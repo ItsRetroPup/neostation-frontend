@@ -389,7 +389,8 @@ class _SystemCardState extends State<SystemCard> {
   }
 
   /// Renders the system brand logo with fallback support.
-  Widget _buildSystemLogo(String assetLogoPath, {double height = 128.r}) {
+  Widget _buildSystemLogo(String assetLogoPath, {double? height}) {
+    height ??= 128.r;
     final customLogoPath = widget.info.customLogoPath;
     final hasCustomLogo = customLogoPath != null && customLogoPath.isNotEmpty;
 
@@ -615,11 +616,13 @@ class _SystemCardState extends State<SystemCard> {
     final assetLogoPath =
         'assets/images/systems/logos/$resolvedLogoFolder.webp';
 
-    return SizedBox(
+    return Container(
       height: 56.r,
-      child: Center(
-        child: _buildSystemLogo(assetLogoPath, height: 40.r),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.white12)),
       ),
+      alignment: Alignment.center,
+      child: _buildSystemLogo(assetLogoPath, height: 40.r),
     );
   }
 }
