@@ -247,7 +247,6 @@ class _SystemCardState extends State<SystemCard> {
                       ],
                     )
                   : Column(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
                         AspectRatio(
                           aspectRatio: 1,
@@ -616,13 +615,14 @@ class _SystemCardState extends State<SystemCard> {
     final assetLogoPath =
         'assets/images/systems/logos/$resolvedLogoFolder.webp';
 
-    return Container(
-      height: 56.r,
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.white12)),
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 44.r,
+      child: Center(
+        child: _buildSystemLogo(assetLogoPath, height: 36.r),
       ),
-      alignment: Alignment.center,
-      child: _buildSystemLogo(assetLogoPath, height: 40.r),
     );
   }
 }
