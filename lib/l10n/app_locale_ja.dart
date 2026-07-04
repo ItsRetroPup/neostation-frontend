@@ -710,4 +710,10 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.romDirectories: 'ROMディレクトリ',
   AppLocale.addRomFolder: 'ROMフォルダを追加',
   AppLocale.removeRomFolder: '削除',
+
+  AppLocale.deleteGame: 'ゲームを削除',
+  AppLocale.deleteGameConfirm: '完全に削除する',
+  AppLocale.deleteGameConfirmBody:
+      'ゲームのROMファイル、スクレイピングデータ、メディアファイルを完全に削除します。この操作は元に戻せません。',
+  AppLocale.deleteGameSubtitle: 'ROMファイルをディスクから完全に削除します',
 };

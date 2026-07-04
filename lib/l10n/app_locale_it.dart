@@ -794,4 +794,10 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.romDirectories: 'Directory ROM',
   AppLocale.addRomFolder: 'Aggiungi cartella ROM',
   AppLocale.removeRomFolder: 'Rimuovi',
+
+  AppLocale.deleteGame: 'Elimina gioco',
+  AppLocale.deleteGameConfirm: 'Elimina per sempre',
+  AppLocale.deleteGameConfirmBody:
+      'Il file ROM, i dati e i media scaricati verranno eliminati definitivamente. Questa azione non può essere annullata.',
+  AppLocale.deleteGameSubtitle: 'Rimuove permanentemente il file ROM dal disco',
 };

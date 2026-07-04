@@ -702,4 +702,10 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.romDirectories: 'ROM 目录',
   AppLocale.addRomFolder: '添加 ROM 文件夹',
   AppLocale.removeRomFolder: '删除',
+
+  AppLocale.deleteGame: '删除游戏',
+  AppLocale.deleteGameConfirm: '永久删除',
+  AppLocale.deleteGameConfirmBody:
+      '这将永久删除游戏ROM文件、已抓取的数据和媒体文件。此操作无法撤销。',
+  AppLocale.deleteGameSubtitle: '从磁盘上永久删除 ROM 文件',
 };

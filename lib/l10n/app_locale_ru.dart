@@ -772,4 +772,10 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.romDirectories: 'Директории ROM',
   AppLocale.addRomFolder: 'Добавить папку ROM',
   AppLocale.removeRomFolder: 'Удалить',
+
+  AppLocale.deleteGame: 'Удалить игру',
+  AppLocale.deleteGameConfirm: 'Удалить навсегда',
+  AppLocale.deleteGameConfirmBody:
+      'ROM-файл игры, данные скрапинга и медиафайлы будут безвозвратно удалены. Это действие нельзя отменить.',
+  AppLocale.deleteGameSubtitle: 'Навсегда удаляет ROM-файл с диска',
 };

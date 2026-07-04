@@ -802,4 +802,10 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.romDirectories: 'Répertoires ROM',
   AppLocale.addRomFolder: 'Ajouter un dossier ROM',
   AppLocale.removeRomFolder: 'Supprimer',
+
+  AppLocale.deleteGame: 'Supprimer le jeu',
+  AppLocale.deleteGameConfirm: 'Supprimer définitivement',
+  AppLocale.deleteGameConfirmBody:
+      'Le fichier ROM, les données et médias scrapés seront définitivement supprimés. Cette action est irréversible.',
+  AppLocale.deleteGameSubtitle: 'Supprime définitivement le fichier ROM du disque',
 };

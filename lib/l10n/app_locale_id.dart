@@ -777,4 +777,10 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.romDirectories: 'Direktori ROM',
   AppLocale.addRomFolder: 'Tambah Folder ROM',
   AppLocale.removeRomFolder: 'Hapus',
+
+  AppLocale.deleteGame: 'Hapus Game',
+  AppLocale.deleteGameConfirm: 'Hapus Secara Permanen',
+  AppLocale.deleteGameConfirmBody:
+      'Ini akan menghapus permanen ROM game, data scraping, dan file media. Tindakan ini tidak dapat dibatalkan.',
+  AppLocale.deleteGameSubtitle: 'Menghapus permanen file ROM dari disk',
 };

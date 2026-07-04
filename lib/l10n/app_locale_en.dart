@@ -774,4 +774,10 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.romDirectories: 'ROM Directories',
   AppLocale.addRomFolder: 'Add ROM Folder',
   AppLocale.removeRomFolder: 'Remove',
+
+  AppLocale.deleteGame: 'Delete Game',
+  AppLocale.deleteGameConfirm: 'Delete Forever',
+  AppLocale.deleteGameConfirmBody:
+      'This will permanently delete the game ROM, its scraped data, and media files. This action cannot be undone.',
+  AppLocale.deleteGameSubtitle: 'Permanently removes the ROM file from disk',
 };

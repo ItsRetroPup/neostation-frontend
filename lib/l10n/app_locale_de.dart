@@ -800,4 +800,10 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.romDirectories: 'ROM-Verzeichnisse',
   AppLocale.addRomFolder: 'ROM-Ordner hinzufügen',
   AppLocale.removeRomFolder: 'Entfernen',
+
+  AppLocale.deleteGame: 'Spiel löschen',
+  AppLocale.deleteGameConfirm: 'Endgültig löschen',
+  AppLocale.deleteGameConfirmBody:
+      'Die ROM-Datei, gescrapte Daten und Mediendateien werden dauerhaft gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
+  AppLocale.deleteGameSubtitle: 'Entfernt die ROM-Datei dauerhaft von der Festplatte',
 };

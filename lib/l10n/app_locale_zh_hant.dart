@@ -702,4 +702,10 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.romDirectories: 'ROM 目錄',
   AppLocale.addRomFolder: '新增 ROM 資料夾',
   AppLocale.removeRomFolder: '移除',
+
+  AppLocale.deleteGame: '刪除遊戲',
+  AppLocale.deleteGameConfirm: '永久刪除',
+  AppLocale.deleteGameConfirmBody:
+      '這將永久刪除遊戲ROM檔案、已抓取的資料和媒體檔案。此操作無法復原。',
+  AppLocale.deleteGameSubtitle: '從磁碟上永久刪除 ROM 檔案',
 };

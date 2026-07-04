@@ -2250,6 +2250,21 @@ class SqliteService {
     );
   }
 
+  /// Permanently deletes a single game and its metadata from the database.
+  static Future<void> deleteGame(String appSystemId, String filename) async {
+    final db = await instance.database;
+    await db.delete(
+      'user_screenscraper_metadata',
+      where: 'app_system_id = ? AND filename = ?',
+      whereArgs: [appSystemId, filename],
+    );
+    await db.delete(
+      'user_roms',
+      where: 'app_system_id = ? AND filename = ?',
+      whereArgs: [appSystemId, filename],
+    );
+  }
+
   static Future<void> saveUserConfig({
     String? lastScan,
     String? gameViewMode,
