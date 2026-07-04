@@ -615,10 +615,7 @@ class _SystemCardState extends State<SystemCard> {
     final assetLogoPath =
         'assets/images/systems/logos/$resolvedLogoFolder.webp';
 
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
+    return SizedBox(
       height: 44.r,
       child: Center(
         child: _buildSystemLogo(assetLogoPath, height: 36.r),
