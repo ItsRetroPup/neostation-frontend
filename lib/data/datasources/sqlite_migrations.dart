@@ -282,6 +282,9 @@ class SqliteMigrations {
       case 92:
         await _migrateToVersion92(db);
         break;
+      case 93:
+        await _migrateToVersion93(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -4611,6 +4614,29 @@ class SqliteMigrations {
       }
     } catch (e, stackTrace) {
       _log.e('Error in migration v92: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v93: Adds `is_default_core` column to `app_emulators` to mark
+  /// which RetroArch core is the recommended default per variant (RA, RA32, RA64).
+  static Future<void> _migrateToVersion93(Database db) async {
+    _log.i('Migration v93: Adding is_default_core to app_emulators');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(app_emulators)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+
+      if (!columns.contains('is_default_core')) {
+        db.execute(
+          'ALTER TABLE app_emulators ADD COLUMN is_default_core INTEGER NOT NULL DEFAULT 0',
+        );
+        _log.i('Column is_default_core added via v93');
+      } else {
+        _log.i('Column is_default_core already exists');
+      }
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v93: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }
