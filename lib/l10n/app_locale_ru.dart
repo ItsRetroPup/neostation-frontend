@@ -102,21 +102,27 @@ const Map<String, dynamic> appLocaleRu = {
       'Ошибка при настройке пути для RetroArch: {error}',
   AppLocale.scanOnStartup: 'Сканировать папки при запуске',
   AppLocale.nowPlayingDimAfter: 'Затемнять Now Playing через',
-  AppLocale.nowPlayingDimAfterSubtitle: 'Бездействие перед затемнением панели на втором экране',
+  AppLocale.nowPlayingDimAfterSubtitle:
+      'Бездействие перед затемнением панели на втором экране',
   AppLocale.nowPlayingDimDarkness: 'Степень затемнения',
-  AppLocale.nowPlayingDimDarknessSubtitle: 'Насколько темной становится панель при затемнении',
+  AppLocale.nowPlayingDimDarknessSubtitle:
+      'Насколько темной становится панель при затемнении',
   AppLocale.nowPlayingDimNever: 'Никогда',
   AppLocale.nowPlayingDockEnabled: 'Док приложений',
-  AppLocale.nowPlayingDockEnabledSubtitle: 'Показывать док приложений на панели Now Playing второго экрана',
+  AppLocale.nowPlayingDockEnabledSubtitle:
+      'Показывать док приложений на панели Now Playing второго экрана',
   AppLocale.nowPlayingDockSlots: 'Слоты дока',
-  AppLocale.nowPlayingDockSlotsSubtitle: 'Сколько слотов приложений показывает док (1-5)',
+  AppLocale.nowPlayingDockSlotsSubtitle:
+      'Сколько слотов приложений показывает док (1-5)',
   AppLocale.nowPlayingFanartDim: 'Затемнять фанарт',
-  AppLocale.nowPlayingFanartDimSubtitle: 'Затемнять фон за логотипом, чтобы яркий фанарт не мешал',
+  AppLocale.nowPlayingFanartDimSubtitle:
+      'Затемнять фон за логотипом, чтобы яркий фанарт не мешал',
   AppLocale.nowPlayingDimOff: 'Выкл',
   AppLocale.secondarySectionNowPlaying: 'Панель Now Playing',
   AppLocale.secondarySectionDock: 'Док приложений',
   AppLocale.screenshotAccess: 'Доступ к скриншотам',
-  AppLocale.screenshotAccessSubtitle: 'Разрешить кнопке скриншота захватывать главный экран (открывает настройки специальных возможностей Android)',
+  AppLocale.screenshotAccessSubtitle:
+      'Разрешить кнопке скриншота захватывать главный экран (открывает настройки специальных возможностей Android)',
   AppLocale.scanOnStartupSubtitle:
       'Автоматически сканировать папки ROM при запуске приложения',
   AppLocale.ignoreHiddenFiles: 'Игнорировать скрытые элементы',

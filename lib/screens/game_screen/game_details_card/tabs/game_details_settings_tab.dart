@@ -271,9 +271,7 @@ class GameDetailsSettingsTabState extends State<GameDetailsSettingsTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => _DeleteGameDialog(
-        gameName: _game.name,
-      ),
+      builder: (ctx) => _DeleteGameDialog(gameName: _game.name),
     );
     if (confirmed == true && mounted) {
       _deleteGame();
@@ -577,12 +575,14 @@ class GameDetailsSettingsTabState extends State<GameDetailsSettingsTab> {
                             _settingsSelectedIndex == _settingsDeleteGameIdx,
                         icon: Symbols.delete_rounded,
                         label: AppLocale.deleteGame.getString(context),
-                        subtitle: AppLocale.deleteGameSubtitle.getString(context),
+                        subtitle: AppLocale.deleteGameSubtitle.getString(
+                          context,
+                        ),
                         onTap: () {
                           SfxService().playNavSound();
                           setState(
-                            () => _settingsSelectedIndex =
-                                _settingsDeleteGameIdx,
+                            () =>
+                                _settingsSelectedIndex = _settingsDeleteGameIdx,
                           );
                           _confirmDeleteGame();
                         },
@@ -602,15 +602,12 @@ class GameDetailsSettingsTabState extends State<GameDetailsSettingsTab> {
                                     vertical: 3.r,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .error
-                                        .withValues(alpha: 0.15),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.error.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(4.r),
                                     border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .error
+                                      color: Theme.of(context).colorScheme.error
                                           .withValues(alpha: 0.4),
                                       width: 1.r,
                                     ),
@@ -620,9 +617,9 @@ class GameDetailsSettingsTabState extends State<GameDetailsSettingsTab> {
                                     style: TextStyle(
                                       fontSize: 11.r,
                                       fontWeight: FontWeight.w600,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .error,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
                                     ),
                                   ),
                                 ),
@@ -956,11 +953,10 @@ class _EmulatorRow extends StatelessWidget {
                     color: theme.colorScheme.secondary,
                   ),
               ],
-              ),
             ),
           ),
         ),
-      
+      ),
     );
   }
 }

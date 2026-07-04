@@ -105,21 +105,27 @@ const Map<String, dynamic> appLocaleIt = {
       'Errore durante la configurazione del percorso RetroArch: {error}',
   AppLocale.scanOnStartup: 'Scansiona cartelle all’avvio',
   AppLocale.nowPlayingDimAfter: 'Oscura Now Playing dopo',
-  AppLocale.nowPlayingDimAfterSubtitle: 'Inattività prima che il panel si oscuri sullo schermo secondario',
+  AppLocale.nowPlayingDimAfterSubtitle:
+      'Inattività prima che il panel si oscuri sullo schermo secondario',
   AppLocale.nowPlayingDimDarkness: 'Intensità oscuramento',
-  AppLocale.nowPlayingDimDarknessSubtitle: 'Quanto si oscura il panel quando si attenua',
+  AppLocale.nowPlayingDimDarknessSubtitle:
+      'Quanto si oscura il panel quando si attenua',
   AppLocale.nowPlayingDimNever: 'Mai',
   AppLocale.nowPlayingDockEnabled: 'Dock app',
-  AppLocale.nowPlayingDockEnabledSubtitle: 'Mostra il dock app sul panel Now Playing secondario',
+  AppLocale.nowPlayingDockEnabledSubtitle:
+      'Mostra il dock app sul panel Now Playing secondario',
   AppLocale.nowPlayingDockSlots: 'Posti dock',
-  AppLocale.nowPlayingDockSlotsSubtitle: 'Quanti posti app mostra il dock (1-5)',
+  AppLocale.nowPlayingDockSlotsSubtitle:
+      'Quanti posti app mostra il dock (1-5)',
   AppLocale.nowPlayingFanartDim: 'Oscura fanart',
-  AppLocale.nowPlayingFanartDimSubtitle: 'Oscura lo sfondo dietro il logo per evitare conflitti con fanart elaborati',
+  AppLocale.nowPlayingFanartDimSubtitle:
+      'Oscura lo sfondo dietro il logo per evitare conflitti con fanart elaborati',
   AppLocale.nowPlayingDimOff: 'Spento',
   AppLocale.secondarySectionNowPlaying: 'Panel Now Playing',
   AppLocale.secondarySectionDock: 'Dock app',
   AppLocale.screenshotAccess: 'Accesso screenshot',
-  AppLocale.screenshotAccessSubtitle: 'Permette al pulsante screenshot di catturare lo schermo principale (apre le impostazioni di accessibilità Android)',
+  AppLocale.screenshotAccessSubtitle:
+      'Permette al pulsante screenshot di catturare lo schermo principale (apre le impostazioni di accessibilità Android)',
   AppLocale.scanOnStartupSubtitle:
       'Scansiona automaticamente le cartelle ROM all’apertura dell’app',
   AppLocale.ignoreHiddenFiles: 'Ignora elementi nascosti',

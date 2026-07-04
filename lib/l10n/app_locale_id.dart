@@ -102,21 +102,26 @@ const Map<String, dynamic> appLocaleId = {
       'Kesalahan saat mengonfigurasi jalur RetroArch: {error}',
   AppLocale.scanOnStartup: 'Pindai folder saat mulai',
   AppLocale.nowPlayingDimAfter: 'Redupkan Now Playing setelah',
-  AppLocale.nowPlayingDimAfterSubtitle: 'Waktu tidak aktif sebelum panel meredup di layar sekunder',
+  AppLocale.nowPlayingDimAfterSubtitle:
+      'Waktu tidak aktif sebelum panel meredup di layar sekunder',
   AppLocale.nowPlayingDimDarkness: 'Gelapnya peredupan',
   AppLocale.nowPlayingDimDarknessSubtitle: 'Seberapa gelap panel saat meredup',
   AppLocale.nowPlayingDimNever: 'Jangan Pernah',
   AppLocale.nowPlayingDockEnabled: 'Dock aplikasi',
-  AppLocale.nowPlayingDockEnabledSubtitle: 'Tampilkan dock aplikasi di panel Now Playing sekunder',
+  AppLocale.nowPlayingDockEnabledSubtitle:
+      'Tampilkan dock aplikasi di panel Now Playing sekunder',
   AppLocale.nowPlayingDockSlots: 'Slot dock',
-  AppLocale.nowPlayingDockSlotsSubtitle: 'Berapa banyak slot aplikasi yang ditampilkan dock (1-5)',
+  AppLocale.nowPlayingDockSlotsSubtitle:
+      'Berapa banyak slot aplikasi yang ditampilkan dock (1-5)',
   AppLocale.nowPlayingFanartDim: 'Redupkan fanart',
-  AppLocale.nowPlayingFanartDimSubtitle: 'Gelapkan seni latar belakang di belakang logo agar fanart yang ramai tidak bertabrakan',
+  AppLocale.nowPlayingFanartDimSubtitle:
+      'Gelapkan seni latar belakang di belakang logo agar fanart yang ramai tidak bertabrakan',
   AppLocale.nowPlayingDimOff: 'Mati',
   AppLocale.secondarySectionNowPlaying: 'Panel Now Playing',
   AppLocale.secondarySectionDock: 'Dock aplikasi',
   AppLocale.screenshotAccess: 'Akses tangkapan layar',
-  AppLocale.screenshotAccessSubtitle: 'Izinkan tombol tangkapan layar untuk menangkap layar utama (membuka pengaturan aksesibilitas Android)',
+  AppLocale.screenshotAccessSubtitle:
+      'Izinkan tombol tangkapan layar untuk menangkap layar utama (membuka pengaturan aksesibilitas Android)',
   AppLocale.scanOnStartupSubtitle:
       'Pindai folder ROM secara otomatis saat membuka aplikasi',
   AppLocale.ignoreHiddenFiles: 'Abaikan item tersembunyi',

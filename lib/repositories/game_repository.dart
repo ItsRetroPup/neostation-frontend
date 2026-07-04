@@ -67,7 +67,8 @@ class GameRepository {
 
     if (romPath != null) {
       try {
-        if (romPath.startsWith('content://') && await SafDirectoryService.deleteFile(romPath)) {
+        if (romPath.startsWith('content://') &&
+            await SafDirectoryService.deleteFile(romPath)) {
           log.i('deleteGame: Deleted ROM file via SAF: $romPath');
         } else {
           final romFile = File(romPath);
@@ -130,7 +131,9 @@ class GameRepository {
     }
 
     if (deletedMedia > 0) {
-      log.i('deleteGame: Deleted $deletedMedia scraped media files for $filename');
+      log.i(
+        'deleteGame: Deleted $deletedMedia scraped media files for $filename',
+      );
     }
   }
 

@@ -108,21 +108,27 @@ const Map<String, dynamic> appLocaleFr = {
       'Erreur lors de la configuration du chemin RetroArch : {error}',
   AppLocale.scanOnStartup: 'Analyser les dossiers au démarrage',
   AppLocale.nowPlayingDimAfter: 'Atténuer Now Playing après',
-  AppLocale.nowPlayingDimAfterSubtitle: 'Inactivité avant que le panneau ne s\'atténue sur l\'écran secondaire',
+  AppLocale.nowPlayingDimAfterSubtitle:
+      'Inactivité avant que le panneau ne s\'atténue sur l\'écran secondaire',
   AppLocale.nowPlayingDimDarkness: 'Niveau d\'atténuation',
-  AppLocale.nowPlayingDimDarknessSubtitle: 'À quel point le panneau s\'assombrit lorsqu\'il s\'atténue',
+  AppLocale.nowPlayingDimDarknessSubtitle:
+      'À quel point le panneau s\'assombrit lorsqu\'il s\'atténue',
   AppLocale.nowPlayingDimNever: 'Jamais',
   AppLocale.nowPlayingDockEnabled: 'Dock d\'applications',
-  AppLocale.nowPlayingDockEnabledSubtitle: 'Afficher le dock d\'applications sur le panneau Now Playing secondaire',
+  AppLocale.nowPlayingDockEnabledSubtitle:
+      'Afficher le dock d\'applications sur le panneau Now Playing secondaire',
   AppLocale.nowPlayingDockSlots: 'Emplacements du dock',
-  AppLocale.nowPlayingDockSlotsSubtitle: 'Combien d\'emplacements le dock affiche (1-5)',
+  AppLocale.nowPlayingDockSlotsSubtitle:
+      'Combien d\'emplacements le dock affiche (1-5)',
   AppLocale.nowPlayingFanartDim: 'Atténuer le fanart',
-  AppLocale.nowPlayingFanartDimSubtitle: 'Assombrir l\'arrière-plan derrière le logo pour éviter les conflits visuels',
+  AppLocale.nowPlayingFanartDimSubtitle:
+      'Assombrir l\'arrière-plan derrière le logo pour éviter les conflits visuels',
   AppLocale.nowPlayingDimOff: 'Désactivé',
   AppLocale.secondarySectionNowPlaying: 'Panneau Now Playing',
   AppLocale.secondarySectionDock: 'Dock d\'applications',
   AppLocale.screenshotAccess: 'Accès aux captures d\'écran',
-  AppLocale.screenshotAccessSubtitle: 'Permettre au bouton de capture de capturer l\'écran principal (ouvre les paramètres d\'accessibilité Android)',
+  AppLocale.screenshotAccessSubtitle:
+      'Permettre au bouton de capture de capturer l\'écran principal (ouvre les paramètres d\'accessibilité Android)',
   AppLocale.scanOnStartupSubtitle:
       'Analyse automatiquement les dossiers de ROMs à l’ouverture de l’application',
   AppLocale.ignoreHiddenFiles: 'Ignorer les éléments cachés',
@@ -807,5 +813,6 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.deleteGameConfirm: 'Supprimer définitivement',
   AppLocale.deleteGameConfirmBody:
       'Le fichier ROM, les données et médias scrapés seront définitivement supprimés. Cette action est irréversible.',
-  AppLocale.deleteGameSubtitle: 'Supprime définitivement le fichier ROM du disque',
+  AppLocale.deleteGameSubtitle:
+      'Supprime définitivement le fichier ROM du disque',
 };

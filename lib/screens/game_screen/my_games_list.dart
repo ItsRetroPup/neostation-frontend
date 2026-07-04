@@ -2907,9 +2907,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
 
     setState(() {
       _games.removeWhere((g) => g.romname == romname);
-      _gameIndexMap = {
-        for (int i = 0; i < _games.length; i++) _games[i]: i,
-      };
+      _gameIndexMap = {for (int i = 0; i < _games.length; i++) _games[i]: i};
 
       if (_games.isEmpty) {
         _selectedGame = null;

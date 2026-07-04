@@ -98,21 +98,27 @@ const Map<String, dynamic> appLocaleEn = {
       'Error configuring RetroArch path: {error}',
   AppLocale.scanOnStartup: 'Scan folders on Startup',
   AppLocale.nowPlayingDimAfter: 'Dim Now Playing after',
-  AppLocale.nowPlayingDimAfterSubtitle: 'Inactivity before the in-game panel dims on the secondary screen',
+  AppLocale.nowPlayingDimAfterSubtitle:
+      'Inactivity before the in-game panel dims on the secondary screen',
   AppLocale.nowPlayingDimDarkness: 'Dim darkness',
-  AppLocale.nowPlayingDimDarknessSubtitle: 'How dark the in-game panel goes when it dims',
+  AppLocale.nowPlayingDimDarknessSubtitle:
+      'How dark the in-game panel goes when it dims',
   AppLocale.nowPlayingDimNever: 'Never',
   AppLocale.nowPlayingDockEnabled: 'App dock',
-  AppLocale.nowPlayingDockEnabledSubtitle: 'Show the app dock on the secondary Now Playing panel',
+  AppLocale.nowPlayingDockEnabledSubtitle:
+      'Show the app dock on the secondary Now Playing panel',
   AppLocale.nowPlayingDockSlots: 'Dock slots',
-  AppLocale.nowPlayingDockSlotsSubtitle: 'How many app slots the dock shows (1-5)',
+  AppLocale.nowPlayingDockSlotsSubtitle:
+      'How many app slots the dock shows (1-5)',
   AppLocale.nowPlayingFanartDim: 'Dim fanart',
-  AppLocale.nowPlayingFanartDimSubtitle: 'Darken the background art behind the logo so a busy fanart does not clash with it',
+  AppLocale.nowPlayingFanartDimSubtitle:
+      'Darken the background art behind the logo so a busy fanart does not clash with it',
   AppLocale.nowPlayingDimOff: 'Off',
   AppLocale.secondarySectionNowPlaying: 'Now Playing panel',
   AppLocale.secondarySectionDock: 'App dock',
   AppLocale.screenshotAccess: 'Screenshot access',
-  AppLocale.screenshotAccessSubtitle: 'Allow the screenshot button to capture the main screen (opens Android accessibility settings)',
+  AppLocale.screenshotAccessSubtitle:
+      'Allow the screenshot button to capture the main screen (opens Android accessibility settings)',
   AppLocale.scanOnStartupSubtitle:
       'Automatically scan ROM folders when the application starts',
   AppLocale.ignoreHiddenFiles: 'Ignore hidden items',

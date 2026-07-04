@@ -105,7 +105,8 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.secondarySectionNowPlaying: 'Now Playingパネル',
   AppLocale.secondarySectionDock: 'アプリドック',
   AppLocale.screenshotAccess: 'スクリーンショットアクセス',
-  AppLocale.screenshotAccessSubtitle: 'スクリーンショットボタンでメイン画面をキャプチャできるようにする（Androidのアクセシビリティ設定を開きます）',
+  AppLocale.screenshotAccessSubtitle:
+      'スクリーンショットボタンでメイン画面をキャプチャできるようにする（Androidのアクセシビリティ設定を開きます）',
   AppLocale.scanOnStartupSubtitle: 'アプリ起動時にROMフォルダを自動的にスキャン',
   AppLocale.ignoreHiddenFiles: '隠しアイテムを無視',
   AppLocale.ignoreHiddenFilesSubtitle: 'ROMスキャン中に隠しファイルとフォルダを非表示にする',

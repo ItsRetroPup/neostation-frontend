@@ -105,21 +105,27 @@ const Map<String, dynamic> appLocaleEs = {
       'Error al configurar la ruta de RetroArch: {error}',
   AppLocale.scanOnStartup: 'Escanear al Iniciar',
   AppLocale.nowPlayingDimAfter: 'Atenuar «Reproduciendo» tras',
-  AppLocale.nowPlayingDimAfterSubtitle: 'Inactividad antes de atenuar el panel en la pantalla secundaria',
+  AppLocale.nowPlayingDimAfterSubtitle:
+      'Inactividad antes de atenuar el panel en la pantalla secundaria',
   AppLocale.nowPlayingDimDarkness: 'Nivel de oscurecimiento',
-  AppLocale.nowPlayingDimDarknessSubtitle: 'Cuánto se oscurece el panel al atenuarse',
+  AppLocale.nowPlayingDimDarknessSubtitle:
+      'Cuánto se oscurece el panel al atenuarse',
   AppLocale.nowPlayingDimNever: 'Nunca',
   AppLocale.nowPlayingDockEnabled: 'Dock de apps',
-  AppLocale.nowPlayingDockEnabledSubtitle: 'Muestra el dock de apps en el panel «Reproduciendo» de la pantalla secundaria',
+  AppLocale.nowPlayingDockEnabledSubtitle:
+      'Muestra el dock de apps en el panel «Reproduciendo» de la pantalla secundaria',
   AppLocale.nowPlayingDockSlots: 'Ranuras del dock',
-  AppLocale.nowPlayingDockSlotsSubtitle: 'Cuántas ranuras de apps muestra el dock (1-5)',
+  AppLocale.nowPlayingDockSlotsSubtitle:
+      'Cuántas ranuras de apps muestra el dock (1-5)',
   AppLocale.nowPlayingFanartDim: 'Atenuar fanart',
-  AppLocale.nowPlayingFanartDimSubtitle: 'Oscurece el arte de fondo tras el logo para que un fanart recargado no choque con él',
+  AppLocale.nowPlayingFanartDimSubtitle:
+      'Oscurece el arte de fondo tras el logo para que un fanart recargado no choque con él',
   AppLocale.nowPlayingDimOff: 'Desactivado',
   AppLocale.secondarySectionNowPlaying: 'Panel Reproduciendo',
   AppLocale.secondarySectionDock: 'Dock de apps',
   AppLocale.screenshotAccess: 'Acceso a capturas',
-  AppLocale.screenshotAccessSubtitle: 'Permite que el botón de captura grabe la pantalla principal (abre los ajustes de accesibilidad de Android)',
+  AppLocale.screenshotAccessSubtitle:
+      'Permite que el botón de captura grabe la pantalla principal (abre los ajustes de accesibilidad de Android)',
   AppLocale.scanOnStartupSubtitle:
       'Escanear carpetas de ROMs automáticamente al iniciar la app',
   AppLocale.ignoreHiddenFiles: 'Ignorar elementos ocultos',

@@ -48,10 +48,8 @@ class EmulatorDefinition {
       isDefaultCore:
           (json['default_core'] ?? false).toString().toLowerCase() == 'true',
       isDefaultStandalone:
-          (json['default_standalone'] ?? false)
-                  .toString()
-                  .toLowerCase() ==
-              'true',
+          (json['default_standalone'] ?? false).toString().toLowerCase() ==
+          'true',
       isretroAchievementsCompatible:
           (json['is_retroachievements_compatible'] ??
                       json['is_ra_compatible'] ??

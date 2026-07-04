@@ -103,21 +103,27 @@ const Map<String, dynamic> appLocaleDe = {
       'Fehler beim Konfigurieren des RetroArch-Pfads: {error}',
   AppLocale.scanOnStartup: 'Ordner beim Start scannen',
   AppLocale.nowPlayingDimAfter: 'Now Playing abdunkeln nach',
-  AppLocale.nowPlayingDimAfterSubtitle: 'Inaktivität bevor das In-Game-Panel auf dem Zweitbildschirm abgedunkelt wird',
+  AppLocale.nowPlayingDimAfterSubtitle:
+      'Inaktivität bevor das In-Game-Panel auf dem Zweitbildschirm abgedunkelt wird',
   AppLocale.nowPlayingDimDarkness: 'Abdunkelungsstärke',
-  AppLocale.nowPlayingDimDarknessSubtitle: 'Wie dunkel das Panel beim Abdunkeln wird',
+  AppLocale.nowPlayingDimDarknessSubtitle:
+      'Wie dunkel das Panel beim Abdunkeln wird',
   AppLocale.nowPlayingDimNever: 'Nie',
   AppLocale.nowPlayingDockEnabled: 'App-Dock',
-  AppLocale.nowPlayingDockEnabledSubtitle: 'App-Dock auf dem Now Playing-Panel des Zweitbildschirms anzeigen',
+  AppLocale.nowPlayingDockEnabledSubtitle:
+      'App-Dock auf dem Now Playing-Panel des Zweitbildschirms anzeigen',
   AppLocale.nowPlayingDockSlots: 'Dock-Plätze',
-  AppLocale.nowPlayingDockSlotsSubtitle: 'Wie viele App-Plätze das Dock anzeigt (1-5)',
+  AppLocale.nowPlayingDockSlotsSubtitle:
+      'Wie viele App-Plätze das Dock anzeigt (1-5)',
   AppLocale.nowPlayingFanartDim: 'Fanart abdunkeln',
-  AppLocale.nowPlayingFanartDimSubtitle: 'Hintergrundbild hinter dem Logo abdunkeln, damit ein unruhiges Fanart nicht stört',
+  AppLocale.nowPlayingFanartDimSubtitle:
+      'Hintergrundbild hinter dem Logo abdunkeln, damit ein unruhiges Fanart nicht stört',
   AppLocale.nowPlayingDimOff: 'Aus',
   AppLocale.secondarySectionNowPlaying: 'Now Playing-Bereich',
   AppLocale.secondarySectionDock: 'App-Dock',
   AppLocale.screenshotAccess: 'Screenshot-Zugriff',
-  AppLocale.screenshotAccessSubtitle: 'Screenshot-Taste erlaubt Aufnahme des Hauptbildschirms (öffnet Android-Bedienungshilfen)',
+  AppLocale.screenshotAccessSubtitle:
+      'Screenshot-Taste erlaubt Aufnahme des Hauptbildschirms (öffnet Android-Bedienungshilfen)',
   AppLocale.scanOnStartupSubtitle:
       'Scant ROM-Ordner automatisch beim Öffnen der App',
   AppLocale.ignoreHiddenFiles: 'Versteckte Elemente ignorieren',
@@ -805,5 +811,6 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.deleteGameConfirm: 'Endgültig löschen',
   AppLocale.deleteGameConfirmBody:
       'Die ROM-Datei, gescrapte Daten und Mediendateien werden dauerhaft gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
-  AppLocale.deleteGameSubtitle: 'Entfernt die ROM-Datei dauerhaft von der Festplatte',
+  AppLocale.deleteGameSubtitle:
+      'Entfernt die ROM-Datei dauerhaft von der Festplatte',
 };

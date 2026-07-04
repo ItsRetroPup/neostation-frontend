@@ -800,7 +800,11 @@ class SqliteService {
         final bool isAndroidTarget = osName == 'android';
         final bool isRetroArchCore = isDefaultCore && !isStandalone;
         final bool skipCoreDefault = isAndroidTarget && isRetroArchCore;
-        final bool applyJsonDefault = !hasDefaultInDB && !defaultSetInLoop && !skipCoreDefault && (isDefaultCore || isDefaultStandalone);
+        final bool applyJsonDefault =
+            !hasDefaultInDB &&
+            !defaultSetInLoop &&
+            !skipCoreDefault &&
+            (isDefaultCore || isDefaultStandalone);
 
         if (applyJsonDefault) {
           defaultSetInLoop = true;
