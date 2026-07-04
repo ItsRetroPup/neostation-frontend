@@ -395,7 +395,7 @@ class MySystems extends StatelessWidget {
               crossAxisCount: Responsive.getSystemsCrossAxisCountFromSize(
                 configProvider.config.systemGridColumns,
               ),
-              childAspectRatio: 1,
+              childAspectRatio: 0.80,
               selectedIndex: selectedIndex,
               onCardTapped: onCardTapped,
               systems: allSystems,
