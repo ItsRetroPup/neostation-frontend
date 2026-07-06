@@ -93,6 +93,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
 
   /// Whether the user awards have been loaded.
   bool _userAwardsLoaded = false;
+  bool _userAwardsLoading = false;
+  String? _userAwardsError;
 
   List<RetroAchievementRecentUnlockItem> _recentUnlocks = [];
   bool _recentUnlocksLoaded = false;
@@ -150,8 +152,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
   }
 
   /// Recent mastery awards (hardcore) visible to the user.
-  List<UserAward> get recentMasteries =>
-      _recentAwardsForMode(hardcore: true);
+  List<UserAward> get recentMasteries => _recentAwardsForMode(hardcore: true);
 
   /// Recent completion awards (softcore) visible to the user.
   List<UserAward> get recentCompletions =>
@@ -159,6 +160,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
 
   RetroAchievementsUserAwards? get userAwards => _userAwards;
   bool get userAwardsLoaded => _userAwardsLoaded;
+  bool get userAwardsLoading => _userAwardsLoading;
+  String? get userAwardsError => _userAwardsError;
   List<RetroAchievementRecentUnlockItem> get recentUnlocks => _recentUnlocks;
   bool get recentUnlocksLoaded => _recentUnlocksLoaded;
   bool get recentUnlocksLoading => _recentUnlocksLoading;
@@ -351,10 +354,14 @@ class RetroAchievementsProvider extends ChangeNotifier {
     if (!hasResolvedApiKey) {
       _userAwards = null;
       _userAwardsLoaded = false;
-      _error = _dashboardApiKeyError;
+      _userAwardsError = _dashboardApiKeyError;
       notifyListeners();
       return false;
     }
+
+    _userAwardsLoading = true;
+    _userAwardsError = null;
+    notifyListeners();
 
     try {
       final awardsData = await RetroAchievementsService.getUserAwards(
@@ -364,23 +371,22 @@ class RetroAchievementsProvider extends ChangeNotifier {
       if (awardsData != null) {
         _userAwards = RetroAchievementsUserAwards.fromJson(awardsData);
         _userAwardsLoaded = true;
-        _error = null;
-        notifyListeners();
         return true;
       }
       _userAwardsLoaded = false;
-      _error = 'User awards could not be loaded';
-      notifyListeners();
+      _userAwardsError = 'User awards could not be loaded';
       return false;
     } catch (e) {
-      _error = _isUnauthorizedError(e)
+      _userAwardsError = _isUnauthorizedError(e)
           ? _dashboardApiKeyError
           : 'Error loading user awards: $e';
       _userAwardsLoaded = false;
       _userAwards = null;
-      _log.e(_error ?? 'Unknown user awards error');
-      notifyListeners();
+      _log.e(_userAwardsError ?? 'Unknown user awards error');
       return false;
+    } finally {
+      _userAwardsLoading = false;
+      notifyListeners();
     }
   }
 
@@ -450,7 +456,9 @@ class RetroAchievementsProvider extends ChangeNotifier {
       final savedApiKey = await _loadRAApiKeyFromConfig();
 
       if (savedUsername != null && savedUsername.isNotEmpty) {
-        if (RetroAchievementsService.resolveApiKey(savedApiKey).trim().isEmpty) {
+        if (RetroAchievementsService.resolveApiKey(
+          savedApiKey,
+        ).trim().isEmpty) {
           _log.i(
             'Skipping RetroAchievements auto-login for $savedUsername: no API key available',
           );
@@ -491,6 +499,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _ownedWeekGame = null;
     _userAwards = null;
     _userAwardsLoaded = false;
+    _userAwardsLoading = false;
+    _userAwardsError = null;
     _recentUnlocks = [];
     _recentUnlocksLoaded = false;
     _recentUnlocksLoading = false;
@@ -739,9 +749,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
     }
 
     try {
-      _ownedWeekGame = await RetroAchievementsRepository.findBestLocalGameByRaGameId(
-        raGameId,
-      );
+      _ownedWeekGame =
+          await RetroAchievementsRepository.findBestLocalGameByRaGameId(
+            raGameId,
+          );
     } catch (e) {
       _ownedWeekGame = null;
       _log.e('Error resolving local GOTW ownership: $e');

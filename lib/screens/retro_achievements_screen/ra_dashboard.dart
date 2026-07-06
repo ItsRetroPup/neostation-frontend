@@ -27,13 +27,15 @@ class _RADashboardHubState extends State<RADashboardHub> {
   bool _requestedInitialLoad = false;
 
   Future<void> _loadDashboard(RetroAchievementsProvider provider) async {
-    await Future.wait([
-      provider.fetchRecentUnlocks(),
-      provider.fetchRecentlyPlayedGames(),
-      provider.fetchUserAwards(),
-      provider.fetchCompletionProgress(),
-      provider.fetchGOTW(),
-    ]);
+    // Load sequentially rather than with Future.wait: firing all five RA
+    // endpoints at once trips the RetroAchievements API rate limiter (HTTP 429),
+    // which left sections such as "Recent Masteries" stuck loading. Each section
+    // still surfaces its own spinner/error independently as it resolves.
+    await provider.fetchRecentUnlocks();
+    await provider.fetchRecentlyPlayedGames();
+    await provider.fetchUserAwards();
+    await provider.fetchCompletionProgress();
+    await provider.fetchGOTW();
   }
 
   @override
@@ -505,8 +507,8 @@ class _RADashboardHubState extends State<RADashboardHub> {
           ? AppLocale.raRecentCompletions.getString(context)
           : AppLocale.raRecentMasteries.getString(context),
       icon: Symbols.workspace_premium_rounded,
-      loading: !raProvider.userAwardsLoaded && raProvider.isConnected,
-      error: raProvider.userAwardsLoaded ? null : raProvider.error,
+      loading: raProvider.userAwardsLoading && items.isEmpty,
+      error: raProvider.userAwardsLoaded ? null : raProvider.userAwardsError,
       emptyMessage: showCompletions
           ? AppLocale.raNoCompletionsYet.getString(context)
           : AppLocale.raNoMasteriesYet.getString(context),
