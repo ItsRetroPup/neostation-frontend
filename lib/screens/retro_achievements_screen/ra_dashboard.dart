@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_locale.dart';
 import '../../models/retro_achievements_dashboard_models.dart';
 import '../../models/retro_achievements_user_awards.dart';
 import '../../providers/file_provider.dart';
@@ -24,9 +26,7 @@ class RADashboardHub extends StatefulWidget {
 class _RADashboardHubState extends State<RADashboardHub> {
   bool _requestedInitialLoad = false;
 
-  Future<void> _loadDashboard(
-    RetroAchievementsProvider provider,
-  ) async {
+  Future<void> _loadDashboard(RetroAchievementsProvider provider) async {
     await Future.wait([
       provider.fetchRecentUnlocks(),
       provider.fetchRecentlyPlayedGames(),
@@ -118,7 +118,9 @@ class _RADashboardHubState extends State<RADashboardHub> {
     final highlightCount = showCompletions
         ? (raProvider.userAwards?.completionAwardsCount ?? 0)
         : (raProvider.userAwards?.masteryAwardsCount ?? 0);
-    final highlightLabel = showCompletions ? 'Completions' : 'Masteries';
+    final highlightLabel = showCompletions
+        ? AppLocale.raCompletionsLabel.getString(context)
+        : AppLocale.raMasteriesLabel.getString(context);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 14.r, vertical: 12.r),
@@ -182,7 +184,8 @@ class _RADashboardHubState extends State<RADashboardHub> {
                     _buildPill(
                       context,
                       icon: Symbols.stars_rounded,
-                      label: '${user.totalPoints} pts',
+                      label:
+                          '${user.totalPoints} ${AppLocale.raPointsAbbrev.getString(context)}',
                       color: theme.colorScheme.tertiary,
                     ),
                     _buildPill(
@@ -208,7 +211,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
               if (!context.mounted) return;
               AppNotification.showNotification(
                 context,
-                'Disconnected from RetroAchievements',
+                AppLocale.disconnectedRA.getString(context),
                 type: NotificationType.info,
               );
             },
@@ -217,7 +220,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
               color: theme.colorScheme.error,
               size: 20.r,
             ),
-            tooltip: 'Logout',
+            tooltip: AppLocale.logout.getString(context),
           ),
         ],
       ),
@@ -265,15 +268,11 @@ class _RADashboardHubState extends State<RADashboardHub> {
           children: [
             Row(
               children: [
-                Icon(
-                  Symbols.emoji_events_rounded,
-                  size: 18.r,
-                  color: accent,
-                ),
+                Icon(Symbols.emoji_events_rounded, size: 18.r, color: accent),
                 SizedBox(width: 8.r),
                 Expanded(
                   child: Text(
-                    'Achievement of the Week',
+                    AppLocale.aotw.getString(context),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontSize: 11.r,
                       fontWeight: FontWeight.bold,
@@ -285,14 +284,14 @@ class _RADashboardHubState extends State<RADashboardHub> {
                   _buildPill(
                     context,
                     icon: Symbols.verified_rounded,
-                    label: 'Earned',
+                    label: AppLocale.raEarned.getString(context),
                     color: accent,
                   )
                 else if (owned != null)
                   _buildPill(
                     context,
                     icon: Symbols.check_circle_rounded,
-                    label: 'Owned',
+                    label: AppLocale.raOwned.getString(context),
                     color: accent,
                   ),
               ],
@@ -303,7 +302,8 @@ class _RADashboardHubState extends State<RADashboardHub> {
             else if (gotw == null)
               _buildSectionMessage(
                 context,
-                raProvider.gotwError ?? 'Could not load Achievement of the Week',
+                raProvider.gotwError ??
+                    AppLocale.couldNotLoadAOTW.getString(context),
                 isError: true,
                 onRetry: raProvider.fetchGOTW,
                 minHeight: 138.r,
@@ -392,19 +392,22 @@ class _RADashboardHubState extends State<RADashboardHub> {
                   _buildPill(
                     context,
                     icon: Symbols.stars_rounded,
-                    label: '${gotw.achievement.points} pts',
+                    label:
+                        '${gotw.achievement.points} ${AppLocale.raPointsAbbrev.getString(context)}',
                     color: accent,
                   ),
                   _buildPill(
                     context,
                     icon: Symbols.groups_rounded,
-                    label: '${gotw.totalPlayers} players',
+                    label:
+                        '${gotw.totalPlayers} ${AppLocale.players.getString(context)}',
                     color: theme.colorScheme.tertiary,
                   ),
                   _buildPill(
                     context,
                     icon: Symbols.trophy_rounded,
-                    label: '${gotw.unlocksCount} unlocks',
+                    label:
+                        '${gotw.unlocksCount} ${AppLocale.unlocks.getString(context)}',
                     color: theme.colorScheme.tertiary,
                   ),
                 ],
@@ -412,7 +415,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
               if (earned) ...[
                 SizedBox(height: 10.r),
                 Text(
-                  'You have already earned this achievement',
+                  AppLocale.raAlreadyEarned.getString(context),
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 8.r,
                     color: accent.withValues(alpha: 0.92),
@@ -422,7 +425,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
               ] else if (owned != null) ...[
                 SizedBox(height: 10.r),
                 Text(
-                  'Tap to open local game details',
+                  AppLocale.raTapToOpenLocalGame.getString(context),
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 8.r,
                     color: accent.withValues(alpha: 0.92),
@@ -451,7 +454,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
           _buildSectionHeader(
             context,
             icon: Symbols.notifications_active_rounded,
-            title: 'Recent Unlocks',
+            title: AppLocale.raRecentUnlocks.getString(context),
             trailing: '30d',
           ),
           SizedBox(height: 12.r),
@@ -468,7 +471,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
           else if (unlocks.isEmpty)
             _buildSectionMessage(
               context,
-              'No recent unlocks in the last 30 days',
+              AppLocale.raNoRecentUnlocks.getString(context),
               minHeight: 138.r,
             )
           else
@@ -487,28 +490,35 @@ class _RADashboardHubState extends State<RADashboardHub> {
     RetroAchievementsProvider raProvider,
   ) {
     final showCompletions = raProvider.user?.isSoftcore ?? false;
-    final items = (showCompletions
-            ? raProvider.recentCompletions
-            : raProvider.recentMasteries)
-        .take(5)
-        .toList();
+    final items =
+        (showCompletions
+                ? raProvider.recentCompletions
+                : raProvider.recentMasteries)
+            .take(5)
+            .toList();
     final subtitle = raProvider.completionProgress?.total != null
-        ? '${raProvider.completionProgress!.total} tracked games'
+        ? '${raProvider.completionProgress!.total} ${AppLocale.raTrackedGames.getString(context)}'
         : null;
     return _buildListSection<UserAward>(
       context,
-      title: showCompletions ? 'Recent Completions' : 'Recent Masteries',
+      title: showCompletions
+          ? AppLocale.raRecentCompletions.getString(context)
+          : AppLocale.raRecentMasteries.getString(context),
       icon: Symbols.workspace_premium_rounded,
       loading: !raProvider.userAwardsLoaded && raProvider.isConnected,
       error: raProvider.userAwardsLoaded ? null : raProvider.error,
-      emptyMessage: showCompletions ? 'No completions yet' : 'No masteries yet',
+      emptyMessage: showCompletions
+          ? AppLocale.raNoCompletionsYet.getString(context)
+          : AppLocale.raNoMasteriesYet.getString(context),
       items: items,
       subtitle: subtitle,
       onRetry: raProvider.fetchUserAwards,
       itemBuilder: (context, item) => _buildAwardRow(
         context,
         item,
-        accentLabel: showCompletions ? 'Completion' : 'Mastery',
+        accentLabel: showCompletions
+            ? AppLocale.raCompletionLabel.getString(context)
+            : AppLocale.raMasteryLabel.getString(context),
         accentLabelColor: showCompletions
             ? const Color(0xFFC0C0C0)
             : const Color(0xFFFFD700),
@@ -523,11 +533,11 @@ class _RADashboardHubState extends State<RADashboardHub> {
     final items = raProvider.recentlyPlayedGames.take(5).toList();
     return _buildListSection<RetroAchievementRecentlyPlayedGameItem>(
       context,
-      title: 'Recently Played',
+      title: AppLocale.raRecentlyPlayedTitle.getString(context),
       icon: Symbols.history_rounded,
       loading: raProvider.recentlyPlayedLoading && items.isEmpty,
       error: items.isEmpty ? raProvider.recentlyPlayedError : null,
-      emptyMessage: 'No recently played games',
+      emptyMessage: AppLocale.raNoRecentlyPlayed.getString(context),
       items: items,
       onRetry: raProvider.fetchRecentlyPlayedGames,
       itemBuilder: (context, item) => _buildRecentlyPlayedRow(context, item),
@@ -571,11 +581,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
               minHeight: 120.r,
             )
           else if (items.isEmpty)
-            _buildSectionMessage(
-              context,
-              emptyMessage,
-              minHeight: 120.r,
-            )
+            _buildSectionMessage(context, emptyMessage, minHeight: 120.r)
           else
             Column(
               children: items
@@ -598,7 +604,11 @@ class _RADashboardHubState extends State<RADashboardHub> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _networkThumb(
-            _raMediaUrl(item.badgeUrl.isNotEmpty ? item.badgeUrl : '/Badge/${item.badgeName}.png'),
+            _raMediaUrl(
+              item.badgeUrl.isNotEmpty
+                  ? item.badgeUrl
+                  : '/Badge/${item.badgeName}.png',
+            ),
             icon: Symbols.emoji_events_rounded,
           ),
           SizedBox(width: 10.r),
@@ -633,7 +643,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${item.points} pts',
+                '${item.points} ${AppLocale.raPointsAbbrev.getString(context)}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontSize: 9.r,
                   color: theme.colorScheme.primary,
@@ -664,7 +674,10 @@ class _RADashboardHubState extends State<RADashboardHub> {
       padding: EdgeInsets.only(bottom: 10.r),
       child: Row(
         children: [
-          _networkThumb(_raMediaUrl(item.imageIcon), icon: Symbols.videogame_asset_rounded),
+          _networkThumb(
+            _raMediaUrl(item.imageIcon),
+            icon: Symbols.videogame_asset_rounded,
+          ),
           SizedBox(width: 10.r),
           Expanded(
             child: Column(
@@ -716,7 +729,10 @@ class _RADashboardHubState extends State<RADashboardHub> {
       padding: EdgeInsets.only(bottom: 10.r),
       child: Row(
         children: [
-          _networkThumb(_raMediaUrl(item.imageIcon), icon: Symbols.military_tech_rounded),
+          _networkThumb(
+            _raMediaUrl(item.imageIcon),
+            icon: Symbols.military_tech_rounded,
+          ),
           SizedBox(width: 10.r),
           Expanded(
             child: Column(
@@ -878,7 +894,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
               SizedBox(height: 8.r),
               TextButton(
                 onPressed: () => onRetry(),
-                child: const Text('Retry'),
+                child: Text(AppLocale.retry.getString(context)),
               ),
             ],
           ],
@@ -949,7 +965,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
     if (system == null) {
       AppNotification.showNotification(
         context,
-        'Could not resolve the local system for this game',
+        AppLocale.raCouldNotResolveLocalSystem.getString(context),
         type: NotificationType.error,
       );
       return;

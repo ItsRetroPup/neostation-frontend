@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_localization/flutter_localization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../l10n/app_locale.dart';
 import 'package:neostation/providers/palette_provider.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/services/secondary_apps_service.dart';
@@ -531,6 +533,9 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
           final palette = _resolvePalette(value?.themeName);
           return MaterialApp(
             debugShowCheckedModeBanner: false,
+            localizationsDelegates:
+                FlutterLocalization.instance.localizationsDelegates,
+            supportedLocales: FlutterLocalization.instance.supportedLocales,
             // Suppress Android's overscroll glow/stretch: on this display a
             // slight drag near the edge would flash white arcs at the screen
             // border, which looks like a rendering glitch on a static panel.
@@ -1997,7 +2002,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Text(
-        'MISSABLE',
+        AppLocale.raMissable.getString(context),
         style: TextStyle(
           color: Colors.white,
           fontSize: 9.r,
@@ -2011,10 +2016,9 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
 
   Widget _buildAchievementCommentsPage(SecondaryAchievementItem achievement) {
     final state = _commentsCache[achievement.id];
-    final comments =
-        (state?.comments ?? const <RetroAchievementComment>[])
-            .where((comment) => !comment.isSystemComment)
-            .toList();
+    final comments = (state?.comments ?? const <RetroAchievementComment>[])
+        .where((comment) => !comment.isSystemComment)
+        .toList();
     final hasMore = state != null && comments.length < state.total;
 
     return Container(
@@ -2073,7 +2077,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
           ),
           SizedBox(height: 16.r),
           Text(
-            'COMMENTS',
+            AppLocale.raComments.getString(context),
             style: TextStyle(
               color: Colors.white70,
               fontSize: 12.r,
@@ -2088,13 +2092,17 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : state.error != null && comments.isEmpty
                 ? _buildCommentsMessage(
-                    'Comments could not be loaded.',
-                    actionLabel: 'RETRY',
+                    AppLocale.raCommentsCouldNotLoad.getString(context),
+                    actionLabel: AppLocale.retry
+                        .getString(context)
+                        .toUpperCase(),
                     onAction: () =>
                         _loadAchievementComments(achievement.id, reset: true),
                   )
                 : comments.isEmpty
-                ? _buildCommentsMessage('No comments yet.')
+                ? _buildCommentsMessage(
+                    AppLocale.raNoCommentsYet.getString(context),
+                  )
                 : ListView.separated(
                     itemCount: comments.length + (hasMore ? 1 : 0),
                     separatorBuilder: (_, _) => SizedBox(height: 8.r),
@@ -2126,7 +2134,9 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
             children: [
               Expanded(
                 child: Text(
-                  comment.user.isEmpty ? 'Unknown user' : comment.user,
+                  comment.user.isEmpty
+                      ? AppLocale.unknownUser.getString(context)
+                      : comment.user,
                   style: TextStyle(
                     color: const Color(0xFFFFC107),
                     fontSize: 12.r,
@@ -2162,8 +2172,10 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
       );
     }
     return _buildCommentsMessage(
-      state.error ?? 'Older comments are available.',
-      actionLabel: state.error == null ? 'LOAD MORE' : 'RETRY',
+      state.error ?? AppLocale.raOlderCommentsAvailable.getString(context),
+      actionLabel: state.error == null
+          ? AppLocale.raLoadMore.getString(context)
+          : AppLocale.retry.getString(context).toUpperCase(),
       onAction: () => _loadAchievementComments(achievementId, reset: false),
     );
   }

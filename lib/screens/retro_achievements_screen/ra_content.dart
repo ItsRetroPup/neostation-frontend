@@ -362,7 +362,7 @@ class _RAContentState extends State<RAContent> {
                   enableSuggestions: false,
                   autocorrect: false,
                   decoration: InputDecoration(
-                    labelText: 'API Key',
+                    labelText: AppLocale.raApiKey.getString(context),
                     labelStyle: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       fontSize: 10.r,
@@ -372,7 +372,7 @@ class _RAContentState extends State<RAContent> {
                       fontSize: 10.r,
                       fontWeight: FontWeight.bold,
                     ),
-                    hintText: 'Enter your API key',
+                    hintText: AppLocale.raEnterApiKey.getString(context),
                     hintStyle: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                       fontSize: 10.r,
@@ -588,5 +588,4 @@ class _RAContentState extends State<RAContent> {
       ),
     );
   }
-
 }

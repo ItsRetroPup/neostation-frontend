@@ -815,4 +815,36 @@ const Map<String, dynamic> appLocaleFr = {
       'Le fichier ROM, les données et médias scrapés seront définitivement supprimés. Cette action est irréversible.',
   AppLocale.deleteGameSubtitle:
       'Supprime définitivement le fichier ROM du disque',
+
+  AppLocale.raCompletionsLabel: 'Complétions',
+  AppLocale.raMasteriesLabel: 'Maîtrises',
+  AppLocale.raEarned: 'Obtenus',
+  AppLocale.raOwned: 'Possédés',
+  AppLocale.raPointsAbbrev: 'pts',
+  AppLocale.raAlreadyEarned: 'Vous avez déjà obtenu ce succès',
+  AppLocale.raTapToOpenLocalGame:
+      'Appuyez pour ouvrir les détails du jeu local',
+  AppLocale.raRecentUnlocks: 'Déblocages Récents',
+  AppLocale.raRecentCompletions: 'Complétions Récentes',
+  AppLocale.raRecentMasteries: 'Maîtrises Récentes',
+  AppLocale.raNoCompletionsYet: 'Aucune complétion pour le moment',
+  AppLocale.raNoMasteriesYet: 'Aucune maîtrise pour le moment',
+  AppLocale.raTrackedGames: 'jeux suivis',
+  AppLocale.raCompletionLabel: 'Complétion',
+  AppLocale.raMasteryLabel: 'Maîtrise',
+  AppLocale.raCouldNotResolveLocalSystem:
+      'Impossible de déterminer le système local pour ce jeu',
+  AppLocale.raMissable: 'MANQUABLE',
+  AppLocale.raComments: 'COMMENTAIRES',
+  AppLocale.raCommentsCouldNotLoad: 'Impossible de charger les commentaires.',
+  AppLocale.raNoCommentsYet: 'Aucun commentaire pour le moment.',
+  AppLocale.raOlderCommentsAvailable:
+      'D\'anciens commentaires sont disponibles.',
+  AppLocale.raLoadMore: 'CHARGER PLUS',
+  AppLocale.raApiKey: 'Clé API',
+  AppLocale.raEnterApiKey: 'Entrez votre clé API',
+  AppLocale.raNoRecentUnlocks:
+      'Aucun déblocage récent au cours des 30 derniers jours',
+  AppLocale.raRecentlyPlayedTitle: 'Joués Récemment',
+  AppLocale.raNoRecentlyPlayed: 'Aucun jeu joué récemment',
 };
