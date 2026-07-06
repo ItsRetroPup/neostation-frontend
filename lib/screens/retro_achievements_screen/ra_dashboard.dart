@@ -105,6 +105,9 @@ class _RADashboardHubState extends State<RADashboardHub> {
                       ],
                     );
                   }
+                  // Split the two long lists (Recent Unlocks / Recently Played)
+                  // across columns and pair each with a shorter card, so neither
+                  // column runs far longer than the other and leaves a tall gap.
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -113,7 +116,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
                           children: [
                             weekCard,
                             SizedBox(height: 12.r),
-                            masteriesCard,
+                            playedCard,
                           ],
                         ),
                       ),
@@ -123,7 +126,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
                           children: [
                             unlocksCard,
                             SizedBox(height: 12.r),
-                            playedCard,
+                            masteriesCard,
                           ],
                         ),
                       ),
