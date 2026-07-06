@@ -30,12 +30,19 @@ class SecondaryScreen extends StatefulWidget {
 class _AchievementCommentsState {
   final List<RetroAchievementComment> comments;
   final int total;
+
+  /// Number of *raw* API results consumed so far (system comments included).
+  /// The API pages over the unfiltered set, so the next fetch offset must be
+  /// based on this, not on the filtered [comments] length — otherwise paging
+  /// re-requests already-seen rows and "load more" appears to do nothing.
+  final int loadedRaw;
   final bool isLoading;
   final String? error;
 
   const _AchievementCommentsState({
     required this.comments,
     required this.total,
+    this.loadedRaw = 0,
     this.isLoading = false,
     this.error,
   });
@@ -250,15 +257,17 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     int achievementId, {
     required bool reset,
   }) async {
+    const pageSize = 25;
     final current = _commentsCache[achievementId];
     if (current?.isLoading == true) return;
 
     final generation = ++_commentsRequestGeneration;
-    final offset = reset ? 0 : (current?.comments.length ?? 0);
+    final offset = reset ? 0 : (current?.loadedRaw ?? 0);
     setState(() {
       _commentsCache[achievementId] = _AchievementCommentsState(
         comments: reset ? const [] : (current?.comments ?? const []),
         total: reset ? 0 : (current?.total ?? 0),
+        loadedRaw: reset ? 0 : (current?.loadedRaw ?? 0),
         isLoading: true,
       );
     });
@@ -267,7 +276,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
       final apiKey = await RetroAchievementsRepository.getRAApiKey();
       final page = await RetroAchievementsService.getAchievementComments(
         achievementId,
-        count: 25,
+        count: pageSize,
         offset: offset,
         apiKey: apiKey,
       );
@@ -283,10 +292,19 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
           byKey[comment.cacheKey] = comment;
         }
       }
+      // Advance by the raw page size (system comments included) so the next
+      // offset lines up with the API's own paging. A short page means we've
+      // reached the end, so pin total to what we've loaded to stop offering
+      // "load more" — the raw Total can exceed the visible count because
+      // system/server comments are filtered out of the display.
+      final consumedRaw = page.count;
+      final loadedRaw = offset + consumedRaw;
+      final reachedEnd = consumedRaw < pageSize;
       setState(() {
         _commentsCache[achievementId] = _AchievementCommentsState(
           comments: byKey.values.toList(),
-          total: page.total,
+          total: reachedEnd ? loadedRaw : page.total,
+          loadedRaw: loadedRaw,
         );
       });
     } catch (error) {
@@ -295,6 +313,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
         _commentsCache[achievementId] = _AchievementCommentsState(
           comments: reset ? const [] : (current?.comments ?? const []),
           total: reset ? 0 : (current?.total ?? 0),
+          loadedRaw: reset ? 0 : (current?.loadedRaw ?? 0),
           error: error.toString(),
         );
       });
@@ -2050,7 +2069,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     final comments = (state?.comments ?? const <RetroAchievementComment>[])
         .where((comment) => !comment.isSystemComment)
         .toList();
-    final hasMore = state != null && comments.length < state.total;
+    final hasMore = state != null && state.loadedRaw < state.total;
 
     return Container(
       color: Colors.black,
