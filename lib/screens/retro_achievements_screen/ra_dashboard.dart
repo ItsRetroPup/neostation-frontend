@@ -73,32 +73,64 @@ class _RADashboardHubState extends State<RADashboardHub> {
               SizedBox(height: 12.r),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final stacked = constraints.maxWidth < 820.r;
-                  if (stacked) {
+                  // constraints.maxWidth is already in logical pixels (the same
+                  // space .r resolves to), so the breakpoint is a raw value — a
+                  // .r here double-scales it and forces stacked mode on wide
+                  // landscape screens, wasting the right half of every card.
+                  final twoColumn = constraints.maxWidth >= 720;
+                  final weekCard = _buildWeekCard(context, raProvider);
+                  final unlocksCard = _buildRecentUnlocksCard(
+                    context,
+                    raProvider,
+                  );
+                  final masteriesCard = _buildRecentMasteriesSection(
+                    context,
+                    raProvider,
+                  );
+                  final playedCard = _buildRecentlyPlayedSection(
+                    context,
+                    raProvider,
+                  );
+
+                  if (!twoColumn) {
                     return Column(
                       children: [
-                        _buildWeekCard(context, raProvider),
+                        weekCard,
                         SizedBox(height: 12.r),
-                        _buildRecentUnlocksCard(context, raProvider),
+                        unlocksCard,
+                        SizedBox(height: 12.r),
+                        masteriesCard,
+                        SizedBox(height: 12.r),
+                        playedCard,
                       ],
                     );
                   }
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: _buildWeekCard(context, raProvider)),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            weekCard,
+                            SizedBox(height: 12.r),
+                            masteriesCard,
+                          ],
+                        ),
+                      ),
                       SizedBox(width: 12.r),
                       Expanded(
-                        child: _buildRecentUnlocksCard(context, raProvider),
+                        child: Column(
+                          children: [
+                            unlocksCard,
+                            SizedBox(height: 12.r),
+                            playedCard,
+                          ],
+                        ),
                       ),
                     ],
                   );
                 },
               ),
-              SizedBox(height: 12.r),
-              _buildRecentMasteriesSection(context, raProvider),
-              SizedBox(height: 12.r),
-              _buildRecentlyPlayedSection(context, raProvider),
             ],
           ),
         );
