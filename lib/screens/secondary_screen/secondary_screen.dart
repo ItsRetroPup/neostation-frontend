@@ -12,6 +12,9 @@ import 'package:video_player/video_player.dart';
 import '../../models/config_model.dart';
 import '../../models/secondary_achievement_item.dart';
 import '../../models/secondary_display_state.dart';
+import '../../models/retro_achievement_comment.dart';
+import '../../repositories/retro_achievements_repository.dart';
+import '../../services/retro_achievements_service.dart';
 import '../../widgets/shaders/shader_gif_widget.dart';
 import '../../utils/image_utils.dart' as image_utils;
 
@@ -20,6 +23,20 @@ class SecondaryScreen extends StatefulWidget {
 
   @override
   State<SecondaryScreen> createState() => _SecondaryScreenState();
+}
+
+class _AchievementCommentsState {
+  final List<RetroAchievementComment> comments;
+  final int total;
+  final bool isLoading;
+  final String? error;
+
+  const _AchievementCommentsState({
+    required this.comments,
+    required this.total,
+    this.isLoading = false,
+    this.error,
+  });
 }
 
 class _SecondaryScreenState extends State<SecondaryScreen> {
@@ -43,6 +60,9 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
   /// 1 = RetroAchievements. Local to this engine, flipped by the edge chevrons;
   /// resets to 0 on each new launch.
   int _inGamePanelPage = 0;
+  SecondaryAchievementItem? _selectedAchievement;
+  final Map<int, _AchievementCommentsState> _commentsCache = {};
+  int _commentsRequestGeneration = 0;
   bool _wasNowPlayingActive = false;
   String? _panelGameId;
 
@@ -183,15 +203,91 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     _panelGameId = state.gameId;
 
     if (freshLaunch) {
+      _resetAchievementComments();
       _startPlayTimeTicker();
       _wakeInGamePanel();
     } else if (exited) {
+      _resetAchievementComments();
       _stopPlayTimeTicker();
       _cancelDim();
     }
 
     if (freshLaunch && _inGamePanelPage != 0 && mounted) {
       setState(() => _inGamePanelPage = 0);
+    }
+  }
+
+  void _resetAchievementComments() {
+    _commentsRequestGeneration++;
+    _selectedAchievement = null;
+    _commentsCache.clear();
+    _inGamePanelPage = 0;
+  }
+
+  Future<void> _selectAchievement(SecondaryAchievementItem achievement) async {
+    SfxService().playNavSound();
+    _wakeInGamePanel();
+    setState(() {
+      _selectedAchievement = achievement;
+      _inGamePanelPage = 2;
+    });
+    if (!_commentsCache.containsKey(achievement.id)) {
+      await _loadAchievementComments(achievement.id, reset: true);
+    }
+  }
+
+  Future<void> _loadAchievementComments(
+    int achievementId, {
+    required bool reset,
+  }) async {
+    final current = _commentsCache[achievementId];
+    if (current?.isLoading == true) return;
+
+    final generation = ++_commentsRequestGeneration;
+    final offset = reset ? 0 : (current?.comments.length ?? 0);
+    setState(() {
+      _commentsCache[achievementId] = _AchievementCommentsState(
+        comments: reset ? const [] : (current?.comments ?? const []),
+        total: reset ? 0 : (current?.total ?? 0),
+        isLoading: true,
+      );
+    });
+
+    try {
+      final apiKey = await RetroAchievementsRepository.getRAApiKey();
+      final page = await RetroAchievementsService.getAchievementComments(
+        achievementId,
+        count: 25,
+        offset: offset,
+        apiKey: apiKey,
+      );
+      if (!mounted || generation != _commentsRequestGeneration) return;
+
+      final existing = reset ? <RetroAchievementComment>[] : current!.comments;
+      final byKey = <String, RetroAchievementComment>{
+        for (final comment in existing)
+          if (!comment.isSystemComment) comment.cacheKey: comment,
+      };
+      for (final comment in page.results) {
+        if (!comment.isSystemComment) {
+          byKey[comment.cacheKey] = comment;
+        }
+      }
+      setState(() {
+        _commentsCache[achievementId] = _AchievementCommentsState(
+          comments: byKey.values.toList(),
+          total: page.total,
+        );
+      });
+    } catch (error) {
+      if (!mounted || generation != _commentsRequestGeneration) return;
+      setState(() {
+        _commentsCache[achievementId] = _AchievementCommentsState(
+          comments: reset ? const [] : (current?.comments ?? const []),
+          total: reset ? 0 : (current?.total ?? 0),
+          error: error.toString(),
+        );
+      });
     }
   }
 
@@ -913,13 +1009,19 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
   }
 
   /// The in-game container body: shows the Now Playing page or the
-  /// achievements page, with edge chevrons to flip between them when the game
+  /// achievements/comments pages, with edge chevrons to flip between them when the game
   /// has a RetroAchievements set. The page index is clamped so the RA page is
   /// only shown when it actually exists.
   Widget _buildInGamePanel(SecondaryDisplayStateData value) {
     final raAvailable =
         value.showAchievementPanel && value.achievements != null;
-    final page = (_inGamePanelPage == 1 && raAvailable) ? 1 : 0;
+    final commentsAvailable =
+        raAvailable && _selectedAchievement != null && _inGamePanelPage == 2;
+    final page = commentsAvailable
+        ? 2
+        : (_inGamePanelPage == 1 && raAvailable)
+        ? 1
+        : 0;
 
     // Idle-dim wrapper: any touch wakes the panel (translucent so it never
     // swallows chevron taps). Once the idle countdown elapses a full-bleed black
@@ -980,7 +1082,9 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
                 FadeTransition(opacity: animation, child: child),
             child: KeyedSubtree(
               key: ValueKey('in-game-page-$page'),
-              child: page == 1
+              child: page == 2
+                  ? _buildAchievementCommentsPage(_selectedAchievement!)
+                  : page == 1
                   ? _buildAchievementPanel(value)
                   : _buildNowPlayingPanel(value),
             ),
@@ -990,13 +1094,14 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
         // points toward the page it reveals (right on Now Playing, left on RA).
         if (raAvailable && page == 0) _buildPageChevron(left: false),
         if (raAvailable && page == 1) _buildPageChevron(left: true),
+        if (page == 2) _buildPageChevron(left: true, destinationPage: 1),
       ],
     );
   }
 
   /// A translucent circular chevron pinned to the left/right edge that flips
   /// the in-game page. Styled like the mute toggle.
-  Widget _buildPageChevron({required bool left}) {
+  Widget _buildPageChevron({required bool left, int? destinationPage}) {
     return Positioned(
       left: left ? 12.r : null,
       right: left ? null : 12.r,
@@ -1007,7 +1112,9 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
           onTap: () {
             SfxService().playNavSound();
             _wakeInGamePanel();
-            setState(() => _inGamePanelPage = left ? 0 : 1);
+            setState(
+              () => _inGamePanelPage = destinationPage ?? (left ? 0 : 1),
+            );
           },
           child: Container(
             padding: EdgeInsets.all(8.r),
@@ -1639,6 +1746,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
                               _buildAchievementBadge(
                                 a,
                                 isNew: newlyEarned.contains(a.id),
+                                onTap: () => _selectAchievement(a),
                               ),
                           ],
                         ),
@@ -1704,72 +1812,91 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
       itemBuilder: (context, i) {
         final a = achievements[i];
         final isNew = newlyEarned.contains(a.id);
-        return Container(
-          padding: EdgeInsets.all(8.r),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: a.earned ? 0.08 : 0.03),
-            borderRadius: BorderRadius.circular(10.r),
-            border: isNew
-                ? Border.all(color: const Color(0xFFFFC107), width: 1.5.r)
-                : null,
-          ),
-          child: Row(
-            children: [
-              _buildAchievementBadge(a, isNew: false),
-              SizedBox(width: 12.r),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _selectAchievement(a),
+          child: Container(
+            padding: EdgeInsets.all(8.r),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: a.earned ? 0.08 : 0.03),
+              borderRadius: BorderRadius.circular(10.r),
+              border: isNew
+                  ? Border.all(color: const Color(0xFFFFC107), width: 1.5.r)
+                  : null,
+            ),
+            child: Row(
+              children: [
+                _buildAchievementBadge(a, isNew: false),
+                SizedBox(width: 12.r),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              a.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15.r,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Anta',
+                              ),
+                            ),
+                          ),
+                          if (a.isMissable) ...[
+                            SizedBox(width: 6.r),
+                            Center(child: _buildMissablePill()),
+                          ],
+                        ],
+                      ),
+                      if (a.description.isNotEmpty) ...[
+                        SizedBox(height: 2.r),
+                        Text(
+                          a.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12.r,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                SizedBox(width: 10.r),
+                Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      a.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      '${a.points}p',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15.r,
-                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFFFC107),
+                        fontSize: 13.r,
+                        fontWeight: FontWeight.bold,
                         fontFamily: 'Anta',
                       ),
                     ),
-                    if (a.description.isNotEmpty) ...[
-                      SizedBox(height: 2.r),
-                      Text(
-                        a.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.white60, fontSize: 12.r),
-                      ),
-                    ],
+                    SizedBox(height: 4.r),
+                    Icon(
+                      a.earned
+                          ? Symbols.check_circle_rounded
+                          : Symbols.lock_rounded,
+                      color: a.earned
+                          ? const Color(0xFF66BB6A)
+                          : Colors.white24,
+                      size: 18.r,
+                    ),
                   ],
                 ),
-              ),
-              SizedBox(width: 10.r),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${a.points}p',
-                    style: TextStyle(
-                      color: const Color(0xFFFFC107),
-                      fontSize: 13.r,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Anta',
-                    ),
-                  ),
-                  SizedBox(height: 4.r),
-                  Icon(
-                    a.earned
-                        ? Symbols.check_circle_rounded
-                        : Symbols.lock_rounded,
-                    color: a.earned ? const Color(0xFF66BB6A) : Colors.white24,
-                    size: 18.r,
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -1781,6 +1908,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
   Widget _buildAchievementBadge(
     SecondaryAchievementItem a, {
     required bool isNew,
+    VoidCallback? onTap,
   }) {
     final double size = 46.r;
     final url = a.earned
@@ -1812,7 +1940,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
       badge = Opacity(opacity: 0.45, child: badge);
     }
 
-    return Container(
+    Widget result = Container(
       decoration: isNew
           ? BoxDecoration(
               borderRadius: BorderRadius.circular(10.r),
@@ -1828,6 +1956,245 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
       padding: EdgeInsets.all(isNew ? 2.r : 0),
       child: badge,
     );
+    if (a.isMissable) {
+      result = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          result,
+          Positioned(
+            top: -4.r,
+            right: -4.r,
+            child: Container(
+              padding: EdgeInsets.all(2.r),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE65100),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Symbols.warning_rounded,
+                color: Colors.white,
+                size: 13.r,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return onTap == null
+        ? result
+        : GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: Padding(padding: EdgeInsets.all(3.r), child: result),
+          );
+  }
+
+  Widget _buildMissablePill() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 2.r),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE65100),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Text(
+        'MISSABLE',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 9.r,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.6.r,
+          fontFamily: 'Anta',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAchievementCommentsPage(SecondaryAchievementItem achievement) {
+    final state = _commentsCache[achievement.id];
+    final comments =
+        (state?.comments ?? const <RetroAchievementComment>[])
+            .where((comment) => !comment.isSystemComment)
+            .toList();
+    final hasMore = state != null && comments.length < state.total;
+
+    return Container(
+      color: Colors.black,
+      padding: EdgeInsets.fromLTRB(58.r, 20.r, 24.r, 20.r),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAchievementBadge(achievement, isNew: false),
+              SizedBox(width: 14.r),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            achievement.title,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18.r,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Anta',
+                            ),
+                          ),
+                        ),
+                        if (achievement.isMissable)
+                          Center(child: _buildMissablePill()),
+                        SizedBox(width: 10.r),
+                        Text(
+                          '${achievement.points}p',
+                          style: TextStyle(
+                            color: const Color(0xFFFFC107),
+                            fontSize: 15.r,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Anta',
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (achievement.description.isNotEmpty) ...[
+                      SizedBox(height: 4.r),
+                      Text(
+                        achievement.description,
+                        style: TextStyle(color: Colors.white60, fontSize: 12.r),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16.r),
+          Text(
+            'COMMENTS',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 12.r,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2.r,
+              fontFamily: 'Anta',
+            ),
+          ),
+          SizedBox(height: 8.r),
+          Expanded(
+            child: state == null || (state.isLoading && comments.isEmpty)
+                ? const Center(child: CircularProgressIndicator())
+                : state.error != null && comments.isEmpty
+                ? _buildCommentsMessage(
+                    'Comments could not be loaded.',
+                    actionLabel: 'RETRY',
+                    onAction: () =>
+                        _loadAchievementComments(achievement.id, reset: true),
+                  )
+                : comments.isEmpty
+                ? _buildCommentsMessage('No comments yet.')
+                : ListView.separated(
+                    itemCount: comments.length + (hasMore ? 1 : 0),
+                    separatorBuilder: (_, _) => SizedBox(height: 8.r),
+                    itemBuilder: (context, index) {
+                      if (index == comments.length) {
+                        return _buildLoadMoreComments(achievement.id, state);
+                      }
+                      return _buildCommentCard(comments[index]);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentCard(RetroAchievementComment comment) {
+    return Container(
+      padding: EdgeInsets.all(10.r),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  comment.user.isEmpty ? 'Unknown user' : comment.user,
+                  style: TextStyle(
+                    color: const Color(0xFFFFC107),
+                    fontSize: 12.r,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (comment.submitted != null)
+                Text(
+                  _formatCommentDate(comment.submitted!),
+                  style: TextStyle(color: Colors.white38, fontSize: 10.r),
+                ),
+            ],
+          ),
+          SizedBox(height: 5.r),
+          Text(
+            comment.commentText,
+            style: TextStyle(color: Colors.white70, fontSize: 12.r),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreComments(
+    int achievementId,
+    _AchievementCommentsState state,
+  ) {
+    if (state.isLoading) {
+      return Padding(
+        padding: EdgeInsets.all(12.r),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return _buildCommentsMessage(
+      state.error ?? 'Older comments are available.',
+      actionLabel: state.error == null ? 'LOAD MORE' : 'RETRY',
+      onAction: () => _loadAchievementComments(achievementId, reset: false),
+    );
+  }
+
+  Widget _buildCommentsMessage(
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            message,
+            style: TextStyle(color: Colors.white54, fontSize: 13.r),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            SizedBox(height: 10.r),
+            TextButton(onPressed: onAction, child: Text(actionLabel)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatCommentDate(DateTime date) {
+    final local = date.toLocal();
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)} '
+        '${two(local.hour)}:${two(local.minute)}';
   }
 
   Widget _buildScrapingOverlay(SecondaryDisplayStateData value) {

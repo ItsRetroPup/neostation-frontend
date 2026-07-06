@@ -51,6 +51,7 @@ void main() {
           points: 5,
           badgeName: '111',
           displayOrder: 0,
+          type: 'missable',
           earned: true,
           earnedHardcore: false,
         ),
@@ -108,6 +109,8 @@ void main() {
       expect(restored.achievements, hasLength(2));
       expect(restored.achievements![0].id, 1);
       expect(restored.achievements![0].earned, isTrue);
+      expect(restored.achievements![0].type, 'missable');
+      expect(restored.achievements![0].isMissable, isTrue);
       expect(restored.achievements![1].earned, isFalse);
     });
 
