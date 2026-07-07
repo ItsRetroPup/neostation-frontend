@@ -12,25 +12,19 @@ import '../models/retro_achievements_dashboard_models.dart';
 /// Service for interacting with the RetroAchievements API.
 ///
 /// Provides access to user profiles, game achievements, and global community
-/// events like "Achievement of the Week". Requires a valid API key — either
-/// passed at build time via `--dart-define=RA_API_KEY=...` or set as a
-/// runtime environment variable (`RA_API_KEY`).
+/// events like "Achievement of the Week". Every request is authenticated with
+/// the *user's own* RetroAchievements web API key, supplied at connect time.
+///
+/// There is deliberately no build-time/environment fallback key: earlier
+/// versions silently authenticated every user's traffic with the maintainer's
+/// key, which is incorrect. A caller that passes no key gets an empty string
+/// and the request-level guards reject it.
 class RetroAchievementsService {
   static const String _baseUrl = 'https://retroachievements.org/API';
 
-  static String resolveApiKey(String? apiKey) {
-    final trimmedApiKey = apiKey?.trim() ?? '';
-    if (trimmedApiKey.isNotEmpty) {
-      return trimmedApiKey;
-    }
-
-    const compileTime = String.fromEnvironment('RA_API_KEY');
-    if (compileTime.isNotEmpty) {
-      return compileTime;
-    }
-
-    return Platform.environment['RA_API_KEY'] ?? '';
-  }
+  /// Returns the trimmed [apiKey], or an empty string if none was supplied.
+  /// Callers must pass the signed-in user's key; there is no shared fallback.
+  static String resolveApiKey(String? apiKey) => apiKey?.trim() ?? '';
 
   static final _log = LoggerService.instance;
 
@@ -46,9 +40,9 @@ class RetroAchievementsService {
       throw StateError('A RetroAchievements API key is required');
     }
 
-    final url = Uri.parse('$_baseUrl/API_GetAchievementOfTheWeek.php').replace(
-      queryParameters: {'y': effectiveApiKey},
-    );
+    final url = Uri.parse(
+      '$_baseUrl/API_GetAchievementOfTheWeek.php',
+    ).replace(queryParameters: {'y': effectiveApiKey});
 
     final response = await http.get(
       url,

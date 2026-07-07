@@ -473,6 +473,18 @@ class RetroAchievementsProvider extends ChangeNotifier {
         }
         return success;
       } else {
+        // No saved username. Older builds persisted the maintainer's shared
+        // API key here and authenticated everyone's traffic with it; the v94
+        // migration cleared the username to force a personal-key login. Since
+        // credentials are now always saved/cleared as a pair, a key with no
+        // username can only be that orphaned legacy key — drop it so it can
+        // never be reused.
+        if (savedApiKey != null && savedApiKey.isNotEmpty) {
+          await RetroAchievementsRepository.clearRAApiKey();
+          _log.i(
+            'Cleared orphaned RetroAchievements API key (legacy shared key)',
+          );
+        }
         return false;
       }
     } catch (e) {
