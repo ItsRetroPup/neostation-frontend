@@ -740,6 +740,7 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.raNoCommentsYet: 'まだコメントはありません。',
   AppLocale.raOlderCommentsAvailable: '過去のコメントがあります。',
   AppLocale.raLoadMore: 'もっと読み込む',
+  AppLocale.raRateLimited: 'RetroAchievements は現在混雑しています。少し待ってからもう一度お試しください。',
   AppLocale.raApiKey: 'APIキー',
   AppLocale.raEnterApiKey: 'APIキーを入力',
   AppLocale.raNoRecentUnlocks: '過去30日間に解除した実績はありません',

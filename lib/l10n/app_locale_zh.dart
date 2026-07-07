@@ -730,6 +730,7 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.raNoCommentsYet: '尚无评论。',
   AppLocale.raOlderCommentsAvailable: '有更早的评论可查看。',
   AppLocale.raLoadMore: '加载更多',
+  AppLocale.raRateLimited: 'RetroAchievements 当前繁忙。请稍等片刻后重试。',
   AppLocale.raApiKey: 'API 密钥',
   AppLocale.raEnterApiKey: '输入您的 API 密钥',
   AppLocale.raNoRecentUnlocks: '最近 30 天内没有解锁记录',

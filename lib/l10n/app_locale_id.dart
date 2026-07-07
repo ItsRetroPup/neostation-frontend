@@ -812,6 +812,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.raNoCommentsYet: 'Belum ada komentar.',
   AppLocale.raOlderCommentsAvailable: 'Komentar lama tersedia.',
   AppLocale.raLoadMore: 'MUAT LEBIH BANYAK',
+  AppLocale.raRateLimited:
+      'RetroAchievements sedang sibuk saat ini. Tunggu sebentar lalu coba lagi.',
   AppLocale.raApiKey: 'Kunci API',
   AppLocale.raEnterApiKey: 'Masukkan kunci API Anda',
   AppLocale.raNoRecentUnlocks:

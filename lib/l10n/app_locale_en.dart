@@ -809,6 +809,8 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.raNoCommentsYet: 'No comments yet.',
   AppLocale.raOlderCommentsAvailable: 'Older comments are available.',
   AppLocale.raLoadMore: 'LOAD MORE',
+  AppLocale.raRateLimited:
+      'RetroAchievements is busy right now. Please wait a moment and try again.',
   AppLocale.raApiKey: 'API Key',
   AppLocale.raEnterApiKey: 'Enter your API key',
   AppLocale.raNoRecentUnlocks: 'No recent unlocks in the last 30 days',

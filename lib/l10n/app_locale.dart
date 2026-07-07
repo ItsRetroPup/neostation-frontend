@@ -837,6 +837,7 @@ mixin AppLocale {
   static const String raNoCommentsYet = 'ra_no_comments_yet';
   static const String raOlderCommentsAvailable = 'ra_older_comments_available';
   static const String raLoadMore = 'ra_load_more';
+  static const String raRateLimited = 'ra_rate_limited';
   static const String raApiKey = 'ra_api_key';
   static const String raEnterApiKey = 'ra_enter_api_key';
   static const String raNoRecentUnlocks = 'ra_no_recent_unlocks';

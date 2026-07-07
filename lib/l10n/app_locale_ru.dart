@@ -809,6 +809,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raNoCommentsYet: 'Пока нет комментариев.',
   AppLocale.raOlderCommentsAvailable: 'Доступны более старые комментарии.',
   AppLocale.raLoadMore: 'ЗАГРУЗИТЬ ЕЩЁ',
+  AppLocale.raRateLimited:
+      'RetroAchievements сейчас перегружен. Подождите немного и попробуйте снова.',
   AppLocale.raApiKey: 'API-ключ',
   AppLocale.raEnterApiKey: 'Введите ваш API-ключ',
   AppLocale.raNoRecentUnlocks: 'Нет недавних достижений за последние 30 дней',

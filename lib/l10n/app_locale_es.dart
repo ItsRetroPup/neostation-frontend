@@ -835,6 +835,8 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raOlderCommentsAvailable:
       'Hay comentarios más antiguos disponibles.',
   AppLocale.raLoadMore: 'CARGAR MÁS',
+  AppLocale.raRateLimited:
+      'RetroAchievements está ocupado en este momento. Espera un momento e inténtalo de nuevo.',
   AppLocale.raApiKey: 'Clave API',
   AppLocale.raEnterApiKey: 'Introduce tu clave API',
   AppLocale.raNoRecentUnlocks:

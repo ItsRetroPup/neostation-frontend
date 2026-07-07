@@ -20,6 +20,9 @@ class RetroAchievementsProvider extends ChangeNotifier {
   static const String _dashboardApiKeyError =
       'A RetroAchievements web API key is required for this dashboard data.';
 
+  static const String _rateLimitError =
+      'RetroAchievements is rate-limiting requests. Please wait a moment and try again.';
+
   /// Basic profile information for the authenticated user.
   RetroAchievementsUser? _user;
 
@@ -283,7 +286,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _error = 'Error loading user summary: $e';
+      _error = _describeApiError(e, 'Error loading user summary');
       _summaryLoaded = false;
       _log.e('$_error');
       notifyListeners();
@@ -332,9 +335,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _gotwError = _isUnauthorizedError(e)
-          ? _dashboardApiKeyError
-          : 'Error loading Achievement of the Week: $e';
+      _gotwError = _describeApiError(
+        e,
+        'Error loading Achievement of the Week',
+      );
       _gotwLoaded = false;
       _gotw = null;
       _ownedWeekGame = null;
@@ -377,9 +381,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
       _userAwardsError = 'User awards could not be loaded';
       return false;
     } catch (e) {
-      _userAwardsError = _isUnauthorizedError(e)
-          ? _dashboardApiKeyError
-          : 'Error loading user awards: $e';
+      _userAwardsError = _describeApiError(e, 'Error loading user awards');
       _userAwardsLoaded = false;
       _userAwards = null;
       _log.e(_userAwardsError ?? 'Unknown user awards error');
@@ -664,9 +666,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _completionProgressError = _isUnauthorizedError(e)
-          ? _dashboardApiKeyError
-          : 'Error loading completion progress: $e';
+      _completionProgressError = _describeApiError(
+        e,
+        'Error loading completion progress',
+      );
       _completionProgressLoaded = false;
       _completionProgress = null;
       _log.e(_completionProgressError ?? 'Unknown completion progress error');
@@ -702,9 +705,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _recentlyPlayedError = _isUnauthorizedError(e)
-          ? _dashboardApiKeyError
-          : 'Error loading recently played games: $e';
+      _recentlyPlayedError = _describeApiError(
+        e,
+        'Error loading recently played games',
+      );
       _recentlyPlayedLoaded = false;
       _recentlyPlayedGames = [];
       _log.e(_recentlyPlayedError ?? 'Unknown recently played error');
@@ -740,9 +744,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _recentUnlocksError = _isUnauthorizedError(e)
-          ? _dashboardApiKeyError
-          : 'Error loading recent unlocks: $e';
+      _recentUnlocksError = _describeApiError(
+        e,
+        'Error loading recent unlocks',
+      );
       _recentUnlocksLoaded = false;
       _recentUnlocks = [];
       _log.e(_recentUnlocksError ?? 'Unknown recent unlocks error');
@@ -772,6 +777,20 @@ class RetroAchievementsProvider extends ChangeNotifier {
   }
 
   bool _isUnauthorizedError(Object error) => error.toString().contains('(401)');
+
+  /// The RetroAchievements API (behind Cloudflare) returns HTTP 429 when a
+  /// user exceeds the request rate. The services surface it as a `(429)` in
+  /// the thrown message, so match on that.
+  bool _isRateLimitedError(Object error) => error.toString().contains('(429)');
+
+  /// Maps a caught API error to a user-facing message: a missing/invalid key
+  /// and rate-limiting each get a dedicated, actionable string; everything
+  /// else falls back to [fallback] with the raw error appended.
+  String _describeApiError(Object error, String fallback) {
+    if (_isUnauthorizedError(error)) return _dashboardApiKeyError;
+    if (_isRateLimitedError(error)) return _rateLimitError;
+    return '$fallback: $error';
+  }
 
   List<UserAward> _recentAwardsForMode({required bool hardcore}) {
     final awards = _userAwards?.visibleUserAwards ?? const <UserAward>[];

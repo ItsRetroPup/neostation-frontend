@@ -263,6 +263,12 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
 
     final generation = ++_commentsRequestGeneration;
     final offset = reset ? 0 : (current?.loadedRaw ?? 0);
+    // Resolve the error strings up front (context is safe before the awaits
+    // below) so the catch block never touches a BuildContext across an async
+    // gap.
+    final ctx = _l10nContext ?? context;
+    final rateLimitedMessage = AppLocale.raRateLimited.getString(ctx);
+    final couldNotLoadMessage = AppLocale.raCommentsCouldNotLoad.getString(ctx);
     setState(() {
       _commentsCache[achievementId] = _AchievementCommentsState(
         comments: reset ? const [] : (current?.comments ?? const []),
@@ -309,12 +315,19 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
       });
     } catch (error) {
       if (!mounted || generation != _commentsRequestGeneration) return;
+      // Map to a friendly, localized message rather than leaking raw
+      // exception text (e.g. "...request failed (429)") into the UI. HTTP 429
+      // means RetroAchievements is rate-limiting us; anything else is a
+      // generic load failure.
+      final message = error.toString().contains('(429)')
+          ? rateLimitedMessage
+          : couldNotLoadMessage;
       setState(() {
         _commentsCache[achievementId] = _AchievementCommentsState(
           comments: reset ? const [] : (current?.comments ?? const []),
           total: reset ? 0 : (current?.total ?? 0),
           loadedRaw: reset ? 0 : (current?.loadedRaw ?? 0),
-          error: error.toString(),
+          error: message,
         );
       });
     }
