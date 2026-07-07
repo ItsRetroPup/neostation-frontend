@@ -1041,7 +1041,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
           ? game.systemFolderName!
           : widget.system.id;
       final path =
-          'assets/images/systems/logos/$sysId.webp'; // Correcting to logo fallback for grid consistency.
+          'assets/images/logos/$sysId.webp'; // Correcting to logo fallback for grid consistency.
       imageProvider = AssetImage(path);
       imagePath = path;
     }
@@ -1140,19 +1140,16 @@ class _SystemGamesListState extends State<SystemGamesList> {
     // → bundled asset, themed background when present) so themed systems don't
     // flash the default logo here before the grid re-asserts its state on pop.
     final configProvider = context.read<SqliteConfigProvider>();
-    final neoAssets = context.read<NeoAssetsProvider>();
     final folder = widget.system.primaryFolderName;
 
     final String? customLogo = widget.system.customLogoPath?.isNotEmpty == true
         ? widget.system.customLogoPath
         : null;
-    final String? themeLogo = customLogo == null
-        ? neoAssets.getLogoForSystemSync(folder)
-        : null;
     final systemLogo =
-        customLogo ?? themeLogo ?? 'assets/images/systems/logos/$folder.webp';
-    final bool isLogoAsset = customLogo == null && themeLogo == null;
+        customLogo ?? 'assets/images/logos/$folder.webp';
+    final bool isLogoAsset = customLogo == null;
 
+    final neoAssets = context.read<NeoAssetsProvider>();
     final String? customBg = widget.system.customBackgroundPath;
     final bool hasCustomBg = customBg != null && customBg.isNotEmpty;
     final String? themeBg = hasCustomBg
