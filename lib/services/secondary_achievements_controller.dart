@@ -70,7 +70,12 @@ class SecondaryAchievementsController {
     _gameId = null;
     _preGameEarnedIds = <int>{};
 
-    if (!_active) return;
+    // Cold launches can beat the secondary engine's initial state sync. Wait
+    // for that once so we don't drop the Now Playing push on a transient
+    // "inactive" read before the secondary display reports in.
+    if (state.value == null) {
+      await state.initialSync;
+    }
 
     // Show the "Now Playing" page immediately for every launched game — this
     // is independent of RetroAchievements, needs no network, and is the first
@@ -96,6 +101,8 @@ class SecondaryAchievementsController {
       lastPlayedMillis: game.lastPlayed?.millisecondsSinceEpoch,
       clearLastPlayed: game.lastPlayed == null,
     );
+
+    if (!_active) return;
 
     // Startup auto-login is async; on a quick launch straight from the systems/
     // recent screen it may still be in flight. Give it a short grace period

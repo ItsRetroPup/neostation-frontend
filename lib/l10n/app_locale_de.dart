@@ -823,4 +823,36 @@ const Map<String, dynamic> appLocaleDe = {
       'Die ROM-Datei, gescrapte Daten und Mediendateien werden dauerhaft gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
   AppLocale.deleteGameSubtitle:
       'Entfernt die ROM-Datei dauerhaft von der Festplatte',
+
+  AppLocale.raCompletionsLabel: 'Abschlüsse',
+  AppLocale.raMasteriesLabel: 'Meisterungen',
+  AppLocale.raEarned: 'Verdient',
+  AppLocale.raOwned: 'Im Besitz',
+  AppLocale.raPointsAbbrev: 'Pkt.',
+  AppLocale.raAlreadyEarned: 'Du hast diesen Erfolg bereits verdient',
+  AppLocale.raTapToOpenLocalGame: 'Tippe, um lokale Spieldetails zu öffnen',
+  AppLocale.raRecentUnlocks: 'Neueste Freischaltungen',
+  AppLocale.raRecentCompletions: 'Neueste Abschlüsse',
+  AppLocale.raRecentMasteries: 'Neueste Meisterungen',
+  AppLocale.raNoCompletionsYet: 'Noch keine Abschlüsse',
+  AppLocale.raNoMasteriesYet: 'Noch keine Meisterungen',
+  AppLocale.raTrackedGames: 'verfolgte Spiele',
+  AppLocale.raCompletionLabel: 'Abschluss',
+  AppLocale.raMasteryLabel: 'Meisterung',
+  AppLocale.raCouldNotResolveLocalSystem:
+      'Das lokale System für dieses Spiel konnte nicht ermittelt werden',
+  AppLocale.raMissable: 'VERPASSBAR',
+  AppLocale.raComments: 'KOMMENTARE',
+  AppLocale.raCommentsCouldNotLoad: 'Kommentare konnten nicht geladen werden.',
+  AppLocale.raNoCommentsYet: 'Noch keine Kommentare.',
+  AppLocale.raOlderCommentsAvailable: 'Ältere Kommentare sind verfügbar.',
+  AppLocale.raLoadMore: 'MEHR LADEN',
+  AppLocale.raRateLimited:
+      'RetroAchievements ist gerade ausgelastet. Bitte warte einen Moment und versuche es erneut.',
+  AppLocale.raApiKey: 'API-Schlüssel',
+  AppLocale.raEnterApiKey: 'Gib deinen API-Schlüssel ein',
+  AppLocale.raNoRecentUnlocks:
+      'Keine kürzlichen Freischaltungen in den letzten 30 Tagen',
+  AppLocale.raRecentlyPlayedTitle: 'Kürzlich Gespielt',
+  AppLocale.raNoRecentlyPlayed: 'Keine kürzlich gespielten Spiele',
 };

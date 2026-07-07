@@ -116,11 +116,13 @@ Future<String?> loadLocalizedDescriptionInBackground(
 class SystemGamesList extends StatefulWidget {
   final SystemModel system;
   final FileProvider fileProvider;
+  final String? initialRomPath;
 
   const SystemGamesList({
     super.key,
     required this.system,
     required this.fileProvider,
+    this.initialRomPath,
   });
 
   @override
@@ -1922,8 +1924,19 @@ class _SystemGamesListState extends State<SystemGamesList> {
           }
         }
 
-        // Persistent Selection Logic: Retain current index if the game still exists post-reload.
-        if (_selectedGame != null && widget.system.folderName != 'music') {
+        if (widget.initialRomPath != null && widget.initialRomPath!.isNotEmpty) {
+          final initialIndex = games.indexWhere(
+            (game) => game.romPath == widget.initialRomPath,
+          );
+          if (initialIndex != -1) {
+            _selectedGameIndex = initialIndex;
+            _selectedGame = games[initialIndex];
+          } else {
+            _selectedGameIndex = 0;
+            _selectedGame = games.isNotEmpty ? games.first : null;
+          }
+        } else if (_selectedGame != null && widget.system.folderName != 'music') {
+          // Persistent Selection Logic: Retain current index if the game still exists post-reload.
           final selectedIndex = games.indexWhere(
             (game) => game.romname == _selectedGame!.romname,
           );

@@ -821,4 +821,36 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.deleteGameConfirmBody:
       'Esto eliminará permanentemente el ROM del juego, sus datos escrapeados y archivos multimedia. Esta acción no se puede deshacer.',
   AppLocale.deleteGameSubtitle: 'Elimina el archivo ROM del disco',
+  AppLocale.raCompletionsLabel: 'Completados',
+  AppLocale.raMasteriesLabel: 'Dominados',
+  AppLocale.raEarned: 'Obtenidos',
+  AppLocale.raOwned: 'En posesión',
+  AppLocale.raPointsAbbrev: 'pts',
+  AppLocale.raAlreadyEarned: 'Ya has obtenido este logro',
+  AppLocale.raTapToOpenLocalGame: 'Toca para ver los detalles del juego local',
+  AppLocale.raRecentUnlocks: 'Desbloqueos Recientes',
+  AppLocale.raRecentCompletions: 'Completados Recientes',
+  AppLocale.raRecentMasteries: 'Dominados Recientes',
+  AppLocale.raNoCompletionsYet: 'Aún no hay completados',
+  AppLocale.raNoMasteriesYet: 'Aún no hay dominados',
+  AppLocale.raTrackedGames: 'juegos seguidos',
+  AppLocale.raCompletionLabel: 'Completado',
+  AppLocale.raMasteryLabel: 'Dominado',
+  AppLocale.raCouldNotResolveLocalSystem:
+      'No se pudo resolver el sistema local de este juego',
+  AppLocale.raMissable: 'EVITABLE',
+  AppLocale.raComments: 'COMENTARIOS',
+  AppLocale.raCommentsCouldNotLoad: 'No se pudieron cargar los comentarios.',
+  AppLocale.raNoCommentsYet: 'Aún no hay comentarios.',
+  AppLocale.raOlderCommentsAvailable:
+      'Hay comentarios más antiguos disponibles.',
+  AppLocale.raLoadMore: 'CARGAR MÁS',
+  AppLocale.raRateLimited:
+      'RetroAchievements está ocupado en este momento. Espera un momento e inténtalo de nuevo.',
+  AppLocale.raApiKey: 'Clave API',
+  AppLocale.raEnterApiKey: 'Introduce tu clave API',
+  AppLocale.raNoRecentUnlocks:
+      'No hay desbloqueos recientes en los últimos 30 días',
+  AppLocale.raRecentlyPlayedTitle: 'Jugados Recientemente',
+  AppLocale.raNoRecentlyPlayed: 'No hay juegos jugados recientemente',
 };
