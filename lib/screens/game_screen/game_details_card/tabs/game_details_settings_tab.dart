@@ -271,7 +271,8 @@ class GameDetailsSettingsTabState extends State<GameDetailsSettingsTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => _DeleteGameDialog(gameName: _game.name),
+      builder: (ctx) =>
+          _DeleteGameDialog(gameName: _game.name, romName: _game.romname),
     );
     if (confirmed == true && mounted) {
       _deleteGame();
@@ -964,8 +965,9 @@ class _EmulatorRow extends StatelessWidget {
 /// A gamepad-friendly confirmation dialog that warns about permanent game deletion.
 class _DeleteGameDialog extends StatefulWidget {
   final String gameName;
+  final String romName;
 
-  const _DeleteGameDialog({required this.gameName});
+  const _DeleteGameDialog({required this.gameName, required this.romName});
 
   @override
   State<_DeleteGameDialog> createState() => _DeleteGameDialogState();
@@ -1040,6 +1042,14 @@ class _DeleteGameDialogState extends State<_DeleteGameDialog> {
             style: theme.textTheme.bodyLarge?.copyWith(
               fontSize: 13.r,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 2.r),
+          Text(
+            widget.romName,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11.r,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
           SizedBox(height: 8.r),

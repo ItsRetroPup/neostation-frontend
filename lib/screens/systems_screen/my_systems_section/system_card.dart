@@ -369,6 +369,7 @@ class _SystemCardState extends State<SystemCard> {
       ),
     );
   }
+
   /// Helper for localized play time formatting.
   String _formatPlayTimeLocalized(int seconds) {
     return GameUtils.formatPlayTime(
@@ -385,7 +386,11 @@ class _SystemCardState extends State<SystemCard> {
 
   /// Renders the system brand logo with fallback support.
   /// The white-transparent logo is tinted with [color] (falls back to theme text).
-  Widget _buildSystemLogo(String assetLogoPath, {double? height, Color? color}) {
+  Widget _buildSystemLogo(
+    String assetLogoPath, {
+    double? height,
+    Color? color,
+  }) {
     height ??= 32.r;
     final customLogoPath = widget.info.customLogoPath;
     final hasCustomLogo = customLogoPath != null && customLogoPath.isNotEmpty;
@@ -399,37 +404,41 @@ class _SystemCardState extends State<SystemCard> {
     }
 
     if (hasCustomLogo) {
-      return buildLogo(Image.file(
-        File(customLogoPath),
-        key: ValueKey('${customLogoPath}_${widget.info.imageVersion}'),
-        height: height,
-        cacheWidth: 256,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => Image.asset(
-          assetLogoPath,
+      return buildLogo(
+        Image.file(
+          File(customLogoPath),
+          key: ValueKey('${customLogoPath}_${widget.info.imageVersion}'),
           height: height,
           cacheWidth: 256,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => SystemLogoFallback(
-            title: widget.info.title,
-            shortName: widget.info.shortName,
-            height: 24.r,
+          errorBuilder: (context, error, stackTrace) => Image.asset(
+            assetLogoPath,
+            height: height,
+            cacheWidth: 256,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => SystemLogoFallback(
+              title: widget.info.title,
+              shortName: widget.info.shortName,
+              height: 24.r,
+            ),
           ),
         ),
-      ));
+      );
     }
 
-    return buildLogo(Image.asset(
-      assetLogoPath,
-      height: height,
-      cacheWidth: 256,
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => SystemLogoFallback(
-        title: widget.info.title,
-        shortName: widget.info.shortName,
-        height: 24.r,
+    return buildLogo(
+      Image.asset(
+        assetLogoPath,
+        height: height,
+        cacheWidth: 256,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => SystemLogoFallback(
+          title: widget.info.title,
+          shortName: widget.info.shortName,
+          height: 24.r,
+        ),
       ),
-    ));
+    );
   }
 
   /// Builds the foreground content, including badges and specialized layouts for 'Recent Games'.
@@ -595,8 +604,7 @@ class _SystemCardState extends State<SystemCard> {
         : (widget.info.folderName?.isNotEmpty == true
               ? widget.info.folderName!
               : 'all');
-    final assetLogoPath =
-        'assets/images/logos/$resolvedLogoFolder.webp';
+    final assetLogoPath = 'assets/images/logos/$resolvedLogoFolder.webp';
 
     return Container(
       height: 32.r,

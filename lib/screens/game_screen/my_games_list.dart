@@ -1145,8 +1145,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
     final String? customLogo = widget.system.customLogoPath?.isNotEmpty == true
         ? widget.system.customLogoPath
         : null;
-    final systemLogo =
-        customLogo ?? 'assets/images/logos/$folder.webp';
+    final systemLogo = customLogo ?? 'assets/images/logos/$folder.webp';
     final bool isLogoAsset = customLogo == null;
 
     final neoAssets = context.read<NeoAssetsProvider>();
@@ -1921,7 +1920,8 @@ class _SystemGamesListState extends State<SystemGamesList> {
           }
         }
 
-        if (widget.initialRomPath != null && widget.initialRomPath!.isNotEmpty) {
+        if (widget.initialRomPath != null &&
+            widget.initialRomPath!.isNotEmpty) {
           final initialIndex = games.indexWhere(
             (game) => game.romPath == widget.initialRomPath,
           );
@@ -1932,7 +1932,8 @@ class _SystemGamesListState extends State<SystemGamesList> {
             _selectedGameIndex = 0;
             _selectedGame = games.isNotEmpty ? games.first : null;
           }
-        } else if (_selectedGame != null && widget.system.folderName != 'music') {
+        } else if (_selectedGame != null &&
+            widget.system.folderName != 'music') {
           // Persistent Selection Logic: Retain current index if the game still exists post-reload.
           final selectedIndex = games.indexWhere(
             (game) => game.romname == _selectedGame!.romname,
@@ -2937,6 +2938,9 @@ class _SystemGamesListState extends State<SystemGamesList> {
     });
 
     if (_games.isNotEmpty && _selectedGame != null) {
+      // The list view's didUpdateWidget already recenters the new selection
+      // when [_selectedGameIndex] changes, so an explicit scroll here is
+      // redundant and can cause conflicting animations.
       _updateSecondaryDisplay(_selectedGame!);
       _updateBackground(_selectedGame!);
       _startVideoTimer();
@@ -3042,6 +3046,12 @@ class _GameListViewState extends State<GameListView>
       duration: duration,
       curve: curve,
     );
+  }
+
+  /// Immediately jumps to center on the item at [index] without animation.
+  /// Unlike [scrollToIndex], this executes synchronously.
+  void jumpToIndex(int index) {
+    _centeredScrollController.jumpToIndex(index);
   }
 
   @override
@@ -3162,6 +3172,7 @@ class _GameListViewState extends State<GameListView>
     final theme = Theme.of(context);
     final itemHeight = _itemHeightBase.r;
     final totalItemHeight = itemHeight;
+    _centeredScrollController.setItemExtent(totalItemHeight, paddingTop: 2.r);
 
     return Column(
       children: [

@@ -1714,7 +1714,11 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
           }
         }
 
-        final focusIndicator = (selLeft != null && selTop != null && selWidth != null && selHeight != null)
+        final focusIndicator =
+            (selLeft != null &&
+                selTop != null &&
+                selWidth != null &&
+                selHeight != null)
             ? AnimatedPositioned(
                 key: const ValueKey('focus_indicator'),
                 duration: const Duration(milliseconds: 350),
@@ -1731,14 +1735,20 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Theme.of(context).colorScheme.secondary.withValues(alpha: 0.28),
-                          Theme.of(context).colorScheme.secondary.withValues(alpha: 0.08),
+                          Theme.of(
+                            context,
+                          ).colorScheme.secondary.withValues(alpha: 0.28),
+                          Theme.of(
+                            context,
+                          ).colorScheme.secondary.withValues(alpha: 0.08),
                           Colors.transparent,
                         ],
                         stops: const [0.0, 0.35, 1.0],
                       ),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.55),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.secondary.withValues(alpha: 0.55),
                         width: 2.r,
                       ),
                     ),
@@ -1757,10 +1767,7 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
             height: totalHeight,
             child: Stack(
               clipBehavior: Clip.none,
-              children: [
-                ...cardWidgets,
-                focusIndicator,
-              ],
+              children: [...cardWidgets, focusIndicator],
             ),
           ),
         );

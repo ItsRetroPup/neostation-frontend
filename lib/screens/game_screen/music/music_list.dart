@@ -137,6 +137,7 @@ class _MusicListState extends State<MusicList> with TickerProviderStateMixin {
     final theme = Theme.of(context);
     final itemHeight = _itemHeightBase.r;
     final totalItemHeight = itemHeight;
+    _centeredScrollController.setItemExtent(totalItemHeight, paddingTop: 2.r);
 
     return ListenableBuilder(
       listenable: MusicPlayerService(),
