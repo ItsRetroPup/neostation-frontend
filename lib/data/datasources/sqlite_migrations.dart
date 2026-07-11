@@ -294,6 +294,9 @@ class SqliteMigrations {
       case 96:
         await _migrateToVersion96(db);
         break;
+      case 97:
+        await _migrateToVersion97(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -4720,6 +4723,33 @@ class SqliteMigrations {
       _log.i('Migration v96 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v96: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v97: Ensure game_carousel_card_style column exists.
+  ///
+  /// v95 originally added this column on main, but the design branch reused v95
+  /// for the palette->theme rename. Devices that ran that rename (now v96) may
+  /// be missing the column, so this migration is idempotent and adds it if
+  /// absent.
+  static Future<void> _migrateToVersion97(Database db) async {
+    _log.i('Migration v97: Ensuring game_carousel_card_style column exists');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('game_carousel_card_style')) {
+        db.execute(
+          "ALTER TABLE user_config ADD COLUMN game_carousel_card_style TEXT DEFAULT 'fanart'",
+        );
+        _log.i('Column game_carousel_card_style added via v97');
+      } else {
+        _log.i('Column game_carousel_card_style already exists');
+      }
+      _log.i('Migration v97 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v97: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }
