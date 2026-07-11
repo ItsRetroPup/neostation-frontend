@@ -733,8 +733,7 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.disconnectRaConfirm: 'RetroAchievements の接続を解除',
   AppLocale.disconnectRaConfirmBody:
       'ログアウトし、保存されたRetroAchievementsの認証情報をこのデバイスから削除します。',
-  AppLocale.neoSyncLogoutConfirmBody:
-      'このデバイスでNeoSyncアカウントからログアウトします。',
+  AppLocale.neoSyncLogoutConfirmBody: 'このデバイスでNeoSyncアカウントからログアウトします。',
 
   AppLocale.deleteGame: 'ゲームを削除',
   AppLocale.deleteGameConfirm: '完全に削除する',

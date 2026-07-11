@@ -1018,9 +1018,10 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                       ValueListenableBuilder<double>(
                         valueListenable: _pageOffsetNotifier,
                         builder: (context, page, _) {
-                          final selectedIndex = page
-                              .round()
-                              .clamp(0, allSystems.length - 1);
+                          final selectedIndex = page.round().clamp(
+                            0,
+                            allSystems.length - 1,
+                          );
                           return Row(
                             children: allSystems.asMap().entries.map((entry) {
                               final index = entry.key;

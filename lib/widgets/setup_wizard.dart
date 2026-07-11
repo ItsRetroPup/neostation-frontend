@@ -29,8 +29,7 @@ class SetupWizard extends StatefulWidget {
   State<SetupWizard> createState() => _SetupWizardState();
 }
 
-class _SetupWizardState extends State<SetupWizard>
-    with WidgetsBindingObserver {
+class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
   int _currentStep = 0;
   bool _isSelectingFolder = false;
   bool _isSelectingUserDataFolder = false;

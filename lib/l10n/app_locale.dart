@@ -827,7 +827,8 @@ mixin AppLocale {
   // Destructive-action confirmation prompts
   static const String resetPlayTimeConfirm = 'reset_play_time_confirm';
   static const String resetPlayTimeConfirmBody = 'reset_play_time_confirm_body';
-  static const String removeRomFolderConfirmBody = 'remove_rom_folder_confirm_body';
+  static const String removeRomFolderConfirmBody =
+      'remove_rom_folder_confirm_body';
   static const String disconnectRaConfirm = 'disconnect_ra_confirm';
   static const String disconnectRaConfirmBody = 'disconnect_ra_confirm_body';
   static const String neoSyncLogoutConfirmBody = 'neo_sync_logout_confirm_body';

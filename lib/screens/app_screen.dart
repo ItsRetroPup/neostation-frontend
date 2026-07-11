@@ -217,10 +217,16 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
         }
       }
 
-      chosenPackage ??= priorityOrder.firstWhere(
-        (p) => packages.contains(p),
-        orElse: () => 'com.retroarch.aarch64',
-      );
+      // Only promote a RetroArch variant to default if it is actually
+      // installed. Falling back to an uninstalled package would silently
+      // replace working standalone defaults with a broken core default.
+      if (chosenPackage == null) {
+        await EmulatorRepository.clearRetroArchDefaultsForAndroid();
+        _log.i(
+          'Android: No RetroArch variant installed; cleared RA defaults so standalone defaults remain active',
+        );
+        return;
+      }
 
       await EmulatorRepository.fixRetroArchDefaultForAndroid(chosenPackage);
       _log.i('Android: Set RetroArch default package to $chosenPackage');

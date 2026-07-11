@@ -104,7 +104,8 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.secondarySectionNowPlaying: 'Now Playing 面板',
   AppLocale.secondarySectionDock: '應用程式塢',
   AppLocale.screenshotAccess: 'Screen return & screenshots',
-  AppLocale.screenshotAccessSubtitle: 'Restores the Now Playing screen when you close an app opened from the dock, and lets the screenshot button capture the screen (opens Android accessibility settings)',
+  AppLocale.screenshotAccessSubtitle:
+      'Restores the Now Playing screen when you close an app opened from the dock, and lets the screenshot button capture the screen (opens Android accessibility settings)',
   AppLocale.scanOnStartupSubtitle: '應用程式啟動時自動掃描 ROM 資料夾',
   AppLocale.ignoreHiddenFiles: '忽略隱藏項目',
   AppLocale.ignoreHiddenFilesSubtitle: 'ROM 掃描期間隱藏隱藏檔案和資料夾',
@@ -717,15 +718,12 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.addRomFolder: '新增 ROM 資料夾',
   AppLocale.removeRomFolder: '移除',
   AppLocale.resetPlayTimeConfirm: '重設遊玩時間',
-  AppLocale.resetPlayTimeConfirmBody:
-      '這將永久將此遊戲記錄的遊玩時間重設為零。此操作無法復原。',
-  AppLocale.removeRomFolderConfirmBody:
-      '這將從您的媒體庫來源中移除此 ROM 資料夾。磁碟上的檔案不會被刪除。',
+  AppLocale.resetPlayTimeConfirmBody: '這將永久將此遊戲記錄的遊玩時間重設為零。此操作無法復原。',
+  AppLocale.removeRomFolderConfirmBody: '這將從您的媒體庫來源中移除此 ROM 資料夾。磁碟上的檔案不會被刪除。',
   AppLocale.disconnectRaConfirm: '中斷 RetroAchievements 連線',
   AppLocale.disconnectRaConfirmBody:
       '這將使您登出，並從此裝置中移除已儲存的 RetroAchievements 憑證。',
-  AppLocale.neoSyncLogoutConfirmBody:
-      '這將使您在此裝置上登出 NeoSync 帳戶。',
+  AppLocale.neoSyncLogoutConfirmBody: '這將使您在此裝置上登出 NeoSync 帳戶。',
 
   AppLocale.deleteGame: '刪除遊戲',
   AppLocale.deleteGameConfirm: '永久刪除',

@@ -710,16 +710,24 @@ class SqliteService {
 
         if (osName == 'android') {
           packageName = platformData['package'];
+          String? activityName = platformData['activity'];
 
-          // Fallback: Parse launch_arguments if package is missing (new format)
-          if (packageName == null &&
+          // Parse launch_arguments if package/activity are missing (new format)
+          if ((packageName == null || activityName == null) &&
               platformData.containsKey('launch_arguments')) {
             final args = platformData['launch_arguments'].toString();
 
-            // Extract package from "-n package/activity"
-            final componentMatch = RegExp(r'-n\s+([^\s/]+)').firstMatch(args);
+            // Extract package and activity from "-n package/activity"
+            final componentMatch = RegExp(
+              r'-n\s+([^\s/]+)/([^\s]+)',
+            ).firstMatch(args);
             if (componentMatch != null) {
-              packageName = componentMatch.group(1);
+              packageName ??= componentMatch.group(1);
+              var activity = componentMatch.group(2)!;
+              if (activity.startsWith('.') && packageName != null) {
+                activity = '$packageName$activity';
+              }
+              activityName ??= activity;
             }
 
             // Check if RetroArch
@@ -750,6 +758,10 @@ class SqliteService {
               }
             }
           }
+
+          // Persist the resolved activity alongside the package so standalone
+          // fallback launches have a complete component name.
+          platformData['_resolved_activity_name'] = activityName;
         } else if (osName == 'windows') {
           executable = platformData['executable'];
           if (executable != null &&
@@ -830,6 +842,7 @@ class SqliteService {
             'is_standalone': isStandalone ? 1 : 0,
             'core_filename': coreFilename,
             'android_package_name': packageName,
+            'android_activity_name': platformData['_resolved_activity_name'],
             'is_ra_compatible': retroAchievementsCompatible ? 1 : 0,
           };
 
@@ -863,6 +876,7 @@ class SqliteService {
               'is_standalone': isStandalone ? 1 : 0,
               'core_filename': coreFilename,
               'android_package_name': packageName,
+              'android_activity_name': platformData['_resolved_activity_name'],
               'is_ra_compatible': retroAchievementsCompatible ? 1 : 0,
             };
             if (isDefaultCore) {
@@ -887,6 +901,7 @@ class SqliteService {
               'is_standalone': isStandalone ? 1 : 0,
               'core_filename': coreFilename,
               'android_package_name': packageName,
+              'android_activity_name': platformData['_resolved_activity_name'],
               'is_default': applyJsonDefault ? 1 : 0,
               'is_ra_compatible': retroAchievementsCompatible ? 1 : 0,
             };

@@ -575,4 +575,3 @@ class _NeoThemeCard extends StatelessWidget {
     );
   }
 }
-
