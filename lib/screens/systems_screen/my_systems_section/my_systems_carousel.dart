@@ -21,7 +21,7 @@ import 'package:neostation/widgets/system_emulator_settings_dialog.dart';
 import '../../game_screen/android_apps/android_apps_grid.dart';
 import 'package:neostation/sync/sync_manager.dart';
 import 'package:neostation/providers/neo_assets_provider.dart';
-import 'package:neostation/providers/palette_provider.dart';
+import 'package:neostation/providers/theme_provider.dart';
 import 'package:neostation/providers/retro_achievements_provider.dart';
 import 'package:neostation/services/secondary_achievements_controller.dart';
 import '../../game_screen/my_games_list.dart';
@@ -1290,11 +1290,8 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
       final String? systemBackground = hasCustomBg ? customBg : themeBg;
       final bool isBackgroundAsset = false;
 
-      final paletteProvider = Provider.of<PaletteProvider>(
-        context,
-        listen: false,
-      );
-      final isOled = paletteProvider.isOled;
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      final isOled = themeProvider.isOled;
 
       _secondaryDisplayState?.updateState(
         systemName: systemName,

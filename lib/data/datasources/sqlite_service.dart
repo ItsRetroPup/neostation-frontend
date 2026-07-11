@@ -421,7 +421,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 95;
+  static const int _databaseVersion = 96;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -1607,7 +1607,7 @@ class SqliteService {
         last_scan TEXT,
         game_view_mode TEXT DEFAULT 'list',
         system_view_mode TEXT DEFAULT 'grid',
-        palette_name TEXT DEFAULT 'system',
+        theme_name TEXT DEFAULT 'system',
         video_sound INTEGER DEFAULT 1,
         ra_user TEXT,
         show_game_info INTEGER DEFAULT 0,
@@ -2237,7 +2237,7 @@ class SqliteService {
         'id': 1,
         'last_scan': null,
         'system_view_mode': 'grid',
-        'palette_name': 'system',
+        'theme_name': 'system',
         'video_sound': 1,
         'ra_user': null,
         'show_game_info': 0,
@@ -2334,7 +2334,7 @@ class SqliteService {
     String? lastScan,
     String? gameViewMode,
     String? systemViewMode,
-    String? paletteName,
+    String? themeName,
     int? videoSound,
     String? raUser,
     int? showGameInfo,
@@ -2384,7 +2384,7 @@ class SqliteService {
       newConfig['game_view_mode'] = gameViewMode;
     }
     if (systemViewMode != null) newConfig['system_view_mode'] = systemViewMode;
-    if (paletteName != null) newConfig['palette_name'] = paletteName;
+    if (themeName != null) newConfig['theme_name'] = themeName;
     if (videoSound != null) newConfig['video_sound'] = videoSound;
     if (raUser != null) newConfig['ra_user'] = raUser;
     if (showGameInfo != null) newConfig['show_game_info'] = showGameInfo;
@@ -2656,15 +2656,15 @@ class SqliteService {
     await saveUserConfig(systemViewMode: mode);
   }
 
-  /// Updates the palette name.
-  static Future<void> updatePaletteName(String paletteName) async {
-    await saveUserConfig(paletteName: paletteName);
+  /// Updates the theme name.
+  static Future<void> updateThemeName(String themeName) async {
+    await saveUserConfig(themeName: themeName);
   }
 
-  /// Retrieves the current palette name.
-  static Future<String> getPaletteName() async {
+  /// Retrieves the current theme name.
+  static Future<String> getThemeName() async {
     final config = await getUserConfig();
-    return config?['palette_name']?.toString() ?? 'system';
+    return config?['theme_name']?.toString() ?? 'system';
   }
 
   /// Retrieves the active asset theme (neostation-assets).

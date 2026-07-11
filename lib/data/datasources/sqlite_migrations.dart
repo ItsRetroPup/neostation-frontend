@@ -291,6 +291,9 @@ class SqliteMigrations {
       case 95:
         await _migrateToVersion95(db);
         break;
+      case 96:
+        await _migrateToVersion96(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -4270,23 +4273,23 @@ class SqliteMigrations {
     }
   }
 
-  /// Migration v81: Rename theme_name column to palette_name in user_config.
+  /// Migration v81: Rename theme_name column to theme_name in user_config.
   static Future<void> _migrateToVersion81(Database db) async {
-    _log.i('Migration v81: Rename theme_name to palette_name in user_config');
+    _log.i('Migration v81: Rename palette_name to theme_name in user_config');
     try {
       final tableInfo = db.select('PRAGMA table_info(user_config)');
       final columns = tableInfo.map((c) => c['name'].toString()).toList();
 
-      if (columns.contains('theme_name') && !columns.contains('palette_name')) {
+      if (columns.contains('palette_name') && !columns.contains('theme_name')) {
         db.execute(
-          'ALTER TABLE user_config RENAME COLUMN theme_name TO palette_name',
+          'ALTER TABLE user_config RENAME COLUMN palette_name TO theme_name',
         );
-        _log.i('Column theme_name renamed to palette_name in user_config');
-      } else if (!columns.contains('palette_name')) {
+        _log.i('Column palette_name renamed to theme_name in user_config');
+      } else if (!columns.contains('theme_name')) {
         db.execute(
-          "ALTER TABLE user_config ADD COLUMN palette_name TEXT DEFAULT 'system'",
+          "ALTER TABLE user_config ADD COLUMN theme_name TEXT DEFAULT 'system'",
         );
-        _log.i('Column palette_name added to user_config');
+        _log.i('Column theme_name added to user_config');
       }
 
       _log.i('Migration v81 completed');
@@ -4690,6 +4693,33 @@ class SqliteMigrations {
       }
     } catch (e, stackTrace) {
       _log.e('Error in migration v95: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v96: Rename palette_name column to theme_name in user_config.
+  static Future<void> _migrateToVersion96(Database db) async {
+    _log.i('Migration v96: Rename palette_name to theme_name in user_config');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+
+      if (columns.contains('palette_name') && !columns.contains('theme_name')) {
+        db.execute(
+          'ALTER TABLE user_config RENAME COLUMN palette_name TO theme_name',
+        );
+        _log.i('Column palette_name renamed to theme_name in user_config');
+      } else if (!columns.contains('theme_name')) {
+        db.execute(
+          "ALTER TABLE user_config ADD COLUMN theme_name TEXT DEFAULT 'system'",
+        );
+        _log.i('Column theme_name added to user_config');
+      }
+
+      _log.i('Migration v96 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v96: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

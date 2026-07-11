@@ -93,7 +93,6 @@ class DatabaseTestHelper {
         last_scan TEXT,
         system_view_mode TEXT,
         theme_name TEXT,
-        palette_name TEXT,
         video_sound INTEGER,
         ra_user TEXT,
         show_game_info INTEGER,

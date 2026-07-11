@@ -17,7 +17,7 @@ import 'neo_sync_screen/neo_sync_tab.dart';
 import '../widgets/scraper_content.dart';
 import 'package:neostation/services/game_service.dart';
 import 'package:neostation/services/android_service.dart';
-import 'package:neostation/providers/palette_provider.dart';
+import 'package:neostation/providers/theme_provider.dart';
 import 'package:neostation/repositories/emulator_repository.dart';
 import 'dart:async';
 import 'dart:io';
@@ -77,12 +77,12 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
   /// Static reference to the currently active instance for global access.
   static AppScreenState? _currentInstance;
 
-  PaletteProvider? _themeProvider;
+  ThemeProvider? _themeProvider;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _themeProvider = Provider.of<PaletteProvider>(context, listen: false);
+    _themeProvider = Provider.of<ThemeProvider>(context, listen: false);
   }
 
   @override
@@ -320,9 +320,9 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
 
     secondaryState.updateState(
       isOled: themeProvider.isOled,
-      backgroundColor: themeProvider.currentPalette.scaffoldBackgroundColor
+      backgroundColor: themeProvider.currentTheme.scaffoldBackgroundColor
           .toARGB32(),
-      themeName: themeProvider.currentPaletteName,
+      themeName: themeProvider.currentThemeName,
     );
 
     _log.i(
@@ -469,11 +469,8 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
       ).secondaryDisplayState;
       if (secondaryState == null) return;
 
-      final paletteProvider = Provider.of<PaletteProvider>(
-        context,
-        listen: false,
-      );
-      final isOled = paletteProvider.isOled;
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      final isOled = themeProvider.isOled;
 
       if (index == 0) {
         return; // System tab manages its own secondary display state.
@@ -499,9 +496,9 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
         systemName: tabName,
         useFluidShader: true,
         isOled: isOled,
-        backgroundColor: paletteProvider.currentPalette.scaffoldBackgroundColor
+        backgroundColor: themeProvider.currentTheme.scaffoldBackgroundColor
             .toARGB32(),
-        themeName: paletteProvider.currentPaletteName,
+        themeName: themeProvider.currentThemeName,
         isGameSelected: false,
         clearSystemLogo: true,
         clearSystemBackground: true,
@@ -527,8 +524,8 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<SqliteConfigProvider, PaletteProvider>(
-      builder: (context, configProvider, paletteProvider, child) {
+    return Consumer2<SqliteConfigProvider, ThemeProvider>(
+      builder: (context, configProvider, themeProvider, child) {
         return PopScope(
           canPop: false, // Intercept hardware back button to maintain app flow.
           child: Scaffold(
