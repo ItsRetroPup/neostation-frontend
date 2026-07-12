@@ -837,8 +837,58 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                   padding: EdgeInsets.symmetric(vertical: 6.r, horizontal: 4.r),
                   child: Stack(
                     children: [
-                      // Label track. Each item keeps its own surface background
-                      // so unselected labels keep their structure.
+                      // Background track: every label keeps its surface shape
+                      // so unselected items still look like buttons.
+                      Row(
+                        children: allSystems.asMap().entries.map((entry) {
+                          final itemWidth = widths[entry.key];
+                          return Container(
+                            width: itemWidth,
+                            height: 32.r,
+                            margin: EdgeInsets.only(right: 4.r),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius:
+                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+                BorderRadius.circular(14.r),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      // Focused item sliding indicator. Painted between the
+                      // backgrounds and the text so the selected label gets a
+                      // solid fill while the text stays perfectly readable.
+                      Positioned.fill(
+                        child: ValueListenableBuilder<double>(
+                          valueListenable: _pageOffsetNotifier,
+                          builder: (context, page, _) {
+                            final (left, width) = _cursorRect(page, widths);
+                            return Stack(
+                              children: [
+                                Positioned(
+                                  left: left,
+                                  top: 0,
+                                  bottom: 0,
+                                  width: width,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary,
+                                      borderRadius:
+                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+                BorderRadius.circular(14.r),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+
+                      // Foreground text track. Transparent background so the
+                      // selector and surface backgrounds show through, while
+                      // the selected label uses onPrimary for contrast.
                       ValueListenableBuilder<double>(
                         valueListenable: _pageOffsetNotifier,
                         builder: (context, page, _) {
@@ -865,12 +915,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                                   height: 32.r,
                                   margin: EdgeInsets.only(right: 4.r),
                                   alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surface,
-                                    borderRadius:
-                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
-                BorderRadius.circular(14.r),
-                                  ),
+                                  color: Colors.transparent,
                                   child: Text(
                                     (system.shortName ??
                                             system.title ??
@@ -890,37 +935,6 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                             }).toList(),
                           );
                         },
-                      ),
-
-                      // Focused item sliding indicator. Painted on top of the
-                      // label backgrounds (but below label text) with a
-                      // semi-transparent tint so the structure remains visible.
-                      Positioned.fill(
-                        child: ValueListenableBuilder<double>(
-                          valueListenable: _pageOffsetNotifier,
-                          builder: (context, page, _) {
-                            final (left, width) = _cursorRect(page, widths);
-                            return Stack(
-                              children: [
-                                Positioned(
-                                  left: left,
-                                  top: 0,
-                                  bottom: 0,
-                                  width: width,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.5),
-                                      borderRadius:
-                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
-                BorderRadius.circular(12.r),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
                       ),
                     ],
                   ),
