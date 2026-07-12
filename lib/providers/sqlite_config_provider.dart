@@ -660,7 +660,9 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
       // scanning so the user can return to the system browser without delay.
       final skipScan = await GameSessionPersistence.consumeSkipStartupScan();
       if (skipScan) {
-        _log.i('Skipping ROM scan because app was killed during a game session');
+        _log.i(
+          'Skipping ROM scan because app was killed during a game session',
+        );
       } else {
         _totalSystemsToScan = _detectedSystems.length;
         _scanStatus = 'Scanning ROMs...';

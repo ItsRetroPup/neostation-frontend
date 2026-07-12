@@ -633,8 +633,9 @@ class _SystemCardState extends State<SystemCard> {
     final assetLogoPath = 'assets/images/logos/$resolvedLogoFolder.webp';
 
     final logoHeight = widget.footerLogoHeight ?? 30.r;
-    final footerHeight =
-        widget.footerLogoHeight != null ? logoHeight + 4.r : 32.r;
+    final footerHeight = widget.footerLogoHeight != null
+        ? logoHeight + 4.r
+        : 32.r;
 
     return Container(
       height: footerHeight,

@@ -145,8 +145,7 @@ class NativeCarouselState extends State<NativeCarousel> {
           // Match the grid's SystemCard aspect ratio: square artwork plus a
           // footer row below it (page width = page height - footer height).
           pageWidth = (maxHeight - widget.footerHeight!).clamp(0.0, maxHeight);
-          pageAspectRatio =
-              maxHeight > 0 ? pageWidth / maxHeight : 1.0;
+          pageAspectRatio = maxHeight > 0 ? pageWidth / maxHeight : 1.0;
         } else {
           // Default: square pages that fill the available height.
           pageWidth = maxHeight;

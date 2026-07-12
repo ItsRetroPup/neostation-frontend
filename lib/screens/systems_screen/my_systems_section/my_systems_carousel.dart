@@ -795,13 +795,17 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                             final system = allSystems[index];
                             final isSelected = index == _currentIndex;
                             return SystemCard(
-                              key: ValueKey('carousel_system_card_${system.title}_$index'),
+                              key: ValueKey(
+                                'carousel_system_card_${system.title}_$index',
+                              ),
                               info: system,
                               isSelected: isSelected,
                               footerLogoHeight: 56.r,
                               onTap: () {
                                 if (!isSelected) {
-                                  _carouselKey.currentState?.animateToPage(index);
+                                  _carouselKey.currentState?.animateToPage(
+                                    index,
+                                  );
                                 }
                               },
                             );
@@ -849,8 +853,10 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surface,
                               borderRadius:
-                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
-                BorderRadius.circular(14.r),
+                                  Theme.of(
+                                    context,
+                                  ).extension<CornerRadii>()?.radiusExternal ??
+                                  BorderRadius.circular(14.r),
                             ),
                           );
                         }).toList(),
@@ -875,8 +881,10 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                                     decoration: BoxDecoration(
                                       color: theme.colorScheme.primary,
                                       borderRadius:
-                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
-                BorderRadius.circular(14.r),
+                                          Theme.of(context)
+                                              .extension<CornerRadii>()
+                                              ?.radiusExternal ??
+                                          BorderRadius.circular(14.r),
                                     ),
                                   ),
                                 ),
