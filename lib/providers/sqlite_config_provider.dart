@@ -113,6 +113,7 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool consumeStartupScan() {
     final v = _pendingStartupScan;
     _pendingStartupScan = false;
+    _log.i('consumeStartupScan: wasPending=$v');
     return v;
   }
 
@@ -266,29 +267,19 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
         );
       }
 
-      // Automatically scan if there are ROM folders configured AND we have permissions
+      // Defer the startup scan whenever it is enabled. The actual permission
+      // and folder-access checks live inside scanSystems(), so a transient
+      // permission denial at provider init can no longer silently skip the
+      // scan on Android. Fast-scan mode is kept for folder-less configs.
       _isFastScan = _config.romFolders.isEmpty;
-      if (_config.romFolders.isNotEmpty) {
-        // Initial detection of systems based on ROM folders is handled by _loadDetectedSystems
-        // and scanSystems if scanOnStartup is true.
-        // Redundant loadAndSyncSystems removed here.
-
-        // Verify permissions in Android before scanning
-        bool canScan = true;
-        if (Platform.isAndroid) {
-          canScan = await PermissionService.hasStoragePermissions();
-        }
-
-        if (canScan && _config.scanOnStartup) {
-          // Defer scan — AppScreen triggers it after update checks complete,
-          // so updates and scan happen in one pass instead of two.
-          _pendingStartupScan = true;
-        } else {
-          _scanCompleted = true;
-        }
+      if (_config.scanOnStartup) {
+        _pendingStartupScan = true;
+        _log.i(
+          'Startup scan pending (scanOnStartup=true, romFolders=${_config.romFolders.length})',
+        );
       } else {
-        // No ROM folders, but we might have detected systems like Android Apps
         _scanCompleted = true;
+        _log.i('Startup scan skipped (scanOnStartup=false)');
       }
 
       // SELF-HEALING: If we have detected systems (from ROMs) but they aren't in uds table
@@ -457,6 +448,9 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     _setScanning(true);
     _error = null;
+    _log.i(
+      'scanSystems starting (romFolders=${_config.romFolders.length}, fastScan=$_isFastScan)',
+    );
 
     // Verify permissions in Android BEFORE scanning
     if (Platform.isAndroid) {
@@ -665,7 +659,9 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
       // If app was killed by OS while an emulator was running, skip ROM
       // scanning so the user can return to the system browser without delay.
       final skipScan = await GameSessionPersistence.consumeSkipStartupScan();
-      if (!skipScan) {
+      if (skipScan) {
+        _log.i('Skipping ROM scan because app was killed during a game session');
+      } else {
         _totalSystemsToScan = _detectedSystems.length;
         _scanStatus = 'Scanning ROMs...';
         await _scanRomsInBackground();
