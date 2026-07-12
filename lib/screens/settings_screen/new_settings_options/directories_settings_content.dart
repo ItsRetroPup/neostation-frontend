@@ -616,11 +616,10 @@ class DirectoriesSettingsContentState
               child: ListView.builder(
                 controller: _scrollController,
                 physics: const ClampingScrollPhysics(),
-                // Visual items = navigable items + 1 section header after index 1
+                // Visual items = navigable items + the ROM section header.
                 itemCount: _directoryItems.length + 1,
                 itemBuilder: (context, visualIndex) {
-                  // Insert "ROM Directories" section header after user_data + rescan (nav indices 0,1)
-                  // Visual index 2 = section header; visual index > 2 maps to nav index - 1
+                  // The ROM header follows user_data + rescan (nav indices 0, 1).
                   if (visualIndex == 2) {
                     return _buildSectionHeader(
                       theme,
@@ -693,10 +692,7 @@ class DirectoriesSettingsContentState
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        isRemoveItem
-                                            ? (item['title'] as String)
-                                            : (item['title'] as String)
-                                                  .getString(context),
+                                        _titleForItem(item, isRemoveItem),
                                         style: theme.textTheme.titleSmall
                                             ?.copyWith(
                                               fontWeight: FontWeight.bold,
@@ -721,9 +717,7 @@ class DirectoriesSettingsContentState
                                       ),
                                       SizedBox(height: 2.r),
                                       Text(
-                                        (item['subtitle'] as String).getString(
-                                          context,
-                                        ),
+                                        _subtitleForItem(item),
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
                                               color: isSelected && isRemoveItem
@@ -831,5 +825,16 @@ class DirectoriesSettingsContentState
       default:
         return Symbols.folder_rounded;
     }
+  }
+
+  String _titleForItem(Map<String, dynamic> item, bool isRemoveItem) {
+    if (isRemoveItem) return item['title'] as String;
+    final title = item['title'] as String;
+    return title.getString(context);
+  }
+
+  String _subtitleForItem(Map<String, dynamic> item) {
+    final subtitle = item['subtitle'] as String;
+    return subtitle.getString(context);
   }
 }
