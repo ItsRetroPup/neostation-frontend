@@ -16,6 +16,11 @@ class NativeCarousel extends StatefulWidget {
   /// the grid, where the footer is rendered under the artwork.
   final double? footerHeight;
 
+  /// Multiplier applied to the automatically computed viewport fraction.
+  /// Use a value > 1.0 (e.g. 1.15) to bring adjacent pages closer together
+  /// while keeping the card's natural size unchanged.
+  final double viewportFractionScale;
+
   const NativeCarousel({
     super.key,
     required this.itemCount,
@@ -24,6 +29,7 @@ class NativeCarousel extends StatefulWidget {
     this.onPageScrolled,
     this.initialIndex = 0,
     this.footerHeight,
+    this.viewportFractionScale = 1.0,
   });
 
   @override
@@ -154,7 +160,8 @@ class NativeCarouselState extends State<NativeCarousel> {
         }
 
         final vpFraction = (availableWidth > 0)
-            ? (pageWidth / availableWidth).clamp(0.18, 1.0)
+            ? (pageWidth / availableWidth * widget.viewportFractionScale)
+                .clamp(0.18, 1.0)
             : 0.3;
 
         _ensureController(vpFraction);
