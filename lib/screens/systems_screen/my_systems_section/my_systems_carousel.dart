@@ -789,7 +789,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                           key: _carouselKey,
                           itemCount: allSystems.length,
                           initialIndex: _currentIndex,
-                          footerHeight: 32.r,
+                          footerHeight: 60.r,
                           itemBuilder: (context, index) {
                             final system = allSystems[index];
                             final isSelected = index == _currentIndex;
@@ -797,6 +797,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                               key: ValueKey('carousel_system_card_${system.title}_$index'),
                               info: system,
                               isSelected: isSelected,
+                              footerLogoHeight: 56.r,
                               onTap: () {
                                 if (!isSelected) {
                                   _carouselKey.currentState?.animateToPage(index);
