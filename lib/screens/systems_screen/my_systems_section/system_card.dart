@@ -27,7 +27,6 @@ class SystemCard extends StatefulWidget {
     required this.info,
     this.onTap,
     this.isSelected = false,
-    this.overlayFooter = false,
   });
 
   /// The system or game metadata resolved for this card.
@@ -38,12 +37,6 @@ class SystemCard extends StatefulWidget {
 
   /// Whether this card currently has visual focus in the grid.
   final bool isSelected;
-
-  /// When true, the system footer is rendered as an overlay on top of the
-  /// square artwork area instead of being appended below it. This is useful
-  /// for layouts (like the system carousel) where the card must remain square
-  /// but should still show the same footer content as the grid.
-  final bool overlayFooter;
 
   @override
   State<SystemCard> createState() => _SystemCardState();
@@ -259,55 +252,21 @@ class _SystemCardState extends State<SystemCard> {
                           _buildRecentFooter(context),
                         ],
                       )
-                    : widget.overlayFooter
-                        ? Stack(
-                            key: _contentStackKey,
-                            children: [
-                              AspectRatio(
-                                aspectRatio: 1,
-                                child: Stack(
-                                  children: [
-                                    _buildSystemBackground(),
-                                    _buildMainBodyContent(context, true),
-                                  ],
-                                ),
-                              ),
-                              Positioned(
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                child: Container(
-                                  height: 40.r,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.transparent,
-                                        Colors.black.withValues(alpha: 0.6),
-                                      ],
-                                    ),
-                                  ),
-                                  child: _buildSystemFooter(context),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              AspectRatio(
-                                aspectRatio: 1,
-                                child: Stack(
-                                  key: _contentStackKey,
-                                  children: [
-                                    _buildSystemBackground(),
-                                    _buildMainBodyContent(context, true),
-                                  ],
-                                ),
-                              ),
-                              _buildSystemFooter(context),
-                            ],
+                    : Column(
+                        children: [
+                          AspectRatio(
+                            aspectRatio: 1,
+                            child: Stack(
+                              key: _contentStackKey,
+                              children: [
+                                _buildSystemBackground(),
+                                _buildMainBodyContent(context, true),
+                              ],
+                            ),
                           ),
+                          _buildSystemFooter(context),
+                        ],
+                      ),
               ),
             ),
           ),
