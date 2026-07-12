@@ -43,6 +43,7 @@ class SystemCard extends StatefulWidget {
   /// square artwork area instead of being appended below it. This is useful
   /// for layouts (like the system carousel) where the card must remain square
   /// but should still show the same footer content as the grid.
+  final bool overlayFooter;
 
   @override
   State<SystemCard> createState() => _SystemCardState();
