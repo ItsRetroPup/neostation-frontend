@@ -791,7 +791,6 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                           itemCount: allSystems.length,
                           initialIndex: _currentIndex,
                           footerHeight: 60.r,
-                          viewportFractionScale: 1.15,
                           itemBuilder: (context, index) {
                             final system = allSystems[index];
                             final isSelected = index == _currentIndex;
