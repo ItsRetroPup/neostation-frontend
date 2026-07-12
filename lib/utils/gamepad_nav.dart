@@ -78,10 +78,15 @@ class GamepadNavigation {
 
   StreamSubscription<GamepadEvent>? _subscription;
   DateTime? _lastDirectionalEventTime;
+  DateTime? _lastShoulderEventTime;
   DateTime? _lastActionEventTime;
 
   /// Throttle duration for directional inputs to prevent "drifting" or excessive navigation.
   static const int _directionalThrottleMs = 128;
+
+  /// Throttle duration for shoulder buttons (tab switching).
+  /// Slightly shorter than the action debounce so rapid LB/RB presses feel snappier.
+  static const int _shoulderThrottleMs = 80;
 
   /// Debounce duration for action buttons to prevent double-presses.
   static const int _actionDebounceMs = 128;
@@ -253,6 +258,7 @@ class GamepadNavigation {
     }
     _lastEventTime = null;
     _lastDirectionalEventTime = null;
+    _lastShoulderEventTime = null;
     _lastActionEventTime = null;
   }
 
@@ -407,6 +413,10 @@ class GamepadNavigation {
           GamepadInputType.leftStickY,
         ].contains(translatedEvent.inputType);
 
+        final isShoulder =
+            translatedEvent.inputType == GamepadInputType.buttonLB ||
+            translatedEvent.inputType == GamepadInputType.buttonRB;
+
         if (isDirectional) {
           if (!isWindows) {
             if (_lastDirectionalEventTime != null &&
@@ -416,6 +426,13 @@ class GamepadNavigation {
             }
           }
           _lastDirectionalEventTime = now;
+        } else if (isShoulder) {
+          if (_lastShoulderEventTime != null &&
+              now.difference(_lastShoulderEventTime!).inMilliseconds <
+                  _shoulderThrottleMs) {
+            return;
+          }
+          _lastShoulderEventTime = now;
         } else {
           if (_lastActionEventTime != null &&
               now.difference(_lastActionEventTime!).inMilliseconds <
