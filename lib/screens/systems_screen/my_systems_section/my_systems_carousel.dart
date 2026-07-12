@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/sqlite_config_provider.dart';
 import '../../../providers/sqlite_database_provider.dart';
 import '../../../providers/file_provider.dart';
+import '../../../themes/corner_radii.dart';
 import '../../../utils/gamepad_nav.dart';
 import '../../../services/game_service.dart';
 import '../../../utils/game_launch_utils.dart';
@@ -722,7 +723,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
             fontWeight: FontWeight.normal,
           );
           final selectedTextStyle = textStyle.copyWith(
-            color: theme.colorScheme.onPrimary,
+            color: theme.colorScheme.onSecondary,
             fontWeight: FontWeight.bold,
           );
 
@@ -854,7 +855,9 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: theme.colorScheme.secondary,
-                                      borderRadius: BorderRadius.circular(12.r),
+                                      borderRadius:
+                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+                BorderRadius.circular(12.r),
                                     ),
                                   ),
                                 ),
@@ -888,17 +891,18 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                                     index,
                                   );
                                 },
-                                child: Container(
-                                  width: itemWidth,
-                                  height: 32.r,
-                                  margin: EdgeInsets.only(right: 4.r),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12.r),
-                                  ),
-                                  child: Text(
+                                  child: Container(
+                                    width: itemWidth,
+                                    height: 32.r,
+                                    margin: EdgeInsets.only(right: 4.r),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: Colors.transparent,
+                                      borderRadius:
+                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+                BorderRadius.circular(14.r),
+                                    ),
+                                    child: Text(
                                     (system.shortName ??
                                             system.title ??
                                             AppLocale.unknown.getString(
