@@ -192,6 +192,7 @@ mixin AppLocale {
   static const String organizeMultiDiscNoSetsFound =
       'organize_multi_disc_no_sets_found';
   static const String organizeMultiDiscFailed = 'organize_multi_disc_failed';
+  static const String organizeMultiDiscWarning = 'organize_multi_disc_warning';
 
   // ---------------------------------------------------------------------------
   // Exit
@@ -836,7 +837,7 @@ mixin AppLocale {
   static const String resetToDefault = 'reset_to_default';
   static const String romDirectories = 'rom_directories';
   static const String tools = 'tools';
-    static const String toolsSubtitle = 'tools_subtitle';
+  static const String toolsSubtitle = 'tools_subtitle';
   static const String addRomFolder = 'add_rom_folder';
   static const String removeRomFolder = 'remove_rom_folder';
 

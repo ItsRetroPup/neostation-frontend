@@ -158,6 +158,8 @@ const Map<String, dynamic> appLocaleJa = {
       '完了: {groups} セットを整理、{files} ファイルを移動、{playlists} プレイリストを作成{skipped}。',
   AppLocale.organizeMultiDiscNoSetsFound: '整理するマルチディスクセットは見つかりませんでした{skipped}。',
   AppLocale.organizeMultiDiscFailed: 'マルチディスクゲームの整理に失敗しました: {error}',
+  AppLocale.organizeMultiDiscWarning:
+      '一致するROMファイルを新しいゲームフォルダへ移動し、ストレージに.m3uプレイリストを作成します。この操作を自動的に元に戻すことはできません。',
   AppLocale.romsFolderSubtitle: 'ROMファイルを含むフォルダを追加',
   AppLocale.pressToRemoveFolder: '決定を押してこのフォルダを削除',
   AppLocale.maxRomFoldersReached: '最大5つのROMフォルダが許可されています',
@@ -735,7 +737,7 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.resetToDefault: 'デフォルトに戻す',
   AppLocale.romDirectories: 'ROMディレクトリ',
   AppLocale.tools: 'ツール',
-    AppLocale.toolsSubtitle: 'ROMの整理に役立つツール',
+  AppLocale.toolsSubtitle: 'ROMの整理に役立つツール',
   AppLocale.addRomFolder: 'ROMフォルダを追加',
   AppLocale.removeRomFolder: '削除',
   AppLocale.resetPlayTimeConfirm: 'プレイ時間をリセット',

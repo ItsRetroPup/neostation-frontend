@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/repositories/config_repository.dart';
+import 'package:neostation/repositories/system_repository.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/rom_folder_organizer_service.dart';
 import 'package:neostation/widgets/custom_notification.dart';
@@ -68,6 +69,33 @@ class ToolsSettingsContentState extends State<ToolsSettingsContent> {
       return;
     }
 
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppLocale.organizeMultiDiscGames.getString(context)),
+        content: Text(AppLocale.organizeMultiDiscWarning.getString(context)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(AppLocale.cancel.getString(context)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(AppLocale.confirm.getString(context)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final multiDiscSystems = (await SystemRepository.getAllSystems())
+        .where((system) => system.multiDisc)
+        .toList();
+    final supportedFolders = multiDiscSystems
+        .expand((system) => [system.folderName, ...system.folders])
+        .where((folder) => folder.isNotEmpty)
+        .toSet();
+
     setState(() => _isOrganizingMultiDisc = true);
     if (mounted) {
       AppNotification.showNotification(
@@ -76,6 +104,7 @@ class ToolsSettingsContentState extends State<ToolsSettingsContent> {
         type: NotificationType.info,
         duration: const Duration(minutes: 5),
         notificationId: 'organize_multidisc',
+        progress: 0,
       );
     }
 
@@ -84,6 +113,17 @@ class ToolsSettingsContentState extends State<ToolsSettingsContent> {
     try {
       final result = await RomFolderOrganizerService.organizeRomFolders(
         _currentRomFolders,
+        supportedSystemFolders: supportedFolders,
+        onProgress: (completed, total) {
+          if (!mounted || total == 0) return;
+          AppNotification.showNotification(
+            context,
+            AppLocale.organizeMultiDiscScanning.getString(context),
+            type: NotificationType.info,
+            notificationId: 'organize_multidisc',
+            progress: completed / total,
+          );
+        },
       );
 
       if (result.hasChanges && mounted) {
@@ -91,7 +131,9 @@ class ToolsSettingsContentState extends State<ToolsSettingsContent> {
           context,
           listen: false,
         );
-        await configProvider.scanSystems();
+        for (final system in multiDiscSystems) {
+          await configProvider.rescanSystemSilent(system);
+        }
       }
 
       if (mounted) {

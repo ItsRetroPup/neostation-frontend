@@ -295,6 +295,14 @@ class MainActivity: MultiDisplayFlutterActivity(), GamepadsCompatibleActivity {
                 "openSafDirectoryPicker" -> {
                     openSafDirectoryPicker(result)
                 }
+                "hasPermission" -> {
+                    val uriString = call.argument<String>("uri")
+                    if (uriString != null) {
+                        hasSafPermission(uriString, result)
+                    } else {
+                        result.error("INVALID_ARGUMENTS", "URI is required", null)
+                    }
+                }
                 "openAllFilesAccessSettings" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         try {
@@ -1144,6 +1152,18 @@ class MainActivity: MultiDisplayFlutterActivity(), GamepadsCompatibleActivity {
                 }
             }
         }.start()
+    }
+
+    private fun hasSafPermission(uriString: String, result: MethodChannel.Result) {
+        try {
+            val uri = Uri.parse(uriString)
+            val hasPermission = contentResolver.persistedUriPermissions.any { permission ->
+                permission.uri == uri && permission.isReadPermission && permission.isWritePermission
+            }
+            result.success(hasPermission)
+        } catch (e: Exception) {
+            result.success(false)
+        }
     }
 
     private fun deleteSafFile(uriString: String, result: MethodChannel.Result) {

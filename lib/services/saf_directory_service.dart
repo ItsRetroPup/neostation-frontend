@@ -53,6 +53,9 @@ class SafDirectoryService {
     } on PlatformException catch (e) {
       _log.e('Error checking SAF permission: ${e.message}');
       return false;
+    } on MissingPluginException catch (e) {
+      _log.e('SAF permission check is unavailable: $e');
+      return false;
     }
   }
 

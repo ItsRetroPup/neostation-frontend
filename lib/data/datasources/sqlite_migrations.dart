@@ -297,6 +297,9 @@ class SqliteMigrations {
       case 97:
         await _migrateToVersion97(db);
         break;
+      case 98:
+        await _migrateToVersion98(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -4750,6 +4753,24 @@ class SqliteMigrations {
       _log.i('Migration v97 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v97: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v98: Store whether a platform supports multi-disc games.
+  static Future<void> _migrateToVersion98(Database db) async {
+    _log.i('Migration v98: Adding multidisc to app_systems');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(app_systems)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('multidisc')) {
+        db.execute(
+          'ALTER TABLE app_systems ADD COLUMN multidisc INTEGER NOT NULL DEFAULT 0',
+        );
+      }
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v98: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

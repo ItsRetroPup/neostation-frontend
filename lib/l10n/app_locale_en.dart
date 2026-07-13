@@ -184,6 +184,8 @@ const Map<String, dynamic> appLocaleEn = {
       'No multi-disc sets found to organize{skipped}.',
   AppLocale.organizeMultiDiscFailed:
       'Failed to organize multi-disc games: {error}',
+  AppLocale.organizeMultiDiscWarning:
+      'This moves matching ROM files into new game folders and creates .m3u playlists on your storage. This cannot be undone automatically.',
   AppLocale.romsFolderSubtitle: 'Add a folder containing your ROM files',
   AppLocale.pressToRemoveFolder: 'Press confirm to remove this folder',
   AppLocale.maxRomFoldersReached: 'Maximum 5 ROM folders allowed',
@@ -808,7 +810,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.resetToDefault: 'Reset to Default',
   AppLocale.romDirectories: 'ROM Directories',
   AppLocale.tools: 'Tools',
-    AppLocale.toolsSubtitle: 'Tools to help organise your ROMs',
+  AppLocale.toolsSubtitle: 'Tools to help organise your ROMs',
   AppLocale.addRomFolder: 'Add ROM Folder',
   AppLocale.removeRomFolder: 'Remove',
   AppLocale.resetPlayTimeConfirm: 'Reset Play Time',

@@ -86,14 +86,26 @@ class RomFolderOrganizerService {
   );
 
   static Future<RomFolderOrganizerResult> organizeRomFolders(
-    List<String> romRoots,
-  ) async {
+    List<String> romRoots, {
+    Set<String>? supportedSystemFolders,
+    void Function(int completed, int total)? onProgress,
+  }) async {
     final result = _MutableResult();
+    final allowedFolders = supportedSystemFolders
+        ?.map((folder) => folder.toLowerCase())
+        .toSet();
+    final scanRoots = <String>[];
 
     for (final rootPath in romRoots) {
       if (_isM3uDirectory(rootPath)) continue;
       if (rootPath.startsWith('content://')) {
-        await _organizeSafRoot(rootPath, result);
+        if (allowedFolders == null) {
+          scanRoots.add(rootPath);
+        } else {
+          scanRoots.addAll(
+            await _getSupportedSafRoots(rootPath, allowedFolders),
+          );
+        }
         continue;
       }
 
@@ -103,10 +115,62 @@ class RomFolderOrganizerService {
         continue;
       }
 
-      await _organizeRoot(rootDir, result);
+      if (allowedFolders == null) {
+        scanRoots.add(rootPath);
+      } else {
+        scanRoots.addAll(
+          await _getSupportedDirectoryRoots(rootDir, allowedFolders),
+        );
+      }
+    }
+
+    for (var index = 0; index < scanRoots.length; index++) {
+      final scanRoot = scanRoots[index];
+      if (scanRoot.startsWith('content://')) {
+        await _organizeSafRoot(scanRoot, result);
+      } else {
+        await _organizeRoot(Directory(scanRoot), result);
+      }
+      onProgress?.call(index + 1, scanRoots.length);
     }
 
     return result.freeze();
+  }
+
+  static Future<List<String>> _getSupportedDirectoryRoots(
+    Directory rootDir,
+    Set<String> allowedFolders,
+  ) async {
+    final roots = <String>[];
+    if (allowedFolders.contains(path.basename(rootDir.path).toLowerCase())) {
+      roots.add(rootDir.path);
+      return roots;
+    }
+
+    await for (final entity in rootDir.list(followLinks: false)) {
+      if (entity is Directory &&
+          allowedFolders.contains(path.basename(entity.path).toLowerCase())) {
+        roots.add(entity.path);
+      }
+    }
+    return roots;
+  }
+
+  static Future<List<String>> _getSupportedSafRoots(
+    String rootUri,
+    Set<String> allowedFolders,
+  ) async {
+    final roots = <String>[];
+    final entries = await SafDirectoryService.listFiles(rootUri);
+    for (final entry in entries) {
+      if (entry['isDirectory'] != true) continue;
+      final name = entry['name']?.toString().toLowerCase();
+      final uri = entry['uri']?.toString();
+      if (name != null && uri != null && allowedFolders.contains(name)) {
+        roots.add(uri);
+      }
+    }
+    return roots;
   }
 
   static Future<void> _organizeRoot(

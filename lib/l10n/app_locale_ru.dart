@@ -189,6 +189,8 @@ const Map<String, dynamic> appLocaleRu = {
       'Многодисковые наборы для организации не найдены{skipped}.',
   AppLocale.organizeMultiDiscFailed:
       'Не удалось организовать многодисковые игры: {error}',
+  AppLocale.organizeMultiDiscWarning:
+      'Подходящие ROM-файлы будут перемещены в новые папки игр, а на накопителе будут созданы плейлисты .m3u. Это нельзя отменить автоматически.',
   AppLocale.romsFolderSubtitle: 'Добавьте папку, содержащую ваши файлы ROM',
   AppLocale.pressToRemoveFolder:
       'Нажмите «Подтвердить», чтобы удалить эту папку',
@@ -806,7 +808,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.resetToDefault: 'Сбросить до стандартного',
   AppLocale.romDirectories: 'Директории ROM',
   AppLocale.tools: 'Инструменты',
-    AppLocale.toolsSubtitle: 'Инструменты для организации ваших ROM',
+  AppLocale.toolsSubtitle: 'Инструменты для организации ваших ROM',
   AppLocale.addRomFolder: 'Добавить папку ROM',
   AppLocale.removeRomFolder: 'Удалить',
   AppLocale.resetPlayTimeConfirm: 'Сбросить время игры',

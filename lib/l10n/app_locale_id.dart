@@ -184,6 +184,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.organizeMultiDiscNoSetsFound:
       'Tidak ada set multi-disk yang ditemukan untuk diatur{skipped}.',
   AppLocale.organizeMultiDiscFailed: 'Gagal mengatur game multi-disk: {error}',
+  AppLocale.organizeMultiDiscWarning:
+      'Ini akan memindahkan file ROM yang cocok ke folder game baru dan membuat playlist .m3u di penyimpanan Anda. Tindakan ini tidak dapat dibatalkan secara otomatis.',
   AppLocale.romsFolderSubtitle: 'Tambahkan folder yang berisi file ROM Anda',
   AppLocale.pressToRemoveFolder: 'Tekan Konfirmasi untuk menghapus folder ini',
   AppLocale.maxRomFoldersReached: 'Maksimal 5 folder ROM diizinkan',
@@ -809,7 +811,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.resetToDefault: 'Setel Ulang ke Default',
   AppLocale.romDirectories: 'Direktori ROM',
   AppLocale.tools: 'Alat',
-    AppLocale.toolsSubtitle: 'Alat untuk membantu mengatur ROM Anda',
+  AppLocale.toolsSubtitle: 'Alat untuk membantu mengatur ROM Anda',
   AppLocale.addRomFolder: 'Tambah Folder ROM',
   AppLocale.removeRomFolder: 'Hapus',
   AppLocale.resetPlayTimeConfirm: 'Atur Ulang Waktu Bermain',
