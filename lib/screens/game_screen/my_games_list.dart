@@ -42,6 +42,8 @@ import '../../widgets/marquee_text.dart';
 import '../../models/secondary_display_state.dart';
 import '../../widgets/game_view_mode_dropdown.dart';
 import '../../constants/system_folder_names.dart';
+import '../../widgets/system_logo_fallback.dart';
+import '../../themes/corner_radii.dart';
 
 /// Transfer object for background game save detection tasks.
 class GameSaveDetectionData {
@@ -2688,30 +2690,308 @@ class _SystemGamesListState extends State<SystemGamesList> {
 
   /// Main layout orchestrator.
   /// Divides the viewport into a specialized browsing panel (left) and a detailed
-  /// info/preview panel (right).
+  /// info/preview panel (right). The selected game's fanart is rendered behind
+  /// the entire viewport so it peeks through both panels.
   Widget _buildGamesList() {
     final availableHeight =
         MediaQuery.of(context).size.height -
         MediaQuery.of(context).padding.top -
         MediaQuery.of(context).padding.bottom;
+    final isMusic = widget.system.folderName == 'music';
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        // Sidebar: Interactive list of games or music tracks.
-        SizedBox(
-          width: 160.r,
-          height: availableHeight,
-          child: _buildGamesListPanel(),
+        // Full-screen ambient fanart + overlay combined in a single layer
+        // to avoid flickering caused by separate Positioned.fill compositing.
+        if (!isMusic && _selectedGame != null)
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildGameFanartBackground(_selectedGame!),
+                  Container(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.shadow.withValues(alpha: 0.2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Main content row: list panel + details panel.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Sidebar: Interactive list of games or music tracks.
+            Container(
+              width: 180.r,
+              height: availableHeight,
+              margin: EdgeInsets.only(left: 58.r, top: 12.r, bottom: 12.r),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.90),
+                borderRadius:
+                    Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+                    BorderRadius.circular(14.r),
+                border: Border.all(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline,
+                  width: 1.r,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.shadow.withValues(alpha: 0.5),
+                    blurRadius: 3.r,
+                    offset: Offset(2.r, 2.r),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius:
+                    Theme.of(context).extension<CornerRadii>()?.radiusInternal ??
+                    BorderRadius.circular(9.r),
+                child: SizedBox(
+                  width: 180.r,
+                  height: availableHeight,
+                  child: _buildGamesListPanel(),
+                ),
+              ),
+            ),
+            // Main Viewport: Rich metadata, video previews, and launch controls.
+            Expanded(
+              child: SizedBox(
+                height: availableHeight,
+                child: _buildGameDetailsPanel(),
+              ),
+            ),
+          ],
         ),
-        // Main Viewport: Rich metadata, video previews, and launch controls.
-        Expanded(
-          child: SizedBox(
-            height: availableHeight,
-            child: _buildGameDetailsPanel(),
+
+        // Floating action buttons on the left side of the game list.
+        if (!isMusic)
+          Positioned(
+            top: 12.r,
+            left: 12.r,
+            child: _buildGameListActionButtons(),
+          ),
+      ],
+    );
+  }
+
+  /// Renders the selected game's fanart as a full-screen background.
+  Widget _buildGameFanartBackground(GameModel game) {
+    final imageSystemFolder =
+        game.systemFolderName ?? widget.system.primaryFolderName;
+
+    final fanartPath = game.getImagePath(
+      imageSystemFolder,
+      'fanarts',
+      _fileProvider,
+    );
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 512),
+      switchInCurve: Curves.easeOutExpo,
+      switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (currentChild, previousChildren) {
+        return Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.center,
+          // ignore: use_null_aware_elements
+          children: [...previousChildren, if (currentChild != null) currentChild],
+        );
+      },
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 1.0, end: 1.1).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: Builder(
+        key: ValueKey('list_fanart_${game.romPath ?? game.romname}'),
+        builder: (context) {
+          final file = File(fanartPath);
+          if (file.existsSync()) {
+            return Image.file(
+              file,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              cacheWidth: 1920,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  /// Floating action buttons for the game list (back, view mode, random,
+  /// favorite, scrape). Arranged vertically on the left side of the game list.
+  Widget _buildGameListActionButtons() {
+    final dropdownState = GameViewModeDropdown.globalKey.currentState;
+    final viewModeKey = GlobalKey();
+    final selectedGame = _selectedGame;
+
+    final isFavorite = selectedGame?.isFavorite ?? false;
+    final hasScreenScraper =
+        widget.system.screenscraperId != null &&
+        widget.system.screenscraperId != 0;
+    final isScraping =
+        selectedGame != null &&
+        _scrapingGameRomnames.contains(selectedGame.romname);
+
+    final description =
+        _localizedDescription ??
+        (selectedGame?.getDescriptionForLanguage('en').isEmpty == true
+            ? AppLocale.noDescription.getString(context)
+            : selectedGame?.getDescriptionForLanguage('en') ?? '');
+    final isDescriptionMissing =
+        description.isEmpty ||
+        description == AppLocale.noDescription.getString(context) ||
+        description.trim().isEmpty;
+
+    return Container(
+      padding: EdgeInsets.all(6.r),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildIconButton(
+            iconPath: 'assets/images/gamepad/Xbox_B_button.png',
+            symbol: Symbols.arrow_back_rounded,
+            color: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
+            onTap: _goBack,
+          ),
+          SizedBox(height: 6.r),
+          _buildIconButton(
+            iconPath: 'assets/images/gamepad/Xbox_Y_button.png',
+            symbol: isFavorite
+                ? Symbols.favorite_rounded
+                : Symbols.favorite_border_rounded,
+            color: isFavorite
+                ? Colors.redAccent
+                : Theme.of(context).colorScheme.tertiary,
+            foregroundColor:
+                isFavorite ? Colors.white : Theme.of(context).colorScheme.onPrimary,
+            onTap: selectedGame != null ? _toggleFavorite : () {},
+          ),
+          SizedBox(height: 6.r),
+          if (hasScreenScraper && selectedGame != null) ...[
+            _buildIconButton(
+              iconPath: 'assets/images/gamepad/Xbox_View_button.png',
+              symbol: isDescriptionMissing
+                  ? Symbols.search_rounded
+                  : Symbols.refresh_rounded,
+              color: Theme.of(context).colorScheme.tertiary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              onTap: _onScrapeCurrentGame,
+              isLoading: isScraping,
+            ),
+            SizedBox(height: 6.r),
+          ],
+          _buildIconButton(
+            key: viewModeKey,
+            iconPath: 'assets/images/gamepad/Xbox_X_button.png',
+            symbol: Symbols.grid_view_rounded,
+            color: Theme.of(context).colorScheme.tertiary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            onTap: () {
+              SfxService().playNavSound();
+              dropdownState?.showDropdownFrom(viewModeKey);
+            },
+          ),
+          SizedBox(height: 6.r),
+          _buildIconButton(
+            iconPath: 'assets/images/gamepad/Left Stick Click.png',
+            symbol: Symbols.casino_rounded,
+            color: Theme.of(context).colorScheme.tertiary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            onTap: _showRandomGameDialog,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Square action button (1:1 aspect ratio) with a gamepad hint icon and
+  /// a Material Symbols icon stacked vertically. Optionally shows a loading
+  /// indicator and disables taps while an async operation is in progress.
+  Widget _buildIconButton({
+    Key? key,
+    required String iconPath,
+    required IconData symbol,
+    required Color color,
+    Color? foregroundColor,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    final fg = foregroundColor ?? Colors.white;
+    const double buttonSize = 28.0;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: key,
+        onTap: isLoading ? null : onTap,
+        borderRadius: BorderRadius.circular(6.r),
+        child: Container(
+          width: buttonSize.r,
+          height: buttonSize.r,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: isLoading ? 0.5 : 0.85),
+            borderRadius: BorderRadius.circular(6.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 2.r,
+                offset: Offset(1.r, 1.r),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: isLoading
+                ? [
+                    SizedBox(
+                      width: 14.r,
+                      height: 14.r,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.r,
+                        color: fg,
+                      ),
+                    ),
+                  ]
+                : [
+                    Image.asset(
+                      iconPath,
+                      width: 11.r,
+                      height: 11.r,
+                      color: fg,
+                      colorBlendMode: BlendMode.srcIn,
+                    ),
+                    SizedBox(height: 1.r),
+                    Icon(symbol, size: 11.r, color: fg),
+                  ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -2748,8 +3028,6 @@ class _SystemGamesListState extends State<SystemGamesList> {
                       widget.system.folderName == SystemFolderNames.favorites,
                   isNavigatingFast: _isNavigatingFast,
                   onGamepadReactivated: _reactivateGamepadNavigation,
-                  onBack: _goBack,
-                  onRandom: _showRandomGameDialog,
                 ),
         ),
       ],
@@ -2997,8 +3275,6 @@ class GameListView extends StatefulWidget {
   final bool isAllMode;
   final bool isNavigatingFast;
   final VoidCallback? onGamepadReactivated;
-  final VoidCallback onBack;
-  final VoidCallback onRandom;
 
   const GameListView({
     super.key,
@@ -3010,8 +3286,6 @@ class GameListView extends StatefulWidget {
     this.isAllMode = false,
     this.isNavigatingFast = false,
     this.onGamepadReactivated,
-    required this.onBack,
-    required this.onRandom,
   });
 
   @override
@@ -3195,12 +3469,12 @@ class _GameListViewState extends State<GameListView>
                   final double topPosition =
                       (currentSelection * totalItemHeight) + 2.r - scrollOffset;
 
-                  final highlightColor = theme.colorScheme.secondary;
+                  final highlightColor = theme.colorScheme.primary;
 
                   return Positioned(
                     top: topPosition,
                     left: 8.r,
-                    right: 0.r,
+                    right: 8.r,
                     height: itemHeight,
                     child: RepaintBoundary(
                       child: Container(
@@ -3304,11 +3578,8 @@ class _GameListViewState extends State<GameListView>
     );
   }
 
-  /// System Branding Header: Dynamically resolves hardware logos.
+  /// System Branding Header: Renders the system logo.
   Widget _buildHeader() {
-    final dropdownState = GameViewModeDropdown.globalKey.currentState;
-    final viewModeKey = GlobalKey();
-
     SystemModel displaySystem = widget.system;
 
     if (widget.isAllMode && widget.selectedIndex < widget.games.length) {
@@ -3325,124 +3596,96 @@ class _GameListViewState extends State<GameListView>
       }
     }
 
-    final shortName =
-        (displaySystem.shortName != null && displaySystem.shortName!.isNotEmpty)
-        ? displaySystem.shortName!
-        : displaySystem.realName;
-
     return Container(
-      margin: EdgeInsets.only(left: 4.r, right: 4.r, top: 8.r),
+      margin: EdgeInsets.only(left: 8.r, right: 8.r, top: 8.r, bottom: 4.r),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildIconButton(
-                iconPath: 'assets/images/gamepad/Xbox_B_button.png',
-                symbol: Symbols.arrow_back_rounded,
-                color: Theme.of(context).colorScheme.error,
-                foregroundColor: Theme.of(context).colorScheme.onError,
-                onTap: widget.onBack,
-              ),
-              SizedBox(width: 6.r),
-              _buildIconButton(
-                key: viewModeKey,
-                iconPath: 'assets/images/gamepad/Xbox_X_button.png',
-                symbol: Symbols.grid_view_rounded,
-                color: Theme.of(context).colorScheme.tertiary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                onTap: () {
-                  SfxService().playNavSound();
-                  dropdownState?.showDropdownFrom(viewModeKey);
-                },
-              ),
-              SizedBox(width: 6.r),
-              _buildIconButton(
-                iconPath: 'assets/images/gamepad/Left Stick Click.png',
-                symbol: Symbols.casino_rounded,
-                color: Theme.of(context).colorScheme.tertiary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                onTap: widget.onRandom,
-              ),
-            ],
-          ),
-          SizedBox(height: 4.r),
-          Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.r, vertical: 3.r),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.4),
-                  width: 1.r,
-                ),
-              ),
-              child: Text(
-                shortName,
-                style: TextStyle(
-                  fontSize: 11.r,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.primary,
-                  letterSpacing: 0.5.r,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
+          _buildSystemLogoHeader(displaySystem),
           SizedBox(height: 4.r),
         ],
       ),
     );
   }
 
-  Widget _buildIconButton({
-    Key? key,
-    required String iconPath,
-    required IconData symbol,
-    required Color color,
-    Color? foregroundColor,
-    required VoidCallback onTap,
-  }) {
-    final fg = foregroundColor ?? Colors.white;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: key,
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6.r),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 4.r, vertical: 3.r),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(6.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 2.r,
-                offset: Offset(1.r, 1.r),
-              ),
-            ],
+  /// Renders the system brand logo with fallback support, tinted to match the theme.
+  Widget _buildSystemLogoHeader(SystemModel displaySystem) {
+    if (displaySystem.hideLogo) {
+      final shortName =
+          (displaySystem.shortName != null &&
+                  displaySystem.shortName!.isNotEmpty)
+          ? displaySystem.shortName!
+          : displaySystem.realName;
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 3.r, vertical: 3.r),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+        ),
+        child: Text(
+          shortName,
+          style: TextStyle(
+            fontSize: 11.r,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
+            letterSpacing: 0.5.r,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                iconPath,
-                width: 14.r,
-                height: 14.r,
-                color: fg,
-                colorBlendMode: BlendMode.srcIn,
-              ),
-              SizedBox(width: 3.r),
-              Icon(symbol, size: 14.r, color: fg),
-            ],
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
+    final resolvedLogoFolder =
+        displaySystem.primaryFolderName.isNotEmpty
+            ? displaySystem.primaryFolderName
+            : (displaySystem.folderName.isNotEmpty
+                  ? displaySystem.folderName
+                  : 'all');
+    final assetLogoPath = 'assets/images/logos/$resolvedLogoFolder.webp';
+    final customLogoPath = displaySystem.customLogoPath;
+    final hasCustomLogo = customLogoPath != null && customLogoPath.isNotEmpty;
+
+    Widget buildLogo(Widget image) {
+      return ColorFiltered(
+        colorFilter: ColorFilter.mode(
+          Theme.of(context).colorScheme.onSurface,
+          BlendMode.srcIn,
+        ),
+        child: image,
+      );
+    }
+
+    if (hasCustomLogo) {
+      return buildLogo(
+        Image.file(
+          File(customLogoPath),
+          height: 38.r,
+          cacheWidth: 256,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Image.asset(
+            assetLogoPath,
+            height: 38.r,
+            cacheWidth: 256,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => SystemLogoFallback(
+              title: displaySystem.realName,
+              shortName: displaySystem.shortName,
+              height: 38.r,
+            ),
           ),
+        ),
+      );
+    }
+
+    return buildLogo(
+      Image.asset(
+        assetLogoPath,
+        height: 38.r,
+        cacheWidth: 256,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => SystemLogoFallback(
+          title: displaySystem.realName,
+          shortName: displaySystem.shortName,
+          height: 38.r,
         ),
       ),
     );
