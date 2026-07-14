@@ -1437,16 +1437,20 @@ class GameService {
     try {
       String executable = launchCmd['executable'].toString();
 
-      if ((Platform.isWindows || Platform.isLinux) &&
-          !await File(executable).exists()) {
+      if ((Platform.isWindows || Platform.isLinux)) {
         final detected = await EmulatorRepository.getUserDetectedEmulators();
 
         if (executable.toLowerCase().contains('retroarch')) {
           final ra = detected['RetroArch'];
-          if (ra != null) {
+          if (ra != null && ra.path.isNotEmpty) {
+            if (executable != ra.path) {
+              _log.i(
+                'Resolving RetroArch executable from "$executable" to user-configured path: ${ra.path}',
+              );
+            }
             executable = ra.path;
           }
-        } else {
+        } else if (!await File(executable).exists()) {
           String? resolvedPath;
           final uniqueId = launchCmd['unique_id']?.toString();
           if (uniqueId != null) {
@@ -1478,7 +1482,12 @@ class GameService {
           executable.toLowerCase().contains('retroarch')) {
         final detected = await EmulatorRepository.getUserDetectedEmulators();
         final ra = detected['RetroArch'];
-        if (ra != null) {
+        if (ra != null && ra.path.isNotEmpty) {
+          if (executable != ra.path) {
+            _log.i(
+              'Resolving RetroArch executable on macOS from "$executable" to user-configured path: ${ra.path}',
+            );
+          }
           executable = ra.path;
           if (executable.endsWith('.app')) {
             executable = path.join(

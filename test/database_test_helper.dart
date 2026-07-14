@@ -147,7 +147,9 @@ class DatabaseTestHelper {
       CREATE TABLE user_emulator_config (
         emulator_unique_id TEXT PRIMARY KEY,
         emulator_path TEXT,
-        is_user_default INTEGER
+        is_user_default INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     ''');
 
