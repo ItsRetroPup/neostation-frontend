@@ -1,9 +1,22 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:neostation/data/datasources/sqlite_service.dart';
 import 'package:neostation/services/rom_folder_organizer_service.dart';
 
+import 'database_test_helper.dart';
+
 void main() {
+  final dbHelper = DatabaseTestHelper();
+
+  setUp(() async {
+    await dbHelper.setUp();
+  });
+
+  tearDown(() async {
+    await dbHelper.tearDown();
+  });
+
   group('RomFolderOrganizerService', () {
     test('moves Disc files and existing m3u into a game folder', () async {
       final root = await Directory.systemTemp.createTemp(
@@ -27,6 +40,14 @@ void main() {
       expect(await disc1.exists(), isTrue);
       expect(await disc2.exists(), isTrue);
       expect(await playlist.exists(), isTrue);
+
+      final db = await SqliteService.getDatabase();
+      await db.execute(
+        "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('Final Fantasy VIII (Disc 1).chd', '${disc1.path}', 'psx')",
+      );
+      await db.execute(
+        "INSERT INTO user_screenscraper_metadata (filename, app_system_id, real_name, is_fully_scraped) VALUES ('Final Fantasy VIII (Disc 1).chd', 'psx', 'Final Fantasy VIII', 1)",
+      );
 
       final result = await RomFolderOrganizerService.organizeRomFolders([
         root.path,
@@ -55,6 +76,12 @@ void main() {
         'Final Fantasy VIII (Disc 1).chd',
         'Final Fantasy VIII (Disc 2).chd',
       ]);
+
+      final metadata = await db.rawQuery(
+        "SELECT filename, real_name FROM user_screenscraper_metadata WHERE app_system_id = 'psx'",
+      );
+      expect(metadata.single['filename'], 'Final Fantasy VIII.m3u');
+      expect(metadata.single['real_name'], 'Final Fantasy VIII');
     });
 
     test(

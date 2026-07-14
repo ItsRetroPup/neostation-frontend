@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
+import 'package:neostation/repositories/scraper_repository.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/saf_directory_service.dart';
+import 'package:neostation/services/scraped_media_migration_service.dart';
 
 class RomFolderOrganizerResult {
   final int groupsOrganized;
@@ -267,6 +269,8 @@ class RomFolderOrganizerService {
       }
 
       final movedDiscPaths = <String>[];
+      final sourceDiscPaths = <String>[];
+      final sourceDiscFilenames = <String>[];
       final sortedDiscFiles = [...group.discFiles]
         ..sort((a, b) {
           final discCmp = a.discNumber.compareTo(b.discNumber);
@@ -290,6 +294,8 @@ class RomFolderOrganizerService {
           result.filesMoved++;
         }
 
+        sourceDiscPaths.add(sourcePath);
+        sourceDiscFilenames.add(path.basename(sourcePath));
         movedDiscPaths.add(targetPath);
       }
 
@@ -312,6 +318,24 @@ class RomFolderOrganizerService {
       await File(
         playlistTargetPath,
       ).writeAsString('${playlistLines.join('\n')}\n');
+      final metadataTransfer =
+          await ScraperRepository.transferMetadataToPlaylist(
+            sourceRomPaths: sourceDiscPaths,
+            sourceFilenames: sourceDiscFilenames,
+            playlistFilename: path.basename(playlistTargetPath),
+          );
+      if (metadataTransfer != null) {
+        final systemFolder = await ScraperRepository.getSystemFolderNameById(
+          metadataTransfer.appSystemId,
+        );
+        if (systemFolder != null) {
+          await ScrapedMediaMigrationService.useDiscOneMediaForPlaylist(
+            systemFolder: systemFolder,
+            discFilenames: sourceDiscFilenames,
+            playlistFilename: path.basename(playlistTargetPath),
+          );
+        }
+      }
 
       result.groupsOrganized++;
     }
@@ -435,6 +459,8 @@ class RomFolderOrganizerService {
       final sortedDiscFiles = [...group.discFiles]
         ..sort((a, b) => a.discNumber.compareTo(b.discNumber));
       final playlistLines = <String>[];
+      final sourceDiscPaths = <String>[];
+      final sourceDiscFilenames = <String>[];
       for (final disc in sortedDiscFiles) {
         final filename = entries
             .firstWhere(
@@ -448,6 +474,8 @@ class RomFolderOrganizerService {
         )) {
           result.filesMoved++;
         }
+        sourceDiscPaths.add(disc.file.path);
+        sourceDiscFilenames.add(filename);
         playlistLines.add(filename);
       }
 
@@ -467,6 +495,24 @@ class RomFolderOrganizerService {
         playlistName,
         '${playlistLines.join('\n')}\n',
       )) {
+        final metadataTransfer =
+            await ScraperRepository.transferMetadataToPlaylist(
+              sourceRomPaths: sourceDiscPaths,
+              sourceFilenames: sourceDiscFilenames,
+              playlistFilename: playlistName,
+            );
+        if (metadataTransfer != null) {
+          final systemFolder = await ScraperRepository.getSystemFolderNameById(
+            metadataTransfer.appSystemId,
+          );
+          if (systemFolder != null) {
+            await ScrapedMediaMigrationService.useDiscOneMediaForPlaylist(
+              systemFolder: systemFolder,
+              discFilenames: sourceDiscFilenames,
+              playlistFilename: playlistName,
+            );
+          }
+        }
         result.groupsOrganized++;
       }
     }
