@@ -830,7 +830,8 @@ mixin AppLocale {
   static const String esdeResetComplete = 'esde_reset_complete';
   static const String esdeImportNotEsdeFolder = 'esde_import_not_esde_folder';
   static const String esdeImportNothingFound = 'esde_import_nothing_found';
-  static const String esdeSummarySystemsMatched = 'esde_summary_systems_matched';
+  static const String esdeSummarySystemsMatched =
+      'esde_summary_systems_matched';
   static const String esdeSummaryUnmatched = 'esde_summary_unmatched';
   static const String esdeSummarySkipped = 'esde_summary_skipped';
   static const String esdeSummaryGamesImported = 'esde_summary_games_imported';
