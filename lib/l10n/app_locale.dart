@@ -13,6 +13,7 @@ part 'app_locale_de.dart';
 part 'app_locale_it.dart';
 part 'app_locale_id.dart';
 part 'app_locale_ja.dart';
+part 'app_locale_ko.dart';
 
 mixin AppLocale {
   // ---------------------------------------------------------------------------
@@ -923,6 +924,7 @@ mixin AppLocale {
   static const Map<String, dynamic> it = appLocaleIt;
   static const Map<String, dynamic> id = appLocaleId;
   static const Map<String, dynamic> ja = appLocaleJa;
+  static const Map<String, dynamic> ko = appLocaleKo;
 
   /// Map of supported languages: code -> display name
   static const Map<String, String> supportedLanguages = {
@@ -937,5 +939,6 @@ mixin AppLocale {
     'it': 'Italiano',
     'id': 'Bahasa Indonesia',
     'ja': '日本語',
+    'ko': '한국어',
   };
 }
