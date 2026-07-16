@@ -923,55 +923,42 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     SecondaryDisplayStateData value, {
     bool isTab = false,
   }) {
-    return LayoutBuilder(
-      builder: (context, constraints) => Padding(
-        // The dock is painted above navigation content. Constraining the
-        // center area keeps a system/tab logo and its label fully visible when
-        // NeoStation is moved to the other screen.
-        padding: EdgeInsets.only(
-          bottom: secondaryDockReservedHeight(
-            screenHeight: constraints.maxHeight,
-            dockEnabled: value.dockEnabled,
+    return Center(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 256),
+        child: Column(
+          key: ValueKey(
+            'system_center_${value.systemName}_${value.systemLogo}_$isTab',
           ),
-        ),
-        child: Center(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 256),
-            child: Column(
-              key: ValueKey(
-                'system_center_${value.systemName}_${value.systemLogo}_$isTab',
-              ),
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (!isTab) ...[
-                  _buildSystemLogo(value),
-                  if (value.systemLogo == null) ...[
-                    SizedBox(height: 40.r),
-                    _buildSystemNameContainer(
-                      value.systemName.isEmpty ? 'WELCOME' : value.systemName,
-                    ),
-                  ],
-                ] else ...[
-                  _buildDefaultLogo(),
-                  SizedBox(height: 8.r),
-                  _buildSystemNameContainer(value.systemName.toUpperCase()),
-                ],
-              ],
-            ),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.0, 0.1),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!isTab) ...[
+              _buildSystemLogo(value),
+              if (value.systemLogo == null) ...[
+                SizedBox(height: 40.r),
+                _buildSystemNameContainer(
+                  value.systemName.isEmpty ? 'WELCOME' : value.systemName,
                 ),
-              );
-            },
-          ),
+              ],
+            ] else ...[
+              _buildDefaultLogo(),
+              SizedBox(height: 8.r),
+              _buildSystemNameContainer(value.systemName.toUpperCase()),
+            ],
+          ],
         ),
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.0, 0.1),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
       ),
     );
   }

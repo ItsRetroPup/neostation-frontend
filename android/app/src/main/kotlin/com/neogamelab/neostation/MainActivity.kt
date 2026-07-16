@@ -558,9 +558,16 @@ open class MainActivity: FlutterActivity(), GamepadsCompatibleActivity {
 
     private fun launchOnDefaultDisplay() {
         SecondaryScreenActivity.closeForPrimaryDisplayChange()
+        // Starting from PrimaryScreenActivity would otherwise inherit its
+        // non-default display. The replacement MainActivity would then see
+        // itself on the secondary display and immediately try to move back,
+        // creating an endless activity handoff.
+        val options = android.app.ActivityOptions.makeBasic()
+            .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
         startActivity(
             Intent(this, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+            options.toBundle(),
         )
         finishAndRemoveTask()
     }

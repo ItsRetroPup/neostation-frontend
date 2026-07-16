@@ -45,21 +45,8 @@ class NowPlayingPanel extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // The dock is an overlay, not part of this panel's layout. Reserve a
-        // proportion of the *actual* display height so the Now Playing details
-        // cannot extend beneath it when the main UI is moved to the other
-        // screen, whose aspect ratio may differ from ScreenUtil's 4:3 base.
-        final dockSpace =
-            secondaryDockReservedHeight(
-              screenHeight: constraints.maxHeight,
-              dockEnabled: value.dockEnabled,
-            ) +
-            20.0;
         final availableWidth = math.max(1.0, constraints.maxWidth - 40.0);
-        final availableHeight = math.max(
-          1.0,
-          constraints.maxHeight - dockSpace - 24.0,
-        );
+        final availableHeight = math.max(1.0, constraints.maxHeight - 24.0);
         final scale = math
             .min(availableWidth / 640.0, availableHeight / 400.0)
             .clamp(0.1, 1.25);
@@ -68,7 +55,7 @@ class NowPlayingPanel extends StatelessWidget {
           width: double.infinity,
           height: double.infinity,
           color: scheme.surface,
-          padding: EdgeInsets.fromLTRB(20.0, 12.0, 20.0, dockSpace + 12.0),
+          padding: const EdgeInsets.fromLTRB(20.0, 12.0, 20.0, 12.0),
           child: Align(
             alignment: Alignment.topCenter,
             child: SizedBox(

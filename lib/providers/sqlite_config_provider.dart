@@ -57,6 +57,10 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
   int _lastMuteToggleTrigger = 0;
   int _lastScreenshotTrigger = 0;
   int _lastDockEditTrigger = 0;
+  // Activity placement destroys the current Flutter host. Keep primary-display
+  // writes ordered so Android never launches the replacement activity with a
+  // stale value from SQLite.
+  Future<void> _pendingPrimaryDisplaySave = Future.value();
   // Latched once the main UI paints its first frame; re-pushed to the secondary
   // display so the app dock slides in as the app settles instead of popping in
   // during cold-boot. See [markAppReady].

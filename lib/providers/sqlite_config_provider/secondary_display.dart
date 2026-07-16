@@ -18,12 +18,22 @@ extension SqliteConfigSecondaryDisplay on SqliteConfigProvider {
     if (_config.primaryDisplay == normalized) return;
 
     _config = _config.copyWith(primaryDisplay: normalized);
-    await SqliteConfigService.saveConfig(_config);
+    final configToSave = _config;
+    // A screen swap finishes the current Android task. Queue saves so the
+    // subsequent placement request cannot restart the app from an older DB
+    // value (which would immediately request the opposite display again).
+    _pendingPrimaryDisplaySave = _pendingPrimaryDisplaySave.then(
+      (_) => SqliteConfigService.saveConfig(configToSave),
+    );
+    await _pendingPrimaryDisplaySave;
     _notify();
   }
 
   /// Applies the saved placement after the user leaves Settings.
-  Future<void> applyPrimaryDisplay() => _configurePrimaryDisplay();
+  Future<void> applyPrimaryDisplay() async {
+    await _pendingPrimaryDisplaySave;
+    await _configurePrimaryDisplay();
+  }
 
   Future<void> _configurePrimaryDisplay() async {
     if (!Platform.isAndroid) return;

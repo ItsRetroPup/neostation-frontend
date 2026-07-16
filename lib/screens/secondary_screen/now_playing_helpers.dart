@@ -52,19 +52,6 @@ ColorScheme panelScheme(SecondaryDisplayStateData value) {
   return base.copyWith(surface: bg, onSurface: fg, primary: accent);
 }
 
-/// Height reserved for the persistent dock when it overlays a secondary screen.
-///
-/// The dock uses the legacy ScreenUtil scale, so reserving a percentage of the
-/// actual display height keeps the content above it on both 4:3 and wide
-/// swapped displays.
-double secondaryDockReservedHeight({
-  required double screenHeight,
-  required bool dockEnabled,
-}) {
-  if (!dockEnabled) return 0;
-  return (screenHeight * 0.2).clamp(88.0, 150.0);
-}
-
 Widget buildNowPlayingBoxart(
   String? path, {
   required double width,
