@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:neostation/providers/theme_provider.dart';
 import '../../models/secondary_display_state.dart';
@@ -53,19 +52,37 @@ ColorScheme panelScheme(SecondaryDisplayStateData value) {
   return base.copyWith(surface: bg, onSurface: fg, primary: accent);
 }
 
-Widget buildNowPlayingBoxart(String? path) {
+/// Height reserved for the persistent dock when it overlays a secondary screen.
+///
+/// The dock uses the legacy ScreenUtil scale, so reserving a percentage of the
+/// actual display height keeps the content above it on both 4:3 and wide
+/// swapped displays.
+double secondaryDockReservedHeight({
+  required double screenHeight,
+  required bool dockEnabled,
+}) {
+  if (!dockEnabled) return 0;
+  return (screenHeight * 0.2).clamp(88.0, 150.0);
+}
+
+Widget buildNowPlayingBoxart(
+  String? path, {
+  required double width,
+  required double height,
+  required double borderRadius,
+}) {
   Widget placeholder() => Container(
-    width: 184.r,
-    height: 264.r,
+    width: width,
+    height: height,
     decoration: BoxDecoration(
       color: Colors.white.withValues(alpha: 0.06),
-      borderRadius: BorderRadius.circular(12.r),
+      borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
     ),
     child: Icon(
       Symbols.videogame_asset_rounded,
       color: Colors.white24,
-      size: 64.r,
+      size: width * 0.35,
     ),
   );
 
@@ -74,9 +91,9 @@ Widget buildNowPlayingBoxart(String? path) {
   if (!file.existsSync()) return placeholder();
 
   return ClipRRect(
-    borderRadius: BorderRadius.circular(12.r),
+    borderRadius: BorderRadius.circular(borderRadius),
     child: ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: 360.r, maxWidth: 200.r),
+      constraints: BoxConstraints(maxHeight: height, maxWidth: width),
       child: Image.file(
         file,
         fit: BoxFit.contain,
@@ -91,22 +108,31 @@ Widget buildNowPlayingStat({
   required IconData icon,
   required String label,
   required String text,
+  required double scale,
 }) {
   final muted = scheme.onSurface.withValues(alpha: 0.55);
   return Row(
     children: [
-      Icon(icon, color: muted, size: 20.r),
-      SizedBox(width: 10.r),
+      Icon(icon, color: muted, size: 20 * scale),
+      SizedBox(width: 10 * scale),
       Text(
         '$label  ',
-        style: TextStyle(color: muted, fontSize: 14.r, letterSpacing: 1.r),
-      ),
-      Text(
-        text,
         style: TextStyle(
-          color: scheme.onSurface,
-          fontSize: 16.r,
-          fontWeight: FontWeight.w600,
+          color: muted,
+          fontSize: 14 * scale,
+          letterSpacing: scale,
+        ),
+      ),
+      Flexible(
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: scheme.onSurface,
+            fontSize: 16 * scale,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     ],

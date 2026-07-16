@@ -291,6 +291,7 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
           nowPlayingDimLevel: _config.nowPlayingDimLevel,
           fanartDimLevel: _config.fanartDimLevel,
         );
+        await _configurePrimaryDisplay();
       }
 
       // Defer the startup scan whenever it is enabled. The actual permission

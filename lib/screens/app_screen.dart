@@ -65,6 +65,10 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
   /// Currently active top-level navigation tab index.
   int _selectedTabIndex = 0;
 
+  /// The configured primary display when the Settings tab was entered. Any
+  /// change is applied only after the user leaves Settings.
+  String? _primaryDisplayAtSettingsEntry;
+
   /// Internal state tracker for system selection within the System tab.
   int _selectedSystemIndex = 0;
 
@@ -461,6 +465,22 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
 
   /// Handles tab selection lifecycle including state updates and UI side-effects.
   void _onTabSelected(int index) {
+    final wasInSettings = _selectedTabIndex == 4;
+    final isEnteringSettings = index == 4 && !wasInSettings;
+    final isLeavingSettings = wasInSettings && index != 4;
+    final configProvider = context.read<SqliteConfigProvider>();
+
+    if (isEnteringSettings) {
+      _primaryDisplayAtSettingsEntry = configProvider.config.primaryDisplay;
+    }
+    final shouldApplyPrimaryDisplay =
+        isLeavingSettings &&
+        _primaryDisplayAtSettingsEntry != null &&
+        _primaryDisplayAtSettingsEntry != configProvider.config.primaryDisplay;
+    if (isLeavingSettings) {
+      _primaryDisplayAtSettingsEntry = null;
+    }
+
     setState(() {
       _selectedTabIndex = index;
       _selectedSystemIndex = 0;
@@ -471,6 +491,10 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     // Re-verify navigation focus after tab transition.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _gamepadNav.activate();
+      if (shouldApplyPrimaryDisplay && mounted) {
+        // ignore: unawaited_futures
+        context.read<SqliteConfigProvider>().applyPrimaryDisplay();
+      }
     });
   }
 

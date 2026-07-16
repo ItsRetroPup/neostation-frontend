@@ -107,6 +107,26 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".PrimaryScreenActivity"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="landscape"
+            android:resizeableActivity="true" />
+        <activity
+            android:name=".SecondaryScreenActivity"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="landscape"
+            android:resizeableActivity="true" />
         
         <!-- FileProvider para compartir archivos con otros apps (emuladores standalone) -->
         <provider

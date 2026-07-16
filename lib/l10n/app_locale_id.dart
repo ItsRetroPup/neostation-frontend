@@ -120,6 +120,11 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.nowPlayingDimOff: 'Mati',
   AppLocale.secondarySectionNowPlaying: 'Panel Now Playing',
   AppLocale.secondarySectionDock: 'Dock aplikasi',
+  AppLocale.primaryDisplay: 'Layar NeoStation',
+  AppLocale.primaryDisplaySubtitle:
+      'Layar default perangkat berbeda menurut model',
+  AppLocale.primaryDisplayDefault: 'Layar default perangkat',
+  AppLocale.primaryDisplaySecondary: 'Layar lain',
   AppLocale.screenshotAccess: 'Screen return & screenshots',
   AppLocale.screenshotAccessSubtitle:
       'Restores the Now Playing screen when you close an app opened from the dock, and lets the screenshot button capture the screen (opens Android accessibility settings)',

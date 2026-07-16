@@ -10,6 +10,36 @@ part of '../sqlite_config_provider.dart';
 /// statics `_log`/`_secondaryDisplayChannel` are host-qualified (both required
 /// from an extension).
 extension SqliteConfigSecondaryDisplay on SqliteConfigProvider {
+  /// Persists the display hosting NeoStation's main UI. Android owns activity
+  /// placement; it receives this value over the method channel and never reads
+  /// the Flutter preferences or SQLite database directly.
+  Future<void> updatePrimaryDisplay(String display) async {
+    final normalized = display == 'secondary' ? 'secondary' : 'default';
+    if (_config.primaryDisplay == normalized) return;
+
+    _config = _config.copyWith(primaryDisplay: normalized);
+    await SqliteConfigService.saveConfig(_config);
+    _notify();
+  }
+
+  /// Applies the saved placement after the user leaves Settings.
+  Future<void> applyPrimaryDisplay() => _configurePrimaryDisplay();
+
+  Future<void> _configurePrimaryDisplay() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await SqliteConfigProvider._secondaryDisplayChannel
+          .invokeMethod('configurePrimaryDisplay', {
+            'primaryDisplay': _config.primaryDisplay,
+            'secondaryVisible': !_config.hideBottomScreen,
+          });
+    } on PlatformException catch (e) {
+      SqliteConfigProvider._log.e(
+        'Could not configure primary display: ${e.message}',
+      );
+    }
+  }
+
   /// Toggles the visibility of the secondary display on dual-screen hardware.
   Future<void> updateHideBottomScreen(
     bool value, {

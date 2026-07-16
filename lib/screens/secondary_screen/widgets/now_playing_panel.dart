@@ -1,5 +1,6 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../models/secondary_display_state.dart';
 import '../now_playing_helpers.dart';
@@ -42,103 +43,142 @@ class NowPlayingPanel extends StatelessWidget {
         : value.systemName;
     final scheme = panelScheme(value);
 
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: scheme.surface,
-      child: Stack(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(44.r, 32.r, 44.r, 96.r),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                buildNowPlayingBoxart(value.gameBoxart),
-                SizedBox(width: 32.r),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'NOW PLAYING',
-                        style: TextStyle(
-                          color: scheme.primary,
-                          fontSize: 14.r,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 3.r,
-                        ),
-                      ),
-                      SizedBox(height: 12.r),
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: scheme.onSurface,
-                          fontSize: 30.r,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8.r),
-                      Text(
-                        value.systemName.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: scheme.onSurface.withValues(alpha: 0.7),
-                          fontSize: 16.r,
-                          letterSpacing: 1.5.r,
-                        ),
-                      ),
-                      SizedBox(height: 26.r),
-                      buildNowPlayingStat(
-                        scheme: scheme,
-                        icon: Symbols.schedule_rounded,
-                        label: 'PLAY TIME',
-                        text: formatPlayTime(value.playTimeSeconds),
-                      ),
-                      if (sessionRunning) ...[
-                        SizedBox(height: 12.r),
-                        buildNowPlayingStat(
-                          scheme: scheme,
-                          icon: Symbols.timer_rounded,
-                          label: 'SESSION',
-                          text: sessionTime,
-                        ),
-                      ],
-                      SizedBox(height: 12.r),
-                      buildNowPlayingStat(
-                        scheme: scheme,
-                        icon: Symbols.history_rounded,
-                        label: 'LAST PLAYED',
-                        text: formatLastPlayed(value.lastPlayedMillis),
-                      ),
-                      if (value.screenshotAccessEnabled) ...[
-                        SizedBox(height: 28.r),
-                        _buildScreenshotButton(scheme),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The dock is an overlay, not part of this panel's layout. Reserve a
+        // proportion of the *actual* display height so the Now Playing details
+        // cannot extend beneath it when the main UI is moved to the other
+        // screen, whose aspect ratio may differ from ScreenUtil's 4:3 base.
+        final dockSpace =
+            secondaryDockReservedHeight(
+              screenHeight: constraints.maxHeight,
+              dockEnabled: value.dockEnabled,
+            ) +
+            20.0;
+        final availableWidth = math.max(1.0, constraints.maxWidth - 40.0);
+        final availableHeight = math.max(
+          1.0,
+          constraints.maxHeight - dockSpace - 24.0,
+        );
+        final scale = math
+            .min(availableWidth / 640.0, availableHeight / 400.0)
+            .clamp(0.1, 1.25);
+
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: scheme.surface,
+          padding: EdgeInsets.fromLTRB(20.0, 12.0, 20.0, dockSpace + 12.0),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: 640.0 * scale,
+              height: 400.0 * scale,
+              child: _buildContent(title, scheme, scale),
             ),
           ),
-        ],
-      ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(String title, ColorScheme scheme, double scale) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        buildNowPlayingBoxart(
+          value.gameBoxart,
+          width: 184.0 * scale,
+          height: 264.0 * scale,
+          borderRadius: 12.0 * scale,
+        ),
+        SizedBox(width: 32.0 * scale),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'NOW PLAYING',
+                style: TextStyle(
+                  color: scheme.primary,
+                  fontSize: 14.0 * scale,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 3.0 * scale,
+                ),
+              ),
+              SizedBox(height: 12.0 * scale),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: scheme.onSurface,
+                  fontSize: 30.0 * scale,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 8.0 * scale),
+              Text(
+                value.systemName.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: scheme.onSurface.withValues(alpha: 0.7),
+                  fontSize: 16.0 * scale,
+                  letterSpacing: 1.5 * scale,
+                ),
+              ),
+              SizedBox(height: 26.0 * scale),
+              buildNowPlayingStat(
+                scheme: scheme,
+                icon: Symbols.schedule_rounded,
+                label: 'PLAY TIME',
+                text: formatPlayTime(value.playTimeSeconds),
+                scale: scale,
+              ),
+              if (sessionRunning) ...[
+                SizedBox(height: 12.0 * scale),
+                buildNowPlayingStat(
+                  scheme: scheme,
+                  icon: Symbols.timer_rounded,
+                  label: 'SESSION',
+                  text: sessionTime,
+                  scale: scale,
+                ),
+              ],
+              SizedBox(height: 12.0 * scale),
+              buildNowPlayingStat(
+                scheme: scheme,
+                icon: Symbols.history_rounded,
+                label: 'LAST PLAYED',
+                text: formatLastPlayed(value.lastPlayedMillis),
+                scale: scale,
+              ),
+              if (value.screenshotAccessEnabled) ...[
+                SizedBox(height: 28.0 * scale),
+                _buildScreenshotButton(scheme, scale),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   /// Tappable pill that asks the main engine to capture a system screenshot of
   /// the main screen.
-  Widget _buildScreenshotButton(ColorScheme scheme) {
+  Widget _buildScreenshotButton(ColorScheme scheme, double scale) {
     return GestureDetector(
       onTap: onRequestScreenshot,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20.r, vertical: 12.r),
+        padding: EdgeInsets.symmetric(
+          horizontal: 20.0 * scale,
+          vertical: 12.0 * scale,
+        ),
         decoration: BoxDecoration(
           color: scheme.onSurface.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12.0 * scale),
           border: Border.all(color: scheme.onSurface.withValues(alpha: 0.18)),
         ),
         child: Row(
@@ -147,16 +187,16 @@ class NowPlayingPanel extends StatelessWidget {
             Icon(
               Symbols.photo_camera_rounded,
               color: scheme.onSurface,
-              size: 22.r,
+              size: 22.0 * scale,
             ),
-            SizedBox(width: 12.r),
+            SizedBox(width: 12.0 * scale),
             Text(
               'SCREENSHOT',
               style: TextStyle(
                 color: scheme.onSurface,
-                fontSize: 14.r,
+                fontSize: 14.0 * scale,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 2.r,
+                letterSpacing: 2.0 * scale,
               ),
             ),
           ],

@@ -421,7 +421,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 101;
+  static const int _databaseVersion = 102;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -1225,6 +1225,10 @@ class SqliteService {
     // FIX: Ensure user_screenscraper_config columns are up to date (v29).
     await _ensureScreenScraperConfigColumns(db);
 
+    if (tableNames.contains('user_config')) {
+      await _ensurePrimaryDisplayColumn(db);
+    }
+
     // FIX: Resolve inconsistencies in default emulator assignments.
     if (tableNames.contains('app_systems') &&
         tableNames.contains('app_emulators')) {
@@ -1300,6 +1304,22 @@ class SqliteService {
       }
     } catch (e) {
       _log.e('Minor fix ensuring emulator unique identifier failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Ensures the selected main-display preference exists in user_config.
+  Future<void> _ensurePrimaryDisplayColumn(DatabaseAdapter db) async {
+    try {
+      final tableInfo = await db.rawQuery('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('primary_display')) {
+        await db.execute(
+          "ALTER TABLE user_config ADD COLUMN primary_display TEXT DEFAULT 'default'",
+        );
+      }
+    } catch (e) {
+      _log.e('Minor fix ensuring primary display preference failed: $e');
       rethrow;
     }
   }
@@ -1620,6 +1640,7 @@ class SqliteService {
         ignore_hidden_files INTEGER DEFAULT 1,
         setup_completed INTEGER DEFAULT 0,
         hide_bottom_screen INTEGER DEFAULT 0,
+        primary_display TEXT DEFAULT 'default',
         sfx_enabled INTEGER DEFAULT 1,
         system_sort_by TEXT DEFAULT 'alphabetical',
         system_sort_order TEXT DEFAULT 'asc',
@@ -2351,6 +2372,7 @@ class SqliteService {
     int? ignoreHiddenFiles,
     int? setupCompleted,
     int? hideBottomScreen,
+    String? primaryDisplay,
     int? sfxEnabled,
     int? use12HourClock,
     String? systemSortBy,
@@ -2411,6 +2433,9 @@ class SqliteService {
     }
     if (hideBottomScreen != null) {
       newConfig['hide_bottom_screen'] = hideBottomScreen;
+    }
+    if (primaryDisplay != null) {
+      newConfig['primary_display'] = primaryDisplay;
     }
     if (sfxEnabled != null) {
       newConfig['sfx_enabled'] = sfxEnabled;

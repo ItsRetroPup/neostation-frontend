@@ -134,6 +134,11 @@ class SqliteConfigService {
                 ) ??
                 0) ==
             1,
+        primaryDisplay:
+            userConfig?['primary_display']?.toString().toLowerCase() ==
+                'secondary'
+            ? 'secondary'
+            : 'default',
         sfxEnabled:
             (int.tryParse(userConfig?['sfx_enabled']?.toString() ?? '1') ??
                 1) ==
@@ -222,6 +227,7 @@ class SqliteConfigService {
         ignoreHiddenFiles: config.ignoreHiddenFiles ? 1 : 0,
         setupCompleted: config.setupCompleted ? 1 : 0,
         hideBottomScreen: config.hideBottomScreen ? 1 : 0,
+        primaryDisplay: config.primaryDisplay,
         videoSound: config.videoSound ? 1 : 0,
         sfxEnabled: config.sfxEnabled ? 1 : 0,
         use12HourClock: config.use12HourClock ? 1 : 0,

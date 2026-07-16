@@ -923,42 +923,55 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     SecondaryDisplayStateData value, {
     bool isTab = false,
   }) {
-    return Center(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 256),
-        child: Column(
-          key: ValueKey(
-            'system_center_${value.systemName}_${value.systemLogo}_$isTab',
+    return LayoutBuilder(
+      builder: (context, constraints) => Padding(
+        // The dock is painted above navigation content. Constraining the
+        // center area keeps a system/tab logo and its label fully visible when
+        // NeoStation is moved to the other screen.
+        padding: EdgeInsets.only(
+          bottom: secondaryDockReservedHeight(
+            screenHeight: constraints.maxHeight,
+            dockEnabled: value.dockEnabled,
           ),
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (!isTab) ...[
-              _buildSystemLogo(value),
-              if (value.systemLogo == null) ...[
-                SizedBox(height: 40.r),
-                _buildSystemNameContainer(
-                  value.systemName.isEmpty ? 'WELCOME' : value.systemName,
-                ),
-              ],
-            ] else ...[
-              _buildDefaultLogo(),
-              SizedBox(height: 8.r),
-              _buildSystemNameContainer(value.systemName.toUpperCase()),
-            ],
-          ],
         ),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0.0, 0.1),
-                end: Offset.zero,
-              ).animate(animation),
-              child: child,
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 256),
+            child: Column(
+              key: ValueKey(
+                'system_center_${value.systemName}_${value.systemLogo}_$isTab',
+              ),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (!isTab) ...[
+                  _buildSystemLogo(value),
+                  if (value.systemLogo == null) ...[
+                    SizedBox(height: 40.r),
+                    _buildSystemNameContainer(
+                      value.systemName.isEmpty ? 'WELCOME' : value.systemName,
+                    ),
+                  ],
+                ] else ...[
+                  _buildDefaultLogo(),
+                  SizedBox(height: 8.r),
+                  _buildSystemNameContainer(value.systemName.toUpperCase()),
+                ],
+              ],
             ),
-          );
-        },
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, 0.1),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -1035,10 +1048,8 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
             tween: Tween(begin: 1.0, end: _dockRevealed ? 0.0 : 1.0),
             duration: const Duration(milliseconds: 550),
             curve: Curves.easeOutCubic,
-            builder: (context, t, child) => Transform.translate(
-              offset: Offset(0, t * 140.r),
-              child: child,
-            ),
+            builder: (context, t, child) =>
+                Transform.translate(offset: Offset(0, t * 140.r), child: child),
             child: Stack(
               children: [
                 Positioned(

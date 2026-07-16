@@ -103,6 +103,10 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.nowPlayingDimOff: '关闭',
   AppLocale.secondarySectionNowPlaying: 'Now Playing 面板',
   AppLocale.secondarySectionDock: '应用坞',
+  AppLocale.primaryDisplay: 'NeoStation 屏幕',
+  AppLocale.primaryDisplaySubtitle: '设备默认屏幕因机型而异',
+  AppLocale.primaryDisplayDefault: '设备默认屏幕',
+  AppLocale.primaryDisplaySecondary: '另一块屏幕',
   AppLocale.screenshotAccess: 'Screen return & screenshots',
   AppLocale.screenshotAccessSubtitle:
       'Restores the Now Playing screen when you close an app opened from the dock, and lets the screenshot button capture the screen (opens Android accessibility settings)',

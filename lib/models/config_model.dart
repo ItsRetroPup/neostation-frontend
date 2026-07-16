@@ -78,6 +78,11 @@ class ConfigModel {
   /// Whether to hide the secondary screen interface (useful for dual-monitor setups).
   final bool hideBottomScreen;
 
+  /// The Android display that hosts NeoStation's main interface on dual-screen
+  /// devices: `default` is the OS default display and `secondary` is the other
+  /// connected display.
+  final String primaryDisplay;
+
   /// Whether to play background audio/music from game preview videos.
   final bool videoSound;
 
@@ -161,6 +166,7 @@ class ConfigModel {
     this.ignoreHiddenFiles = true,
     this.setupCompleted = false,
     this.hideBottomScreen = false,
+    this.primaryDisplay = 'default',
     this.videoSound = false,
     this.sfxEnabled = true,
     this.use12HourClock = false,
@@ -244,6 +250,13 @@ class ConfigModel {
       hideBottomScreen:
           (json['hideBottomScreen'] ?? false).toString().toLowerCase() ==
           'true',
+      primaryDisplay:
+          (json['primaryDisplay'] ?? json['primary_display'] ?? 'default')
+                  .toString()
+                  .toLowerCase() ==
+              'secondary'
+          ? 'secondary'
+          : 'default',
       videoSound:
           (json['videoSound'] ?? false).toString().toLowerCase() == 'true' ||
           (json['video_sound'] ?? 0).toString() == '1' ||
@@ -351,6 +364,7 @@ class ConfigModel {
       'ignoreHiddenFiles': ignoreHiddenFiles,
       'setupCompleted': setupCompleted,
       'hideBottomScreen': hideBottomScreen,
+      'primaryDisplay': primaryDisplay,
       'videoSound': videoSound,
       'sfxEnabled': sfxEnabled,
       'use12HourClock': use12HourClock,
@@ -390,6 +404,7 @@ class ConfigModel {
     bool? ignoreHiddenFiles,
     bool? setupCompleted,
     bool? hideBottomScreen,
+    String? primaryDisplay,
     bool? videoSound,
     bool? sfxEnabled,
     bool? use12HourClock,
@@ -426,6 +441,7 @@ class ConfigModel {
       ignoreHiddenFiles: ignoreHiddenFiles ?? this.ignoreHiddenFiles,
       setupCompleted: setupCompleted ?? this.setupCompleted,
       hideBottomScreen: hideBottomScreen ?? this.hideBottomScreen,
+      primaryDisplay: primaryDisplay ?? this.primaryDisplay,
       videoSound: videoSound ?? this.videoSound,
       sfxEnabled: sfxEnabled ?? this.sfxEnabled,
       use12HourClock: use12HourClock ?? this.use12HourClock,
@@ -455,6 +471,6 @@ class ConfigModel {
 
   @override
   String toString() {
-    return 'ConfigModel(romFolders: ${romFolders.length}, detectedSystems: ${detectedSystems.length}, emulators: ${emulators.length}, showGameInfo: $showGameInfo, isFullscreen: $isFullscreen, bartopExitPoweroff: $bartopExitPoweroff, scanOnStartup: $scanOnStartup, ignoreHiddenFiles: $ignoreHiddenFiles, setupCompleted: $setupCompleted, hideBottomScreen: $hideBottomScreen, videoSound: $videoSound)';
+    return 'ConfigModel(romFolders: ${romFolders.length}, detectedSystems: ${detectedSystems.length}, emulators: ${emulators.length}, showGameInfo: $showGameInfo, isFullscreen: $isFullscreen, bartopExitPoweroff: $bartopExitPoweroff, scanOnStartup: $scanOnStartup, ignoreHiddenFiles: $ignoreHiddenFiles, setupCompleted: $setupCompleted, hideBottomScreen: $hideBottomScreen, primaryDisplay: $primaryDisplay, videoSound: $videoSound)';
   }
 }

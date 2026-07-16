@@ -117,6 +117,11 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.nowPlayingDimOff: 'Off',
   AppLocale.secondarySectionNowPlaying: 'Now Playing panel',
   AppLocale.secondarySectionDock: 'App dock',
+  AppLocale.primaryDisplay: 'NeoStation display',
+  AppLocale.primaryDisplaySubtitle:
+      'The device default display varies by model',
+  AppLocale.primaryDisplayDefault: 'Device default display',
+  AppLocale.primaryDisplaySecondary: 'Other display',
   AppLocale.screenshotAccess: 'Screen return & screenshots',
   AppLocale.screenshotAccessSubtitle:
       'Restores the Now Playing screen when you close an app opened from the dock, and lets the screenshot button capture the screen (opens Android accessibility settings)',
