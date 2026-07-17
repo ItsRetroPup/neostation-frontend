@@ -285,6 +285,7 @@ void main() async {
       MapLocale('it', AppLocale.it),
       MapLocale('id', AppLocale.id),
       MapLocale('ja', AppLocale.ja),
+      MapLocale('ko', AppLocale.ko),
     ],
     initLanguageCode: initLang.isNotEmpty ? initLang : 'en',
   );
@@ -389,6 +390,7 @@ Future<void> subDisplay() async {
       MapLocale('it', AppLocale.it),
       MapLocale('id', AppLocale.id),
       MapLocale('ja', AppLocale.ja),
+      MapLocale('ko', AppLocale.ko),
     ],
     initLanguageCode: initLang.isNotEmpty ? initLang : 'en',
   );
