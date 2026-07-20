@@ -27,7 +27,7 @@ class SystemCard extends StatefulWidget {
     required this.info,
     this.onTap,
     this.isSelected = false,
-    this.footerLogoHeight,
+    this.backgroundCacheWidth = 512,
   });
 
   /// The system or game metadata resolved for this card.
@@ -39,10 +39,9 @@ class SystemCard extends StatefulWidget {
   /// Whether this card currently has visual focus in the grid.
   final bool isSelected;
 
-  /// Optional override for the system footer logo height. When null, the grid
-  /// default (30.r) is used. Larger values are useful for big cards such as
-  /// the system carousel.
-  final double? footerLogoHeight;
+  /// Decode width for the card's background image. Defaults to 512 (grid
+  /// cards); the carousel passes 1024 since its cards are much larger.
+  final int backgroundCacheWidth;
 
   @override
   State<SystemCard> createState() => _SystemCardState();
@@ -248,7 +247,12 @@ class _SystemCardState extends State<SystemCard> {
               highlightColor: Colors.transparent,
               splashColor: Colors.transparent,
               child: Padding(
-                padding: EdgeInsets.all(4.r),
+                padding: EdgeInsets.only(
+                  top: 4.r,
+                  bottom: 0.r,
+                  left: 4.r,
+                  right: 4.r,
+                ),
                 child: widget.info.isGame
                     ? Stack(
                         key: _contentStackKey,
@@ -374,7 +378,7 @@ class _SystemCardState extends State<SystemCard> {
                 File(activeBgPath),
                 key: ValueKey('${activeBgPath}_${widget.info.imageVersion}'),
                 fit: BoxFit.cover,
-                cacheWidth: widget.info.isGame ? 1024 : 256,
+                cacheWidth: widget.backgroundCacheWidth,
                 errorBuilder: (context, error, stackTrace) => Stack(
                   children: [
                     Container(color: Theme.of(context).colorScheme.surface),
@@ -417,7 +421,6 @@ class _SystemCardState extends State<SystemCard> {
     double? height,
     Color? color,
   }) {
-    height ??= 32.r;
     final customLogoPath = widget.info.customLogoPath;
     final hasCustomLogo = customLogoPath != null && customLogoPath.isNotEmpty;
 
@@ -434,7 +437,7 @@ class _SystemCardState extends State<SystemCard> {
         Image.file(
           File(customLogoPath),
           key: ValueKey('${customLogoPath}_${widget.info.imageVersion}'),
-          height: height,
+          height: height ?? 32.r,
           cacheWidth: 256,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => Image.asset(
@@ -445,7 +448,7 @@ class _SystemCardState extends State<SystemCard> {
             errorBuilder: (context, error, stackTrace) => SystemLogoFallback(
               title: widget.info.title,
               shortName: widget.info.shortName,
-              height: 24.r,
+              height: height ?? 32.r,
             ),
           ),
         ),
@@ -455,13 +458,13 @@ class _SystemCardState extends State<SystemCard> {
     return buildLogo(
       Image.asset(
         assetLogoPath,
-        height: height,
+        height: height ?? 32.r,
         cacheWidth: 256,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => SystemLogoFallback(
           title: widget.info.title,
           shortName: widget.info.shortName,
-          height: 24.r,
+          height: height ?? 32.r,
         ),
       ),
     );
@@ -622,32 +625,36 @@ class _SystemCardState extends State<SystemCard> {
   }
 
   /// Renders a bottom footer with the system logo for non-game system cards.
+  ///
+  /// The footer expands to fill the remaining space below the square artwork,
+  /// and the logo is auto-sized to fit while keeping its aspect ratio.
   Widget _buildSystemFooter(BuildContext context) {
-    if (widget.info.hideLogo) return const SizedBox.shrink();
+    final assetLogoPath = _resolveSystemLogoPath();
 
+    return Expanded(
+      child: Container(
+        alignment: Alignment.center,
+        padding: EdgeInsets.only(top: 1.r, bottom: 1.r, left: 2.r, right: 2.r),
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: _buildSystemLogo(
+            assetLogoPath,
+            height: 128.r,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Resolves the logo asset path for this system.
+  String _resolveSystemLogoPath() {
     final resolvedLogoFolder = widget.info.primaryFolderName?.isNotEmpty == true
         ? widget.info.primaryFolderName!
         : (widget.info.folderName?.isNotEmpty == true
               ? widget.info.folderName!
               : 'all');
-    final assetLogoPath = 'assets/images/logos/$resolvedLogoFolder.webp';
-
-    final logoHeight = widget.footerLogoHeight ?? 30.r;
-    final footerHeight = widget.footerLogoHeight != null
-        ? logoHeight + 4.r
-        : 32.r;
-
-    return Container(
-      height: footerHeight,
-      padding: EdgeInsets.only(left: 0.r, right: 0.r, top: 4.r, bottom: 0.r),
-      child: Center(
-        child: _buildSystemLogo(
-          assetLogoPath,
-          height: logoHeight,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-    );
+    return 'assets/images/logos/$resolvedLogoFolder.webp';
   }
 }
 

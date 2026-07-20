@@ -4,11 +4,12 @@ import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/services/sfx_service.dart';
+import 'package:neostation/themes/app_themes.dart';
 import '../../../../models/system_model.dart';
 import '../../../../models/game_model.dart';
 import '../../../../models/retro_achievements_game_info.dart';
-import '../../../../models/neo_sync_models.dart';
 import '../../../../sync/i_sync_provider.dart';
+import '../../../../themes/corner_radii.dart';
 import '../../../../utils/game_utils.dart';
 import '../../../../widgets/marquee_text.dart';
 import '../../music/music_player.dart';
@@ -67,7 +68,7 @@ class GameDetailsFooter extends StatelessWidget {
       bottom: -0.5.r,
       left: -0.5.r,
       right: -0.5.r,
-      height: 98.r,
+      height: 105.r,
       child: ClipRRect(
         child: RepaintBoundary(
           child: Container(
@@ -76,14 +77,10 @@ class GameDetailsFooter extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Identity Section: Title, Rating, and ROM Filename.
+                // Identity Section: Title and ROM Filename.
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    if (game.rating > 0) ...[
-                      _SteamStyleRating(game: game),
-                      SizedBox(width: 8.r),
-                    ],
                     Expanded(
                       child: RepaintBoundary(
                         child: Column(
@@ -99,9 +96,9 @@ class GameDetailsFooter extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                                 shadows: [
                                   Shadow(
-                                    blurRadius: 2.r,
+                                    blurRadius: 1.r,
                                     color: Colors.black,
-                                    offset: const Offset(0, 0),
+                                    offset: const Offset(2, 2),
                                   ),
                                 ],
                               ),
@@ -118,10 +115,8 @@ class GameDetailsFooter extends StatelessWidget {
                                   height: 1.15,
                                   shadows: [
                                     Shadow(
-                                      blurRadius: 2.r,
-                                      color: Colors.black.withValues(
-                                        alpha: 0.45,
-                                      ),
+                                      blurRadius: 1.r,
+                                      color: Colors.black,
                                       offset: const Offset(2, 2),
                                     ),
                                   ],
@@ -140,37 +135,20 @@ class GameDetailsFooter extends StatelessWidget {
                 ExcludeFocus(
                   child: Row(
                     children: [
-                      ...(() {
-                        final List<Widget> leftSide = [];
+                      // Game rating.
+                      if (game.rating > 0) ...[
+                        _SteamStyleRating(game: game),
+                        SizedBox(width: 12.r),
+                      ],
 
-                        // Cloud Sync Status.
-                        final neoSync = _buildCompactNeoSyncIndicator(context);
-                        if (neoSync is! SizedBox ||
-                            (neoSync.width != null && neoSync.width! > 0)) {
-                          leftSide.add(Expanded(flex: 1, child: neoSync));
-                        }
-
-                        // RetroAchievements Progress.
-                        final ach = _buildCompactAchievementsIndicator(context);
-                        if (ach is! SizedBox ||
-                            (ach.width != null && ach.width! > 0)) {
-                          if (leftSide.isNotEmpty) {
-                            leftSide.add(SizedBox(width: 8.r));
-                          }
-                          leftSide.add(Expanded(flex: 1, child: ach));
-                        }
-
-                        return leftSide;
-                      })(),
+                      // RetroAchievements Progress.
+                      _buildCompactAchievementsIndicator(context),
 
                       const Spacer(),
                       SizedBox(width: 8.r),
 
                       // Primary Launch Control.
-                      Expanded(
-                        flex: 1,
-                        child: _buildPlayButtonCompact(context),
-                      ),
+                      _buildPlayButtonCompact(context),
                     ],
                   ),
                 ),
@@ -192,16 +170,22 @@ class GameDetailsFooter extends StatelessWidget {
         final isFocused = Focus.of(context).hasFocus;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: 40.r,
+          width: 120.r,
+          height: 45.r,
           decoration: BoxDecoration(
             color: isFocused
                 ? const Color(0xFF36F184)
                 : const Color(0xFF2ECC71),
-            borderRadius: BorderRadius.circular(8.r),
+            borderRadius:
+                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+                BorderRadius.circular(14.r),
+            border: Border.all(color: Color(0xFF36F184), width: 1.r),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 2.r,
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 4.r,
                 offset: Offset(2.0.r, 2.0.r),
               ),
             ],
@@ -214,20 +198,22 @@ class GameDetailsFooter extends StatelessWidget {
               hoverColor: Colors.transparent,
               highlightColor: Colors.transparent,
               splashColor: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius:
+                  Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+                  BorderRadius.circular(14.r),
               onTap: () {
                 SfxService().playEnterSound();
                 onPlayGame();
               },
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12.r),
+                padding: EdgeInsets.only(left: 0.r, right: 10.r),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
                       'assets/images/gamepad/Xbox_A_button.png',
-                      width: 22.r,
-                      height: 22.r,
+                      width: 32.r,
+                      height: 32.r,
                       color: Theme.of(context).colorScheme.onPrimary,
                     ),
                     SizedBox(width: 8.r),
@@ -256,6 +242,8 @@ class GameDetailsFooter extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               height: 1.2,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                       ],
                     ),
@@ -267,175 +255,6 @@ class GameDetailsFooter extends StatelessWidget {
         );
       },
     );
-  }
-
-  /// Resolves the current cloud synchronization state into a compact visual badge.
-  ///
-  /// Handles transition states (syncing), error states (quota, network), and
-  /// arbitration states (conflict detected).
-  Widget _buildCompactNeoSyncIndicator(BuildContext context) {
-    if (!system.neosync.sync) return const SizedBox.shrink();
-    if (system.folderName == 'android') return const SizedBox.shrink();
-
-    final isNeoSyncConnected = syncProvider.isAuthenticated;
-    if (!isNeoSyncConnected) return const SizedBox.shrink();
-    if (system.screenscraperId == null || system.screenscraperId == 0) {
-      return const SizedBox.shrink();
-    }
-
-    final gameState = syncProvider.getGameSyncState(game.romname);
-    final isSyncing = syncProvider.status == SyncProviderStatus.syncing;
-    final isCloudSyncDisabled = cloudSyncEnabled == false;
-
-    Color statusColor;
-    IconData statusIcon;
-    String statusText;
-
-    if (isCloudSyncDisabled) {
-      statusColor = Theme.of(context).colorScheme.onSurface;
-      statusIcon = Symbols.cloud_off_rounded;
-      statusText = AppLocale.cloudSyncDisabled.getString(context);
-    } else if (isSyncing) {
-      statusColor = Colors.lightBlue;
-      statusIcon = Symbols.sync_rounded;
-      statusText = AppLocale.syncing.getString(context);
-    } else if (syncProvider.lastError != null) {
-      statusColor = const Color(0xFFE53E3E);
-      statusIcon = Symbols.error_outline_rounded;
-      statusText = AppLocale.error.getString(context);
-    } else if (gameState != null) {
-      switch (gameState.status) {
-        case GameSyncStatus.upToDate:
-          statusColor = const Color(0xFF79AA41);
-          statusIcon = Symbols.check_circle_outline_rounded;
-          statusText = AppLocale.synced.getString(context);
-          break;
-        case GameSyncStatus.localOnly:
-          statusColor = Colors.orange;
-          statusIcon = Symbols.cloud_upload_rounded;
-          statusText = AppLocale.upload.getString(context);
-          break;
-        case GameSyncStatus.cloudOnly:
-          statusColor = Colors.lightBlue;
-          statusIcon = Symbols.cloud_download_rounded;
-          statusText = AppLocale.download.getString(context);
-          break;
-        case GameSyncStatus.syncing:
-          statusColor = Colors.lightBlue;
-          statusIcon = Symbols.sync_rounded;
-          statusText = AppLocale.syncing.getString(context);
-          break;
-        case GameSyncStatus.disabled:
-          if (!isCloudSyncDisabled) {
-            statusColor = Colors.lightBlue;
-            statusIcon = Symbols.sync_rounded;
-            statusText = AppLocale.ready.getString(context);
-          } else {
-            statusColor = Colors.grey;
-            statusIcon = Symbols.cloud_off_rounded;
-            statusText = AppLocale.cloudSyncDisabled.getString(context);
-          }
-          break;
-        case GameSyncStatus.quotaExceeded:
-          statusColor = Colors.redAccent;
-          statusIcon = Symbols.storage_rounded;
-          statusText = AppLocale.quota.getString(context);
-          break;
-        case GameSyncStatus.noSaveFound:
-          statusColor = Colors.grey;
-          statusIcon = Symbols.save_alt_rounded;
-          statusText = AppLocale.noSave.getString(context);
-          break;
-        case GameSyncStatus.missingEmulator:
-          statusColor = Colors.orange;
-          statusIcon = Symbols.videogame_asset_off_rounded;
-          statusText = AppLocale.noEmulator.getString(context);
-          break;
-        case GameSyncStatus.error:
-          statusColor = Colors.red;
-          statusIcon = Symbols.error_outline_rounded;
-          statusText = AppLocale.error.getString(context);
-          break;
-      }
-    } else {
-      statusColor = Colors.lightBlue;
-      statusIcon = Symbols.sync_rounded;
-      statusText = AppLocale.ready.getString(context);
-    }
-
-    Widget neoSyncContent = AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      height: 40.r,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 2.r,
-            offset: Offset(2.0.r, 2.0.r),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 6.r),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Render a rotating sync icon during active I/O.
-                statusIcon == Symbols.sync_rounded && syncIconController != null
-                    ? AnimatedBuilder(
-                        animation: syncIconController!,
-                        builder: (context, child) {
-                          return Transform.rotate(
-                            angle: syncIconController!.value * 2 * 3.14159,
-                            child: Icon(
-                              statusIcon,
-                              color: statusColor,
-                              size: 16.r,
-                            ),
-                          );
-                        },
-                      )
-                    : Icon(statusIcon, color: statusColor, size: 16.r),
-                if (gameState?.status == GameSyncStatus.error) ...[
-                  SizedBox(width: 4.r),
-                  Image.asset(
-                    'assets/images/gamepad/Xbox_L-click.png',
-                    width: 16.r,
-                    height: 16.r,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      Symbols.radio_button_checked_rounded,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      size: 16.r,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            SizedBox(height: 2.r),
-            Text(
-              statusText.toUpperCase(),
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 8.r,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return neoSyncContent;
   }
 
   /// Resolves the current RetroAchievements progress into a compact visual badge.
@@ -479,28 +298,41 @@ class GameDetailsFooter extends StatelessWidget {
         splashColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8.r),
         child: Container(
-          height: 40.r,
+          width: 120.r,
+          height: 45.r,
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(8.r),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+            borderRadius:
+                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+                BorderRadius.circular(14.r),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+              width: 1.r,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 2.r,
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 4.r,
                 offset: Offset(2.0.r, 2.0.r),
               ),
             ],
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 4.r),
+            padding: EdgeInsets.symmetric(horizontal: 4.r, vertical: 4.r),
             child: Row(
               children: [
                 // RetroAchievements game icon.
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(6.r),
+                  borderRadius:
+                      Theme.of(
+                        context,
+                      ).extension<CornerRadii>()?.radiusInternal ??
+                      BorderRadius.circular(14.r),
                   child: Container(
-                    width: 28.r,
-                    height: 28.r,
+                    width: 32.r,
+                    height: 32.r,
                     color: theme.colorScheme.surface,
                     child: gameIconUrl != null
                         ? Image.network(
@@ -519,26 +351,30 @@ class GameDetailsFooter extends StatelessWidget {
                           ),
                   ),
                 ),
-                SizedBox(width: 8.r),
+                SizedBox(width: 4.r),
                 // Progress bar and achievement count.
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 70.r,
+                      child: Text(
                         progressText.toUpperCase(),
                         style: TextStyle(
                           color: theme.colorScheme.onSurface,
-                          fontSize: 8.r,
+                          fontSize: 10.r,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4.r),
-                      ClipRRect(
+                    ),
+                    SizedBox(height: 4.r),
+                    SizedBox(
+                      width: 70.r,
+                      child: ClipRRect(
                         borderRadius: BorderRadius.circular(4.r),
                         child: LinearProgressIndicator(
                           value: isLoadingAchievements ? null : progress,
@@ -550,8 +386,8 @@ class GameDetailsFooter extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -573,36 +409,45 @@ class _SteamStyleRating extends StatelessWidget {
     // Normalizes a 0-20 score to a 0.0-10.0 scale for color interpolation.
     final ratingValue = (game.rating / 2).clamp(0.0, 10.0);
     final colorRatio = (ratingValue - 1) / 9;
+    final customColors = AppThemes.getCustomColors(context);
     final ratingColor = Color.lerp(
-      Colors.redAccent,
-      Colors.lightGreenAccent,
+      customColors.errorColor,
+      customColors.successColor,
       colorRatio,
     )!;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.r, vertical: 6.r),
+      height: 45.r,
+      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
       decoration: BoxDecoration(
-        color: Colors.black87,
-        borderRadius: BorderRadius.circular(6.r),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+        borderRadius:
+            Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
+            BorderRadius.circular(14.r),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline,
+          width: 1.r,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 2.r,
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.5),
+            blurRadius: 3.r,
             offset: Offset(2.0.r, 2.0.r),
           ),
         ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(Symbols.star_rounded, color: ratingColor, size: 24.r),
           SizedBox(width: 6.r),
           Text(
             ratingValue.toStringAsFixed(1),
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 20.r,
-              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 22.r,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],

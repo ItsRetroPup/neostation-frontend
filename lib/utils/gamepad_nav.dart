@@ -64,6 +64,11 @@ class GamepadNavigation {
   final VoidCallback? onLeftBumper;
   final VoidCallback? onRightBumper;
 
+  /// Optional override that reports whether a text field is currently focused
+  /// in the active UI layer. When provided, it takes precedence over the global
+  /// focus search, preventing off-stage text fields from blocking navigation.
+  final bool Function()? isTextFieldFocused;
+
   static final _log = LoggerService.instance;
 
   /// When true, all raw input events are logged for diagnostic purposes.
@@ -138,6 +143,7 @@ class GamepadNavigation {
     this.onSelectButton,
     this.onLeftBumper,
     this.onRightBumper,
+    this.isTextFieldFocused,
   });
 
   /// Starts listening for gamepad and keyboard events.
@@ -162,7 +168,7 @@ class GamepadNavigation {
       cancelOnError: false,
     );
 
-    if (isDesktop && !_keyboardInitialized) {
+    if (!_keyboardInitialized) {
       ServicesBinding.instance.keyboard.addHandler(_handleKeyEvent);
       _keyboardInitialized = true;
     }
@@ -254,7 +260,7 @@ class GamepadNavigation {
     if (wasInactive) {
       _activationTime = DateTime.now();
       // Clear any stale repeat timers that may have survived a prior deactivation.
-      _cancelAllRepeatTimers();
+      cancelAllRepeatTimers();
     }
     _lastEventTime = null;
     _lastDirectionalEventTime = null;
@@ -266,11 +272,14 @@ class GamepadNavigation {
   void deactivate() {
     _isActive = false;
     _activationTime = null;
-    _cancelAllRepeatTimers();
+    cancelAllRepeatTimers();
   }
 
-  /// Internal cleanup for auto-repeat logic.
-  void _cancelAllRepeatTimers() {
+  /// Cancels all active auto-repeat timers.
+  ///
+  /// Called when navigation lands on a text field so held directional inputs
+  /// do not loop indefinitely.
+  void cancelAllRepeatTimers() {
     for (final timer in _repeatTimers.values) {
       timer?.cancel();
     }
@@ -347,7 +356,7 @@ class GamepadNavigation {
   void dispose() {
     _subscription?.cancel();
     _subscription = null;
-    _cancelAllRepeatTimers();
+    cancelAllRepeatTimers();
 
     if (_keyboardInitialized && isDesktop) {
       ServicesBinding.instance.keyboard.removeHandler(_handleKeyEvent);
@@ -645,6 +654,10 @@ class GamepadNavigation {
 
   /// Internal helper to detect if any TextField currently holds focus.
   bool _isTextFieldFocused() {
+    if (isTextFieldFocused != null) {
+      return isTextFieldFocused!();
+    }
+
     final primaryFocus = FocusManager.instance.primaryFocus;
     if (primaryFocus == null || primaryFocus.context == null) return false;
 
@@ -659,9 +672,7 @@ class GamepadNavigation {
 
   /// Orchestrates the processing of a raw [KeyEvent] from the keyboard.
   bool _handleKeyEvent(KeyEvent event) {
-    if (!_isActive ||
-        !isDesktop ||
-        (event is! KeyDownEvent && event is! KeyUpEvent)) {
+    if (!_isActive || (event is! KeyDownEvent && event is! KeyUpEvent)) {
       return false;
     }
 
@@ -682,6 +693,7 @@ class GamepadNavigation {
     }
 
     if (_isTextFieldFocused()) {
+      cancelAllRepeatTimers();
       return false;
     }
 
@@ -812,21 +824,60 @@ class GamepadNavigation {
     }
 
     // Mutually exclusive directions: stop the opposite direction if active.
-    if (key == GamepadInputType.dpadUp) {
+    final bool isUp =
+        key == GamepadInputType.dpadUp ||
+        key == LogicalKeyboardKey.arrowUp ||
+        key == LogicalKeyboardKey.keyW;
+    final bool isDown =
+        key == GamepadInputType.dpadDown ||
+        key == LogicalKeyboardKey.arrowDown ||
+        key == LogicalKeyboardKey.keyS;
+    final bool isLeft =
+        key == GamepadInputType.dpadLeft ||
+        key == LogicalKeyboardKey.arrowLeft ||
+        key == LogicalKeyboardKey.keyA;
+    final bool isRight =
+        key == GamepadInputType.dpadRight ||
+        key == LogicalKeyboardKey.arrowRight ||
+        key == LogicalKeyboardKey.keyD;
+
+    if (isUp) {
       _stopRepeatTimer(GamepadInputType.dpadDown);
+      _stopRepeatTimer(LogicalKeyboardKey.arrowDown);
+      _stopRepeatTimer(LogicalKeyboardKey.keyS);
     }
-    if (key == GamepadInputType.dpadDown) {
+    if (isDown) {
       _stopRepeatTimer(GamepadInputType.dpadUp);
+      _stopRepeatTimer(LogicalKeyboardKey.arrowUp);
+      _stopRepeatTimer(LogicalKeyboardKey.keyW);
     }
-    if (key == GamepadInputType.dpadLeft) {
+    if (isLeft) {
       _stopRepeatTimer(GamepadInputType.dpadRight);
+      _stopRepeatTimer(LogicalKeyboardKey.arrowRight);
+      _stopRepeatTimer(LogicalKeyboardKey.keyD);
     }
-    if (key == GamepadInputType.dpadRight) {
+    if (isRight) {
       _stopRepeatTimer(GamepadInputType.dpadLeft);
+      _stopRepeatTimer(LogicalKeyboardKey.arrowLeft);
+      _stopRepeatTimer(LogicalKeyboardKey.keyA);
     }
 
-    if (_runNavAction(action, false)) {
+    final moved = _runNavAction(action, false);
+    if (moved) {
       SfxService().playNavSound();
+    }
+
+    // Don't auto-repeat while a text field is focused. Repeating would keep
+    // moving focus away from the field and create an infinite navigation loop.
+    if (_isTextFieldFocused()) {
+      cancelAllRepeatTimers();
+      return;
+    }
+
+    // Stop repeating once we hit a boundary so the selection doesn't feel stuck.
+    if (!moved) {
+      cancelAllRepeatTimers();
+      return;
     }
 
     _startRepeatTimer(key, action);

@@ -502,22 +502,12 @@ extension _Tabs on _SystemEmulatorSettingsDialogState {
           value: _system.hideBrackets,
           onChanged: _toggleHideBrackets,
         ),
-        SizedBox(height: 4.r),
-        _buildSwitchItem(
-          index: 4,
-          key: _generalItemKeys[4],
-          title: AppLocale.hideSystemLogo.getString(context),
-          subtitle: AppLocale.hideSystemLogoSubtitle.getString(context),
-          value: _system.hideLogo,
-          onChanged: _toggleHideLogo,
-        ),
-
         if (widget.system.folderName != 'all' &&
             widget.system.folderName != 'android') ...[
           SizedBox(height: 4.r),
           _buildSwitchItem(
-            index: 5,
-            key: _generalItemKeys[5],
+            index: 4,
+            key: _generalItemKeys[4],
             title: AppLocale.recursiveScan.getString(context),
             subtitle: AppLocale.recursiveScanSubtitle.getString(context),
             value: _system.recursiveScan,

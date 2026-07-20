@@ -102,8 +102,8 @@ class _RandomGameDialogState extends State<RandomGameDialog>
           widget.onPlayGame(_selectedGame!);
         }
       },
-      // Gamepad SELECT (View): Restart the randomization process.
-      onSelectButton: () {
+      // Gamepad X: Restart the randomization process.
+      onXButton: () {
         if (!_isAnimating && _showPlayButton) {
           _reroll();
         }
@@ -321,7 +321,7 @@ class _RandomGameDialogState extends State<RandomGameDialog>
                         BlendMode.srcIn,
                       ),
                       child: Image.asset(
-                        'assets/images/gamepad/Xbox_View_button.png',
+                        'assets/images/gamepad/Xbox_X_button.png',
                         width: 14.r,
                         height: 14.r,
                         errorBuilder: (context, e, s) => Icon(

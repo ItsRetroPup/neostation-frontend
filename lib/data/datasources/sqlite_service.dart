@@ -2561,10 +2561,6 @@ class SqliteService {
     await _updateSystemSetting(systemId, 'hide_brackets', enabled ? 1 : 0);
   }
 
-  static Future<void> setSystemHideLogo(String systemId, bool enabled) async {
-    await _updateSystemSetting(systemId, 'hide_logo', enabled ? 1 : 0);
-  }
-
   static Future<void> setSystemPreferFileName(
     String systemId,
     bool enabled,
@@ -2616,6 +2612,10 @@ class SqliteService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     });
+
+    // Invalidate the systems cache so subsequent reads reflect the updated
+    // setting (e.g. hide_logo) instead of returning a stale cached model.
+    _cachedSystems = null;
   }
 
   /// Sets custom images for a system.
