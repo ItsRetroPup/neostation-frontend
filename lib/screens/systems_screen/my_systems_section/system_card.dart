@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../../../themes/corner_radii.dart';
-import '../../../widgets/marquee_text.dart';
 import '../../../widgets/shaders/shader_gif_widget.dart';
 import '../../../widgets/shaders/music_card_shader_background.dart';
 import '../../../utils/image_utils.dart';
@@ -254,12 +253,18 @@ class _SystemCardState extends State<SystemCard> {
                   right: 4.r,
                 ),
                 child: widget.info.isGame
-                    ? Stack(
-                        key: _contentStackKey,
+                    ? Column(
                         children: [
-                          _buildSystemBackground(),
-                          _buildMainBodyContent(context, true),
-                          _buildRecentFooter(context),
+                          Expanded(
+                            child: Stack(
+                              key: _contentStackKey,
+                              children: [
+                                _buildSystemBackground(),
+                                _buildGameMainContent(context),
+                              ],
+                            ),
+                          ),
+                          _buildGameFooter(context),
                         ],
                       )
                     : Column(
@@ -268,10 +273,7 @@ class _SystemCardState extends State<SystemCard> {
                             aspectRatio: 1,
                             child: Stack(
                               key: _contentStackKey,
-                              children: [
-                                _buildSystemBackground(),
-                                _buildMainBodyContent(context, true),
-                              ],
+                              children: [_buildSystemBackground()],
                             ),
                           ),
                           _buildSystemFooter(context),
@@ -470,156 +472,86 @@ class _SystemCardState extends State<SystemCard> {
     );
   }
 
-  /// Builds the foreground content, including badges and specialized layouts for 'Recent Games'.
-  Widget _buildMainBodyContent(BuildContext context, bool includeInnerCard) {
-    final isGame = widget.info.isGame;
-
+  /// Builds the foreground content for game cards, including the RECENT badge
+  /// and the game wheel/logo.
+  Widget _buildGameMainContent(BuildContext context) {
     return Stack(
       children: [
-        if (isGame) ...[
-          // Premium 'RECENT' badge.
-          Positioned(
-            top: 10.r,
-            right: 10.r,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(4.r),
-              ),
-              child: Text(
-                AppLocale.recentBadge.getString(context),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontSize: 10.r,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
+        // RECENT badge.
+        Positioned(
+          top: 6.r,
+          right: 6.r,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondary,
+              borderRadius:
+                  Theme.of(context).extension<CornerRadii>()?.radiusInternal ??
+                  BorderRadius.circular(9.r),
+            ),
+            child: Text(
+              AppLocale.recentBadge.getString(context),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSecondary,
+                fontSize: 8.r,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
               ),
             ),
           ),
+        ),
 
-          // Central game identification asset (Wheel/Logo).
-          Positioned(
-            top: 20.r,
-            left: 60.r,
-            right: 60.r,
-            bottom: 45.r,
-            child: Center(
-              child: !_cachedHasWheelFile
-                  ? const SizedBox.shrink()
-                  : Image.file(
-                      _cachedWheelFile!,
-                      height: 128.r,
-                      fit: BoxFit.contain,
-                      cacheWidth: 512,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const SizedBox.shrink(),
-                    ),
-            ),
-          ),
-        ],
+        // Central game wheel/logo.
+        Center(
+          child: !_cachedHasWheelFile
+              ? const SizedBox.shrink()
+              : Container(
+                padding: EdgeInsetsGeometry.all(48.r),
+                child: Image.file(
+                  _cachedWheelFile!,
+                  height: 256.r,
+                  fit: BoxFit.contain,
+                  cacheWidth: 512,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox.shrink(),
+                ),
+              )
+              
+        ),
       ],
     );
   }
 
-  /// Renders a descriptive footer overlay for game-specific cards.
-  Widget _buildRecentFooter(BuildContext context) {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 42.r,
-      child: ClipRRect(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(12.r),
-          bottomRight: Radius.circular(12.r),
-        ),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.r),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(12.r),
-              bottomRight: Radius.circular(12.r),
+  /// Renders a footer for game cards, matching the system card footer style.
+  Widget _buildGameFooter(BuildContext context) {
+    return Container(
+      height: 32.r,
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 8.r),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            AppLocale.timePlayedLabel
+                .getString(context)
+                .replaceFirst(
+                  '{time}',
+                  _formatPlayTimeLocalized(
+                    widget.info.gameModel?.playTime ?? 0,
+                  ),
+                )
+                .toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 10.r,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.0,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              MarqueeText(
-                text:
-                    widget.info.title?.toUpperCase() ??
-                    AppLocale.unknownGame.getString(context),
-                isActive: widget.isSelected,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13.r,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  shadows: const <Shadow>[
-                    Shadow(
-                      offset: Offset(2.0, 2.0),
-                      blurRadius: 2.0,
-                      color: Colors.black,
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                widget.info.isGame
-                    ? AppLocale.timePlayedLabel
-                          .getString(context)
-                          .replaceFirst(
-                            '{time}',
-                            _formatPlayTimeLocalized(
-                              widget.info.gameModel?.playTime ?? 0,
-                            ),
-                          )
-                          .toUpperCase()
-                    : (widget.info.folderName == 'android'
-                          ? AppLocale.appsCount
-                                .getString(context)
-                                .replaceFirst(
-                                  '{count}',
-                                  widget.info.numOfRoms.toString(),
-                                )
-                                .toUpperCase()
-                          : (widget.info.folderName == 'music'
-                                ? AppLocale.tracksCount
-                                      .getString(context)
-                                      .replaceFirst(
-                                        '{count}',
-                                        widget.info.numOfRoms.toString(),
-                                      )
-                                      .toUpperCase()
-                                : AppLocale.gamesCount
-                                      .getString(context)
-                                      .replaceFirst(
-                                        '{count}',
-                                        widget.info.numOfRoms.toString(),
-                                      )
-                                      .toUpperCase())),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 8.r,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                  shadows: const <Shadow>[
-                    Shadow(
-                      offset: Offset(1.0, 1.0),
-                      blurRadius: 1.0,
-                      color: Colors.black,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
