@@ -850,8 +850,7 @@ const Map<String, dynamic> appLocaleJa = {
       'システムアートパックのダウンロードを強くおすすめします。後で設定から'
       '変更できます。',
   AppLocale.wizardDownloadArtPack: 'アートパックをダウンロード',
-  AppLocale.wizardArtPackInstalled:
-      'アートパックをインストールしました！他のテーマは後で設定から確認できます。',
+  AppLocale.wizardArtPackInstalled: 'アートパックをインストールしました！他のテーマは後で設定から確認できます。',
   AppLocale.wizardArtPackUnavailable:
       '現在アートパックにアクセスできませんでした。オンラインになったら、後で'
       '設定からインストールできます。',

@@ -835,6 +835,5 @@ const Map<String, dynamic> appLocaleZh = {
       '主机背景。之后可在“设置”中更改。',
   AppLocale.wizardDownloadArtPack: '下载美术包',
   AppLocale.wizardArtPackInstalled: '美术包已安装！你之后可以在“设置”中探索更多主题。',
-  AppLocale.wizardArtPackUnavailable:
-      '目前无法访问美术包。联网后，你可以稍后在“设置”中安装它。',
+  AppLocale.wizardArtPackUnavailable: '目前无法访问美术包。联网后，你可以稍后在“设置”中安装它。',
 };

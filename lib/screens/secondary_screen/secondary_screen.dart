@@ -1035,10 +1035,8 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
             tween: Tween(begin: 1.0, end: _dockRevealed ? 0.0 : 1.0),
             duration: const Duration(milliseconds: 550),
             curve: Curves.easeOutCubic,
-            builder: (context, t, child) => Transform.translate(
-              offset: Offset(0, t * 140.r),
-              child: child,
-            ),
+            builder: (context, t, child) =>
+                Transform.translate(offset: Offset(0, t * 140.r), child: child),
             child: Stack(
               children: [
                 Positioned(

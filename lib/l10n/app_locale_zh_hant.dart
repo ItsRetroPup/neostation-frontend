@@ -835,6 +835,5 @@ const Map<String, dynamic> appLocaleZhHant = {
       '主機背景。之後可在「設定」中變更。',
   AppLocale.wizardDownloadArtPack: '下載美術包',
   AppLocale.wizardArtPackInstalled: '美術包已安裝！你之後可以在「設定」中探索更多主題。',
-  AppLocale.wizardArtPackUnavailable:
-      '目前無法存取美術包。連上網路後，你可以稍後在「設定」中安裝它。',
+  AppLocale.wizardArtPackUnavailable: '目前無法存取美術包。連上網路後，你可以稍後在「設定」中安裝它。',
 };
