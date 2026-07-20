@@ -56,6 +56,12 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.hideRecentCardSubtitle: '시스템 그리드에 최근 플레이한 게임 카드를 표시합니다',
   AppLocale.themesSubtitle: 'NeoStation의 화면을 원하는 스타일로 꾸밉니다',
   AppLocale.systemTheme: '시스템',
+  AppLocale.importTheme: '테마 가져오기',
+  AppLocale.importThemeSuccess: '"%s" 가져옴',
+  AppLocale.importThemeExists: '"%s" 테마가 이미 가져와졌습니다',
+  AppLocale.importThemeError: '테마를 가져올 수 없음 - 잘못된 파일',
+  AppLocale.deleteThemeTitle: '테마를 삭제할까요?',
+  AppLocale.deleteThemeConfirm: '가져온 테마 "%s"를 제거할까요?',
 
   AppLocale.generalSettings: '일반 설정',
   AppLocale.alwaysShowRomName: '항상 ROM 파일 이름 표시',
@@ -103,10 +109,6 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.nowPlayingDimOff: '끄기',
   AppLocale.secondarySectionNowPlaying: '플레이 중 패널',
   AppLocale.secondarySectionDock: '앱 Dock',
-  AppLocale.primaryDisplay: 'NeoStation 표시 화면',
-  AppLocale.primaryDisplaySubtitle: '기기에 따라 기본 화면이 다를 수 있습니다.',
-  AppLocale.primaryDisplayDefault: '기본 화면',
-  AppLocale.primaryDisplaySecondary: '보조 화면',
   AppLocale.screenshotAccess: '화면 복귀 & 스크린샷',
   AppLocale.screenshotAccessSubtitle: 'Dock에서 실행한 앱을 닫으면 플레이 중 화면으로 돌아오며, 스크린샷 버튼으로 화면을 캡처할 수 있습니다(Android 접근성 설정이 열립니다)',
   AppLocale.scanOnStartupSubtitle: '앱을 시작할 때 ROM 폴더를 자동으로 검색합니다',
@@ -449,6 +451,21 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.scrape: '정보 가져오기',
   AppLocale.noAchievements: '업적 없음',
   AppLocale.gameInfo: '게임 정보',
+  AppLocale.manage: '관리',
+  AppLocale.forceRescrape: '강제 다시 가져오기',
+  AppLocale.scrapingData: '데이터 가져오는 중',
+  AppLocale.scrapingMedia: '미디어 가져오는 중',
+  AppLocale.gameTitle: '제목',
+  AppLocale.publisher: '퍼블리셔',
+  AppLocale.genre: '장르',
+  AppLocale.description: '설명',
+  AppLocale.screenshot: '스크린샷',
+  AppLocale.fanart: '팬아트',
+  AppLocale.wheel: '휠',
+  AppLocale.boxart: '박스아트',
+  AppLocale.change: '변경',
+  AppLocale.metadataSaved: '메타데이터 저장됨',
+  AppLocale.imageUpdated: '이미지 업데이트됨',
   AppLocale.unlocked: '잠금 해제!',
   AppLocale.points: '점',
   AppLocale.scanningRomsRA: 'RetroAchievements 지원 ROM 검색 중',
@@ -790,4 +807,22 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.esdeSummaryStatsUpdated: '즐겨찾기 / 통계 업데이트',
   AppLocale.esdeSummaryGames: '게임',
   AppLocale.esdeSummarySystems: '시스템',
+
+  // Onboarding wizard
+  AppLocale.wizardScanComplete: '스캔 완료',
+  AppLocale.wizardTapNextToContinue: '계속하려면 다음을 탭하세요',
+  AppLocale.wizardEsdeStepTitle: 'ES-DE에서 가져오기',
+  AppLocale.wizardEsdeStepDesc:
+      '이미 ES-DE를 사용 중이신가요? 게임 메타데이터와 아트워크를 가져오세요. '
+      '"gamelists"와 "downloaded_media" 폴더가 포함된 ES-DE 메인 폴더를 '
+      '선택하세요. 선택 사항이며, 나중에 설정에서 실행할 수 있습니다.',
+  AppLocale.wizardArtPackTitle: 'NeoStation 아트 팩 받기',
+  AppLocale.wizardArtPackDesc:
+      '라이브러리 전체에 아름다운 콘솔 배경을 제공하는 NeoStation 시스템 '
+      '아트 팩 다운로드를 적극 권장합니다. 나중에 설정에서 변경할 수 있습니다.',
+  AppLocale.wizardDownloadArtPack: '아트 팩 다운로드',
+  AppLocale.wizardArtPackInstalled:
+      '아트 팩이 설치되었습니다! 나중에 설정에서 더 많은 테마를 살펴볼 수 있습니다.',
+  AppLocale.wizardArtPackUnavailable:
+      '현재 아트 팩에 접근할 수 없습니다. 온라인 상태가 되면 설정에서 설치할 수 있습니다.',
 };
