@@ -33,32 +33,38 @@ void main() {
     await dbHelper.tearDown();
   });
 
-  test('scanned rows inherit (NULL emulator) instead of the stamped default', () async {
-    final root = await Directory.systemTemp.createTemp('neostation_emu_scan_');
-    addTearDown(() async {
-      if (await root.exists()) await root.delete(recursive: true);
-    });
+  test(
+    'scanned rows inherit (NULL emulator) instead of the stamped default',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'neostation_emu_scan_',
+      );
+      addTearDown(() async {
+        if (await root.exists()) await root.delete(recursive: true);
+      });
 
-    final snesDir = Directory('${root.path}/snes')..createSync(recursive: true);
-    File('${snesDir.path}/mario.smc').writeAsStringSync('ok');
+      final snesDir = Directory('${root.path}/snes')
+        ..createSync(recursive: true);
+      File('${snesDir.path}/mario.smc').writeAsStringSync('ok');
 
-    final system = SystemModel(
-      id: 'snes',
-      realName: 'Super Nintendo',
-      folderName: 'snes',
-      iconImage: '',
-      color: '#000000',
-      recursiveScan: true,
-    );
+      final system = SystemModel(
+        id: 'snes',
+        realName: 'Super Nintendo',
+        folderName: 'snes',
+        iconImage: '',
+        color: '#000000',
+        recursiveScan: true,
+      );
 
-    await SqliteDatabaseService.scanSystemRoms(system, [root.path]);
+      await SqliteDatabaseService.scanSystemRoms(system, [root.path]);
 
-    final rows = await db.rawQuery(
-      "SELECT app_emulator_unique_id, app_emulator_os_id FROM user_roms WHERE app_system_id = 'snes'",
-    );
+      final rows = await db.rawQuery(
+        "SELECT app_emulator_unique_id, app_emulator_os_id FROM user_roms WHERE app_system_id = 'snes'",
+      );
 
-    expect(rows, hasLength(1));
-    expect(rows.first['app_emulator_unique_id'], isNull);
-    expect(rows.first['app_emulator_os_id'], isNull);
-  });
+      expect(rows, hasLength(1));
+      expect(rows.first['app_emulator_unique_id'], isNull);
+      expect(rows.first['app_emulator_os_id'], isNull);
+    },
+  );
 }

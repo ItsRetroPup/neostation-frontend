@@ -687,8 +687,9 @@ class GameLaunchService {
         await EmulatorRepository.getUserDefaultEmulatorForSystem(system.id!);
     if (userDefault != null) return userDefault;
 
-    final configured =
-        await EmulatorRepository.getDefaultEmulatorForSystem(system.id!);
+    final configured = await EmulatorRepository.getDefaultEmulatorForSystem(
+      system.id!,
+    );
 
     List<CoreEmulatorModel> all;
     try {

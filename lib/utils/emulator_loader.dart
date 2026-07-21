@@ -71,7 +71,8 @@ Future<List<CoreEmulatorModel>> loadEmulatorsForSystem(
       final retroArchPath =
           await EmulatorRepository.getRetroArchExecutablePath();
       if (retroArchPath != null && retroArchPath.isNotEmpty) {
-        final coresDir = '${File(retroArchPath).parent.path}'
+        final coresDir =
+            '${File(retroArchPath).parent.path}'
             '${Platform.pathSeparator}cores';
         final coresDirReadable = await Directory(coresDir).exists();
         final updated = <CoreEmulatorModel>[];
@@ -124,7 +125,11 @@ Future<bool> _desktopCoreExists(String coresDir, String coreFilename) async {
       break;
     }
   }
-  for (final ext in const ['_libretro.dll', '_libretro.so', '_libretro.dylib']) {
+  for (final ext in const [
+    '_libretro.dll',
+    '_libretro.so',
+    '_libretro.dylib',
+  ]) {
     if (await File('$coresDir${Platform.pathSeparator}$base$ext').exists()) {
       return true;
     }

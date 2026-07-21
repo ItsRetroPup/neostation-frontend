@@ -506,17 +506,16 @@ class _SystemCardState extends State<SystemCard> {
           child: !_cachedHasWheelFile
               ? const SizedBox.shrink()
               : Container(
-                padding: EdgeInsetsGeometry.all(48.r),
-                child: Image.file(
-                  _cachedWheelFile!,
-                  height: 256.r,
-                  fit: BoxFit.contain,
-                  cacheWidth: 512,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const SizedBox.shrink(),
+                  padding: EdgeInsetsGeometry.all(48.r),
+                  child: Image.file(
+                    _cachedWheelFile!,
+                    height: 256.r,
+                    fit: BoxFit.contain,
+                    cacheWidth: 512,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox.shrink(),
+                  ),
                 ),
-              )
-              
         ),
       ],
     );

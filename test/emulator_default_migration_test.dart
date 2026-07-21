@@ -72,17 +72,20 @@ void main() {
 
   Future<void> runV102() => SqliteMigrations.migrateToVersion(db, 102);
 
-  test('reclaims a row stamped with the system is_default core to NULL', () async {
-    db.execute(
-      "INSERT INTO user_roms VALUES ('neogeo', 'neogeo.ra.fbneo', 1, 'garou.zip', '/roms/garou.zip')",
-    );
+  test(
+    'reclaims a row stamped with the system is_default core to NULL',
+    () async {
+      db.execute(
+        "INSERT INTO user_roms VALUES ('neogeo', 'neogeo.ra.fbneo', 1, 'garou.zip', '/roms/garou.zip')",
+      );
 
-    await runV102();
+      await runV102();
 
-    final row = rowFor('garou.zip');
-    expect(row['app_emulator_unique_id'], isNull);
-    expect(row['app_emulator_os_id'], isNull);
-  });
+      final row = rowFor('garou.zip');
+      expect(row['app_emulator_unique_id'], isNull);
+      expect(row['app_emulator_os_id'], isNull);
+    },
+  );
 
   test('preserves a genuine per-game override (a different emulator)', () async {
     // User pinned this game to the standalone, which is NOT the is_default core.
