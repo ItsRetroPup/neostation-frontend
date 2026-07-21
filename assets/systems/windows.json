@@ -1,7 +1,7 @@
 {
   "system": {
     "id": "windows",
-    "multidisc: false,
+    "multidisc": false,
     "name": "Windows",
     "neosync": {
       "sync": false,
