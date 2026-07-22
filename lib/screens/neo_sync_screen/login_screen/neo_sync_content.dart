@@ -812,8 +812,25 @@ class NeoSyncContentState extends State<NeoSyncContent>
               ),
               Switch.adaptive(
                 value: _armsx2SyncControlsVisible,
-                onChanged: (enabled) =>
-                    setState(() => _armsx2SyncControlsVisible = enabled),
+                onChanged: (enabled) async {
+                  setState(() => _armsx2SyncControlsVisible = enabled);
+                  if (!enabled || !mounted) return;
+                  await showDialog<void>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('ARMSX2 storage access'),
+                      content: const Text(
+                        'Due to Android storage permissions, NeoSync can only reliably sync ARMSX2 memory cards when ARMSX2 uses a custom, accessible data folder. Internal storage is not supported.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          child: Text(AppLocale.ok.getString(context)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
