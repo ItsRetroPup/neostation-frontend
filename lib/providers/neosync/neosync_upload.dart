@@ -1,6 +1,70 @@
 part of '../neo_sync_provider.dart';
 
 extension NeoSyncUpload on NeoSyncProvider {
+  /// Scans and uploads the complete ARMSX2 memory-card folder.
+  ///
+  /// This is deliberately separate from [autoSyncUploads] so configuring
+  /// ARMSX2 never uploads unrelated emulator saves. Background callers pass
+  /// [respectAutoSyncEnabled] to honour the user's NeoSync setting, while the
+  /// dashboard's "Sync now" action can always run for an authenticated user.
+  Future<void> syncArmsx2MemoryCards({
+    bool respectAutoSyncEnabled = false,
+  }) async {
+    if (!isNeoSyncAuthenticated ||
+        (respectAutoSyncEnabled && !_autoSyncEnabled) ||
+        _isSyncing) {
+      return;
+    }
+
+    final memcardsPath = await _getArmsx2MemcardsPath();
+    if (memcardsPath == null) return;
+
+    _setSyncing(true);
+    _error = null;
+    _syncProgress = 0.0;
+    _syncStatus = 'Scanning ARMSX2 memory cards...';
+    _totalFiles = 0;
+    _processedFiles = 0;
+    _uploadedFiles = 0;
+    _skippedFiles = 0;
+    _downloadedFiles = 0;
+    _processedItems = [];
+    notify();
+
+    try {
+      final memoryCards = await _getSaveFiles(memcardsPath);
+      _totalFiles = memoryCards.length;
+      if (memoryCards.isEmpty) {
+        _syncStatus = 'No ARMSX2 memory cards found';
+        _processedItems.add('No ARMSX2 memory cards found');
+        return;
+      }
+
+      _processedItems.add('Syncing $_totalFiles ARMSX2 memory cards...');
+      _syncStatus = 'Uploading ARMSX2 memory cards...';
+      notify();
+
+      for (final file in memoryCards) {
+        await _processAutoUploadFile(file, memcardsPath, isPs2MemoryCard: true);
+        _processedFiles++;
+        _syncProgress = _processedFiles / _totalFiles;
+        notify();
+      }
+
+      _syncProgress = 1.0;
+      _syncStatus =
+          'ARMSX2 sync completed: $_uploadedFiles uploaded, $_skippedFiles already synced';
+      _processedItems.add(_syncStatus);
+    } catch (e) {
+      _error = 'Error syncing ARMSX2 memory cards: $e';
+      _syncStatus = 'Error: $_error';
+      _processedItems.add(_syncStatus);
+      NeoSyncProvider._log.e(_error!);
+    } finally {
+      _setSyncing(false);
+    }
+  }
+
   /// Auto-sync solo para subidas (archivos locales nuevos o modificados)
   Future<void> autoSyncUploads() async {
     if (!isNeoSyncAuthenticated) {
@@ -36,7 +100,14 @@ extension NeoSyncUpload on NeoSyncProvider {
         retroArchStates = await _getSaveFiles(statesPath);
       }
 
-      // 2. Collect Switch NAND files
+      // 2. Collect configured ARMSX2 PS2 memory cards. Unlike RetroArch,
+      // ARMSX2 stores them in a user-selectable data folder.
+      final armsx2MemcardsPath = await _getArmsx2MemcardsPath();
+      final armsx2Memcards = armsx2MemcardsPath == null
+          ? <File>[]
+          : await _getSaveFiles(armsx2MemcardsPath);
+
+      // 3. Collect Switch NAND files
       try {
         final emulators = await SwitchSaveDetector.detectEmulatorNandPaths();
         if (Platform.isAndroid) {
@@ -140,6 +211,7 @@ extension NeoSyncUpload on NeoSyncProvider {
       _totalFiles =
           retroArchSaves.length +
           retroArchStates.length +
+          armsx2Memcards.length +
           saveFiles.length; // saveFiles contains Switch files here
 
       _processedItems.add('Auto-syncing $_totalFiles local files...');
@@ -157,6 +229,18 @@ extension NeoSyncUpload on NeoSyncProvider {
       // Process RetroArch States
       for (final file in retroArchStates) {
         await _processAutoUploadFile(file, statesPath!, isState: true);
+        _processedFiles++;
+        _syncProgress = _totalFiles > 0 ? _processedFiles / _totalFiles : 0.0;
+        notify();
+      }
+
+      // Process ARMSX2 memory cards using the shared PS2 cloud namespace.
+      for (final file in armsx2Memcards) {
+        await _processAutoUploadFile(
+          file,
+          armsx2MemcardsPath!,
+          isPs2MemoryCard: true,
+        );
         _processedFiles++;
         _syncProgress = _totalFiles > 0 ? _processedFiles / _totalFiles : 0.0;
         notify();
@@ -227,6 +311,7 @@ extension NeoSyncUpload on NeoSyncProvider {
     File file,
     String basePath, {
     bool isState = false,
+    bool isPs2MemoryCard = false,
   }) async {
     try {
       final isNandFile = file.path.contains(
@@ -238,11 +323,9 @@ extension NeoSyncUpload on NeoSyncProvider {
         return;
       }
 
-      String relativePath = _calculateRelativePath(
-        file,
-        basePath,
-        isState: isState,
-      );
+      final relativePath = isPs2MemoryCard
+          ? 'saves/PS2/${path.basename(file.path)}'
+          : _calculateRelativePath(file, basePath, isState: isState);
       final gameName = _extractGameNameFromPath(file.path);
 
       final result = await _neoSyncService.syncFile(

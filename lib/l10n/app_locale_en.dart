@@ -929,4 +929,13 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.wizardArtPackUnavailable:
       'The art pack couldn\'t be reached right now. You can install it later '
       'from Settings once you\'re online.',
+  AppLocale.armsx2Sync: 'ARMSX2 Save Sync',
+  AppLocale.armsx2SelectDataFolder: 'Select ARMSX2 Data Folder',
+  AppLocale.armsx2SelectDataFolderSubtitle:
+      'Choose the folder that contains ARMSX2 memcards',
+  AppLocale.armsx2ResetDataFolder: 'Clear ARMSX2 Data Folder',
+  AppLocale.armsx2ResetDataFolderSubtitle:
+      'Stop syncing ARMSX2 memory cards on this device',
+  AppLocale.armsx2MemcardsMissing:
+      'The selected folder must contain a memcards folder',
 };

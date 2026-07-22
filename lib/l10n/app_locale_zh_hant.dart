@@ -836,4 +836,10 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.wizardDownloadArtPack: '下載美術包',
   AppLocale.wizardArtPackInstalled: '美術包已安裝！你之後可以在「設定」中探索更多主題。',
   AppLocale.wizardArtPackUnavailable: '目前無法存取美術包。連上網路後，你可以稍後在「設定」中安裝它。',
+  AppLocale.armsx2Sync: 'ARMSX2 存檔同步',
+  AppLocale.armsx2SelectDataFolder: '選擇 ARMSX2 資料夾',
+  AppLocale.armsx2SelectDataFolderSubtitle: '選擇包含 ARMSX2 memcards 的資料夾',
+  AppLocale.armsx2ResetDataFolder: '清除 ARMSX2 資料夾',
+  AppLocale.armsx2ResetDataFolderSubtitle: '停止在此裝置上同步 ARMSX2 記憶卡',
+  AppLocale.armsx2MemcardsMissing: '所選資料夾必須包含 memcards 資料夾',
 };

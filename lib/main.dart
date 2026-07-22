@@ -456,6 +456,9 @@ class _MyAppState extends State<MyApp> {
     // showing it fully-formed while the app is still cold-starting).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.sqliteConfigProvider.markAppReady();
+      // Restored NeoSync sessions can now scan ARMSX2's configured memory
+      // cards. The provider itself checks authentication and auto-sync state.
+      widget.neoSyncProvider.syncOnAppStart();
     });
   }
 

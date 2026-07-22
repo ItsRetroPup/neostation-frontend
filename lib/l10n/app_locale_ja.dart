@@ -854,4 +854,10 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.wizardArtPackUnavailable:
       '現在アートパックにアクセスできませんでした。オンラインになったら、後で'
       '設定からインストールできます。',
+  AppLocale.armsx2Sync: 'ARMSX2 セーブ同期',
+  AppLocale.armsx2SelectDataFolder: 'ARMSX2 データフォルダーを選択',
+  AppLocale.armsx2SelectDataFolderSubtitle: 'ARMSX2 の memcards を含むフォルダーを選択します',
+  AppLocale.armsx2ResetDataFolder: 'ARMSX2 データフォルダーをクリア',
+  AppLocale.armsx2ResetDataFolderSubtitle: 'この端末で ARMSX2 メモリーカードの同期を停止します',
+  AppLocale.armsx2MemcardsMissing: '選択したフォルダーには memcards フォルダーが必要です',
 };

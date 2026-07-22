@@ -17,6 +17,12 @@ class ConfigRepository {
   static Future<Map<String, dynamic>?> getUserConfig() =>
       SqliteService.getUserConfig();
 
+  /// Returns the configured ARMSX2 data folder, if any.
+  static Future<String> getArmsx2DataFolderPath() async =>
+      (await SqliteService.getUserConfig())?['armsx2_data_folder_path']
+          ?.toString() ??
+      '';
+
   // ── Theme settings ──────────────────────────────────────────────────────
 
   static Future<String> getThemeName() => SqliteService.getThemeName();

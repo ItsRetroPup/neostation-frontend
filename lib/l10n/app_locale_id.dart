@@ -933,4 +933,13 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.wizardArtPackUnavailable:
       'Paket gambar tidak dapat dijangkau saat ini. Anda dapat memasangnya '
       'nanti dari Pengaturan setelah online.',
+  AppLocale.armsx2Sync: 'Sinkronisasi penyimpanan ARMSX2',
+  AppLocale.armsx2SelectDataFolder: 'Pilih folder data ARMSX2',
+  AppLocale.armsx2SelectDataFolderSubtitle:
+      'Pilih folder yang berisi memcards ARMSX2',
+  AppLocale.armsx2ResetDataFolder: 'Hapus folder data ARMSX2',
+  AppLocale.armsx2ResetDataFolderSubtitle:
+      'Berhenti menyinkronkan kartu memori ARMSX2 di perangkat ini',
+  AppLocale.armsx2MemcardsMissing:
+      'Folder yang dipilih harus berisi folder memcards',
 };

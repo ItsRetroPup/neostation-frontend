@@ -859,4 +859,10 @@ const Map<String, dynamic> appLocaleKo = {
       '아트 팩이 설치되었습니다! 나중에 설정에서 더 많은 테마를 살펴볼 수 있습니다.',
   AppLocale.wizardArtPackUnavailable:
       '현재 아트 팩에 접근할 수 없습니다. 온라인 상태가 되면 설정에서 설치할 수 있습니다.',
+  AppLocale.armsx2Sync: 'ARMSX2 저장 데이터 동기화',
+  AppLocale.armsx2SelectDataFolder: 'ARMSX2 데이터 폴더 선택',
+  AppLocale.armsx2SelectDataFolderSubtitle: 'ARMSX2 memcards가 있는 폴더를 선택하세요',
+  AppLocale.armsx2ResetDataFolder: 'ARMSX2 데이터 폴더 지우기',
+  AppLocale.armsx2ResetDataFolderSubtitle: '이 기기에서 ARMSX2 메모리 카드 동기화를 중지합니다',
+  AppLocale.armsx2MemcardsMissing: '선택한 폴더에 memcards 폴더가 있어야 합니다',
 };

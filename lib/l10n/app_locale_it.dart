@@ -953,4 +953,13 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.wizardArtPackUnavailable:
       'Al momento non è stato possibile raggiungere il pacchetto grafico. Puoi '
       'installarlo in seguito dalle Impostazioni una volta online.',
+  AppLocale.armsx2Sync: 'Sincronizzazione salvataggi ARMSX2',
+  AppLocale.armsx2SelectDataFolder: 'Seleziona cartella dati ARMSX2',
+  AppLocale.armsx2SelectDataFolderSubtitle:
+      'Scegli la cartella che contiene i memcards di ARMSX2',
+  AppLocale.armsx2ResetDataFolder: 'Cancella cartella dati ARMSX2',
+  AppLocale.armsx2ResetDataFolderSubtitle:
+      'Interrompi la sincronizzazione delle memory card ARMSX2 su questo dispositivo',
+  AppLocale.armsx2MemcardsMissing:
+      'La cartella selezionata deve contenere una cartella memcards',
 };

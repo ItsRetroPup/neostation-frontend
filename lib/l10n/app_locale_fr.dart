@@ -965,4 +965,13 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.wizardArtPackUnavailable:
       'Le pack visuel est actuellement inaccessible. Vous pourrez l\'installer '
       'plus tard depuis les Paramètres une fois en ligne.',
+  AppLocale.armsx2Sync: 'Synchronisation des sauvegardes ARMSX2',
+  AppLocale.armsx2SelectDataFolder: 'Sélectionner le dossier de données ARMSX2',
+  AppLocale.armsx2SelectDataFolderSubtitle:
+      'Choisissez le dossier qui contient les memcards ARMSX2',
+  AppLocale.armsx2ResetDataFolder: 'Effacer le dossier de données ARMSX2',
+  AppLocale.armsx2ResetDataFolderSubtitle:
+      'Arrêter la synchronisation des cartes mémoire ARMSX2 sur cet appareil',
+  AppLocale.armsx2MemcardsMissing:
+      'Le dossier sélectionné doit contenir un dossier memcards',
 };

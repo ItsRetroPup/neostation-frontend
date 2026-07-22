@@ -234,7 +234,9 @@ extension NeoSyncCore on NeoSyncProvider {
     await autoSyncUploads(); // Only upload local changes after the game
   }
 
-  /// Runs only download auto-sync when initializing the app
+  /// Syncs cloud changes down and local ARMSX2 memory-card changes up at app
+  /// startup. ARMSX2 uses a standalone, user-selected folder, so it is not
+  /// covered by RetroArch's normal startup flow.
   Future<void> syncOnAppStart() async {
     if (!isNeoSyncAuthenticated) {
       return;
@@ -242,7 +244,8 @@ extension NeoSyncCore on NeoSyncProvider {
     if (!_autoSyncEnabled) return;
 
     _processedItems.add('🚀 Checking for cloud updates on app start...');
-    await autoSyncDownloads(); // Only download on initialization
+    await autoSyncDownloads();
+    await syncArmsx2MemoryCards(respectAutoSyncEnabled: true);
   }
 
   /// Resets the state of the quota exceeded dialog
@@ -1205,24 +1208,21 @@ extension NeoSyncCore on NeoSyncProvider {
         final file = File(gameState.localSave!.filePath);
         if (file.existsSync()) {
           // Calcular la ruta relativa correcta
-          final savesPath = await _getRetroArchSavesPath();
-          if (savesPath != null) {
-            final relativePath = await _calculateSyncRelativePath(
-              game,
-              file,
-              savesPath,
-            );
+          final relativePath = await _calculateSyncRelativePath(
+            game,
+            file,
+            file.parent.path,
+          );
 
-            final result = await _neoSyncService.syncFile(
-              file,
-              game.name,
-              customFilename: relativePath,
-            );
+          final result = await _neoSyncService.syncFile(
+            file,
+            game.name,
+            customFilename: relativePath,
+          );
 
-            if (result['success']) {
-              // Actualizar estado después del sync
-              await detectGameSaveFiles(game);
-            }
+          if (result['success']) {
+            // Actualizar estado después del sync
+            await detectGameSaveFiles(game);
           }
         }
       } else if (gameState.status == neo_sync.GameSyncStatus.cloudOnly &&
@@ -1266,24 +1266,21 @@ extension NeoSyncCore on NeoSyncProvider {
       final file = File(gameState.localSave!.filePath);
       if (file.existsSync()) {
         // Calcular la ruta relativa correcta
-        final savesPath = await _getRetroArchSavesPath();
-        if (savesPath != null) {
-          final relativePath = await _calculateSyncRelativePath(
-            game,
-            file,
-            savesPath,
-          );
+        final relativePath = await _calculateSyncRelativePath(
+          game,
+          file,
+          file.parent.path,
+        );
 
-          final result = await _neoSyncService.syncFile(
-            file,
-            game.name,
-            customFilename: relativePath,
-          );
+        final result = await _neoSyncService.syncFile(
+          file,
+          game.name,
+          customFilename: relativePath,
+        );
 
-          if (result['success']) {
-            // Actualizar estado después del sync
-            await detectGameSaveFiles(game);
-          }
+        if (result['success']) {
+          // Actualizar estado después del sync
+          await detectGameSaveFiles(game);
         }
       }
     } on QuotaExceededException {

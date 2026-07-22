@@ -146,6 +146,10 @@ class ConfigModel {
   /// by the ES-DE import and read-time fallback artwork resolution.
   final String esdeFolderPath;
 
+  /// Absolute path to the ARMSX2 data folder. Its `memcards/` child is synced
+  /// by NeoSync on Android. Empty when ARMSX2 has not been configured.
+  final String armsx2DataFolderPath;
+
   const ConfigModel({
     this.romFolders = const [],
     this.detectedSystems = const [],
@@ -181,6 +185,7 @@ class ConfigModel {
     this.dockEnabled = true,
     this.dockSlotCount = 3,
     this.esdeFolderPath = '',
+    this.armsx2DataFolderPath = '',
   });
 
   /// Convenience getter that returns the primary ROM folder, if any are configured.
@@ -326,6 +331,11 @@ class ConfigModel {
               .clamp(dockMinSlotCount, dockMaxSlotCount),
       esdeFolderPath: (json['esdeFolderPath'] ?? json['esde_folder_path'] ?? '')
           .toString(),
+      armsx2DataFolderPath:
+          (json['armsx2DataFolderPath'] ??
+                  json['armsx2_data_folder_path'] ??
+                  '')
+              .toString(),
     );
   }
 
@@ -371,6 +381,7 @@ class ConfigModel {
       'dockEnabled': dockEnabled,
       'dockSlotCount': dockSlotCount,
       'esdeFolderPath': esdeFolderPath,
+      'armsx2DataFolderPath': armsx2DataFolderPath,
     };
   }
 
@@ -410,6 +421,7 @@ class ConfigModel {
     bool? dockEnabled,
     int? dockSlotCount,
     String? esdeFolderPath,
+    String? armsx2DataFolderPath,
   }) {
     return ConfigModel(
       romFolders: romFolders ?? this.romFolders,
@@ -447,6 +459,7 @@ class ConfigModel {
       dockEnabled: dockEnabled ?? this.dockEnabled,
       dockSlotCount: dockSlotCount ?? this.dockSlotCount,
       esdeFolderPath: esdeFolderPath ?? this.esdeFolderPath,
+      armsx2DataFolderPath: armsx2DataFolderPath ?? this.armsx2DataFolderPath,
     );
   }
 

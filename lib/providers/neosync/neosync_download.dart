@@ -39,9 +39,14 @@ extension NeoSyncDownload on NeoSyncProvider {
 
       // Collect RetroArch folders to resolve locally
       final savesPath = await _getRetroArchSavesPath();
+      final armsx2MemcardsPath = await _getArmsx2MemcardsPath();
 
       for (final cloudFile in cloudFiles) {
-        await _processAutoDownloadFile(cloudFile, savesPath ?? '');
+        await _processAutoDownloadFile(
+          cloudFile,
+          savesPath ?? '',
+          armsx2MemcardsPath: armsx2MemcardsPath,
+        );
         _processedFiles++;
         _syncProgress = _totalFiles > 0 ? _processedFiles / _totalFiles : 0.0;
         notify();
@@ -93,9 +98,30 @@ extension NeoSyncDownload on NeoSyncProvider {
   /// Procesa un archivo para auto-descarga (Universal)
   Future<void> _processAutoDownloadFile(
     NeoSyncFile cloudFile,
-    String savesPath,
-  ) async {
+    String savesPath, {
+    String? armsx2MemcardsPath,
+  }) async {
     try {
+      // PS2 memory cards are shared between games, so their cloud filename
+      // intentionally does not identify one ROM. Route them directly to the
+      // configured ARMSX2 folder instead of relying on game-name lookup.
+      if (armsx2MemcardsPath != null &&
+          cloudFile.fileName.startsWith('saves/PS2/')) {
+        final localFile = File(
+          path.join(armsx2MemcardsPath, path.basename(cloudFile.fileName)),
+        );
+        await localFile.parent.create(recursive: true);
+        if (!localFile.existsSync() ||
+            cloudFile.uploadedAt.isAfter(await localFile.lastModified())) {
+          await _downloadCloudFileImpl(cloudFile, localFile);
+          _downloadedFiles++;
+          _processedItems.add('⬇️ ARMSX2 memory card: ${cloudFile.fileName}');
+        } else {
+          _skippedFiles++;
+        }
+        return;
+      }
+
       // 1. Resolve the game associated with the file
       GameModel? game = await _findGameForCloudFile(cloudFile);
 

@@ -312,6 +312,9 @@ class SqliteMigrations {
       case 102:
         await _migrateToVersion102(db);
         break;
+      case 103:
+        await _migrateToVersion103(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -4924,6 +4927,26 @@ class SqliteMigrations {
       _log.i('Migration v102 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v102: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v103: Store the user-selected ARMSX2 data folder.
+  static Future<void> _migrateToVersion103(Database db) async {
+    _log.i('Migration v103: Adding ARMSX2 data-folder configuration');
+    try {
+      final columns = db
+          .select('PRAGMA table_info(user_config)')
+          .map((c) => c['name'].toString())
+          .toList();
+      if (!columns.contains('armsx2_data_folder_path')) {
+        db.execute(
+          "ALTER TABLE user_config ADD COLUMN armsx2_data_folder_path TEXT DEFAULT ''",
+        );
+      }
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v103: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

@@ -78,6 +78,13 @@ extension SqliteConfigMutators on SqliteConfigProvider {
     _notify();
   }
 
+  /// Persists the ARMSX2 data folder selected for NeoSync memory-card backup.
+  Future<void> updateArmsx2DataFolderPath(String path) async {
+    _config = _config.copyWith(armsx2DataFolderPath: path);
+    await SqliteConfigService.saveConfig(_config);
+    _notify();
+  }
+
   Future<void> updateHideRecentCard(bool value) async {
     _config = _config.copyWith(hideRecentCard: value);
     await SqliteConfigService.saveConfig(_config);

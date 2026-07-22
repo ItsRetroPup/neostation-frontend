@@ -21,6 +21,14 @@ extension NeoSyncPathResolver on NeoSyncProvider {
       resolvedPaths.addAll(resolved);
     }
 
+    // ARMSX2 lets Android users relocate its data folder. The system
+    // definitions cannot know that per-device location, so append the selected
+    // PS2 memory-card folder here rather than hard-coding it in assets.
+    if (Platform.isAndroid && system.folderName == 'ps2') {
+      final armsx2Memcards = await _getArmsx2MemcardsPath();
+      if (armsx2Memcards != null) resolvedPaths.add(armsx2Memcards);
+    }
+
     // Eliminar duplicados y rutas inexistentes si requireExists es true
     var result = resolvedPaths.toSet();
     if (ensureExists) {
@@ -602,6 +610,20 @@ extension NeoSyncPathResolver on NeoSyncProvider {
       if (Directory(docs).existsSync()) return docs;
     }
     return null;
+  }
+
+  /// Returns the `memcards` child of the user-selected ARMSX2 data folder.
+  ///
+  /// ARMSX2 intentionally makes this root configurable, so deriving it from
+  /// the package's private Android directory would fail for custom locations.
+  Future<String?> _getArmsx2MemcardsPath() async {
+    if (!Platform.isAndroid) return null;
+
+    final dataFolder = await ConfigRepository.getArmsx2DataFolderPath();
+    if (dataFolder.trim().isEmpty) return null;
+
+    final memcards = path.join(dataFolder, 'memcards');
+    return Directory(memcards).existsSync() ? memcards : null;
   }
 
   Future<String?> _getFlycastSavesPath() async {

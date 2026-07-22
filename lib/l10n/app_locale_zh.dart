@@ -836,4 +836,10 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.wizardDownloadArtPack: '下载美术包',
   AppLocale.wizardArtPackInstalled: '美术包已安装！你之后可以在“设置”中探索更多主题。',
   AppLocale.wizardArtPackUnavailable: '目前无法访问美术包。联网后，你可以稍后在“设置”中安装它。',
+  AppLocale.armsx2Sync: 'ARMSX2 存档同步',
+  AppLocale.armsx2SelectDataFolder: '选择 ARMSX2 数据文件夹',
+  AppLocale.armsx2SelectDataFolderSubtitle: '选择包含 ARMSX2 memcards 的文件夹',
+  AppLocale.armsx2ResetDataFolder: '清除 ARMSX2 数据文件夹',
+  AppLocale.armsx2ResetDataFolderSubtitle: '停止在此设备上同步 ARMSX2 记忆卡',
+  AppLocale.armsx2MemcardsMissing: '所选文件夹必须包含 memcards 文件夹',
 };

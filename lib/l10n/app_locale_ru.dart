@@ -931,4 +931,12 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.wizardArtPackUnavailable:
       'Сейчас не удалось получить набор обложек. Вы можете установить его позже '
       'в Настройках, когда будете онлайн.',
+  AppLocale.armsx2Sync: 'Синхронизация сохранений ARMSX2',
+  AppLocale.armsx2SelectDataFolder: 'Выбрать папку данных ARMSX2',
+  AppLocale.armsx2SelectDataFolderSubtitle: 'Выберите папку с memcards ARMSX2',
+  AppLocale.armsx2ResetDataFolder: 'Очистить папку данных ARMSX2',
+  AppLocale.armsx2ResetDataFolderSubtitle:
+      'Прекратить синхронизацию карт памяти ARMSX2 на этом устройстве',
+  AppLocale.armsx2MemcardsMissing:
+      'Выбранная папка должна содержать папку memcards',
 };

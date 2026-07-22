@@ -862,6 +862,14 @@ mixin AppLocale {
   static const String esdeSummaryStatsUpdated = 'esde_summary_stats_updated';
   static const String esdeSummaryGames = 'esde_summary_games';
   static const String esdeSummarySystems = 'esde_summary_systems';
+  static const String armsx2Sync = 'armsx2_sync';
+  static const String armsx2SelectDataFolder = 'armsx2_select_data_folder';
+  static const String armsx2SelectDataFolderSubtitle =
+      'armsx2_select_data_folder_subtitle';
+  static const String armsx2ResetDataFolder = 'armsx2_reset_data_folder';
+  static const String armsx2ResetDataFolderSubtitle =
+      'armsx2_reset_data_folder_subtitle';
+  static const String armsx2MemcardsMissing = 'armsx2_memcards_missing';
   // Setup wizard: ES-DE import & system art pack steps.
   static const String wizardScanComplete = 'wizard_scan_complete';
   static const String wizardTapNextToContinue = 'wizard_tap_next_to_continue';

@@ -962,4 +962,13 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.wizardArtPackUnavailable:
       'Das Artwork-Paket ist derzeit nicht erreichbar. Du kannst es später in '
       'den Einstellungen installieren, sobald du online bist.',
+  AppLocale.armsx2Sync: 'ARMSX2-Spielstand-Synchronisierung',
+  AppLocale.armsx2SelectDataFolder: 'ARMSX2-Datenordner auswählen',
+  AppLocale.armsx2SelectDataFolderSubtitle:
+      'Wähle den Ordner mit den ARMSX2-memcards',
+  AppLocale.armsx2ResetDataFolder: 'ARMSX2-Datenordner löschen',
+  AppLocale.armsx2ResetDataFolderSubtitle:
+      'ARMSX2-Speicherkarten auf diesem Gerät nicht mehr synchronisieren',
+  AppLocale.armsx2MemcardsMissing:
+      'Der ausgewählte Ordner muss einen memcards-Ordner enthalten',
 };

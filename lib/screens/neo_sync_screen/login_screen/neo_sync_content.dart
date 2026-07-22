@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as path;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:neostation/l10n/app_locale.dart';
@@ -10,6 +12,10 @@ import 'package:neostation/services/game_service.dart';
 import 'package:neostation/widgets/auth_form.dart';
 import 'package:neostation/providers/neo_sync_provider.dart';
 import 'package:neostation/services/notification_service.dart';
+import 'package:neostation/services/permission_service.dart';
+import 'package:neostation/services/user_data_location_service.dart';
+import 'package:neostation/providers/sqlite_config_provider.dart';
+import 'package:neostation/widgets/tv_directory_picker.dart';
 import 'package:neostation/services/neosync/billing_service.dart';
 import 'package:neostation/models/billing_models.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -56,6 +62,7 @@ class NeoSyncContentState extends State<NeoSyncContent>
   List<PlanInfo> _plans = [];
   static bool _plansLoadedThisSession = false;
   bool _isProfileLoading = false;
+  bool _isConfiguringArmsx2 = false;
   static bool _profileLoaded = false;
 
   late final FocusNode _upgradeButtonFocusNode;
@@ -543,6 +550,8 @@ class NeoSyncContentState extends State<NeoSyncContent>
                 ),
               ),
               SizedBox(height: 8.r),
+              _buildArmsx2SyncCard(),
+              SizedBox(height: 8.r),
               // Storage quota Steam-style (Compacto)
               if (neoSyncProvider.quota != null) ...[
                 Container(
@@ -701,6 +710,168 @@ class NeoSyncContentState extends State<NeoSyncContent>
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _selectArmsx2DataFolder() async {
+    if (_isConfiguringArmsx2) return;
+    setState(() => _isConfiguringArmsx2 = true);
+
+    try {
+      String? selected;
+      final isTV = await PermissionService.isTelevision();
+      if (!mounted) return;
+
+      if (isTV) {
+        selected = await TvDirectoryPicker.show(context);
+      } else {
+        final uri = await PermissionService.requestFolderAccess();
+        if (uri != null) {
+          final uriString = uri.toString();
+          final hasFiles = await PermissionService.hasAllFilesAccess();
+          selected =
+              await UserDataLocationService.resolveAndroidUserDataPath(
+                uriString,
+                hasAllFilesAccess: hasFiles,
+              ) ??
+              UserDataLocationService.safUriToRealPath(uriString);
+        }
+      }
+
+      if (selected == null || !mounted) return;
+      selected = selected.replaceFirst(RegExp(r'[\\/]+$'), '');
+      if (!Directory(path.join(selected, 'memcards')).existsSync()) {
+        custom.AppNotification.showNotification(
+          context,
+          AppLocale.armsx2MemcardsMissing.getString(context),
+          type: custom.NotificationType.error,
+        );
+        return;
+      }
+
+      await context.read<SqliteConfigProvider>().updateArmsx2DataFolderPath(
+        selected,
+      );
+      if (!mounted) return;
+
+      // The folder may already contain cards from existing games. Sync it as
+      // soon as access is granted rather than waiting for the next launch.
+      await context.read<NeoSyncProvider>().syncArmsx2MemoryCards();
+    } catch (e) {
+      if (mounted) {
+        custom.AppNotification.showNotification(
+          context,
+          '$e',
+          type: custom.NotificationType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isConfiguringArmsx2 = false);
+    }
+  }
+
+  Widget _buildArmsx2SyncCard() {
+    if (!Platform.isAndroid) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final config = context.watch<SqliteConfigProvider>().config;
+    final dataFolder = config.armsx2DataFolderPath.trim();
+    final neoSyncProvider = context.watch<NeoSyncProvider>();
+    final isBusy = _isConfiguringArmsx2 || neoSyncProvider.isSyncing;
+
+    return Container(
+      padding: EdgeInsets.all(8.r),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.15),
+          width: 1.r,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Symbols.sd_card_rounded,
+                size: 16.r,
+                color: theme.colorScheme.primary,
+              ),
+              SizedBox(width: 4.r),
+              Expanded(
+                child: Text(
+                  AppLocale.armsx2Sync.getString(context),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10.r,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 5.r),
+          Text(
+            dataFolder.isEmpty
+                ? AppLocale.armsx2SelectDataFolderSubtitle.getString(context)
+                : dataFolder,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 8.r,
+              fontFamily: dataFolder.isEmpty ? null : 'monospace',
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          SizedBox(height: 7.r),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: isBusy ? null : _selectArmsx2DataFolder,
+                  icon: Icon(Symbols.folder_special_rounded, size: 14.r),
+                  label: Text(
+                    AppLocale.armsx2SelectDataFolder.getString(context),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 8.r),
+                  ),
+                ),
+              ),
+              if (dataFolder.isNotEmpty) ...[
+                SizedBox(width: 5.r),
+                IconButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context
+                            .read<SqliteConfigProvider>()
+                            .updateArmsx2DataFolderPath(''),
+                  tooltip: AppLocale.armsx2ResetDataFolder.getString(context),
+                  icon: Icon(Symbols.restart_alt_rounded, size: 16.r),
+                ),
+              ],
+            ],
+          ),
+          if (dataFolder.isNotEmpty) ...[
+            SizedBox(height: 5.r),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: isBusy
+                    ? null
+                    : () => context
+                          .read<NeoSyncProvider>()
+                          .syncArmsx2MemoryCards(),
+                icon: Icon(Symbols.sync_rounded, size: 14.r),
+                label: Text(
+                  AppLocale.armsx2Sync.getString(context),
+                  style: TextStyle(fontSize: 8.r),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
