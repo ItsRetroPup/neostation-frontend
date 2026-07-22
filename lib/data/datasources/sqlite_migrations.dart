@@ -315,6 +315,10 @@ class SqliteMigrations {
       case 103:
         await _migrateToVersion103(db);
         break;
+      case 104:
+      case 105:
+        // Reserved by independent NeoSync emulator feature branches.
+        break;
       default:
         _log.w('No migration defined for version $version');
     }

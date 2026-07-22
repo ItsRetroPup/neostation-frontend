@@ -63,6 +63,7 @@ class NeoSyncContentState extends State<NeoSyncContent>
   static bool _plansLoadedThisSession = false;
   bool _isProfileLoading = false;
   bool _isConfiguringArmsx2 = false;
+  bool _armsx2SyncControlsVisible = false;
   static bool _profileLoaded = false;
 
   late final FocusNode _upgradeButtonFocusNode;
@@ -809,66 +810,73 @@ class NeoSyncContentState extends State<NeoSyncContent>
                   ),
                 ),
               ),
+              Switch.adaptive(
+                value: _armsx2SyncControlsVisible,
+                onChanged: (enabled) =>
+                    setState(() => _armsx2SyncControlsVisible = enabled),
+              ),
             ],
           ),
-          SizedBox(height: 5.r),
-          Text(
-            dataFolder.isEmpty
-                ? AppLocale.armsx2SelectDataFolderSubtitle.getString(context)
-                : dataFolder,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 8.r,
-              fontFamily: dataFolder.isEmpty ? null : 'monospace',
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          if (_armsx2SyncControlsVisible) ...[
+            SizedBox(height: 5.r),
+            Text(
+              dataFolder.isEmpty
+                  ? AppLocale.armsx2SelectDataFolderSubtitle.getString(context)
+                  : dataFolder,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 8.r,
+                fontFamily: dataFolder.isEmpty ? null : 'monospace',
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
-          ),
-          SizedBox(height: 7.r),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: isBusy ? null : _selectArmsx2DataFolder,
-                  icon: Icon(Symbols.folder_special_rounded, size: 14.r),
+            SizedBox(height: 7.r),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isBusy ? null : _selectArmsx2DataFolder,
+                    icon: Icon(Symbols.folder_special_rounded, size: 14.r),
+                    label: Text(
+                      AppLocale.armsx2SelectDataFolder.getString(context),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 8.r),
+                    ),
+                  ),
+                ),
+                if (dataFolder.isNotEmpty) ...[
+                  SizedBox(width: 5.r),
+                  IconButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                              .read<SqliteConfigProvider>()
+                              .updateArmsx2DataFolderPath(''),
+                    tooltip: AppLocale.armsx2ResetDataFolder.getString(context),
+                    icon: Icon(Symbols.restart_alt_rounded, size: 16.r),
+                  ),
+                ],
+              ],
+            ),
+            if (dataFolder.isNotEmpty) ...[
+              SizedBox(height: 5.r),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: isBusy
+                      ? null
+                      : () => context
+                            .read<NeoSyncProvider>()
+                            .syncArmsx2MemoryCards(),
+                  icon: Icon(Symbols.sync_rounded, size: 14.r),
                   label: Text(
-                    AppLocale.armsx2SelectDataFolder.getString(context),
-                    overflow: TextOverflow.ellipsis,
+                    AppLocale.armsx2Sync.getString(context),
                     style: TextStyle(fontSize: 8.r),
                   ),
                 ),
               ),
-              if (dataFolder.isNotEmpty) ...[
-                SizedBox(width: 5.r),
-                IconButton(
-                  onPressed: isBusy
-                      ? null
-                      : () => context
-                            .read<SqliteConfigProvider>()
-                            .updateArmsx2DataFolderPath(''),
-                  tooltip: AppLocale.armsx2ResetDataFolder.getString(context),
-                  icon: Icon(Symbols.restart_alt_rounded, size: 16.r),
-                ),
-              ],
             ],
-          ),
-          if (dataFolder.isNotEmpty) ...[
-            SizedBox(height: 5.r),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: isBusy
-                    ? null
-                    : () => context
-                          .read<NeoSyncProvider>()
-                          .syncArmsx2MemoryCards(),
-                icon: Icon(Symbols.sync_rounded, size: 14.r),
-                label: Text(
-                  AppLocale.armsx2Sync.getString(context),
-                  style: TextStyle(fontSize: 8.r),
-                ),
-              ),
-            ),
           ],
         ],
       ),
