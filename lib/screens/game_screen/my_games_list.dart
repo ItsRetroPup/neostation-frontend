@@ -1508,7 +1508,11 @@ class _SystemGamesListState extends State<SystemGamesList> {
             (g) => g.romname == updatedGame.romname,
           );
           if (index != -1) {
-            _games[index] = updatedGame;
+            // Grid and carousel views use the games-list identity to know
+            // when their cached artwork cards must be rebuilt. Publish a new
+            // list instead of mutating this one in place so a completed
+            // scrape is visible as soon as the settings dialog is closed.
+            _games = List<GameModel>.of(_games)..[index] = updatedGame;
           }
         });
 
