@@ -42,6 +42,7 @@ import '../../models/secondary_display_state.dart';
 import '../../widgets/game_view_mode_dropdown.dart';
 import '../../widgets/game_action_buttons.dart';
 import '../../constants/system_folder_names.dart';
+import '../../utils/game_list_update.dart';
 import '../../themes/corner_radii.dart';
 
 part 'my_games_list/gamepad_nav.dart';
@@ -1504,12 +1505,10 @@ class _SystemGamesListState extends State<SystemGamesList> {
           _selectedGame = updatedGame;
           _artworkVersion++;
 
-          final index = _games.indexWhere(
-            (g) => g.romname == updatedGame.romname,
-          );
-          if (index != -1) {
-            _games[index] = updatedGame;
-          }
+          // Grid and carousel views use the games-list identity to know when
+          // their cached artwork cards must be rebuilt. Publish a new list
+          // instead of mutating this one in place.
+          _games = replaceGameInList(_games, updatedGame);
         });
 
         _loadLocalizedDescription();
