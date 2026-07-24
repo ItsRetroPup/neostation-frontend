@@ -421,7 +421,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 103;
+  static const int _databaseVersion = 104;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -1206,6 +1206,17 @@ class SqliteService {
     );
     final tableNames = tables.map((r) => r['name'].toString()).toSet();
 
+    // Recovery guard: if the database already has tables but app_os is missing
+    // (e.g. after a failed downgrade/recreate cycle), recreate it immediately so
+    // downstream hotfixes and queries do not crash.
+    if (tableNames.isNotEmpty && !tableNames.contains('app_os')) {
+      _log.w(
+        'app_os table is missing on an existing database; recreating it defensively.',
+      );
+      await _ensureAppOsTable(db);
+      tableNames.add('app_os');
+    }
+
     // Only run hotfixes if the target tables exist.
 
     // FIX: Ensure user_rom_folders exists even if migrations were skipped.
@@ -1316,6 +1327,33 @@ class SqliteService {
       }
     } catch (e) {
       _log.e('Minor fix ensuring emulator default core column failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Ensures the [app_os] lookup table exists and contains the base OS rows.
+  ///
+  /// This is a defensive guard used both during first install and as a recovery
+  /// mechanism if the table was lost during a failed downgrade/recreate cycle.
+  Future<void> _ensureAppOsTable(DatabaseAdapter db) async {
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS app_os (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL UNIQUE
+        );
+      ''');
+
+      await db.execute('''
+        INSERT OR IGNORE INTO app_os (id, name) VALUES
+        (1, 'windows'),
+        (2, 'android'),
+        (3, 'linux'),
+        (4, 'macos'),
+        (5, 'ios')
+      ''');
+    } catch (e) {
+      _log.e('Failed to ensure app_os table: $e');
       rethrow;
     }
   }
@@ -1518,17 +1556,27 @@ class SqliteService {
   }
 
   /// Completely drops and recreates the database schema.
+  ///
+  /// Foreign keys are disabled while dropping tables so that parent tables
+  /// (e.g. [app_os], [app_systems]) can be removed even when child tables
+  /// reference them. They are re-enabled before returning.
   Future<void> _recreateDatabase(DatabaseAdapter db) async {
-    final tables = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
-    );
+    try {
+      await db.execute('PRAGMA foreign_keys = OFF;');
 
-    for (final table in tables) {
-      final tableName = table['name'].toString();
-      await db.execute('DROP TABLE IF EXISTS $tableName;');
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
+      );
+
+      for (final table in tables) {
+        final tableName = table['name'].toString();
+        await db.execute('DROP TABLE IF EXISTS $tableName;');
+      }
+
+      await _onCreate(db, _databaseVersion);
+    } finally {
+      await db.execute('PRAGMA foreign_keys = ON;');
     }
-
-    await _onCreate(db, _databaseVersion);
   }
 
   /// Creates internal application tables (systems, emulators, etc.).
@@ -1893,14 +1941,7 @@ class SqliteService {
 
     try {
       await db.transaction((txn) async {
-        await txn.execute('''
-          INSERT OR IGNORE INTO app_os (id, name) VALUES
-          (1, 'windows'),
-          (2, 'android'),
-          (3, 'linux'),
-          (4, 'macos'),
-          (5, 'ios')
-        ''');
+        await _ensureAppOsTable(txn);
         await txn.execute('''
           INSERT OR IGNORE INTO user_screenscraper_config (id, scrape_mode) VALUES (1, 'new_only')
         ''');
@@ -2089,6 +2130,7 @@ class SqliteService {
 
       // Verify presence of critical tables
       final criticalTables = [
+        'app_os',
         'app_system_extensions',
         'app_systems',
         'app_emulators',

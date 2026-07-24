@@ -315,6 +315,9 @@ class SqliteMigrations {
       case 103:
         await _migrateToVersion103(db);
         break;
+      case 104:
+        await _migrateToVersion104(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -4950,6 +4953,51 @@ class SqliteMigrations {
       _log.i('Migration v103 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v103: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v104: Defensively recreate the [app_os] lookup table if it is
+  /// missing and re-seed the base operating system rows.
+  ///
+  /// Devices that experienced a failed downgrade/recreate cycle could end up
+  /// with `PRAGMA user_version` advanced but without the [app_os] table. This
+  /// migration restores the table so every other query that joins against it
+  /// can succeed. It is idempotent and safe to run on a healthy database.
+  static Future<void> _migrateToVersion104(Database db) async {
+    _log.i('Migration v104: Ensuring app_os table exists');
+    try {
+      final tableExists = db.select('''
+        SELECT name FROM sqlite_master
+        WHERE type = 'table' AND name = 'app_os'
+        LIMIT 1
+      ''');
+
+      if (tableExists.isEmpty) {
+        _log.w('app_os table is missing; recreating it');
+        db.execute('''
+          CREATE TABLE app_os (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE
+          )
+        ''');
+      } else {
+        _log.i('app_os table already exists');
+      }
+
+      db.execute('''
+        INSERT OR IGNORE INTO app_os (id, name) VALUES
+        (1, 'windows'),
+        (2, 'android'),
+        (3, 'linux'),
+        (4, 'macos'),
+        (5, 'ios')
+      ''');
+
+      _log.i('Migration v104 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v104: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }
