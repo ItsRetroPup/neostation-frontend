@@ -8,6 +8,7 @@ import 'package:neostation/models/system_model.dart';
 import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/providers/neo_sync_provider.dart';
 import 'package:neostation/repositories/game_repository.dart';
+import 'package:neostation/utils/enabled_index_nav.dart';
 import 'package:neostation/screens/settings_screen/new_settings_options/widgets/setting_row.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/sfx_service.dart';
@@ -17,7 +18,6 @@ import 'package:neostation/widgets/confirm_action_dialog.dart';
 import 'package:neostation/widgets/custom_notification.dart';
 import 'package:neostation/widgets/custom_toggle_switch.dart';
 import 'package:neostation/widgets/delete_game_dialog.dart';
-
 
 /// Manage tab for [GameSettingsDialog]: cloud sync, grid size/style,
 /// play-time reset, and permanent game deletion. View mode is selected from the
@@ -94,23 +94,12 @@ class GameSettingsManageTabState extends State<GameSettingsManageTab> {
     return idx >= 0 && idx < _totalItems;
   }
 
-  int _previousEnabledIndex() {
-    int idx = _selectedIndex;
-    do {
-      idx = (idx - 1).clamp(0, _totalItems - 1);
-      if (_isEnabledIndex(idx)) return idx;
-    } while (idx != _selectedIndex);
-    return _selectedIndex;
-  }
+  // Clamp at the ends like the other tabs (no wrap); just skip disabled rows.
+  int _previousEnabledIndex() =>
+      previousEnabledIndex(_selectedIndex, _totalItems, _isEnabledIndex);
 
-  int _nextEnabledIndex() {
-    int idx = _selectedIndex;
-    do {
-      idx = (idx + 1).clamp(0, _totalItems - 1);
-      if (_isEnabledIndex(idx)) return idx;
-    } while (idx != _selectedIndex);
-    return _selectedIndex;
-  }
+  int _nextEnabledIndex() =>
+      nextEnabledIndex(_selectedIndex, _totalItems, _isEnabledIndex);
 
   void _ensureSelectedIndexEnabled() {
     if (!_isEnabledIndex(_selectedIndex)) {
