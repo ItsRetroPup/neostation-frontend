@@ -18,6 +18,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.download: 'Unduh',
   AppLocale.stop: 'Berhenti',
   AppLocale.reset: 'Atur Ulang',
+  AppLocale.startupLoading:
+      'Menyiapkan NeoStation. Menunggu penyimpanan dan layanan...',
 
   AppLocale.play: 'Main',
   AppLocale.playButton: 'MAIN',

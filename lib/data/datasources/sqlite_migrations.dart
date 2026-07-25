@@ -3592,19 +3592,16 @@ class SqliteMigrations {
       }
 
       if (hasLegacyPath) {
-        _log.i('Resetting setup for legacy paths...');
+        _log.i('Marking setup incomplete for legacy paths...');
         db.execute('BEGIN TRANSACTION');
         try {
-          // Clear ROM folders
-          db.execute('DELETE FROM user_rom_folders');
-
-          // Reset setup_completed in user_config
+          // Preserve the paths and their existing library. Deleting them makes
+          // the next automatic scan run with zero roots and can prune every
+          // stored game before the user has a chance to select SAF again.
           db.execute('UPDATE user_config SET setup_completed = 0');
 
           db.execute('COMMIT');
-          _log.i(
-            'Setup reset successfully. User will see SetupWizard on next launch.',
-          );
+          _log.i('Setup marked incomplete; legacy ROM folders were preserved.');
         } catch (e) {
           db.execute('ROLLBACK');
           _log.e('Error resetting setup: $e');

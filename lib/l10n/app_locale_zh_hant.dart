@@ -18,6 +18,7 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.download: '下載',
   AppLocale.stop: '停止',
   AppLocale.reset: '重置',
+  AppLocale.startupLoading: '正在準備 NeoStation，等待儲存空間與服務就緒…',
 
   AppLocale.play: '開始遊戲',
   AppLocale.playButton: '開始遊戲',

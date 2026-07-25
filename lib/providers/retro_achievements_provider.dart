@@ -452,9 +452,34 @@ class RetroAchievementsProvider extends ChangeNotifier {
   /// Initializes the provider and attempts automatic login with stored credentials.
   Future<void> initialize() async {
     try {
-      final loggedIn = await tryAutoLogin();
-      if (loggedIn) {
-        await fetchGOTW();
+      // When NeoStation is the default launcher it can start before Wi-Fi has
+      // reconnected. Credentials are already persisted, but a single failed
+      // request made during that window used to leave the UI signed out until
+      // the user restarted the app. Retry only during initialization and only
+      // while a stored account exists; manual login remains a single attempt.
+      const maxAttempts = 5;
+      for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+        final loggedIn = await tryAutoLogin();
+        if (loggedIn) {
+          await fetchGOTW();
+          return;
+        }
+
+        final savedUsername = await _loadRAUserFromConfig();
+        final savedApiKey = await _loadRAApiKeyFromConfig();
+        if (savedUsername == null ||
+            savedUsername.isEmpty ||
+            RetroAchievementsService.resolveApiKey(
+              savedApiKey,
+            ).trim().isEmpty ||
+            attempt == maxAttempts) {
+          return;
+        }
+
+        _log.i(
+          'RetroAchievements auto-login attempt $attempt failed; retrying after startup delay',
+        );
+        await Future<void>.delayed(const Duration(seconds: 4));
       }
     } catch (e) {
       _log.e('Error initializing RA: $e');

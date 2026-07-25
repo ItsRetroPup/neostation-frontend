@@ -312,10 +312,7 @@ class _SteamStyleRating extends StatelessWidget {
                 opacity: 0,
                 child: Text(
                   '10',
-                  style: TextStyle(
-                    fontSize: 13.r,
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: TextStyle(fontSize: 13.r, fontWeight: FontWeight.w900),
                 ),
               ),
               Text(

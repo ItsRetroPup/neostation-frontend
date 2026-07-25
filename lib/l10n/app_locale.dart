@@ -36,6 +36,7 @@ mixin AppLocale {
   static const String download = 'download';
   static const String stop = 'stop';
   static const String reset = 'reset';
+  static const String startupLoading = 'startup_loading';
 
   // ---------------------------------------------------------------------------
   // Game / Playback

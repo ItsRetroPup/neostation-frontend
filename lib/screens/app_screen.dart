@@ -173,7 +173,10 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     );
     Future<void>? initialScan;
     if (startupScanPending && mounted) {
-      initialScan = configProvider.scanSystems();
+      // A default launcher may be started before removable storage has mounted.
+      // Let the startup scan wait for it rather than interpreting an empty SD
+      // card as a library whose ROMs were deleted.
+      initialScan = configProvider.scanSystems(waitForAndroidStorage: true);
       _log.i('AppScreen: initial startup scan started');
     }
 

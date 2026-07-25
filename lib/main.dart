@@ -177,6 +177,12 @@ Future<void> _configureImageCache() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Render immediately. Cold boots can wait for removable storage before the
+  // database opens, and without this lightweight root Android shows only a
+  // blank launch surface for that entire interval.
+  runApp(const StartupLoadingApp());
+  await WidgetsBinding.instance.endOfFrame;
+
   await _configureImageCache();
 
   final log = LoggerService.instance;
@@ -365,6 +371,89 @@ void main() async {
     // Apply the persisted enabled/disabled preference immediately.
     SfxService().setEnabled(sqliteConfigProvider.config.sfxEnabled);
   });
+}
+
+/// Lightweight root displayed while the app waits for its persisted data.
+/// It reads the device locale directly because the saved app language is in
+/// the database that may still be on a mounting SD card.
+class StartupLoadingApp extends StatelessWidget {
+  const StartupLoadingApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    final languageTag = locale.toLanguageTag().replaceAll('-', '_');
+    final translations = <String, Map<String, dynamic>>{
+      'en': appLocaleEn,
+      'es': appLocaleEs,
+      'pt': appLocalePt,
+      'ru': appLocaleRu,
+      'zh': appLocaleZh,
+      'zh_Hant': appLocaleZhHant,
+      'fr': appLocaleFr,
+      'de': appLocaleDe,
+      'it': appLocaleIt,
+      'id': appLocaleId,
+      'ja': appLocaleJa,
+      'ko': appLocaleKo,
+    };
+    final strings =
+        translations[languageTag] ?? translations[locale.languageCode]!;
+    final message = strings[AppLocale.startupLoading] as String;
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: const Color(0xFF090B10),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/images/logo_transparent.png',
+                  width: 112,
+                  height: 112,
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'NeoStation',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: Color(0xFF70C8FF),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFFC4CBD6),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 @pragma('vm:entry-point')

@@ -18,6 +18,8 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.download: 'Scarica',
   AppLocale.stop: 'Ferma',
   AppLocale.reset: 'Ripristina',
+  AppLocale.startupLoading:
+      'Preparazione di NeoStation. In attesa di archiviazione e servizi…',
 
   AppLocale.play: 'Gioca',
   AppLocale.playButton: 'GIOCA',

@@ -18,6 +18,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.download: 'Скачать',
   AppLocale.stop: 'Стоп',
   AppLocale.reset: 'Сбросить',
+  AppLocale.startupLoading:
+      'Подготовка NeoStation. Ожидание хранилища и служб...',
 
   AppLocale.play: 'Играть',
   AppLocale.playButton: 'ИГРАТЬ',

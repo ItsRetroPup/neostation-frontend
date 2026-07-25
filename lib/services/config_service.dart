@@ -32,6 +32,8 @@ class ConfigService {
   }
 
   static const String _customPathKey = 'custom_user_data_path';
+  static const Duration _androidStorageRetryDelay = Duration(seconds: 3);
+  static const int _androidStorageMaxAttempts = 20;
 
   /// Resolves the absolute path to the user's local data directory.
   ///
@@ -45,9 +47,42 @@ class ConfigService {
       if (await dir.exists()) {
         return customPath;
       }
+
+      if (Platform.isAndroid) {
+        // A default launcher can start while the removable volume containing
+        // the user data is still mounting. Falling back to the app-private
+        // default here creates a second, empty database and makes the whole
+        // app look freshly installed. Wait for the configured volume instead.
+        for (
+          var attempt = 1;
+          attempt <= _androidStorageMaxAttempts;
+          attempt++
+        ) {
+          if (await dir.exists()) return customPath;
+
+          // A missing last directory is safe to create only once its parent
+          // volume is available. Do not create a lookalike path before that.
+          if (await dir.parent.exists()) {
+            await dir.create(recursive: true);
+            return customPath;
+          }
+
+          if (attempt < _androidStorageMaxAttempts) {
+            _log.i(
+              'Waiting for custom user-data storage ($attempt/$_androidStorageMaxAttempts): $customPath',
+            );
+            await Future<void>.delayed(_androidStorageRetryDelay);
+          }
+        }
+
+        throw StateError(
+          'Configured user-data storage is unavailable: $customPath',
+        );
+      }
+
       // Directory missing — try to create it (first-run on new device or new location).
-      // If creation fails (SD card not mounted, permission revoked, etc.) fall back
-      // to the default path so we never open a fresh empty DB at a wrong location.
+      // On desktop, falling back keeps the application usable when a removable
+      // custom path has genuinely been removed.
       try {
         await dir.create(recursive: true);
         return customPath;

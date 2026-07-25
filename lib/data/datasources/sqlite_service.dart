@@ -2320,6 +2320,46 @@ class SqliteService {
     return results.map((row) => row['path'].toString()).toList();
   }
 
+  /// Rebuilds Android ROM roots from existing library entries when a previous
+  /// migration or interrupted save left [user_rom_folders] empty. Both SAF tree
+  /// URIs and traditional paths are supported so the library remains usable
+  /// while the user moves from legacy storage access to SAF.
+  static Future<List<String>> recoverRomFoldersFromStoredRoms() async {
+    final db = await instance.database;
+    final rows = await db.rawQuery('''
+      SELECT ur.rom_path, s.folder_name
+      FROM user_roms ur
+      JOIN app_systems s ON s.id = ur.app_system_id
+      WHERE ur.rom_path IS NOT NULL AND ur.rom_path != ''
+    ''');
+
+    final roots = <String>{};
+    for (final row in rows) {
+      final romPath = row['rom_path']?.toString() ?? '';
+      final systemFolder = row['folder_name']?.toString() ?? '';
+      if (romPath.isEmpty || systemFolder.isEmpty) continue;
+
+      // SAF files retain their selected tree URI before the document segment.
+      final documentIndex = romPath.indexOf('/document/');
+      if (romPath.startsWith('content://') && documentIndex > 0) {
+        roots.add(romPath.substring(0, documentIndex));
+        continue;
+      }
+
+      // Legacy paths generally look like /root/<system>/<rom>. Derive the
+      // root only when the stored system folder appears as a full path segment.
+      final normalizedPath = romPath.replaceAll('\\', '/');
+      final lowerPath = normalizedPath.toLowerCase();
+      final marker = '/${systemFolder.toLowerCase()}/';
+      final folderIndex = lowerPath.lastIndexOf(marker);
+      if (folderIndex > 0) {
+        roots.add(normalizedPath.substring(0, folderIndex));
+      }
+    }
+
+    return roots.toList()..sort();
+  }
+
   /// Persists a complete list of ROM directories, replacing existing ones.
   static Future<void> saveUserRomFolders(List<String> folders) async {
     final db = await instance.database;

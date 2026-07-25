@@ -18,6 +18,8 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.download: 'Descargar',
   AppLocale.stop: 'Detener',
   AppLocale.reset: 'Restablecer',
+  AppLocale.startupLoading:
+      'Preparando NeoStation. Esperando al almacenamiento y los servicios...',
 
   AppLocale.play: 'Jugar',
   AppLocale.playButton: 'JUGAR',

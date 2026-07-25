@@ -18,6 +18,7 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.download: 'ダウンロード',
   AppLocale.stop: '停止',
   AppLocale.reset: 'リセット',
+  AppLocale.startupLoading: 'NeoStation を準備中です。ストレージとサービスを待機しています…',
 
   AppLocale.play: 'プレイ',
   AppLocale.playButton: 'プレイ',
