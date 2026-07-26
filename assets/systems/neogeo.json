@@ -1,6 +1,7 @@
 {
   "system": {
     "id": "neogeo",
+    "multidisc": false,
     "name": "Neo Geo",
     "short_name": "Neo Geo",
     "details": {
@@ -15,7 +16,9 @@
     },
     "folders": [
       "neogeo",
-      "Neo Geo"
+      "Neo Geo",
+      "neogeoaes",
+      "neogeomvs"
     ],
     "colors": [
       "#263238",

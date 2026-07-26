@@ -1,6 +1,7 @@
 {
   "system": {
     "id": "n64",
+    "multidisc": false,
     "name": "Nintendo 64",
     "short_name": "N64",
     "details": {
@@ -16,7 +17,8 @@
     "folders": [
       "n64",
       "Nintendo 64",
-      "n64dd"
+      "n64dd",
+      "64dd"
     ],
     "colors": [
       "#546e7a",

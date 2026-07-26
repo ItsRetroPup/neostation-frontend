@@ -201,12 +201,10 @@ These packages are "vendored" within the /packages directory to ensure long-term
 
 ## Systems & Emulator Definitions
 
-NeoStation's system configurations, emulator definitions, and launch arguments are maintained in a separate repository.  
-**If you want to add new emulators, fix launch arguments, or update system configurations, please open a pull request in the dedicated systems repository:**
+NeoStation's system configurations, emulator definitions, and launch arguments are maintained in this repository under [`assets/systems/`](assets/systems/).  
+**If you want to add new emulators, fix launch arguments, or update system configurations, please open a pull request here.**
 
-👉 [**misobadev/neostation-systems**](https://github.com/misobadev/neostation-systems)
-
-Changes to these files are not accepted in this frontend repository.
+The bundled `assets/manifest.json` drives the over-the-air systems update mechanism, so compatible changes can be delivered to existing installs without requiring a full app release.
 
 ## Contributing
 

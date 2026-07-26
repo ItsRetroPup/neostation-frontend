@@ -1,6 +1,7 @@
 {
   "system": {
     "id": "pcfx",
+    "multidisc": false,
     "name": "NEC PC-FX",
     "short_name": "PC-FX",
     "details": {
@@ -15,7 +16,8 @@
     },
     "folders": [
       "pcfx",
-      "NEC PC-FX"
+      "NEC PC-FX",
+      "pc-fx"
     ],
     "colors": [
       "#F5F5F5",

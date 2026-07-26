@@ -1,6 +1,7 @@
 {
   "system": {
     "id": "pico",
+    "multidisc": false,
     "name": "Sega Pico",
     "short_name": "Pico",
     "details": {
@@ -15,7 +16,8 @@
     },
     "folders": [
       "pico",
-      "Sega Pico"
+      "Sega Pico",
+      "sega-pico"
     ],
     "colors": [
       "#FFEB3B",

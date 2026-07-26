@@ -1,6 +1,7 @@
 {
   "system": {
     "id": "ngp",
+    "multidisc": false,
     "name": "NeoGeo Pocket",
     "short_name": "NGP",
     "details": {
@@ -18,7 +19,8 @@
       "Neo Geo Pocket",
       "NeoGeo Pocket",
       "Neo-Geo Pocket",
-      "SNK Neo Geo Pocket"
+      "SNK Neo Geo Pocket",
+      "neo-geo-pocket"
     ],
     "colors": [
       "#90A4AE",
