@@ -8,6 +8,7 @@ import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/sfx_service.dart';
 import '../responsive.dart';
 import 'gamepad_translator.dart';
+import 'select_tap.dart';
 import '../main.dart' show FullscreenNotifier;
 
 /// Metadata for a connected gamepad device.
@@ -187,33 +188,55 @@ class GamepadNavigation {
   static const int _throttleDelayMs = 128;
   bool _isActive = false;
 
-  /// True while the Select (View) button is reported as physically held down.
-  /// Not all controllers sustain this — many emit a brief down+up pulse even
-  /// while the button is held, which is why [_lastSelectDownTime] backs it up.
-  bool _selectHeld = false;
-
   /// Broadcasts whether Select is currently held, so UI (e.g. the gamepad
   /// legend) can reveal the Select+face-button chord shortcuts while it is down.
   /// Only the active navigation layer drives this.
   static final ValueNotifier<bool> selectHeldNotifier = ValueNotifier(false);
 
-  /// Updates both the local hold flag and the shared notifier in one place.
-  void _setSelectHeld(bool held) {
-    _selectHeld = held;
+  /// Tap-vs-chord decisions for Select. See [SelectTap] for the rules.
+  final SelectTap _selectTap = SelectTap();
+
+  /// Mirrors [SelectTap.held] onto the shared notifier for the legend UI.
+  void _publishSelectHeld() {
+    final held = _selectTap.held;
     if (selectHeldNotifier.value != held) selectHeldNotifier.value = held;
   }
-
-  /// When Select was last pressed. A face button counts as a combo if it lands
-  /// while Select is still held OR within [_selectChordWindowMs] of this time,
-  /// so the pulse-emitting controllers above still register chords.
-  DateTime? _lastSelectDownTime;
 
   /// Face buttons whose PRESS fired a combo and whose matching RELEASE must be
   /// swallowed so the normal action never fires (Desktop dispatches on release).
   final Set<GamepadInputType> _comboConsumed = {};
 
-  /// How long after a Select press a face button still counts as a chord.
-  static const int _selectChordWindowMs = 400;
+  /// Pending tap dispatch, cancelled if a chord fires inside the chord window.
+  Timer? _selectTapTimer;
+
+  /// Handles the Select press edge shared by the raw-Android and translated
+  /// paths.
+  void _onSelectDown(DateTime now) {
+    _selectTap.press(now);
+    _selectTapTimer?.cancel();
+    _selectTapTimer = null;
+    _publishSelectHeld();
+  }
+
+  /// Handles the Select release edge, dispatching [onSelectButton] when the
+  /// hold was a plain tap so Select keeps its own action (e.g. mute the playing
+  /// video) while still working as the chord modifier.
+  ///
+  /// The dispatch is deferred by [SelectTap.chordWindow] because the
+  /// pulse-emitting controllers release Select while it is still physically
+  /// held — firing immediately would mute the video at the start of every
+  /// chord. Any chord landing inside that window invalidates the pending tap.
+  void _onSelectUp(DateTime now) {
+    final schedulesTap = _selectTap.releaseSchedulesTap(now);
+    _publishSelectHeld();
+    if (!schedulesTap) return;
+    _selectTapTimer?.cancel();
+    _selectTapTimer = Timer(SelectTap.chordWindow, () {
+      _selectTapTimer = null;
+      if (!_selectTap.tapStillValid) return;
+      onSelectButton?.call();
+    });
+  }
 
   DateTime? _activationTime;
 
@@ -402,19 +425,16 @@ class GamepadNavigation {
   /// Clears Select chord-modifier state so it can't leak across layer changes
   /// (e.g. opening a dialog while Select is down).
   void _resetSelectModifier() {
-    _setSelectHeld(false);
-    _lastSelectDownTime = null;
+    _selectTap.reset();
+    _publishSelectHeld();
+    _selectTapTimer?.cancel();
+    _selectTapTimer = null;
     _comboConsumed.clear();
   }
 
   /// Whether a Select+face-button chord should register right now: Select is
   /// still reported down, or it pulsed within the chord window.
-  bool _isSelectChordActive() {
-    if (_selectHeld) return true;
-    final t = _lastSelectDownTime;
-    if (t == null) return false;
-    return DateTime.now().difference(t).inMilliseconds < _selectChordWindowMs;
-  }
+  bool _isSelectChordActive() => _selectTap.isChordActive(DateTime.now());
 
   /// Maps a face button to its Select-modifier combo callback, if any.
   VoidCallback? _selectModifierFor(GamepadInputType inputType) {
@@ -569,13 +589,13 @@ class GamepadNavigation {
       // This controller auto-repeats ACTION_DOWN (value 0.0) while the button is
       // held and doesn't reliably emit a matching ACTION_UP, so edge-detection
       // gets stuck. The raw value can't: 0.0 = down (incl. key-repeat) → held;
-      // 1.0 = up → released. Select is a pure modifier, so it never dispatches.
+      // 1.0 = up → released. A hold that fires a chord dispatches nothing of its
+      // own; a short tap that fires none dispatches [onSelectButton] on release.
       if (isAndroid && event.key.toLowerCase() == 'keycode_button_select') {
         if (event.value < 0.5) {
-          _setSelectHeld(true);
-          _lastSelectDownTime = now;
+          _onSelectDown(now);
         } else {
-          _setSelectHeld(false);
+          _onSelectUp(now);
         }
         return;
       }
@@ -694,13 +714,13 @@ class GamepadNavigation {
     // alongside it fires a combo. Some controllers only reliably report one edge
     // of this button, so the timestamp is stamped on BOTH press and release.
     if (event.inputType == GamepadInputType.buttonSelect) {
+      final now = DateTime.now();
       if (event.isPressed) {
-        _setSelectHeld(true);
+        _onSelectDown(now);
       } else if (event.isReleased) {
-        _setSelectHeld(false);
+        _onSelectUp(now);
       }
-      _lastSelectDownTime = DateTime.now();
-      return; // Select alone never triggers an action.
+      return; // Select alone only ever fires its tap action, on release.
     }
 
     // A face-button PRESS fires its modifier combo when Select is still held or
@@ -708,6 +728,11 @@ class GamepadNavigation {
     if (event.isPressed && _isSelectChordActive()) {
       final modifier = _selectModifierFor(event.inputType);
       if (modifier != null) {
+        // This hold unlocked a chord, so its release must not also fire the
+        // plain Select tap action.
+        _selectTap.chordFired();
+        _selectTapTimer?.cancel();
+        _selectTapTimer = null;
         _comboConsumed.add(event.inputType);
         SfxService().playNavSound();
         modifier();
