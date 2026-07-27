@@ -9,7 +9,7 @@ set -e
 #     ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev \
 #     libsqlite3-dev libsecret-1-dev libjsoncpp-dev libasound2-dev libpulse-dev \
 #     libopus-dev libvorbis-dev libflac-dev libogg-dev python3 imagemagick \
-#     patchelf dos2unix desktop-file-utils libgdk-pixbuf2.0-dev fakeroot file \
+#     patchelf binutils dos2unix desktop-file-utils libgdk-pixbuf2.0-dev fakeroot file \
 #     libfuse2 squashfs-tools wget lld
 
 echo "Building Flutter Linux app (x86_64)..."
@@ -208,6 +208,30 @@ for audiolib in libFLAC.so.* libFLAC++.so.* libogg.so.* libvorbis.so.* libvorbis
     [ -f "$lib_path" ] && cp -L "$lib_path" "$APPDIR/usr/bin/lib/" 2>/dev/null || true
   done
 done
+
+# The system copies above are not necessarily the ones the plugin was linked against:
+# flutter_soloud ships its own FLAC/Xiph libraries and CMake prefers them ("FLAC: using
+# bundled library: .../flutter_soloud/linux/libs/libFLAC.so" in the build log). Their
+# SONAMEs differ from the build host's — the bundled FLAC is libFLAC.so.14 while Ubuntu
+# 24.04 ships libFLAC.so.12 — so on that host everything above satisfies nothing and the
+# plugin's DT_NEEDED entries go unresolved. Copy the plugin's own libraries in on top,
+# named by SONAME rather than by filename: the package ships each one three times under
+# names that are mostly not its SONAME, and for some there is no correctly-named copy at
+# all (libvorbis is shipped as libvorbis.so/.so.0.4.9, and its SONAME is libvorbis.so.0.4.9).
+SOLOUD_LIBS_DIR="$PROJECT_ROOT/linux/flutter/ephemeral/.plugin_symlinks/flutter_soloud/linux/libs"
+if [ -d "$SOLOUD_LIBS_DIR" ]; then
+  if ! command -v objdump >/dev/null 2>&1; then
+    echo "ERROR: objdump (binutils) is required to bundle flutter_soloud's audio libraries by SONAME."
+    exit 1
+  fi
+  echo "Copying flutter_soloud's bundled audio libraries..."
+  for lib_path in "$SOLOUD_LIBS_DIR"/lib*.so*; do
+    [ -f "$lib_path" ] || continue
+    lib_soname=$(objdump -p "$lib_path" 2>/dev/null | awk '/SONAME/{print $2; exit}')
+    [ -n "$lib_soname" ] || continue
+    cp -L "$lib_path" "$APPDIR/usr/bin/lib/$lib_soname"
+  done
+fi
 
 # Verify critical audio libraries were bundled. Fedora/RHEL places them under /usr/lib64,
 # while Debian/Ubuntu uses /usr/lib/x86_64-linux-gnu. If the build machine lacks the
