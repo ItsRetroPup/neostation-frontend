@@ -136,10 +136,8 @@ class EsdeImportService {
         // within the system too rather than freezing the bar on its name.
         onGameProgress: onProgress == null
             ? null
-            : (fraction) => onProgress(
-                (i + fraction) / systemDirs.length,
-                esdeDirName,
-              ),
+            : (fraction) =>
+                  onProgress((i + fraction) / systemDirs.length, esdeDirName),
       );
 
       // Only wire up the read-time media fallback for systems that actually
@@ -211,7 +209,11 @@ class EsdeImportService {
       );
       if (system == null) continue;
 
-      await _recordEsdeMediaDir(esdeRoot, esdeDirName, system['app_system_id']!);
+      await _recordEsdeMediaDir(
+        esdeRoot,
+        esdeDirName,
+        system['app_system_id']!,
+      );
       _log.i(
         'ES-DE import: linked art-only system "$esdeDirName" '
         '(no gamelist.xml) to ${system['app_system_id']}',

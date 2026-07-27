@@ -71,24 +71,27 @@ void main() {
       ]);
     });
 
-    test('falls back to the category root after the recorded subfolder', () async {
-      await db.execute(
-        "INSERT INTO user_screenscraper_metadata (app_system_id, filename, esde_media_subdir) VALUES ('snes', 'sonic.smc', 'Hacks')",
-      );
-      await provider.refreshEsde();
+    test(
+      'falls back to the category root after the recorded subfolder',
+      () async {
+        await db.execute(
+          "INSERT INTO user_screenscraper_metadata (app_system_id, filename, esde_media_subdir) VALUES ('snes', 'sonic.smc', 'Hacks')",
+        );
+        await provider.refreshEsde();
 
-      final candidates = provider.getEsdeMediaCandidates(
-        'snes',
-        'wheels',
-        'sonic.smc',
-      );
-      expect(candidates, [
-        '/esde/downloaded_media/snes/marquees/Hacks/sonic.png',
-        '/esde/downloaded_media/snes/marquees/Hacks/sonic.jpg',
-        '/esde/downloaded_media/snes/marquees/sonic.png',
-        '/esde/downloaded_media/snes/marquees/sonic.jpg',
-      ]);
-    });
+        final candidates = provider.getEsdeMediaCandidates(
+          'snes',
+          'wheels',
+          'sonic.smc',
+        );
+        expect(candidates, [
+          '/esde/downloaded_media/snes/marquees/Hacks/sonic.png',
+          '/esde/downloaded_media/snes/marquees/Hacks/sonic.jpg',
+          '/esde/downloaded_media/snes/marquees/sonic.png',
+          '/esde/downloaded_media/snes/marquees/sonic.jpg',
+        ]);
+      },
+    );
 
     test('returns nothing for a system with no recorded ES-DE media dir', () {
       expect(

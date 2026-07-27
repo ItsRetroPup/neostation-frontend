@@ -327,7 +327,9 @@ void main() {
         await db.execute(
           "INSERT INTO app_systems (id, real_name, folder_name, screenscraper_id) VALUES ('nes', 'NES', 'nes', 3)",
         );
-        Directory('${tempRoot.path}/gamelists/snes').createSync(recursive: true);
+        Directory(
+          '${tempRoot.path}/gamelists/snes',
+        ).createSync(recursive: true);
         File(
           '${tempRoot.path}/gamelists/snes/gamelist.xml',
         ).writeAsStringSync('<gameList></gameList>');
@@ -340,10 +342,7 @@ void main() {
         final rows = await db.rawQuery(
           "SELECT app_system_id, esde_media_dir FROM user_system_settings WHERE esde_media_dir IS NOT NULL ORDER BY app_system_id",
         );
-        expect(rows.map((r) => r['app_system_id']).toList(), [
-          'nes',
-          'snes',
-        ]);
+        expect(rows.map((r) => r['app_system_id']).toList(), ['nes', 'snes']);
         expect(rows.first['esde_media_dir'], 'nes');
       },
     );

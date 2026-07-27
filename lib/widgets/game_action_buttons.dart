@@ -101,8 +101,9 @@ class GameActionButtons extends StatelessWidget {
     return GameActionButton(
       iconPath: 'assets/images/gamepad/Xbox_View_button.png',
       symbol: active ? Symbols.close_rounded : Symbols.more_horiz_rounded,
-      color: active ? scheme.secondary : scheme.primary,
-      foregroundColor: active ? scheme.onSecondary : scheme.onPrimary,
+      color: active ? scheme.primary : scheme.tertiaryFixed,
+      foregroundColor: active ? scheme.onPrimary : scheme.onTertiaryFixed,
+      sound: GameActionButtonSound.nav,
       onTap: () => GamepadNavigation.selectHeldNotifier.value = !active,
     );
   }
@@ -126,24 +127,27 @@ class GameActionButtons extends StatelessWidget {
       GameActionButton(
         iconPath: 'assets/images/gamepad/Xbox_B_button.png',
         symbol: Symbols.arrow_back_rounded,
-        color: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+        color: scheme.tertiaryFixed,
+        foregroundColor: scheme.onTertiaryFixed,
+        sound: GameActionButtonSound.back,
         onTap: onBack,
       ),
       SizedBox(height: 6.r),
       GameActionButton(
         iconPath: 'assets/images/gamepad/Xbox_Y_button.png',
         symbol: Symbols.favorite_rounded,
-        color: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+        color: scheme.tertiaryFixed,
+        foregroundColor: scheme.onTertiaryFixed,
+        sound: GameActionButtonSound.nav,
         onTap: selectedGame != null ? onFavorite : null,
       ),
       SizedBox(height: 6.r),
       GameActionButton(
         iconPath: 'assets/images/gamepad/Xbox_X_button.png',
         symbol: Symbols.grid_view_rounded,
-        color: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+        color: scheme.tertiaryFixed,
+        foregroundColor: scheme.onTertiaryFixed,
+        sound: GameActionButtonSound.nav,
         onTap: onViewMode,
       ),
       SizedBox(height: 6.r),
@@ -151,8 +155,9 @@ class GameActionButtons extends StatelessWidget {
       GameActionButton(
         iconPath: 'assets/images/gamepad/Xbox_Menu_button.png',
         symbol: Symbols.settings_rounded,
-        color: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+        color: scheme.tertiaryFixed,
+        foregroundColor: scheme.onTertiaryFixed,
+        sound: GameActionButtonSound.nav,
         onTap: selectedGame != null ? onSettings : null,
       ),
       // Compact NeoSync status indicator — always the last option.
@@ -180,8 +185,9 @@ class GameActionButtons extends StatelessWidget {
       GameActionButton(
         iconPath: 'assets/images/gamepad/Xbox_A_button.png',
         symbol: Symbols.cloud_download_rounded,
-        color: scheme.secondary,
-        foregroundColor: scheme.onSecondary,
+        color: scheme.tertiaryFixed,
+        foregroundColor: scheme.onTertiaryFixed,
+        sound: GameActionButtonSound.enter,
         onTap: selectedGame != null ? _withRevert(onScrape) : null,
       ),
       SizedBox(height: 6.r),
@@ -189,8 +195,9 @@ class GameActionButtons extends StatelessWidget {
       GameActionButton(
         iconPath: 'assets/images/gamepad/Xbox_Y_button.png',
         symbol: Symbols.casino_rounded,
-        color: scheme.secondary,
-        foregroundColor: scheme.onSecondary,
+        color: scheme.tertiaryFixed,
+        foregroundColor: scheme.onTertiaryFixed,
+        sound: GameActionButtonSound.nav,
         onTap: _withRevert(onRandom),
       ),
     ];
