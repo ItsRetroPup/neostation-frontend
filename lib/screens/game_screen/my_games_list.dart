@@ -28,6 +28,7 @@ import '../../utils/letter_jump.dart';
 import '../../providers/file_provider.dart';
 import '../../providers/sqlite_config_provider.dart';
 import '../../providers/sqlite_database_provider.dart';
+import '../../providers/scraping_provider.dart';
 import '../../models/system_model.dart';
 import '../../models/game_model.dart';
 import 'game_details_card/game_details_card_list.dart';
@@ -185,6 +186,8 @@ class _SystemGamesListState extends State<SystemGamesList> {
   // Memoized providers for lifecycle management.
   late SqliteConfigProvider _configProvider;
   late SqliteDatabaseProvider _databaseProvider;
+  late ScrapingProvider _scrapingProvider;
+  int _lastArtworkRevision = 0;
 
   @override
   void initState() {
@@ -200,6 +203,12 @@ class _SystemGamesListState extends State<SystemGamesList> {
 
     _configProvider = context.read<SqliteConfigProvider>();
     _configProvider.addListener(_onConfigChanged);
+
+    _scrapingProvider = context.read<ScrapingProvider>();
+    _lastArtworkRevision = _scrapingProvider.artworkRevision;
+    _scrapingProvider.addListener(_onScrapingUpdated);
+    _artworkVersion = _lastArtworkRevision;
+    _invalidateArtworkCaches();
 
     GameLegendVisibility.hidden.addListener(_onLegendVisibilityChanged);
 
@@ -230,6 +239,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
     // Detach listeners before disposal.
     _configProvider.removeListener(_onConfigChanged);
     _databaseProvider.removeListener(_onDatabaseUpdated);
+    _scrapingProvider.removeListener(_onScrapingUpdated);
     MusicPlayerService().removeListener(_onMusicPlayerStateChanged);
     GameLegendVisibility.hidden.removeListener(_onLegendVisibilityChanged);
 
@@ -240,6 +250,24 @@ class _SystemGamesListState extends State<SystemGamesList> {
     _cleanupResources();
     _backButtonFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onScrapingUpdated() {
+    final revision = _scrapingProvider.artworkRevision;
+    if (!mounted || revision == _lastArtworkRevision) return;
+    _lastArtworkRevision = revision;
+
+    // Bulk scraping happens outside this route. Reload its metadata and force
+    // image widgets to check the artwork files again.
+    _invalidateArtworkCaches();
+    setState(() => _artworkVersion++);
+    _loadGames();
+  }
+
+  void _invalidateArtworkCaches() {
+    GamesGrid.evictArtworkCaches(const []);
+    GamesCarousel.evictArtworkCaches(const []);
+    PaintingBinding.instance.imageCache.clear();
   }
 
   /// Synchronizes UI state with global configuration changes.
@@ -1058,6 +1086,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
       onScrape: _scrapeSelectedGame,
       scrapingGameRomnames: _scrapingGameRomnames,
       scrapeProgress: _scrapeProgress,
+      artworkVersion: _artworkVersion,
     );
   }
 
@@ -1083,6 +1112,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
       onScrape: _scrapeSelectedGame,
       scrapingGameRomnames: _scrapingGameRomnames,
       scrapeProgress: _scrapeProgress,
+      artworkVersion: _artworkVersion,
     );
   }
 
@@ -1531,6 +1561,15 @@ class _SystemGamesListState extends State<SystemGamesList> {
       );
 
       if (updatedGame != null) {
+        final artworkFolder =
+            updatedGame.systemFolderName ?? widget.system.primaryFolderName;
+        final artworkPaths = [
+          updatedGame.getScreenshotPath(artworkFolder, _fileProvider),
+          updatedGame.getImagePath(artworkFolder, 'box2d', _fileProvider),
+          updatedGame.getImagePath(artworkFolder, 'fanarts', _fileProvider),
+        ];
+        GamesGrid.evictArtworkCaches(artworkPaths);
+        GamesCarousel.evictArtworkCaches(artworkPaths);
         setState(() {
           _selectedGame = updatedGame;
           _artworkVersion++;
