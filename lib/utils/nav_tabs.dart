@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/models/config_model.dart';
 
@@ -7,7 +9,7 @@ import 'package:neostation/models/config_model.dart';
 /// (`_selectedTabIndex`, `_buildCurrentTabContent`, the secondary-display tab
 /// names). Append new tabs at the end — inserting one renumbers every existing
 /// tab and silently repoints all of that dispatch.
-enum NavTab { systems, sync, achievements, scraper, settings }
+enum NavTab { systems, search, sync, achievements, scraper, settings }
 
 /// Static description of one navigation tab: how it is drawn, whether the user
 /// may hide it, and how that preference is read and written.
@@ -15,14 +17,18 @@ class NavTabSpec {
   const NavTabSpec({
     required this.icon,
     required this.labelKey,
+    this.iconData,
     this.hidden,
     this.withHidden,
     this.settingsTitleKey,
     this.settingsSubtitleKey,
   });
 
-  /// Asset drawn in the header strip.
+  /// Asset drawn in the header strip. Use [iconData] when no asset exists.
   final String icon;
+
+  /// Material symbol fallback for tabs with no webp asset.
+  final IconData? iconData;
 
   /// [AppLocale] key for the tab's display name.
   final String labelKey;
@@ -59,6 +65,11 @@ const Map<NavTab, NavTabSpec> navTabSpecs = {
   NavTab.systems: NavTabSpec(
     icon: 'assets/images/icons/grids.webp',
     labelKey: AppLocale.systems,
+  ),
+  NavTab.search: NavTabSpec(
+    icon: '',
+    labelKey: AppLocale.searchTitle,
+    iconData: Symbols.search_rounded,
   ),
   NavTab.sync: NavTabSpec(
     icon: 'assets/images/icons/cloud-add.webp',

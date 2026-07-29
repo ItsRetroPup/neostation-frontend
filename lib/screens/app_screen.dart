@@ -122,15 +122,6 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     _currentInstance = this;
     WidgetsBinding.instance.addObserver(this);
 
-    _tabContents = [
-      SystemContent(), // Tab 0: Game Systems
-      SearchScreen(), // Tab 1: Library-wide ROM search
-      NeoSyncContent(), // Tab 2: Cloud Persistence (NeoSync)
-      RAContent(), // Tab 3: RetroAchievements
-      ScraperContent(), // Tab 4: Metadata Scraper
-      NewSettingsScreen(), // Tab 5: Global Settings
-    ];
-
     // Initialize the navigation bridge with core application callbacks.
     _gamepadNav = GamepadNavigation(
       onNavigateUp: _navigateContentUp,

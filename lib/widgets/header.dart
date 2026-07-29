@@ -13,7 +13,6 @@ import 'package:neostation/services/permission_service.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/widgets/header_sort_dropdown.dart';
 import 'package:neostation/screens/app_screen.dart';
-import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/utils/nav_tabs.dart';
 import 'package:neostation/utils/time_format.dart';
 import 'package:flutter_localization/flutter_localization.dart';
@@ -47,10 +46,6 @@ class HeaderState extends State<Header> {
   @override
   void initState() {
     super.initState();
-    _tabFocusNodes = List.generate(
-      AppTabs.count,
-    // One per canonical tab (indexed by NavTab.index), not per *visible* tab, so
-    // hiding a tab can't shift a node onto a different button.
     _tabFocusNodes = List.generate(
       NavTab.values.length,
       (_) => FocusNode(skipTraversal: true),
@@ -250,66 +245,6 @@ class HeaderState extends State<Header> {
                           // Tabs Section
                           Stack(
                             children: [
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  AppTabs.systems,
-                                  "assets/images/icons/grids.webp",
-                                  AppLocale.systems.getString(context),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  AppTabs.search,
-                                  null,
-                                  AppLocale.searchTitle.getString(context),
-                                  iconData: Symbols.search_rounded,
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  AppTabs.sync,
-                                  "assets/images/icons/cloud-add.webp",
-                                  'Sync',
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  AppTabs.achievements,
-                                  "assets/images/icons/enhance-prize.webp",
-                                  AppLocale.achievements.getString(context),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  AppTabs.scraper,
-                                  "assets/images/icons/box-search.webp",
-                                  AppLocale.scraping.getString(context),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  AppTabs.settings,
-                                  "assets/images/icons/setting.webp",
-                                  AppLocale.settings.getString(context),
-                                ),
                               // Moving indicator
                               AnimatedPositioned(
                                 left:
@@ -345,9 +280,10 @@ class HeaderState extends State<Header> {
                                         context,
                                         tab.index,
                                         navTabSpec(tab).icon,
-                                        navTabSpec(
-                                          tab,
-                                        ).labelKey.getString(context),
+                                        navTabSpec(tab).labelKey.getString(
+                                          context,
+                                        ),
+                                        iconData: navTabSpec(tab).iconData,
                                       ),
                                     ),
                                 ],
