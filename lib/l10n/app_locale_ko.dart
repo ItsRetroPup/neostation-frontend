@@ -874,4 +874,21 @@ const Map<String, dynamic> appLocaleKo = {
       '아트 팩이 설치되었습니다! 나중에 설정에서 더 많은 테마를 살펴볼 수 있습니다.',
   AppLocale.wizardArtPackUnavailable:
       '현재 아트 팩에 접근할 수 없습니다. 온라인 상태가 되면 설정에서 설치할 수 있습니다.',
+
+  // Library search & filtering.
+  AppLocale.searchTitle: '검색',
+  AppLocale.searchNameHint: '검색...',
+  AppLocale.searchNoResults: '게임을 찾을 수 없습니다',
+  AppLocale.searchResultsCount: '결과 {count}개',
+  AppLocale.searchClearFilters: '필터 지우기',
+  AppLocale.searchFilters: '필터',
+  AppLocale.searchViewResults: '결과 보기',
+  AppLocale.searchOpen: '검색',
+  AppLocale.searchGoToGame: '게임으로 이동',
+  AppLocale.filterPlatform: '플랫폼',
+  AppLocale.filterDeveloper: '개발사',
+  AppLocale.filterGenre: '장르',
+  AppLocale.filterRating: '평점',
+  AppLocale.filterYear: '연도',
+  AppLocale.filterAny: '전체',
 };

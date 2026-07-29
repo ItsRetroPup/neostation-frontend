@@ -62,6 +62,11 @@ part 'my_games_list/launch_flow.dart';
 class SystemGamesList extends StatefulWidget {
   final SystemModel system;
   final FileProvider fileProvider;
+
+  /// When set, the list opens with this game selected and scrolled into view
+  /// instead of defaulting to the first entry. Used by the RetroAchievements
+  /// dashboard and by the library-wide search "Go to game" action to reveal a
+  /// specific game in the normal browsing view.
   final String? initialRomPath;
 
   const SystemGamesList({

@@ -914,6 +914,22 @@ mixin AppLocale {
   static const String addRomFolder = 'add_rom_folder';
   static const String removeRomFolder = 'remove_rom_folder';
 
+  // Library search & filtering.
+  static const String searchTitle = 'search_title';
+  static const String searchNameHint = 'search_name_hint';
+  static const String searchNoResults = 'search_no_results';
+  static const String searchResultsCount = 'search_results_count';
+  static const String searchClearFilters = 'search_clear_filters';
+  static const String searchFilters = 'search_filters';
+  static const String searchViewResults = 'search_view_results';
+  static const String searchOpen = 'search_open';
+  static const String searchGoToGame = 'search_go_to_game';
+  static const String filterPlatform = 'filter_platform';
+  static const String filterDeveloper = 'filter_developer';
+  static const String filterGenre = 'filter_genre';
+  static const String filterRating = 'filter_rating';
+  static const String filterYear = 'filter_year';
+  static const String filterAny = 'filter_any';
   // Destructive-action confirmation prompts
   static const String resetPlayTimeConfirm = 'reset_play_time_confirm';
   static const String resetPlayTimeConfirmBody = 'reset_play_time_confirm_body';
