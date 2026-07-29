@@ -147,13 +147,15 @@ class _SearchScreenState extends State<SearchScreen> {
         onActivate: () => _gamepadNav.activate(),
         onDeactivate: () => _gamepadNav.deactivate(),
       );
+
+      // Wait for the tab indicator animation (160ms AnimatedPositioned)
+      // to finish before starting any database work.
+      Future.delayed(const Duration(milliseconds: 250), _loadGames);
     });
 
     if (Platform.isAndroid) {
       _secondaryDisplayState = SecondaryDisplayState.instance;
     }
-
-    _loadGames();
   }
 
   @override
@@ -173,10 +175,18 @@ class _SearchScreenState extends State<SearchScreen> {
     final games = await GameRepository.getAllGames();
     if (!mounted) return;
 
+    // Phase 1: make the data available and show the loaded UI instantly
+    // without any heavy computation, so the tab transition never freezes.
     setState(() {
       _all = games;
       _loading = false;
-      _recompute();
+    });
+
+    // Phase 2: after the first loaded frame is on screen, run the expensive
+    // filter / sort / facet computation off the critical path.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _recompute());
     });
   }
 
