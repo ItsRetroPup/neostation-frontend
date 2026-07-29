@@ -79,6 +79,9 @@ class ScrapingContentState extends State<ScrapingContent> {
       );
 
       if (scrapingSuccess) {
+        if (scrapingProvider.successfulGames > 0) {
+          scrapingProvider.markArtworkUpdated();
+        }
         if (mounted) {
           final message = scrapingProvider.totalGames == 0
               ? AppLocale.allGamesUpToDate.getString(context)
