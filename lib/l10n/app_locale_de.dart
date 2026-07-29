@@ -445,6 +445,8 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.stoppingScraping: 'Scraping-Prozess wird gestoppt...',
   AppLocale.syncError: 'Fehler beim Synchronisieren der System-IDs',
   AppLocale.metadataError: 'Fehler während des Scraping-Prozesses',
+  AppLocale.scrapeQuotaExceeded:
+      'ScreenScraper Tages-Scraping-Kontingent überschritten',
   AppLocale.start: 'Start',
   AppLocale.systemsSub: 'Wähle die Systeme zum Scrapen',
   AppLocale.disableAll: 'Alle deaktivieren',

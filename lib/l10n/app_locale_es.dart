@@ -442,6 +442,8 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.stoppingScraping: 'Deteniendo el proceso de scraping...',
   AppLocale.syncError: 'Error al sincronizar IDs de sistemas',
   AppLocale.metadataError: 'Error durante el scraping de metadatos',
+  AppLocale.scrapeQuotaExceeded:
+      'Has superado la cuota diaria de scraping de ScreenScraper',
   AppLocale.start: 'Iniciar',
   AppLocale.systemsSub: 'Selecciona qué sistemas escanear',
   AppLocale.disableAll: 'Desactivar Todos',

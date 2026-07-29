@@ -436,6 +436,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.stoppingScraping: 'Остановка процесса скрапинга...',
   AppLocale.syncError: 'Ошибка синхронизации ID систем',
   AppLocale.metadataError: 'Ошибка при скрапинге метаданных',
+  AppLocale.scrapeQuotaExceeded:
+      'Превышена дневная квота скрейпинга ScreenScraper',
   AppLocale.start: 'Старт',
   AppLocale.systemsSub: 'Выберите системы для скрапинга',
   AppLocale.disableAll: 'Отключить все',

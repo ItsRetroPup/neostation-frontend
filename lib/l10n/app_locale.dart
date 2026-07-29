@@ -833,6 +833,7 @@ mixin AppLocale {
   static const String scrapeUnexpectedError = 'scrape_unexpected_error';
   static const String scrapeSuccessful = 'scrape_successful';
   static const String scrapeErrorGame = 'scrape_error_game';
+  static const String scrapeQuotaExceeded = 'scrape_quota_exceeded';
 
   // ---------------------------------------------------------------------------
   // User data location

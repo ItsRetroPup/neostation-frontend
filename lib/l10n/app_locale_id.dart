@@ -427,6 +427,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.stoppingScraping: 'Menghentikan proses scraping...',
   AppLocale.syncError: 'Kesalahan saat menyinkronkan ID sistem',
   AppLocale.metadataError: 'Kesalahan selama proses scraping',
+  AppLocale.scrapeQuotaExceeded:
+      'Kuota harian scraping ScreenScraper terlampaui',
   AppLocale.start: 'Mulai',
   AppLocale.systemsSub: 'Pilih sistem yang akan di-scrape',
   AppLocale.disableAll: 'Nonaktifkan Semua',
