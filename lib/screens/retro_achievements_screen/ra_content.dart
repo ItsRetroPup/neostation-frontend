@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:neostation/services/permission_service.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
 import 'package:provider/provider.dart';
 import '../../providers/retro_achievements_provider.dart';
@@ -21,9 +19,11 @@ class RAContent extends StatefulWidget {
 
   /// Returns whether the selection/scroll actually moved, so the gamepad
   /// handler can suppress the nav sound when repeating against a boundary.
-  static bool navigateUp() => _RAContentState.navigateUp();
+  static bool navigateUp({bool repeat = false}) =>
+      _RAContentState.navigateUp(repeat: repeat);
 
-  static bool navigateDown() => _RAContentState.navigateDown();
+  static bool navigateDown({bool repeat = false}) =>
+      _RAContentState.navigateDown(repeat: repeat);
 
   @override
   State<RAContent> createState() => _RAContentState();
@@ -38,7 +38,7 @@ class _RAContentState extends State<RAContent> {
   final FocusNode _apiKeyFocus = FocusNode();
   final ScrollController _dashboardScrollController = ScrollController();
 
-  bool _isTelevision = false;
+  bool _controllerNavigationEnabled = false;
   int _tvFieldIndex = 0;
   GamepadNavigation? _tvNav;
 
@@ -46,15 +46,11 @@ class _RAContentState extends State<RAContent> {
   void initState() {
     super.initState();
     _currentInstance = this;
-    _initTvMode();
+    _initControllerNavigation();
   }
 
-  Future<void> _initTvMode() async {
-    if (!Platform.isAndroid) return;
-    final isTV = await PermissionService.isTelevision();
-    if (!mounted) return;
-    setState(() => _isTelevision = isTV);
-    if (!isTV) return;
+  void _initControllerNavigation() {
+    _controllerNavigationEnabled = true;
     _tvNav = GamepadNavigation(
       onNavigateUp: _handleNavigateUp,
       onNavigateDown: _handleNavigateDown,
@@ -63,6 +59,9 @@ class _RAContentState extends State<RAContent> {
       onNextTab: AppNavigation.nextTab,
       onLeftBumper: AppNavigation.previousTab,
       onRightBumper: AppNavigation.nextTab,
+      isTextFieldFocused: _isAnyFieldFocused,
+      allowDirectionalNavigationWhileTextFieldFocused: true,
+      onBack: _exitTextEntry,
     );
     _tvNav!.initialize();
     GamepadNavigationManager.pushLayer(
@@ -73,7 +72,8 @@ class _RAContentState extends State<RAContent> {
   }
 
   bool _tvMove(int delta) {
-    if (!_isTelevision || _usernameFocus.hasFocus) return false;
+    if (!_controllerNavigationEnabled) return false;
+    _exitTextEntry();
     final next = (_tvFieldIndex + delta).clamp(0, 2);
     if (next == _tvFieldIndex) return false;
     setState(() {
@@ -83,7 +83,7 @@ class _RAContentState extends State<RAContent> {
   }
 
   void _tvSelect() {
-    if (!_isTelevision) return;
+    if (!_controllerNavigationEnabled) return;
     if (_tvFieldIndex == 0) {
       _usernameFocus.requestFocus();
     } else if (_tvFieldIndex == 1) {
@@ -93,7 +93,14 @@ class _RAContentState extends State<RAContent> {
     }
   }
 
-  bool _isTvSelected(int slot) => _isTelevision && _tvFieldIndex == slot;
+  bool _isAnyFieldFocused() => _usernameFocus.hasFocus || _apiKeyFocus.hasFocus;
+
+  void _exitTextEntry() {
+    if (_isAnyFieldFocused()) FocusScope.of(context).unfocus();
+  }
+
+  bool _isTvSelected(int slot) =>
+      _controllerNavigationEnabled && _tvFieldIndex == slot;
 
   Future<void> _connectToRA() async {
     final raProvider = context.read<RetroAchievementsProvider>();
@@ -134,21 +141,25 @@ class _RAContentState extends State<RAContent> {
     super.dispose();
   }
 
-  static bool navigateUp() => _currentInstance?._handleNavigateUp() ?? true;
+  static bool navigateUp({bool repeat = false}) =>
+      _currentInstance?._handleNavigateUp(repeat) ?? true;
 
-  static bool navigateDown() => _currentInstance?._handleNavigateDown() ?? true;
+  static bool navigateDown({bool repeat = false}) =>
+      _currentInstance?._handleNavigateDown(repeat) ?? true;
 
-  bool _handleNavigateUp() {
+  bool _handleNavigateUp(bool repeat) {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) {
+      if (repeat) return false;
       return _tvMove(-1);
     }
     return _scrollDashboard(-160.r);
   }
 
-  bool _handleNavigateDown() {
+  bool _handleNavigateDown(bool repeat) {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) {
+      if (repeat) return false;
       return _tvMove(1);
     }
     return _scrollDashboard(160.r);

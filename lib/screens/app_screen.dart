@@ -400,10 +400,10 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
 
   /// Returns whether the selection moved, so the gamepad handler can suppress
   /// the nav sound when repeating against the start/end of a list.
-  bool _navigateContentDown() {
+  bool _navigateContentDown(bool repeat) {
     if (_selectedTabIndex == AppTabs.systems) return true;
     if (_selectedTabIndex == AppTabs.achievements) {
-      return RAContent.navigateDown();
+      return RAContent.navigateDown(repeat: repeat);
     }
     if (_selectedTabIndex == AppTabs.scraper) {
       NewScraperOptionsScreen.navigateDown();
@@ -415,10 +415,10 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     return true;
   }
 
-  bool _navigateContentUp() {
+  bool _navigateContentUp(bool repeat) {
     if (_selectedTabIndex == AppTabs.systems) return true;
     if (_selectedTabIndex == AppTabs.achievements) {
-      return RAContent.navigateUp();
+      return RAContent.navigateUp(repeat: repeat);
     }
     if (_selectedTabIndex == AppTabs.scraper) {
       NewScraperOptionsScreen.navigateUp();
@@ -482,7 +482,11 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
 
     // Re-verify navigation focus after tab transition.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _gamepadNav.activate();
+      // The destination tab may have pushed its own navigation layer during
+      // the rebuild. Reactivate the stack's top layer instead of unconditionally
+      // reactivating AppScreen, which would leave two controllers handling the
+      // same D-pad event (e.g. Username -> API Key -> Connect in one press).
+      GamepadNavigationManager.reactivate();
     });
   }
 

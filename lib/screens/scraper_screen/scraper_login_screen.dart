@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
-import 'package:neostation/services/permission_service.dart';
 import 'package:neostation/services/screenscraper_service.dart';
 import 'package:neostation/widgets/custom_notification.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -25,7 +23,7 @@ class ScraperLoginScreen extends StatefulWidget {
 class _ScraperLoginScreenState extends State<ScraperLoginScreen> {
   GamepadNavigation? _gamepadNav;
   int _selectedFieldIndex = 0; // 0: username, 1: password, 2: login button
-  bool _isTelevision = false;
+  bool _controllerNavigationEnabled = false;
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -38,15 +36,11 @@ class _ScraperLoginScreenState extends State<ScraperLoginScreen> {
   @override
   void initState() {
     super.initState();
-    _initTvMode();
+    _initControllerNavigation();
   }
 
-  Future<void> _initTvMode() async {
-    if (!Platform.isAndroid) return;
-    final isTV = await PermissionService.isTelevision();
-    if (!mounted) return;
-    setState(() => _isTelevision = isTV);
-    if (!isTV) return;
+  void _initControllerNavigation() {
+    _controllerNavigationEnabled = true;
     _gamepadNav = GamepadNavigation(
       onNavigateUp: _navigateUp,
       onNavigateDown: _navigateDown,
@@ -55,6 +49,9 @@ class _ScraperLoginScreenState extends State<ScraperLoginScreen> {
       onNextTab: AppNavigation.nextTab,
       onLeftBumper: AppNavigation.previousTab,
       onRightBumper: AppNavigation.nextTab,
+      isTextFieldFocused: _isAnyFieldFocused,
+      allowDirectionalNavigationWhileTextFieldFocused: true,
+      onBack: _exitTextEntry,
     );
     _gamepadNav!.initialize();
     GamepadNavigationManager.pushLayer(
@@ -78,21 +75,28 @@ class _ScraperLoginScreenState extends State<ScraperLoginScreen> {
   bool _isAnyFieldFocused() =>
       _usernameFocus.hasFocus || _passwordFocus.hasFocus;
 
+  void _exitTextEntry() {
+    if (_isAnyFieldFocused()) FocusScope.of(context).unfocus();
+  }
+
   void _navigateUp() {
-    if (_isAnyFieldFocused()) return;
+    if (!_controllerNavigationEnabled) return;
+    _exitTextEntry();
     setState(() {
       _selectedFieldIndex = (_selectedFieldIndex - 1 + 3) % 3;
     });
   }
 
   void _navigateDown() {
-    if (_isAnyFieldFocused()) return;
+    if (!_controllerNavigationEnabled) return;
+    _exitTextEntry();
     setState(() {
       _selectedFieldIndex = (_selectedFieldIndex + 1) % 3;
     });
   }
 
   void _selectCurrentField() {
+    if (!_controllerNavigationEnabled) return;
     switch (_selectedFieldIndex) {
       case 0:
         _usernameFocus.requestFocus();
@@ -106,7 +110,8 @@ class _ScraperLoginScreenState extends State<ScraperLoginScreen> {
     }
   }
 
-  bool _isTvSelected(int slot) => _isTelevision && _selectedFieldIndex == slot;
+  bool _isTvSelected(int slot) =>
+      _controllerNavigationEnabled && _selectedFieldIndex == slot;
 
   Future<void> _performLogin() async {
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {

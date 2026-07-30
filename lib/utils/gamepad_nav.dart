@@ -102,6 +102,10 @@ class GamepadNavigation {
   /// focus search, preventing off-stage text fields from blocking navigation.
   final bool Function()? isTextFieldFocused;
 
+  /// Lets a form use up/down to move between its inputs while one is focused.
+  /// The form is responsible for clearing focus before changing its selection.
+  final bool allowDirectionalNavigationWhileTextFieldFocused;
+
   static final _log = LoggerService.instance;
 
   /// When true, all raw input events are logged for diagnostic purposes.
@@ -290,6 +294,7 @@ class GamepadNavigation {
     this.letterJumpAxis = LetterJumpAxis.vertical,
     this.accelerateRepeats = false,
     this.isTextFieldFocused,
+    this.allowDirectionalNavigationWhileTextFieldFocused = false,
   });
 
   /// Starts listening for gamepad and keyboard events.
@@ -720,14 +725,25 @@ class GamepadNavigation {
   void _handleTranslatedEvent(TranslatedGamepadEvent event) {
     if (!_isActive) return;
 
-    // ANDROID: Handle text field focus by restricting navigation.
-    // Allow tab switching and back button to ensure the user can always exit a focused state.
-    if (isAndroid && _isTextFieldFocused()) {
+    // While a screen has opted into explicit text-field focus tracking, keep
+    // controller input with the platform text editor rather than navigating
+    // the underlying screen. Android always needs this guard; desktop screens
+    // opt in when they expose controller-editable fields.
+    // Allow tab switching and back button to ensure the user can always exit
+    // a focused state.
+    if ((isAndroid || isTextFieldFocused != null) && _isTextFieldFocused()) {
       final allowedWhileTyping = {
         GamepadInputType.buttonLB,
         GamepadInputType.buttonRB,
         GamepadInputType.buttonB,
       };
+      if (allowDirectionalNavigationWhileTextFieldFocused) {
+        allowedWhileTyping.addAll({
+          GamepadInputType.dpadUp,
+          GamepadInputType.dpadDown,
+          GamepadInputType.leftStickY,
+        });
+      }
       if (!allowedWhileTyping.contains(event.inputType)) return;
     }
 
@@ -1158,6 +1174,10 @@ class GamepadNavigation {
       _stopRepeatTimer(LogicalKeyboardKey.keyA);
     }
 
+    // A form may deliberately clear text-field focus as it moves to the next
+    // input. Capture this before invoking the callback so that same D-pad hold
+    // cannot start a repeat timer and skip over the newly selected field.
+    final wasTextFieldFocused = _isTextFieldFocused();
     final moved = _runNavAction(action, false);
     if (moved) {
       SfxService().playNavSound();
@@ -1165,7 +1185,7 @@ class GamepadNavigation {
 
     // Don't auto-repeat while a text field is focused. Repeating would keep
     // moving focus away from the field and create an infinite navigation loop.
-    if (_isTextFieldFocused()) {
+    if (wasTextFieldFocused || _isTextFieldFocused()) {
       cancelAllRepeatTimers();
       return;
     }
