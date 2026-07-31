@@ -72,6 +72,7 @@ class _RAContentState extends State<RAContent> {
   }
 
   bool _moveSelection(int delta) {
+    if (_isAnyFieldFocused()) return false;
     setState(() {
       _selectedFieldIndex = (_selectedFieldIndex + delta + 3) % 3;
     });

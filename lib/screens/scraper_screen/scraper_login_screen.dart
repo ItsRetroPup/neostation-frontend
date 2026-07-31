@@ -77,6 +77,7 @@ class _ScraperLoginScreenState extends State<ScraperLoginScreen> {
   }
 
   bool _navigateUp(bool repeat) {
+    if (_isAnyFieldFocused()) return false;
     if (repeat) return false;
     setState(() {
       _selectedFieldIndex = (_selectedFieldIndex - 1 + 3) % 3;
@@ -85,6 +86,7 @@ class _ScraperLoginScreenState extends State<ScraperLoginScreen> {
   }
 
   bool _navigateDown(bool repeat) {
+    if (_isAnyFieldFocused()) return false;
     if (repeat) return false;
     setState(() {
       _selectedFieldIndex = (_selectedFieldIndex + 1) % 3;
