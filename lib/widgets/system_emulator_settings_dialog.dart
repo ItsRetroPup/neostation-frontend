@@ -18,6 +18,7 @@ import '../providers/sqlite_database_provider.dart';
 import '../repositories/system_repository.dart';
 import '../repositories/emulator_repository.dart';
 import '../services/config_service.dart';
+import '../services/linux_emulator_service.dart';
 import 'package:neostation/services/logger_service.dart';
 import '../utils/gamepad_nav.dart';
 import '../services/game_service.dart' show GamepadNavigationManager;
@@ -65,6 +66,8 @@ class _SystemEmulatorSettingsDialogState
   int _currentTab = 0; // Default to General tab
   int _generalIndex = 0; // Index for General tab items
   int _appearanceIndex = 0; // Index for Appearance tab items
+  // Emulators tab: 0 = default/core action, 1 = executable picker.
+  int _emulatorActionIndex = 0;
   // 0: Prefer filename, 1: Hide ext, 2: (), 3: [], 4: Recursive?
   late int _totalGeneralItems;
   late List<GlobalKey> _generalItemKeys;
@@ -699,28 +702,26 @@ class _SystemEmulatorSettingsDialogState
       // Determine executable extension based on platform
       final extension = Platform.isWindows ? 'exe' : null;
 
-      // Open file picker
-      final result = await FilePicker.pickFiles(
-        dialogTitle: AppLocale.selectEmulatorExecutable
-            .getString(context)
-            .replaceFirst('{name}', standalone.name),
-        type: extension != null ? FileType.custom : FileType.any,
-        allowedExtensions: extension != null ? [extension] : null,
-        lockParentWindow: true,
-      );
+      final selectedPath = Platform.isLinux
+          ? await TvDirectoryPicker.showExecutablePicker(context)
+          : (await FilePicker.pickFiles(
+              dialogTitle: AppLocale.selectEmulatorExecutable
+                  .getString(context)
+                  .replaceFirst('{name}', standalone.name),
+              type: extension != null ? FileType.custom : FileType.any,
+              allowedExtensions: extension != null ? [extension] : null,
+              lockParentWindow: true,
+            ))?.files.firstOrNull?.path;
 
-      if (result == null || result.files.isEmpty) {
-        return; // User cancelled
-      }
-
-      final selectedPath = result.files.first.path;
-      if (selectedPath == null) {
-        return;
-      }
+      if (selectedPath == null) return;
 
       // Verify file exists
       bool exists = false;
-      if (Platform.isMacOS && selectedPath.endsWith('.app')) {
+      if (Platform.isLinux) {
+        exists = await LinuxEmulatorService.isAvailable(
+          LinuxEmulatorService.normalizeSelectedPath(selectedPath),
+        );
+      } else if (Platform.isMacOS && selectedPath.endsWith('.app')) {
         exists = await Directory(selectedPath).exists();
       } else {
         exists = await File(selectedPath).exists();
@@ -740,7 +741,9 @@ class _SystemEmulatorSettingsDialogState
       // Save path to database
       await EmulatorRepository.setStandaloneEmulatorPath(
         standalone.uniqueIdentifier,
-        selectedPath,
+        Platform.isLinux
+            ? LinuxEmulatorService.normalizeSelectedPath(selectedPath)
+            : selectedPath,
       );
 
       // Reload the full dialog to update UI (same as RetroArch)
@@ -771,22 +774,23 @@ class _SystemEmulatorSettingsDialogState
   /// Configure RetroArch executable path on desktop platforms
   Future<void> _configureRetroArchPath() async {
     try {
-      // Open file picker for RetroArch executable
-      FilePickerResult? result = await FilePicker.pickFiles(
-        type: Platform.isWindows ? FileType.custom : FileType.any,
-        allowedExtensions: Platform.isWindows ? ['exe'] : null,
-        dialogTitle: AppLocale.selectRetroArchExe.getString(context),
-      );
+      final selectedPath = Platform.isLinux
+          ? await TvDirectoryPicker.showExecutablePicker(context)
+          : (await FilePicker.pickFiles(
+              type: Platform.isWindows ? FileType.custom : FileType.any,
+              allowedExtensions: Platform.isWindows ? ['exe'] : null,
+              dialogTitle: AppLocale.selectRetroArchExe.getString(context),
+            ))?.files.firstOrNull?.path;
 
-      if (result == null || result.files.single.path == null) {
-        return; // User cancelled
-      }
-
-      final selectedPath = result.files.single.path!;
+      if (selectedPath == null) return;
 
       // Verify the file exists
       bool exists = false;
-      if (Platform.isMacOS && selectedPath.endsWith('.app')) {
+      if (Platform.isLinux) {
+        exists = await LinuxEmulatorService.isAvailable(
+          LinuxEmulatorService.normalizeSelectedPath(selectedPath),
+        );
+      } else if (Platform.isMacOS && selectedPath.endsWith('.app')) {
         exists = await Directory(selectedPath).exists();
       } else {
         exists = await File(selectedPath).exists();
@@ -806,7 +810,9 @@ class _SystemEmulatorSettingsDialogState
       // Save RetroArch path
       await EmulatorRepository.saveDetectedEmulatorPath(
         emulatorName: 'RetroArch',
-        emulatorPath: selectedPath,
+        emulatorPath: Platform.isLinux
+            ? LinuxEmulatorService.normalizeSelectedPath(selectedPath)
+            : selectedPath,
       );
 
       // Refresh the dialog to update UI

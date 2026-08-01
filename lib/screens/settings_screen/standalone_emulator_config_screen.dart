@@ -9,6 +9,8 @@ import 'package:neostation/utils/gamepad_nav.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:neostation/widgets/custom_notification.dart';
 import 'package:neostation/services/logger_service.dart';
+import 'package:neostation/services/linux_emulator_service.dart';
+import 'package:neostation/widgets/tv_directory_picker.dart';
 
 /// A specialized configuration screen for mapping hardware-specific standalone
 /// emulator binaries to the application's execution engine.
@@ -137,8 +139,15 @@ class _StandaloneEmulatorConfigScreenState
         if (result != null && result.files.single.path != null) {
           executablePath = result.files.single.path!;
         }
+      } else if (Platform.isLinux) {
+        executablePath = await TvDirectoryPicker.showExecutablePicker(context);
+        if (executablePath != null) {
+          executablePath = LinuxEmulatorService.normalizeSelectedPath(
+            executablePath,
+          );
+        }
       } else {
-        // POSIX Environments (Linux/macOS): Utilize generic binary selection.
+        // macOS: Utilize generic binary selection.
         final result = await FilePicker.pickFiles(
           type: FileType.any,
           dialogTitle: 'Select ${emulator['name']} executable',

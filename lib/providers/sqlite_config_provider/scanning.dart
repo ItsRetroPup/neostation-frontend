@@ -877,7 +877,9 @@ extension SqliteConfigScanning on SqliteConfigProvider {
   }
 
   Future<void> _loadAvailableEmulators() async {
-    _availableEmulators = await SqliteConfigService.loadAvailableEmulators();
+    _availableEmulators = Platform.isLinux
+        ? await SqliteConfigService.detectEmulators()
+        : await SqliteConfigService.loadAvailableEmulators();
   }
 
   Future<void> _loadDetectedSystems() async {

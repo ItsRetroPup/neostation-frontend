@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../services/linux_emulator_service.dart';
 import 'package:flutter/services.dart';
 import 'package:neostation/services/logger_service.dart';
 
@@ -152,7 +153,11 @@ class StandaloneEmulatorModel {
   /// On Android, performs a package name lookup via native channels.
   Future<bool> get isInstalled async {
     if (!Platform.isAndroid) {
-      return isConfigured && userPath != null && await File(userPath!).exists();
+      if (!isConfigured || userPath == null) return false;
+      if (Platform.isLinux) {
+        return LinuxEmulatorService.isAvailable(userPath!);
+      }
+      return File(userPath!).exists();
     }
 
     if (androidPackageName == null || androidPackageName!.isEmpty) {

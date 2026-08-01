@@ -55,15 +55,15 @@
         },
         "windows": {
           "executable": "duckstation.exe",
-          "args": "{file.path}"
+          "args": "-batch {file.path}"
         },
         "linux": {
           "executable": "duckstation",
-          "args": "{file.path}"
+          "args": "-batch {file.path}"
         },
         "macos": {
           "executable": "duckstation",
-          "args": "{file.path}"
+          "args": "-batch {file.path}"
         }
       }
     },
