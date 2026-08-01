@@ -4562,6 +4562,7 @@ class SqliteService {
           path: '',
           detected: false,
           possiblePaths: {},
+          uniqueId: row['unique_identifier']?.toString(),
         ),
       );
     }
