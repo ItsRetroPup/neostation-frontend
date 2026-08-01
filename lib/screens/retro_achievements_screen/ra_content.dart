@@ -1,10 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:neostation/services/permission_service.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
 import 'package:provider/provider.dart';
 import '../../providers/retro_achievements_provider.dart';
+import '../../widgets/confirm_action_dialog.dart';
 import '../../widgets/custom_notification.dart';
 import '../../responsive.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -21,9 +20,11 @@ class RAContent extends StatefulWidget {
 
   /// Returns whether the selection/scroll actually moved, so the gamepad
   /// handler can suppress the nav sound when repeating against a boundary.
-  static bool navigateUp() => _RAContentState.navigateUp();
+  static bool navigateUp({bool repeat = false}) =>
+      _RAContentState.navigateUp(repeat: repeat);
 
-  static bool navigateDown() => _RAContentState.navigateDown();
+  static bool navigateDown({bool repeat = false}) =>
+      _RAContentState.navigateDown(repeat: repeat);
 
   @override
   State<RAContent> createState() => _RAContentState();
@@ -38,62 +39,98 @@ class _RAContentState extends State<RAContent> {
   final FocusNode _apiKeyFocus = FocusNode();
   final ScrollController _dashboardScrollController = ScrollController();
 
-  bool _isTelevision = false;
-  int _tvFieldIndex = 0;
-  GamepadNavigation? _tvNav;
+  int _selectedFieldIndex = 0;
+  bool _dashboardLogoutSelected = true;
+  GamepadNavigation? _gamepadNav;
 
   @override
   void initState() {
     super.initState();
     _currentInstance = this;
-    _initTvMode();
+    _dashboardScrollController.addListener(_updateDashboardSelection);
+    _initControllerNavigation();
   }
 
-  Future<void> _initTvMode() async {
-    if (!Platform.isAndroid) return;
-    final isTV = await PermissionService.isTelevision();
-    if (!mounted) return;
-    setState(() => _isTelevision = isTV);
-    if (!isTV) return;
-    _tvNav = GamepadNavigation(
+  void _initControllerNavigation() {
+    _gamepadNav = GamepadNavigation(
       onNavigateUp: _handleNavigateUp,
       onNavigateDown: _handleNavigateDown,
-      onSelectItem: _tvSelect,
+      onSelectItem: _selectCurrent,
       onPreviousTab: AppNavigation.previousTab,
       onNextTab: AppNavigation.nextTab,
       onLeftBumper: AppNavigation.previousTab,
       onRightBumper: AppNavigation.nextTab,
+      isTextFieldFocused: _isAnyFieldFocused,
+      onBack: _exitTextEntry,
     );
-    _tvNav!.initialize();
+    _gamepadNav!.initialize();
     GamepadNavigationManager.pushLayer(
       'ra_content',
-      onActivate: () => _tvNav?.activate(),
-      onDeactivate: () => _tvNav?.deactivate(),
+      onActivate: () => _gamepadNav?.activate(),
+      onDeactivate: () => _gamepadNav?.deactivate(),
     );
   }
 
-  bool _tvMove(int delta) {
-    if (!_isTelevision || _usernameFocus.hasFocus) return false;
-    final next = (_tvFieldIndex + delta).clamp(0, 2);
-    if (next == _tvFieldIndex) return false;
+  bool _moveSelection(int delta) {
+    if (_isAnyFieldFocused()) return false;
     setState(() {
-      _tvFieldIndex = next;
+      _selectedFieldIndex = (_selectedFieldIndex + delta + 3) % 3;
     });
     return true;
   }
 
-  void _tvSelect() {
-    if (!_isTelevision) return;
-    if (_tvFieldIndex == 0) {
+  void _selectCurrent() {
+    final raProvider = context.read<RetroAchievementsProvider>();
+    if (raProvider.isConnected) {
+      if (_dashboardLogoutSelected) _requestDisconnect();
+      return;
+    }
+    if (_selectedFieldIndex == 0) {
       _usernameFocus.requestFocus();
-    } else if (_tvFieldIndex == 1) {
+    } else if (_selectedFieldIndex == 1) {
       _apiKeyFocus.requestFocus();
     } else {
       _connectToRA();
     }
   }
 
-  bool _isTvSelected(int slot) => _isTelevision && _tvFieldIndex == slot;
+  bool _isAnyFieldFocused() => _usernameFocus.hasFocus || _apiKeyFocus.hasFocus;
+
+  void _exitTextEntry() {
+    if (_isAnyFieldFocused()) FocusScope.of(context).unfocus();
+  }
+
+  bool _isSelected(int slot) => _selectedFieldIndex == slot;
+
+  void _updateDashboardSelection() {
+    if (!_dashboardScrollController.hasClients) return;
+    final position = _dashboardScrollController.position;
+    final selected = position.pixels <= position.minScrollExtent + 1;
+    if (selected == _dashboardLogoutSelected || !mounted) return;
+    setState(() => _dashboardLogoutSelected = selected);
+  }
+
+  Future<void> _requestDisconnect() async {
+    final confirmed = await ConfirmActionDialog.show(
+      context,
+      title: AppLocale.disconnectRaConfirm.getString(context),
+      body: AppLocale.disconnectRaConfirmBody.getString(context),
+      confirmLabel: AppLocale.logout.getString(context),
+      icon: Symbols.logout_rounded,
+    );
+    if (!confirmed || !mounted) return;
+    context.read<RetroAchievementsProvider>().disconnect(clearSavedUser: true);
+    if (!mounted) return;
+    setState(() {
+      _selectedFieldIndex = 0;
+      _dashboardLogoutSelected = true;
+    });
+    AppNotification.showNotification(
+      context,
+      AppLocale.disconnectedRA.getString(context),
+      type: NotificationType.info,
+    );
+  }
 
   Future<void> _connectToRA() async {
     final raProvider = context.read<RetroAchievementsProvider>();
@@ -125,7 +162,7 @@ class _RAContentState extends State<RAContent> {
       _currentInstance = null;
     }
     GamepadNavigationManager.popLayer('ra_content');
-    _tvNav?.dispose();
+    _gamepadNav?.dispose();
     _usernameController.dispose();
     _apiKeyController.dispose();
     _usernameFocus.dispose();
@@ -134,22 +171,26 @@ class _RAContentState extends State<RAContent> {
     super.dispose();
   }
 
-  static bool navigateUp() => _currentInstance?._handleNavigateUp() ?? true;
+  static bool navigateUp({bool repeat = false}) =>
+      _currentInstance?._handleNavigateUp(repeat) ?? true;
 
-  static bool navigateDown() => _currentInstance?._handleNavigateDown() ?? true;
+  static bool navigateDown({bool repeat = false}) =>
+      _currentInstance?._handleNavigateDown(repeat) ?? true;
 
-  bool _handleNavigateUp() {
+  bool _handleNavigateUp(bool repeat) {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) {
-      return _tvMove(-1);
+      if (repeat) return false;
+      return _moveSelection(-1);
     }
     return _scrollDashboard(-160.r);
   }
 
-  bool _handleNavigateDown() {
+  bool _handleNavigateDown(bool repeat) {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) {
-      return _tvMove(1);
+      if (repeat) return false;
+      return _moveSelection(1);
     }
     return _scrollDashboard(160.r);
   }
@@ -226,6 +267,8 @@ class _RAContentState extends State<RAContent> {
               child: RepaintBoundary(
                 child: RADashboardHub(
                   scrollController: _dashboardScrollController,
+                  logoutSelected: _dashboardLogoutSelected,
+                  onDisconnectRequested: _requestDisconnect,
                 ),
               ),
             ),
@@ -235,12 +278,12 @@ class _RAContentState extends State<RAContent> {
     );
   }
 
-  Widget _buildTvFieldHighlight({
+  Widget _buildFieldHighlight({
     required int slot,
     required ThemeData theme,
     required Widget child,
   }) {
-    if (!_isTvSelected(slot)) return child;
+    if (!_isSelected(slot)) return child;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8.r),
@@ -295,7 +338,7 @@ class _RAContentState extends State<RAContent> {
           // Username field
           Container(
             constraints: BoxConstraints(maxWidth: 220.r),
-            child: _buildTvFieldHighlight(
+            child: _buildFieldHighlight(
               slot: 0,
               theme: theme,
               child: SizedBox(
@@ -330,10 +373,10 @@ class _RAContentState extends State<RAContent> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.r),
                       borderSide: BorderSide(
-                        color: _isTvSelected(0)
+                        color: _isSelected(0)
                             ? theme.colorScheme.primary
                             : theme.colorScheme.primary.withValues(alpha: 0.1),
-                        width: _isTvSelected(0) ? 2.r : 1.r,
+                        width: _isSelected(0) ? 2.r : 1.r,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -356,7 +399,7 @@ class _RAContentState extends State<RAContent> {
           // API key field
           Container(
             constraints: BoxConstraints(maxWidth: 220.r),
-            child: _buildTvFieldHighlight(
+            child: _buildFieldHighlight(
               slot: 1,
               theme: theme,
               child: SizedBox(
@@ -394,10 +437,10 @@ class _RAContentState extends State<RAContent> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.r),
                       borderSide: BorderSide(
-                        color: _isTvSelected(1)
+                        color: _isSelected(1)
                             ? theme.colorScheme.primary
                             : theme.colorScheme.primary.withValues(alpha: 0.1),
-                        width: _isTvSelected(1) ? 2.r : 1.r,
+                        width: _isSelected(1) ? 2.r : 1.r,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -420,7 +463,7 @@ class _RAContentState extends State<RAContent> {
           // Connect button
           Container(
             constraints: BoxConstraints(maxWidth: 220.r),
-            decoration: _isTvSelected(2)
+            decoration: _isSelected(2)
                 ? BoxDecoration(
                     borderRadius: BorderRadius.circular(8.r),
                     boxShadow: [
