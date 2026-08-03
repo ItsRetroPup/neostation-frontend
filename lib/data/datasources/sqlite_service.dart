@@ -4547,23 +4547,14 @@ class SqliteService {
   /// Retrieves a map of all emulators available in the database schema.
   static Future<Map<String, EmulatorModel>> getAvailableEmulators() async {
     final db = await instance.database;
-    final results = await db.rawQuery(
-      '''
+    final results = await db.rawQuery('''
       SELECT DISTINCT e.unique_identifier, e.name, e.android_package_name, os.name as os_name
       FROM app_emulators e
       JOIN app_os os ON e.os_id = os.id
-      WHERE os.name = ?
-    ''',
-      [getCurrentOs()],
-    );
+    ''');
     final emulators = <String, EmulatorModel>{};
     for (final row in results) {
-      final databaseName = row['name'].toString();
-      // Every libretro core has its own display name in app_emulators, but they
-      // all share one RetroArch frontend executable on desktop Linux.
-      final name = databaseName.toLowerCase().startsWith('retroarch')
-          ? 'RetroArch'
-          : databaseName;
+      final name = row['name'].toString();
       emulators.putIfAbsent(
         name,
         () => EmulatorModel(
@@ -4571,9 +4562,6 @@ class SqliteService {
           path: '',
           detected: false,
           possiblePaths: {},
-          uniqueId: name == 'RetroArch'
-              ? 'ra'
-              : row['unique_identifier']?.toString(),
         ),
       );
     }

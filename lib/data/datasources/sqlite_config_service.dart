@@ -7,7 +7,6 @@ import '../../models/system_model.dart';
 import '../../models/emulator_model.dart';
 import 'sqlite_service.dart';
 import '../../services/config_service.dart';
-import '../../services/linux_emulator_service.dart';
 import '../../repositories/system_repository.dart';
 
 /// Configuration service that utilizes SQLite for persistent application state
@@ -394,30 +393,10 @@ class SqliteConfigService {
   static Future<Map<String, EmulatorModel>> detectEmulators() async {
     try {
       final availableEmulators = await SqliteService.getAvailableEmulators();
-      final configuredEmulators =
-          await SqliteService.getUserDetectedEmulators();
       final detectedEmulators = <String, EmulatorModel>{};
 
       for (final entry in availableEmulators.entries) {
-        final configured = configuredEmulators[entry.key];
-        EmulatorModel detected;
-        if (configured != null &&
-            (!Platform.isLinux ||
-                await LinuxEmulatorService.isAvailable(configured.path))) {
-          detected = configured;
-        } else if (Platform.isLinux) {
-          final target = await LinuxEmulatorService.detect(
-            name: entry.value.name,
-            uniqueId: entry.value.uniqueId,
-          );
-          detected = entry.value.copyWith(
-            path: target ?? '',
-            detected: target != null,
-            lastDetection: target != null ? DateTime.now() : null,
-          );
-        } else {
-          detected = await entry.value.detect();
-        }
+        final detected = await entry.value.detect();
         detectedEmulators[entry.key] = detected;
 
         if (detected.detected) {

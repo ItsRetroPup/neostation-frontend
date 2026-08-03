@@ -18,7 +18,6 @@ import '../providers/sqlite_database_provider.dart';
 import '../repositories/system_repository.dart';
 import '../repositories/emulator_repository.dart';
 import '../services/config_service.dart';
-import '../services/linux_emulator_service.dart';
 import 'package:neostation/services/logger_service.dart';
 import '../utils/gamepad_nav.dart';
 import '../services/game_service.dart' show GamepadNavigationManager;
@@ -717,11 +716,7 @@ class _SystemEmulatorSettingsDialogState
 
       // Verify file exists
       bool exists = false;
-      if (Platform.isLinux) {
-        exists = await LinuxEmulatorService.isAvailable(
-          LinuxEmulatorService.normalizeSelectedPath(selectedPath),
-        );
-      } else if (Platform.isMacOS && selectedPath.endsWith('.app')) {
+      if (Platform.isMacOS && selectedPath.endsWith('.app')) {
         exists = await Directory(selectedPath).exists();
       } else {
         exists = await File(selectedPath).exists();
@@ -742,7 +737,7 @@ class _SystemEmulatorSettingsDialogState
       await EmulatorRepository.setStandaloneEmulatorPath(
         standalone.uniqueIdentifier,
         Platform.isLinux
-            ? LinuxEmulatorService.normalizeSelectedPath(selectedPath)
+            ? TvDirectoryPicker.persistedExecutablePath(selectedPath)
             : selectedPath,
       );
 
@@ -786,11 +781,7 @@ class _SystemEmulatorSettingsDialogState
 
       // Verify the file exists
       bool exists = false;
-      if (Platform.isLinux) {
-        exists = await LinuxEmulatorService.isAvailable(
-          LinuxEmulatorService.normalizeSelectedPath(selectedPath),
-        );
-      } else if (Platform.isMacOS && selectedPath.endsWith('.app')) {
+      if (Platform.isMacOS && selectedPath.endsWith('.app')) {
         exists = await Directory(selectedPath).exists();
       } else {
         exists = await File(selectedPath).exists();
@@ -811,7 +802,7 @@ class _SystemEmulatorSettingsDialogState
       await EmulatorRepository.saveDetectedEmulatorPath(
         emulatorName: 'RetroArch',
         emulatorPath: Platform.isLinux
-            ? LinuxEmulatorService.normalizeSelectedPath(selectedPath)
+            ? TvDirectoryPicker.persistedExecutablePath(selectedPath)
             : selectedPath,
       );
 

@@ -1,5 +1,4 @@
 import 'dart:io';
-import '../services/linux_emulator_service.dart';
 
 /// Represents an emulator installation or a target application for launching ROMs.
 class EmulatorModel {
@@ -107,13 +106,8 @@ class EmulatorModel {
   }
 
   /// Indicates if the emulator is detected and the specified path physically exists.
-  bool get isAvailable {
-    if (!detected || path.isEmpty) return false;
-    if (Platform.isLinux && LinuxEmulatorService.isLauncherTarget(path)) {
-      return true;
-    }
-    return File(path).existsSync();
-  }
+  bool get isAvailable =>
+      detected && path.isNotEmpty && File(path).existsSync();
 
   /// Returns a new instance with the specified properties updated.
   EmulatorModel copyWith({

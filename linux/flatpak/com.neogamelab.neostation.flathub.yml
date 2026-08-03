@@ -33,7 +33,6 @@ finish-args:
   - --allow=bluetooth
   - --filesystem=home
   - --talk-name=org.freedesktop.secrets
-  - --talk-name=org.freedesktop.Flatpak
 
 cleanup:
   - /include
@@ -91,3 +90,4 @@ modules:
         dest: assets/images
       - type: file
         path: LICENSE.md
+

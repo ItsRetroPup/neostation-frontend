@@ -56,6 +56,15 @@ class TvDirectoryPicker extends StatefulWidget {
     );
   }
 
+  /// Converts Flatpak's host filesystem mount into a portable host path.
+  static String persistedExecutablePath(String selectedPath) {
+    const hostMountPrefix = '/run/host/';
+    if (selectedPath.startsWith(hostMountPrefix)) {
+      return '/${selectedPath.substring(hostMountPrefix.length)}';
+    }
+    return selectedPath;
+  }
+
   @override
   State<TvDirectoryPicker> createState() => _TvDirectoryPickerState();
 }

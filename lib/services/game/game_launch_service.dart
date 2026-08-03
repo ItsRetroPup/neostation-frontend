@@ -14,7 +14,6 @@ import '../../utils/emulator_loader.dart';
 import '../config_service.dart';
 import '../android_service.dart';
 import '../launcher_service.dart';
-import '../linux_emulator_service.dart';
 import 'favorites_service.dart';
 import 'game_session_manager.dart';
 import '../gamepad/gamepad_navigation_manager.dart';
@@ -493,9 +492,7 @@ class GameLaunchService {
       }
 
       bool raExists = false;
-      if (Platform.isLinux) {
-        raExists = await LinuxEmulatorService.isAvailable(retroArch.path);
-      } else if (Platform.isMacOS && retroArch.path.endsWith('.app')) {
+      if (Platform.isMacOS && retroArch.path.endsWith('.app')) {
         raExists = await Directory(retroArch.path).exists();
       } else {
         raExists = await File(retroArch.path).exists();
@@ -554,9 +551,6 @@ class GameLaunchService {
         env['HOME'] = ConfigService.getRealHomePath();
 
         process = await Process.start(executable, args, environment: env);
-      } else if (Platform.isLinux) {
-        final args = ['-f', '-L', coreFullPath, game.romPath!];
-        process = await LinuxEmulatorService.start(retroArch.path, args);
       } else {
         String executable = retroArch.path;
         final args = ['-f', '-L', coreFullPath, game.romPath!];
@@ -675,11 +669,8 @@ class GameLaunchService {
         }
       }
 
-      final executableExists = Platform.isLinux
-          ? await LinuxEmulatorService.isAvailable(executable)
-          : await File(executable).exists();
       if ((Platform.isWindows || Platform.isLinux || Platform.isMacOS) &&
-          !executableExists) {
+          !await File(executable).exists()) {
         if (!context.mounted) return GameLaunchResult.failure('', '');
         _log.e('Final check failed: $executable not found');
         return GameLaunchResult.failure(
@@ -696,9 +687,7 @@ class GameLaunchService {
         env['HOME'] = ConfigService.getRealHomePath();
       }
 
-      final process = Platform.isLinux
-          ? await LinuxEmulatorService.start(executable, args)
-          : await Process.start(executable, args, environment: env);
+      final process = await Process.start(executable, args, environment: env);
 
       process.stdout.listen((_) {});
       process.stderr.listen((_) {});
@@ -1007,10 +996,8 @@ class GameLaunchService {
           return null;
         }
 
-        final exists = Platform.isLinux
-            ? await LinuxEmulatorService.isAvailable(path)
-            : await File(path).exists();
-        if (!exists) {
+        final file = File(path);
+        if (!await file.exists()) {
           return null;
         }
       }
@@ -1122,10 +1109,8 @@ class GameLaunchService {
         );
       }
 
-      final emulatorExists = Platform.isLinux
-          ? await LinuxEmulatorService.isAvailable(emulatorPath)
-          : await File(emulatorPath).exists();
-      if (!emulatorExists) {
+      final emulatorFile = File(emulatorPath);
+      if (!await emulatorFile.exists()) {
         if (!context.mounted) return GameLaunchResult.failure('', '');
         _log.e('Emulator not found: $emulatorPath');
         return GameLaunchResult.failure(
@@ -1140,23 +1125,7 @@ class GameLaunchService {
           .replaceAll('{emulator_path}', emulatorPath);
 
       final argList = _parseCommandArguments(args);
-      final emulatorIdentity = [
-        emulator['name'],
-        emulator['unique_identifier'],
-        emulatorPath,
-      ].whereType<Object>().join(' ').toLowerCase();
-
-      // DuckStation normally returns to its game list when emulation stops,
-      // leaving NeoStation suspended behind it. Batch mode makes DuckStation
-      // exit with the emulation session, allowing the process-exit callback
-      // below to restore NeoStation and its controller navigation.
-      if (emulatorIdentity.contains('duckstation') &&
-          !argList.contains('-batch')) {
-        argList.insert(0, '-batch');
-      }
-      final process = Platform.isLinux
-          ? await LinuxEmulatorService.start(emulatorPath, argList)
-          : await Process.start(emulatorPath, argList);
+      final process = await Process.start(emulatorPath, argList);
 
       process.stdout.listen((_) {});
       process.stderr.listen((_) {});
@@ -1407,7 +1376,7 @@ class GameLaunchService {
     if (Platform.isLinux) {
       final homeDir = Platform.environment['HOME'] ?? '';
 
-      if (LinuxEmulatorService.isFlatpakTarget(retroArch.path)) {
+      if (retroArch.path.contains('flatpak')) {
         return path.join(
           homeDir,
           '.var/app/org.libretro.RetroArch/config/retroarch/cores',

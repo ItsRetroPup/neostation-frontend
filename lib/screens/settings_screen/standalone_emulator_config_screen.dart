@@ -9,7 +9,6 @@ import 'package:neostation/utils/gamepad_nav.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:neostation/widgets/custom_notification.dart';
 import 'package:neostation/services/logger_service.dart';
-import 'package:neostation/services/linux_emulator_service.dart';
 import 'package:neostation/widgets/tv_directory_picker.dart';
 
 /// A specialized configuration screen for mapping hardware-specific standalone
@@ -142,7 +141,7 @@ class _StandaloneEmulatorConfigScreenState
       } else if (Platform.isLinux) {
         executablePath = await TvDirectoryPicker.showExecutablePicker(context);
         if (executablePath != null) {
-          executablePath = LinuxEmulatorService.normalizeSelectedPath(
+          executablePath = TvDirectoryPicker.persistedExecutablePath(
             executablePath,
           );
         }
