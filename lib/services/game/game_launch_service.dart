@@ -16,6 +16,7 @@ import '../android_service.dart';
 import '../launcher_service.dart';
 import '../linux_emulator_discovery.dart';
 import '../linux_host_process.dart';
+import '../macos_application_service.dart';
 import 'emulator_launch_diagnostics.dart';
 import 'favorites_service.dart';
 import 'game_session_manager.dart';
@@ -639,7 +640,7 @@ class GameLaunchService {
     try {
       String executable = launchCmd['executable'].toString();
 
-      if ((Platform.isWindows || Platform.isLinux)) {
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
         final detected = await EmulatorRepository.getUserDetectedEmulators();
 
         if (executable.toLowerCase().contains('retroarch')) {
@@ -680,24 +681,21 @@ class GameLaunchService {
             executable = resolvedPath;
           }
         }
-      } else if (Platform.isMacOS &&
-          executable.toLowerCase().contains('retroarch')) {
-        final detected = await EmulatorRepository.getUserDetectedEmulators();
-        final ra = detected['RetroArch'];
-        if (ra != null && ra.path.isNotEmpty) {
-          if (executable != ra.path) {
+
+        if (Platform.isMacOS) {
+          final resolvedExecutable =
+              await MacOsApplicationService.resolveExecutable(
+                executable,
+                applicationName: launchCmd['player_name']?.toString(),
+                bundleIdentifierHint: launchCmd['unique_id']?.toString(),
+                homePath: ConfigService.getRealHomePath(),
+              );
+          if (resolvedExecutable != null && resolvedExecutable != executable) {
             _log.i(
-              'Resolving RetroArch executable on macOS from "$executable" to user-configured path: ${ra.path}',
+              'Resolving macOS application "$executable" to executable: '
+              '$resolvedExecutable',
             );
-          }
-          executable = ra.path;
-          if (executable.endsWith('.app')) {
-            executable = path.join(
-              executable,
-              'Contents',
-              'MacOS',
-              'RetroArch',
-            );
+            executable = resolvedExecutable;
           }
         }
       }
