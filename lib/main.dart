@@ -177,6 +177,10 @@ Future<void> _configureImageCache() async {
   }
 }
 
+/// Global navigator key so overlay notifications can outlive the widget that
+/// created them. Used by [AppNotification] for progress notifications.
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -841,6 +845,7 @@ class _MyAppState extends State<MyApp> {
                   child: Actions(
                     actions: {ToggleFullscreenIntent: ToggleFullscreenAction()},
                     child: MaterialApp(
+                      navigatorKey: rootNavigatorKey,
                       debugShowCheckedModeBanner: false,
                       title: 'NeoStation',
                       locale: _locale,
