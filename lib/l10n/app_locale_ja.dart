@@ -848,6 +848,8 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.raRateLimited: 'RetroAchievements は現在混雑しています。少し待ってからもう一度お試しください。',
   AppLocale.raApiKey: 'APIキー',
   AppLocale.raEnterApiKey: 'APIキーを入力',
+  AppLocale.raGetApiKey: 'APIキーを取得',
+  AppLocale.raApiKeyHelp: 'RetroAchievementsのコントロールパネルを開き、個人用Web APIキーをコピーします。',
   AppLocale.raNoRecentUnlocks: '過去30日間に解除した実績はありません',
   AppLocale.raRecentlyPlayedTitle: '最近プレイ',
   AppLocale.raNoRecentlyPlayed: '最近プレイしたゲームはありません',

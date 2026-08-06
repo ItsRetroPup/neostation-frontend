@@ -834,6 +834,8 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.raRateLimited: 'RetroAchievements 当前繁忙。请稍等片刻后重试。',
   AppLocale.raApiKey: 'API 密钥',
   AppLocale.raEnterApiKey: '输入您的 API 密钥',
+  AppLocale.raGetApiKey: '获取 API 密钥',
+  AppLocale.raApiKeyHelp: '打开 RetroAchievements 控制面板以复制您的个人 Web API 密钥。',
   AppLocale.raNoRecentUnlocks: '最近 30 天内没有解锁记录',
   AppLocale.raRecentlyPlayedTitle: '最近游玩',
   AppLocale.raNoRecentlyPlayed: '没有最近游玩的游戏',
