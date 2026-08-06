@@ -10,6 +10,11 @@ import '../data/datasources/sqlite_service.dart';
 class NeoSyncSaveFolderRepository {
   static const _table = 'user_custom_save_folders';
 
+  /// System folder names whose standalone emulators support a user-selected
+  /// save folder (ARMSX2 for ps2, ARMSX1 for ps1, etc.). The UI uses this to
+  /// show configuration controls regardless of the downloaded systems JSON.
+  static const supportedSystemFolderNames = <String>['ps2'];
+
   /// Returns the user-selected save folder for [systemFolderName], or null.
   static Future<String?> getFolder(String systemFolderName) async {
     final db = await SqliteService.getDatabase();

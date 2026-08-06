@@ -21,6 +21,17 @@ extension NeoSyncPathResolver on NeoSyncProvider {
       resolvedPaths.addAll(resolved);
     }
 
+    // User-selected custom save folders (ARMSX2, ARMSX1, etc.) are stored per
+    // system in the NeoSync module. Append the configured folder directly so
+    // syncing works regardless of whether the downloaded systems JSON declares
+    // the {CUSTOM_SAVES_FOLDER} placeholder.
+    if (NeoSyncSaveFolderRepository.supportedSystemFolderNames.contains(
+      system.folderName,
+    )) {
+      final customFolder = await _getCustomSaveFolder(system.folderName);
+      if (customFolder != null) resolvedPaths.add(customFolder);
+    }
+
     // Eliminar duplicados y rutas inexistentes si requireExists es true
     var result = resolvedPaths.toSet();
     if (ensureExists) {

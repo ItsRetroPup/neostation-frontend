@@ -1005,15 +1005,17 @@ class NeoSyncContentState extends State<NeoSyncContent>
     _initializeGamepad();
   }
 
-  /// Loads the systems that declare a user-configurable custom save folder via
-  /// the `{CUSTOM_SAVES_FOLDER}` placeholder in their NeoSync definition.
+  /// Loads the systems that support a user-configurable custom save folder
+  /// (ARMSX2, ARMSX1, etc.) so the configuration card can be shown. The list
+  /// comes from the NeoSync module so it works even when the downloaded systems
+  /// JSON does not declare the {CUSTOM_SAVES_FOLDER} placeholder yet.
   Future<void> _loadCustomSaveFolderSystems() async {
     try {
       final systems = await SystemRepository.getAllSystems();
       final supported = systems.where((s) {
-        return s.neosync
-            .getFoldersForCurrentPlatform()
-            .contains('{CUSTOM_SAVES_FOLDER}');
+        return NeoSyncSaveFolderRepository.supportedSystemFolderNames.contains(
+          s.folderName,
+        );
       }).toList();
       if (mounted) {
         setState(() => _customSaveFolderSystems = supported);
