@@ -18,6 +18,12 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.download: 'Скачать',
   AppLocale.stop: 'Стоп',
   AppLocale.reset: 'Сбросить',
+  AppLocale.startupStorageUnavailable:
+      'NeoStation не удалось получить доступ к папке с вашими данными. Убедитесь, что SD-карта или накопитель подключены.',
+  AppLocale.startupStorageRetry: 'Повторить',
+  AppLocale.startupStorageUseDefault: 'Продолжить без неё',
+  AppLocale.startupLoading:
+      'Подготовка NeoStation. Ожидание хранилища и служб...',
 
   AppLocale.play: 'Играть',
   AppLocale.playButton: 'ИГРАТЬ',
@@ -165,6 +171,19 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.bartopShutdownSubtitle:
       'Выключать компьютер при выходе из приложения',
 
+  AppLocale.showSyncTab: 'Показывать вкладку синхронизации',
+  AppLocale.showSyncTabSubtitle:
+      'Отображает вкладку облачной синхронизации на панели навигации',
+  AppLocale.showAchievementsTab: 'Показывать вкладку достижений',
+  AppLocale.showAchievementsTabSubtitle:
+      'Отображает вкладку RetroAchievements на панели навигации',
+  AppLocale.showScraperTab: 'Показывать вкладку скрапера',
+  AppLocale.showScraperTabSubtitle:
+      'Отображает вкладку скрапинга на панели навигации',
+  AppLocale.showSearchTab: 'Показывать вкладку поиска',
+  AppLocale.showSearchTabSubtitle:
+      'Отображает вкладку поиска на панели навигации',
+
   AppLocale.configureDirectories: 'Директории',
   AppLocale.configureRomsFolder: 'Настроить папку ROM',
   AppLocale.cannotAccessFolder: 'Нет доступа к папке',
@@ -197,6 +216,24 @@ const Map<String, dynamic> appLocaleRu = {
       'Не удалось организовать многодисковые игры: {error}',
   AppLocale.organizeMultiDiscWarning:
       'Подходящие ROM-файлы будут перемещены в новые папки игр, а на накопителе будут созданы плейлисты .m3u. Это нельзя отменить автоматически.',
+  AppLocale.cleanOrphanedMetadata: 'Очистить потерянные метаданные',
+  AppLocale.cleanOrphanedMetadataSubtitle:
+      'Удалить метаданные и медиа, оставленные удалёнными ROM',
+  AppLocale.cleanOrphanedMetadataWarning:
+      'Это навсегда удалит строки метаданных и медиафайлы для ROM, которых больше нет в вашей библиотеке. Импортированные из ES-DE записи не будут удалены.',
+  AppLocale.cleanOrphanedMetadataScanning: 'Очистка потерянных метаданных...',
+  AppLocale.cleanOrphanedMetadataCleaningItem: 'Очистка {filename}...',
+  AppLocale.cleanOrphanedMetadataNothingFound:
+      'Потерянные метаданные не найдены.',
+  AppLocale.cleanOrphanedMetadataDone:
+      'Очищено {entries} запис(ь/ей) метаданных и {files} медиафайл(а/ов).',
+  AppLocale.cleanOrphanedMetadataEsdeSkippedSuffix:
+      ' {count} запис(ь/ей), импортированных из ES-DE, оставлены нетронутыми.',
+  AppLocale.cleanOrphanedMetadataFailed:
+      'Не удалось очистить потерянные метаданные: {error}',
+  AppLocale.notifications: 'Уведомления',
+  AppLocale.clearAll: 'Очистить все',
+  AppLocale.noActiveNotifications: 'Нет активных уведомлений',
   AppLocale.romsFolderSubtitle: 'Добавьте папку, содержащую ваши файлы ROM',
   AppLocale.pressToRemoveFolder:
       'Нажмите «Подтвердить», чтобы удалить эту папку',
@@ -430,6 +467,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.stoppingScraping: 'Остановка процесса скрапинга...',
   AppLocale.syncError: 'Ошибка синхронизации ID систем',
   AppLocale.metadataError: 'Ошибка при скрапинге метаданных',
+  AppLocale.scrapeQuotaExceeded:
+      'Превышена дневная квота скрейпинга ScreenScraper',
   AppLocale.start: 'Старт',
   AppLocale.systemsSub: 'Выберите системы для скрапинга',
   AppLocale.disableAll: 'Отключить все',
@@ -461,6 +500,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.hintRefresh: 'Обновить',
   AppLocale.hintViewMode: 'Режим',
   AppLocale.hintScrape: 'Скрейп',
+  AppLocale.hintMoreActions: 'Ещё',
 
   AppLocale.error: 'Ошибка',
   AppLocale.loading: 'Загрузка...',
@@ -832,6 +872,21 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.toolsSubtitle: 'Инструменты для организации ваших ROM',
   AppLocale.addRomFolder: 'Добавить папку ROM',
   AppLocale.removeRomFolder: 'Удалить',
+  AppLocale.searchTitle: 'Поиск',
+  AppLocale.searchNameHint: 'Поиск...',
+  AppLocale.searchNoResults: 'Игры не найдены',
+  AppLocale.searchResultsCount: 'Результатов: {count}',
+  AppLocale.searchClearFilters: 'Сбросить фильтры',
+  AppLocale.searchFilters: 'Фильтры',
+  AppLocale.searchViewResults: 'Показать результаты',
+  AppLocale.searchOpen: 'Поиск',
+  AppLocale.searchGoToGame: 'Перейти к игре',
+  AppLocale.filterPlatform: 'Платформа',
+  AppLocale.filterDeveloper: 'Разработчик',
+  AppLocale.filterGenre: 'Жанр',
+  AppLocale.filterRating: 'Рейтинг',
+  AppLocale.filterYear: 'Год',
+  AppLocale.filterAny: 'Любой',
   AppLocale.resetPlayTimeConfirm: 'Сбросить время игры',
   AppLocale.resetPlayTimeConfirmBody:
       'Записанное время игры для этой игры будет безвозвратно сброшено до нуля. Это действие нельзя отменить.',
@@ -877,6 +932,9 @@ const Map<String, dynamic> appLocaleRu = {
       'RetroAchievements сейчас перегружен. Подождите немного и попробуйте снова.',
   AppLocale.raApiKey: 'API-ключ',
   AppLocale.raEnterApiKey: 'Введите ваш API-ключ',
+  AppLocale.raGetApiKey: 'Получить API-ключ',
+  AppLocale.raApiKeyHelp:
+      'Откройте панель управления RetroAchievements, чтобы скопировать личный Web API-ключ.',
   AppLocale.raNoRecentUnlocks: 'Нет недавних достижений за последние 30 дней',
   AppLocale.raRecentlyPlayedTitle: 'Недавно сыгранные',
   AppLocale.raNoRecentlyPlayed: 'Нет недавно сыгранных игр',
@@ -931,12 +989,14 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.wizardArtPackUnavailable:
       'Сейчас не удалось получить набор обложек. Вы можете установить его позже '
       'в Настройках, когда будете онлайн.',
-  AppLocale.armsx2Sync: 'Синхронизация сохранений ARMSX2',
-  AppLocale.armsx2SelectDataFolder: 'Выбрать папку данных ARMSX2',
-  AppLocale.armsx2SelectDataFolderSubtitle: 'Выберите папку с memcards ARMSX2',
-  AppLocale.armsx2ResetDataFolder: 'Очистить папку данных ARMSX2',
-  AppLocale.armsx2ResetDataFolderSubtitle:
-      'Прекратить синхронизацию карт памяти ARMSX2 на этом устройстве',
-  AppLocale.armsx2MemcardsMissing:
-      'Выбранная папка должна содержать папку memcards',
+  AppLocale.customSaveFoldersTitle: 'Пользовательские папки сохранений',
+  AppLocale.customSaveFoldersStorageAccessTitle: 'Доступ к хранилищу',
+  AppLocale.customSaveFoldersStorageAccessBody:
+      'Из-за разрешений Android на хранилище NeoSync может надёжно синхронизировать '
+      'эти папки только при использовании эмулятором пользовательской доступной '
+      'папки данных. Внутреннее хранилище не поддерживается.',
+  AppLocale.customSaveFolderNotSet: 'Папка не выбрана',
+  AppLocale.customSaveFolderSelect: 'Выбрать папку',
+  AppLocale.customSaveFolderReset: 'Очистить папку',
+  AppLocale.customSaveFolderSync: 'Синхронизировать сейчас',
 };

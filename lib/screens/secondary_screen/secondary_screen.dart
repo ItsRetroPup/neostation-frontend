@@ -47,6 +47,23 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
   /// still slides in shortly after the screen appears. See [_buildDockOverlay].
   Timer? _dockRevealFallback;
 
+  /// How long the dock takes to slide in — and, in reverse, back out. Shared by
+  /// the reveal tween and [_dockSlideOutTimer] so the unmount can't fire before
+  /// the animation has finished.
+  static const Duration _dockRevealDuration = Duration(milliseconds: 550);
+
+  /// The last [_dockShown] this engine observed, so [_onStateChanged] can spot
+  /// the dock going away. Null until the first state push.
+  bool? _dockShownSeen;
+
+  /// Keeps the dock overlay mounted while it slides out after being disabled.
+  /// The setting flips instantly, so without this the subtree would be dropped
+  /// mid-frame and the dock would blink out instead of leaving the way it came.
+  bool _dockSlidingOut = false;
+
+  /// Unmounts the dock overlay once [_dockSlidingOut] has run its course.
+  Timer? _dockSlideOutTimer;
+
   /// A BuildContext captured from *under* this screen's MaterialApp (and its
   /// Localizations). The _buildXxx helpers below run as methods on this State,
   /// so a bare `context` resolves to `this.context` — which sits ABOVE the
@@ -194,8 +211,10 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
 
     // Warm the app list + dock icons exactly once, only after the dock has
     // revealed. Gating on `appReady` keeps this heavy work off the cold-boot
-    // reveal path so it can't perturb the cross-engine dock-reveal race.
-    if (state.appReady && !_dockPrefetchStarted) {
+    // reveal path so it can't perturb the cross-engine dock-reveal race — and
+    // on the wizard flag so it doesn't compete with first-run setup for a
+    // dock nobody can see yet.
+    if (state.appReady && !state.setupWizardActive && !_dockPrefetchStarted) {
       _dockPrefetchStarted = true;
       unawaited(_prefetchDockData());
     }
@@ -216,6 +235,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     _maybeResetInGamePage(state);
     _applySessionPower(state);
     _maybeStartCelebration(state);
+    _syncDockMount(state);
 
     if (state.isGameLaunching) {
       _stopVideo();
@@ -246,6 +266,39 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
         _videoController!.setVolume(state.isVideoMuted ? 0.0 : 1.0);
       }
     }
+  }
+
+  /// Whether the app dock (and its all-apps launcher) belongs on screen: the
+  /// user has it enabled *and* the main display isn't running the first-run
+  /// setup wizard. The wizard owns the whole first-run experience, so the
+  /// bottom screen shouldn't be offering app shortcuts underneath it.
+  bool _dockShown(SecondaryDisplayStateData state) =>
+      state.dockEnabled && !state.setupWizardActive;
+
+  /// Keeps the dock overlay mounted long enough to animate out when the user
+  /// turns the dock off in settings. Enabling is symmetrical and needs no
+  /// bookkeeping: the overlay mounts on the next build and the reveal tween
+  /// eases it up from its parked position, exactly as it does at boot — which
+  /// is also how the dock arrives when the wizard finishes.
+  void _syncDockMount(SecondaryDisplayStateData state) {
+    final was = _dockShownSeen;
+    final shown = _dockShown(state);
+    _dockShownSeen = shown;
+    if (was == null || was == shown) return;
+
+    _dockSlideOutTimer?.cancel();
+    _dockSlideOutTimer = null;
+    if (shown) {
+      // Re-enabled, possibly mid-slide-out — the tween picks up from wherever
+      // the dock currently sits and carries it back into place.
+      if (_dockSlidingOut) setState(() => _dockSlidingOut = false);
+      return;
+    }
+    setState(() => _dockSlidingOut = true);
+    _dockSlideOutTimer = Timer(_dockRevealDuration, () {
+      if (!mounted) return;
+      setState(() => _dockSlidingOut = false);
+    });
   }
 
   /// Triggers (or refreshes) the celebration banner when a new set of
@@ -555,6 +608,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     _playTimeTicker?.cancel();
     _dimTimer?.cancel();
     _dockRevealFallback?.cancel();
+    _dockSlideOutTimer?.cancel();
     _stopVideo();
     super.dispose();
   }
@@ -873,8 +927,11 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
+                                        // Select (View), not Start — mute is a
+                                        // Select tap, matching the primary
+                                        // screen's hint.
                                         Image.asset(
-                                          'assets/images/gamepad/Xbox_Menu_button.png',
+                                          'assets/images/gamepad/Xbox_View_button.png',
                                           width: 32.r,
                                           height: 32.r,
                                           color: Colors.white,
@@ -898,7 +955,11 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
                             // stays visible while browsing systems and on the
                             // Now Playing page — hidden on the achievement pages
                             // and dimmed together with the panel's idle scrim.
-                            if (value.dockEnabled) _buildDockOverlay(value),
+                            // Stays mounted for one animation after being
+                            // disabled so it can slide back out (see
+                            // [_syncDockMount]).
+                            if (_dockShown(value) || _dockSlidingOut)
+                              _buildDockOverlay(value),
 
                             // Scraping Overlay
                             _buildScrapingOverlay(value),
@@ -1101,9 +1162,16 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
           // reports its first frame via `appReady`, then eases into place. This
           // syncs the dock's arrival with the app becoming usable instead of
           // firing on the secondary display's own (earlier) first paint.
+          //
+          // Turning the dock off in settings drives the same tween back to t=1,
+          // so it leaves the way it arrived; [_syncDockMount] holds the subtree
+          // mounted until it lands.
           child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 1.0, end: _dockRevealed ? 0.0 : 1.0),
-            duration: const Duration(milliseconds: 550),
+            tween: Tween(
+              begin: 1.0,
+              end: _dockRevealed && _dockShown(value) ? 0.0 : 1.0,
+            ),
+            duration: _dockRevealDuration,
             curve: Curves.easeOutCubic,
             builder: (context, t, child) =>
                 Transform.translate(offset: Offset(0, t * 140.r), child: child),

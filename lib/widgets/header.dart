@@ -12,7 +12,9 @@ import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/services/permission_service.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/widgets/header_sort_dropdown.dart';
-import 'package:neostation/l10n/app_locale.dart';
+import 'package:neostation/widgets/notification_bell.dart';
+import 'package:neostation/screens/app_screen.dart';
+import 'package:neostation/utils/nav_tabs.dart';
 import 'package:neostation/utils/time_format.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 
@@ -45,7 +47,10 @@ class HeaderState extends State<Header> {
   @override
   void initState() {
     super.initState();
-    _tabFocusNodes = List.generate(5, (_) => FocusNode(skipTraversal: true));
+    _tabFocusNodes = List.generate(
+      NavTab.values.length,
+      (_) => FocusNode(skipTraversal: true),
+    );
     _getBatteryLevel();
     _listenToBatteryState();
     _updateTime();
@@ -185,10 +190,13 @@ class HeaderState extends State<Header> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              if (widget.selectedTabIndex == 0)
+              if (widget.selectedTabIndex == AppTabs.systems)
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: HeaderSortDropdown(),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [HeaderSortDropdown()],
+                  ),
                 ),
 
               // Grouped Tab Navigation with Background (Glass Style)
@@ -220,94 +228,74 @@ class HeaderState extends State<Header> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // LB button (left)
-                      _buildShoulderButton('LB', true),
-                      // Tabs Section
-                      Stack(
+                  child: Builder(
+                    builder: (context) {
+                      final visibleTabs = visibleNavTabs(configProvider.config);
+                      // The indicator tracks the tab's slot in the *rendered*
+                      // strip, not its canonical index — otherwise hiding a tab
+                      // parks it past the end of a shortened strip.
+                      final selectedSlot = visibleTabs.indexOf(
+                        NavTab.values[widget.selectedTabIndex],
+                      );
+
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Moving indicator
-                          AnimatedPositioned(
-                            left: widget.selectedTabIndex * 32.r,
-                            top: 4.r,
-                            bottom: 4.r,
-                            width: 32.r,
-                            duration: const Duration(milliseconds: 160),
-                            curve: Curves.easeInOut,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                borderRadius:
-                                    Theme.of(context)
-                                        .extension<CornerRadii>()
-                                        ?.radiusInternal ??
-                                    BorderRadius.circular(4.r),
-                              ),
-                            ),
-                          ),
-                          // Tab buttons
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
+                          // LB button (left)
+                          _buildShoulderButton('LB', true),
+                          // Tabs Section
+                          Stack(
                             children: [
-                              SizedBox(
+                              // Moving indicator
+                              AnimatedPositioned(
+                                left:
+                                    (selectedSlot < 0 ? 0 : selectedSlot) *
+                                    32.r,
+                                top: 4.r,
+                                bottom: 4.r,
                                 width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  0,
-                                  "assets/images/icons/grids.webp",
-                                  AppLocale.systems.getString(context),
+                                duration: const Duration(milliseconds: 160),
+                                curve: Curves.easeInOut,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    borderRadius:
+                                        Theme.of(context)
+                                            .extension<CornerRadii>()
+                                            ?.radiusInternal ??
+                                        BorderRadius.circular(4.r),
+                                  ),
                                 ),
                               ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  1,
-                                  "assets/images/icons/cloud-add.webp",
-                                  'Sync',
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  2,
-                                  "assets/images/icons/enhance-prize.webp",
-                                  AppLocale.achievements.getString(context),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  3,
-                                  "assets/images/icons/box-search.webp",
-                                  AppLocale.scraping.getString(context),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32.r,
-                                height: 32.r,
-                                child: _buildTabButton(
-                                  context,
-                                  4,
-                                  "assets/images/icons/setting.webp",
-                                  AppLocale.settings.getString(context),
-                                ),
+                              // Tab buttons
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  for (final tab in visibleTabs)
+                                    SizedBox(
+                                      width: 32.r,
+                                      height: 32.r,
+                                      child: _buildTabButton(
+                                        context,
+                                        tab.index,
+                                        navTabSpec(tab).icon,
+                                        navTabSpec(
+                                          tab,
+                                        ).labelKey.getString(context),
+                                        iconData: navTabSpec(tab).iconData,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ],
                           ),
+                          // RB button (right)
+                          _buildShoulderButton('RB', false),
                         ],
-                      ),
-                      // RB button (right)
-                      _buildShoulderButton('RB', false),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -345,6 +333,8 @@ class HeaderState extends State<Header> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const NotificationBell(),
+                      SizedBox(width: 10.r),
                       Icon(
                         Symbols.schedule,
                         color: Theme.of(context).colorScheme.onSurface,
@@ -394,14 +384,21 @@ class HeaderState extends State<Header> {
     );
   }
 
-  // Steam-style tab button
+  // Steam-style tab button.
+  //
+  // Most tabs use a webp asset; [iconData] is the fallback for tabs with no
+  // matching asset (Search), rendered at the same box size and tint.
   Widget _buildTabButton(
     BuildContext context,
     int tabIndex,
-    String icon,
-    String label,
-  ) {
+    String? icon,
+    String label, {
+    IconData? iconData,
+  }) {
     final bool isSelected = tabIndex == widget.selectedTabIndex;
+    final Color tint = isSelected
+        ? Theme.of(context).colorScheme.onPrimary
+        : Theme.of(context).colorScheme.onSurface;
 
     return Material(
       color: Colors.transparent,
@@ -418,12 +415,9 @@ class HeaderState extends State<Header> {
         },
         child: Container(
           padding: EdgeInsets.all(8.r),
-          child: Image.asset(
-            icon,
-            color: isSelected
-                ? Theme.of(context).colorScheme.onPrimary
-                : Theme.of(context).colorScheme.onSurface,
-          ),
+          child: iconData != null
+              ? Icon(iconData, size: 16.r, color: tint)
+              : Image.asset(icon!, color: tint),
         ),
       ),
     );

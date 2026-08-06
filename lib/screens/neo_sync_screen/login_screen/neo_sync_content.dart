@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as path;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:neostation/l10n/app_locale.dart';
@@ -14,7 +13,6 @@ import 'package:neostation/providers/neo_sync_provider.dart';
 import 'package:neostation/services/notification_service.dart';
 import 'package:neostation/services/permission_service.dart';
 import 'package:neostation/services/user_data_location_service.dart';
-import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/widgets/tv_directory_picker.dart';
 import 'package:neostation/services/neosync/billing_service.dart';
 import 'package:neostation/models/billing_models.dart';
@@ -24,6 +22,9 @@ import 'package:flutter/gestures.dart';
 import '../../../models/neo_sync_models.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:neostation/repositories/game_repository.dart';
+import 'package:neostation/repositories/system_repository.dart';
+import 'package:neostation/repositories/neosync_save_folder_repository.dart';
+import 'package:neostation/models/system_model.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
 import '../../app_screen.dart';
 import 'package:neostation/utils/centered_scroll_controller.dart';
@@ -62,8 +63,9 @@ class NeoSyncContentState extends State<NeoSyncContent>
   List<PlanInfo> _plans = [];
   static bool _plansLoadedThisSession = false;
   bool _isProfileLoading = false;
-  bool _isConfiguringArmsx2 = false;
-  bool _armsx2SyncControlsVisible = false;
+  bool _isConfiguringCustomSaveFolder = false;
+  bool _customSaveFoldersControlsVisible = false;
+  List<SystemModel> _customSaveFolderSystems = [];
   static bool _profileLoaded = false;
 
   late final FocusNode _upgradeButtonFocusNode;
@@ -551,7 +553,7 @@ class NeoSyncContentState extends State<NeoSyncContent>
                 ),
               ),
               SizedBox(height: 8.r),
-              _buildArmsx2SyncCard(),
+              _buildCustomSaveFoldersCard(),
               SizedBox(height: 8.r),
               // Storage quota Steam-style (Compacto)
               if (neoSyncProvider.quota != null) ...[
@@ -714,9 +716,9 @@ class NeoSyncContentState extends State<NeoSyncContent>
     );
   }
 
-  Future<void> _selectArmsx2DataFolder() async {
-    if (_isConfiguringArmsx2) return;
-    setState(() => _isConfiguringArmsx2 = true);
+  Future<void> _selectCustomSaveFolder(String systemFolderName) async {
+    if (_isConfiguringCustomSaveFolder) return;
+    setState(() => _isConfiguringCustomSaveFolder = true);
 
     try {
       String? selected;
@@ -741,23 +743,13 @@ class NeoSyncContentState extends State<NeoSyncContent>
 
       if (selected == null || !mounted) return;
       selected = selected.replaceFirst(RegExp(r'[\\/]+$'), '');
-      if (!Directory(path.join(selected, 'memcards')).existsSync()) {
-        custom.AppNotification.showNotification(
-          context,
-          AppLocale.armsx2MemcardsMissing.getString(context),
-          type: custom.NotificationType.error,
-        );
-        return;
-      }
 
-      await context.read<SqliteConfigProvider>().updateArmsx2DataFolderPath(
-        selected,
-      );
+      await NeoSyncSaveFolderRepository.saveFolder(systemFolderName, selected);
       if (!mounted) return;
 
-      // The folder may already contain cards from existing games. Sync it as
+      // The folder may already contain saves from existing games. Sync it as
       // soon as access is granted rather than waiting for the next launch.
-      await context.read<NeoSyncProvider>().syncArmsx2MemoryCards();
+      await context.read<NeoSyncProvider>().syncCustomSaveFolders();
     } catch (e) {
       if (mounted) {
         custom.AppNotification.showNotification(
@@ -767,18 +759,17 @@ class NeoSyncContentState extends State<NeoSyncContent>
         );
       }
     } finally {
-      if (mounted) setState(() => _isConfiguringArmsx2 = false);
+      if (mounted) setState(() => _isConfiguringCustomSaveFolder = false);
     }
   }
 
-  Widget _buildArmsx2SyncCard() {
+  Widget _buildCustomSaveFoldersCard() {
     if (!Platform.isAndroid) return const SizedBox.shrink();
+    if (_customSaveFolderSystems.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
-    final config = context.watch<SqliteConfigProvider>().config;
-    final dataFolder = config.armsx2DataFolderPath.trim();
     final neoSyncProvider = context.watch<NeoSyncProvider>();
-    final isBusy = _isConfiguringArmsx2 || neoSyncProvider.isSyncing;
+    final isBusy = _isConfiguringCustomSaveFolder || neoSyncProvider.isSyncing;
 
     return Container(
       padding: EdgeInsets.all(8.r),
@@ -803,7 +794,7 @@ class NeoSyncContentState extends State<NeoSyncContent>
               SizedBox(width: 4.r),
               Expanded(
                 child: Text(
-                  AppLocale.armsx2Sync.getString(context),
+                  AppLocale.customSaveFoldersTitle.getString(context),
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     fontSize: 10.r,
@@ -811,16 +802,22 @@ class NeoSyncContentState extends State<NeoSyncContent>
                 ),
               ),
               Switch.adaptive(
-                value: _armsx2SyncControlsVisible,
+                value: _customSaveFoldersControlsVisible,
                 onChanged: (enabled) async {
-                  setState(() => _armsx2SyncControlsVisible = enabled);
+                  setState(() => _customSaveFoldersControlsVisible = enabled);
                   if (!enabled || !mounted) return;
                   await showDialog<void>(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
-                      title: const Text('ARMSX2 storage access'),
-                      content: const Text(
-                        'Due to Android storage permissions, NeoSync can only reliably sync ARMSX2 memory cards when ARMSX2 uses a custom, accessible data folder. Internal storage is not supported.',
+                      title: Text(
+                        AppLocale.customSaveFoldersStorageAccessTitle.getString(
+                          context,
+                        ),
+                      ),
+                      content: Text(
+                        AppLocale.customSaveFoldersStorageAccessBody.getString(
+                          context,
+                        ),
                       ),
                       actions: [
                         TextButton(
@@ -834,69 +831,99 @@ class NeoSyncContentState extends State<NeoSyncContent>
               ),
             ],
           ),
-          if (_armsx2SyncControlsVisible) ...[
-            SizedBox(height: 5.r),
-            Text(
-              dataFolder.isEmpty
-                  ? AppLocale.armsx2SelectDataFolderSubtitle.getString(context)
-                  : dataFolder,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 8.r,
-                fontFamily: dataFolder.isEmpty ? null : 'monospace',
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
-            SizedBox(height: 7.r),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isBusy ? null : _selectArmsx2DataFolder,
-                    icon: Icon(Symbols.folder_special_rounded, size: 14.r),
-                    label: Text(
-                      AppLocale.armsx2SelectDataFolder.getString(context),
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 8.r),
-                    ),
-                  ),
-                ),
-                if (dataFolder.isNotEmpty) ...[
-                  SizedBox(width: 5.r),
-                  IconButton(
-                    onPressed: isBusy
-                        ? null
-                        : () => context
-                              .read<SqliteConfigProvider>()
-                              .updateArmsx2DataFolderPath(''),
-                    tooltip: AppLocale.armsx2ResetDataFolder.getString(context),
-                    icon: Icon(Symbols.restart_alt_rounded, size: 16.r),
-                  ),
-                ],
-              ],
-            ),
-            if (dataFolder.isNotEmpty) ...[
-              SizedBox(height: 5.r),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: isBusy
-                      ? null
-                      : () => context
-                            .read<NeoSyncProvider>()
-                            .syncArmsx2MemoryCards(),
-                  icon: Icon(Symbols.sync_rounded, size: 14.r),
-                  label: Text(
-                    AppLocale.armsx2Sync.getString(context),
-                    style: TextStyle(fontSize: 8.r),
-                  ),
-                ),
-              ),
-            ],
-          ],
+          if (_customSaveFoldersControlsVisible)
+            for (final system in _customSaveFolderSystems)
+              _buildCustomSaveFolderRow(theme, system, isBusy),
         ],
       ),
+    );
+  }
+
+  Widget _buildCustomSaveFolderRow(
+    ThemeData theme,
+    SystemModel system,
+    bool isBusy,
+  ) {
+    final folderFuture =
+        NeoSyncSaveFolderRepository.getFolder(system.folderName);
+
+    return FutureBuilder<String?>(
+      future: folderFuture,
+      builder: (context, snapshot) {
+        final folder = snapshot.data ?? '';
+        final configured = folder.trim().isNotEmpty;
+
+        return Padding(
+          padding: EdgeInsets.only(top: 8.r),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                system.realName,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 9.r,
+                ),
+              ),
+              SizedBox(height: 3.r),
+              Text(
+                configured ? folder : AppLocale.customSaveFolderNotSet.getString(
+                  context,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 8.r,
+                  fontFamily: configured ? 'monospace' : null,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              SizedBox(height: 6.r),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: isBusy
+                          ? null
+                          : () => _selectCustomSaveFolder(system.folderName),
+                      icon: Icon(Symbols.folder_special_rounded, size: 14.r),
+                      label: Text(
+                        AppLocale.customSaveFolderSelect.getString(context),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 8.r),
+                      ),
+                    ),
+                  ),
+                  if (configured) ...[
+                    SizedBox(width: 5.r),
+                    IconButton(
+                      onPressed: isBusy
+                          ? null
+                          : () => NeoSyncSaveFolderRepository.removeFolder(
+                              system.folderName,
+                            ),
+                      tooltip: AppLocale.customSaveFolderReset.getString(
+                        context,
+                      ),
+                      icon: Icon(Symbols.restart_alt_rounded, size: 16.r),
+                    ),
+                    SizedBox(width: 5.r),
+                    IconButton(
+                      onPressed: isBusy
+                          ? null
+                          : () => context
+                                .read<NeoSyncProvider>()
+                                .syncCustomSaveFolders(),
+                      tooltip: AppLocale.customSaveFolderSync.getString(context),
+                      icon: Icon(Symbols.sync_rounded, size: 16.r),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -972,9 +999,28 @@ class NeoSyncContentState extends State<NeoSyncContent>
 
     _loadProfileIfNeeded();
     _loadPlansIfNeeded();
+    _loadCustomSaveFolderSystems();
 
     // Inicializar navegación por gamepad para la lista de saves
     _initializeGamepad();
+  }
+
+  /// Loads the systems that declare a user-configurable custom save folder via
+  /// the `{CUSTOM_SAVES_FOLDER}` placeholder in their NeoSync definition.
+  Future<void> _loadCustomSaveFolderSystems() async {
+    try {
+      final systems = await SystemRepository.getAllSystems();
+      final supported = systems.where((s) {
+        return s.neosync
+            .getFoldersForCurrentPlatform()
+            .contains('{CUSTOM_SAVES_FOLDER}');
+      }).toList();
+      if (mounted) {
+        setState(() => _customSaveFolderSystems = supported);
+      }
+    } catch (e) {
+      // Non-fatal: the card simply stays hidden if systems cannot be loaded.
+    }
   }
 
   void _cleanupResources() {

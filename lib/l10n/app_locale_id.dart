@@ -18,6 +18,12 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.download: 'Unduh',
   AppLocale.stop: 'Berhenti',
   AppLocale.reset: 'Atur Ulang',
+  AppLocale.startupStorageUnavailable:
+      'NeoStation tidak dapat mengakses folder tempat data Anda disimpan. Pastikan kartu SD atau drive terpasang.',
+  AppLocale.startupStorageRetry: 'Coba lagi',
+  AppLocale.startupStorageUseDefault: 'Lanjutkan tanpa itu',
+  AppLocale.startupLoading:
+      'Menyiapkan NeoStation. Menunggu penyimpanan dan layanan...',
 
   AppLocale.play: 'Main',
   AppLocale.playButton: 'MAIN',
@@ -161,6 +167,19 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.bartopShutdown: 'Matikan BarTOP saat keluar',
   AppLocale.bartopShutdownSubtitle: 'Mematikan komputer saat menutup aplikasi',
 
+  AppLocale.showSyncTab: 'Tampilkan tab Sinkronisasi',
+  AppLocale.showSyncTabSubtitle:
+      'Menampilkan tab sinkronisasi cloud di bilah navigasi',
+  AppLocale.showAchievementsTab: 'Tampilkan tab Pencapaian',
+  AppLocale.showAchievementsTabSubtitle:
+      'Menampilkan tab RetroAchievements di bilah navigasi',
+  AppLocale.showScraperTab: 'Tampilkan tab Scraper',
+  AppLocale.showScraperTabSubtitle:
+      'Menampilkan tab scraping di bilah navigasi',
+  AppLocale.showSearchTab: 'Tampilkan tab Cari',
+  AppLocale.showSearchTabSubtitle:
+      'Menampilkan tab pencarian di bilah navigasi',
+
   AppLocale.configureDirectories: 'Konfigurasi Direktori',
   AppLocale.configureRomsFolder: 'Konfigurasi Folder ROM',
   AppLocale.cannotAccessFolder: 'Tidak dapat mengakses folder',
@@ -192,6 +211,24 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.organizeMultiDiscFailed: 'Gagal mengatur game multi-disk: {error}',
   AppLocale.organizeMultiDiscWarning:
       'Ini akan memindahkan file ROM yang cocok ke folder game baru dan membuat playlist .m3u di penyimpanan Anda. Tindakan ini tidak dapat dibatalkan secara otomatis.',
+  AppLocale.cleanOrphanedMetadata: 'Bersihkan Metadata Yatim',
+  AppLocale.cleanOrphanedMetadataSubtitle:
+      'Hapus metadata dan media yang tertinggal dari ROM yang dihapus',
+  AppLocale.cleanOrphanedMetadataWarning:
+      'Ini akan menghapus permanen baris metadata dan file media untuk ROM yang tidak lagi ada di perpustakaan Anda. Entri yang diimpor dari ES-DE tidak akan dihapus.',
+  AppLocale.cleanOrphanedMetadataScanning: 'Membersihkan metadata yatim...',
+  AppLocale.cleanOrphanedMetadataCleaningItem: 'Membersihkan {filename}...',
+  AppLocale.cleanOrphanedMetadataNothingFound:
+      'Tidak ditemukan metadata yatim.',
+  AppLocale.cleanOrphanedMetadataDone:
+      'Dibersihkan {entries} entri metadata dan {files} file media.',
+  AppLocale.cleanOrphanedMetadataEsdeSkippedSuffix:
+      '{count} entri yang diimpor dari ES-DE dibiarkan tidak terubah.',
+  AppLocale.cleanOrphanedMetadataFailed:
+      'Gagal membersihkan metadata yatim: {error}',
+  AppLocale.notifications: 'Notifikasi',
+  AppLocale.clearAll: 'Hapus semua',
+  AppLocale.noActiveNotifications: 'Tidak ada notifikasi aktif',
   AppLocale.romsFolderSubtitle: 'Tambahkan folder yang berisi file ROM Anda',
   AppLocale.pressToRemoveFolder: 'Tekan Konfirmasi untuk menghapus folder ini',
   AppLocale.maxRomFoldersReached: 'Maksimal 5 folder ROM diizinkan',
@@ -421,6 +458,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.stoppingScraping: 'Menghentikan proses scraping...',
   AppLocale.syncError: 'Kesalahan saat menyinkronkan ID sistem',
   AppLocale.metadataError: 'Kesalahan selama proses scraping',
+  AppLocale.scrapeQuotaExceeded:
+      'Kuota harian scraping ScreenScraper terlampaui',
   AppLocale.start: 'Mulai',
   AppLocale.systemsSub: 'Pilih sistem yang akan di-scrape',
   AppLocale.disableAll: 'Nonaktifkan Semua',
@@ -452,6 +491,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.hintRefresh: 'Segarkan',
   AppLocale.hintViewMode: 'Tampilan',
   AppLocale.hintScrape: 'Ambil',
+  AppLocale.hintMoreActions: 'Lainnya',
 
   AppLocale.error: 'Kesalahan',
   AppLocale.loading: 'Memuat...',
@@ -835,6 +875,21 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.toolsSubtitle: 'Alat untuk membantu mengatur ROM Anda',
   AppLocale.addRomFolder: 'Tambah Folder ROM',
   AppLocale.removeRomFolder: 'Hapus',
+  AppLocale.searchTitle: 'Cari',
+  AppLocale.searchNameHint: 'Cari...',
+  AppLocale.searchNoResults: 'Tidak ada gim ditemukan',
+  AppLocale.searchResultsCount: '{count} hasil',
+  AppLocale.searchClearFilters: 'Hapus filter',
+  AppLocale.searchFilters: 'Filter',
+  AppLocale.searchViewResults: 'Lihat hasil',
+  AppLocale.searchOpen: 'Cari',
+  AppLocale.searchGoToGame: 'Buka di daftar',
+  AppLocale.filterPlatform: 'Platform',
+  AppLocale.filterDeveloper: 'Pengembang',
+  AppLocale.filterGenre: 'Genre',
+  AppLocale.filterRating: 'Peringkat',
+  AppLocale.filterYear: 'Tahun',
+  AppLocale.filterAny: 'Semua',
   AppLocale.resetPlayTimeConfirm: 'Atur Ulang Waktu Bermain',
   AppLocale.resetPlayTimeConfirmBody:
       'Ini akan mengatur ulang waktu bermain yang tercatat untuk game ini menjadi nol secara permanen. Tindakan ini tidak dapat dibatalkan.',
@@ -879,6 +934,9 @@ const Map<String, dynamic> appLocaleId = {
       'RetroAchievements sedang sibuk saat ini. Tunggu sebentar lalu coba lagi.',
   AppLocale.raApiKey: 'Kunci API',
   AppLocale.raEnterApiKey: 'Masukkan kunci API Anda',
+  AppLocale.raGetApiKey: 'Dapatkan Kunci API',
+  AppLocale.raApiKeyHelp:
+      'Buka panel kontrol RetroAchievements untuk menyalin kunci API Web pribadi Anda.',
   AppLocale.raNoRecentUnlocks:
       'Tidak ada pembukaan baru dalam 30 hari terakhir',
   AppLocale.raRecentlyPlayedTitle: 'Baru Dimainkan',
@@ -933,13 +991,14 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.wizardArtPackUnavailable:
       'Paket gambar tidak dapat dijangkau saat ini. Anda dapat memasangnya '
       'nanti dari Pengaturan setelah online.',
-  AppLocale.armsx2Sync: 'Sinkronisasi penyimpanan ARMSX2',
-  AppLocale.armsx2SelectDataFolder: 'Pilih folder data ARMSX2',
-  AppLocale.armsx2SelectDataFolderSubtitle:
-      'Pilih folder yang berisi memcards ARMSX2',
-  AppLocale.armsx2ResetDataFolder: 'Hapus folder data ARMSX2',
-  AppLocale.armsx2ResetDataFolderSubtitle:
-      'Berhenti menyinkronkan kartu memori ARMSX2 di perangkat ini',
-  AppLocale.armsx2MemcardsMissing:
-      'Folder yang dipilih harus berisi folder memcards',
+  AppLocale.customSaveFoldersTitle: 'Folder penyimpanan khusus',
+  AppLocale.customSaveFoldersStorageAccessTitle: 'Akses penyimpanan',
+  AppLocale.customSaveFoldersStorageAccessBody:
+      'Karena izin penyimpanan Android, NeoSync hanya dapat menyinkronkan folder '
+      'ini secara andal jika emulator menggunakan folder data khusus yang '
+      'dapat diakses. Penyimpanan internal tidak didukung.',
+  AppLocale.customSaveFolderNotSet: 'Tidak ada folder yang dipilih',
+  AppLocale.customSaveFolderSelect: 'Pilih folder',
+  AppLocale.customSaveFolderReset: 'Hapus folder',
+  AppLocale.customSaveFolderSync: 'Sinkronkan sekarang',
 };

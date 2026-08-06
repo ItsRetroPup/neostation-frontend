@@ -36,6 +36,10 @@ mixin AppLocale {
   static const String download = 'download';
   static const String stop = 'stop';
   static const String reset = 'reset';
+  static const String startupLoading = 'startup_loading';
+  static const String startupStorageUnavailable = 'startup_storage_unavailable';
+  static const String startupStorageRetry = 'startup_storage_retry';
+  static const String startupStorageUseDefault = 'startup_storage_use_default';
 
   // ---------------------------------------------------------------------------
   // Game / Playback
@@ -173,6 +177,15 @@ mixin AppLocale {
       'disable_secondary_screen_sub';
   static const String bartopShutdown = 'bartop_shutdown';
   static const String bartopShutdownSubtitle = 'bartop_shutdown_subtitle';
+  static const String showSyncTab = 'show_sync_tab';
+  static const String showSyncTabSubtitle = 'show_sync_tab_subtitle';
+  static const String showAchievementsTab = 'show_achievements_tab';
+  static const String showAchievementsTabSubtitle =
+      'show_achievements_tab_subtitle';
+  static const String showScraperTab = 'show_scraper_tab';
+  static const String showScraperTabSubtitle = 'show_scraper_tab_subtitle';
+  static const String showSearchTab = 'show_search_tab';
+  static const String showSearchTabSubtitle = 'show_search_tab_subtitle';
 
   // ---------------------------------------------------------------------------
   // Directories
@@ -200,6 +213,31 @@ mixin AppLocale {
       'organize_multi_disc_no_sets_found';
   static const String organizeMultiDiscFailed = 'organize_multi_disc_failed';
   static const String organizeMultiDiscWarning = 'organize_multi_disc_warning';
+
+  static const String cleanOrphanedMetadata = 'clean_orphaned_metadata';
+  static const String cleanOrphanedMetadataSubtitle =
+      'clean_orphaned_metadata_subtitle';
+  static const String cleanOrphanedMetadataWarning =
+      'clean_orphaned_metadata_warning';
+  static const String cleanOrphanedMetadataScanning =
+      'clean_orphaned_metadata_scanning';
+  static const String cleanOrphanedMetadataCleaningItem =
+      'clean_orphaned_metadata_cleaning_item';
+  static const String cleanOrphanedMetadataNothingFound =
+      'clean_orphaned_metadata_nothing_found';
+  static const String cleanOrphanedMetadataDone =
+      'clean_orphaned_metadata_done';
+  static const String cleanOrphanedMetadataEsdeSkippedSuffix =
+      'clean_orphaned_metadata_esde_skipped_suffix';
+  static const String cleanOrphanedMetadataFailed =
+      'clean_orphaned_metadata_failed';
+
+  // ---------------------------------------------------------------------------
+  // Notification center
+  // ---------------------------------------------------------------------------
+  static const String notifications = 'notifications';
+  static const String clearAll = 'clear_all';
+  static const String noActiveNotifications = 'no_active_notifications';
 
   // ---------------------------------------------------------------------------
   // Exit
@@ -683,6 +721,7 @@ mixin AppLocale {
   static const String hintRefresh = 'hint_refresh';
   static const String hintViewMode = 'hint_view_mode';
   static const String hintScrape = 'hint_scrape';
+  static const String hintMoreActions = 'hint_more_actions';
 
   // ---------------------------------------------------------------------------
   // Misc
@@ -828,6 +867,7 @@ mixin AppLocale {
   static const String scrapeUnexpectedError = 'scrape_unexpected_error';
   static const String scrapeSuccessful = 'scrape_successful';
   static const String scrapeErrorGame = 'scrape_error_game';
+  static const String scrapeQuotaExceeded = 'scrape_quota_exceeded';
 
   // ---------------------------------------------------------------------------
   // User data location
@@ -862,14 +902,15 @@ mixin AppLocale {
   static const String esdeSummaryStatsUpdated = 'esde_summary_stats_updated';
   static const String esdeSummaryGames = 'esde_summary_games';
   static const String esdeSummarySystems = 'esde_summary_systems';
-  static const String armsx2Sync = 'armsx2_sync';
-  static const String armsx2SelectDataFolder = 'armsx2_select_data_folder';
-  static const String armsx2SelectDataFolderSubtitle =
-      'armsx2_select_data_folder_subtitle';
-  static const String armsx2ResetDataFolder = 'armsx2_reset_data_folder';
-  static const String armsx2ResetDataFolderSubtitle =
-      'armsx2_reset_data_folder_subtitle';
-  static const String armsx2MemcardsMissing = 'armsx2_memcards_missing';
+  static const String customSaveFoldersTitle = 'custom_save_folders_title';
+  static const String customSaveFoldersStorageAccessTitle =
+      'custom_save_folders_storage_access_title';
+  static const String customSaveFoldersStorageAccessBody =
+      'custom_save_folders_storage_access_body';
+  static const String customSaveFolderNotSet = 'custom_save_folder_not_set';
+  static const String customSaveFolderSelect = 'custom_save_folder_select';
+  static const String customSaveFolderReset = 'custom_save_folder_reset';
+  static const String customSaveFolderSync = 'custom_save_folder_sync';
   // Setup wizard: ES-DE import & system art pack steps.
   static const String wizardScanComplete = 'wizard_scan_complete';
   static const String wizardTapNextToContinue = 'wizard_tap_next_to_continue';
@@ -909,6 +950,22 @@ mixin AppLocale {
   static const String addRomFolder = 'add_rom_folder';
   static const String removeRomFolder = 'remove_rom_folder';
 
+  // Library search & filtering.
+  static const String searchTitle = 'search_title';
+  static const String searchNameHint = 'search_name_hint';
+  static const String searchNoResults = 'search_no_results';
+  static const String searchResultsCount = 'search_results_count';
+  static const String searchClearFilters = 'search_clear_filters';
+  static const String searchFilters = 'search_filters';
+  static const String searchViewResults = 'search_view_results';
+  static const String searchOpen = 'search_open';
+  static const String searchGoToGame = 'search_go_to_game';
+  static const String filterPlatform = 'filter_platform';
+  static const String filterDeveloper = 'filter_developer';
+  static const String filterGenre = 'filter_genre';
+  static const String filterRating = 'filter_rating';
+  static const String filterYear = 'filter_year';
+  static const String filterAny = 'filter_any';
   // Destructive-action confirmation prompts
   static const String resetPlayTimeConfirm = 'reset_play_time_confirm';
   static const String resetPlayTimeConfirmBody = 'reset_play_time_confirm_body';
@@ -945,6 +1002,8 @@ mixin AppLocale {
   static const String raRateLimited = 'ra_rate_limited';
   static const String raApiKey = 'ra_api_key';
   static const String raEnterApiKey = 'ra_enter_api_key';
+  static const String raGetApiKey = 'ra_get_api_key';
+  static const String raApiKeyHelp = 'ra_api_key_help';
   static const String raNoRecentUnlocks = 'ra_no_recent_unlocks';
   static const String raRecentlyPlayedTitle = 'ra_recently_played_title';
   static const String raNoRecentlyPlayed = 'ra_no_recently_played';

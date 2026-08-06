@@ -18,6 +18,12 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.download: 'Descargar',
   AppLocale.stop: 'Detener',
   AppLocale.reset: 'Restablecer',
+  AppLocale.startupStorageUnavailable:
+      'NeoStation no pudo acceder a la carpeta donde se guardan tus datos. Comprueba que la tarjeta SD o la unidad esté conectada.',
+  AppLocale.startupStorageRetry: 'Reintentar',
+  AppLocale.startupStorageUseDefault: 'Continuar sin ella',
+  AppLocale.startupLoading:
+      'Preparando NeoStation. Esperando al almacenamiento y los servicios...',
 
   AppLocale.play: 'Jugar',
   AppLocale.playButton: 'JUGAR',
@@ -167,6 +173,19 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.bartopShutdownSubtitle:
       'Apagar el equipo al salir de la aplicación',
 
+  AppLocale.showSyncTab: 'Mostrar pestaña Sincronización',
+  AppLocale.showSyncTabSubtitle:
+      'Muestra la pestaña de sincronización en la nube en la barra de navegación',
+  AppLocale.showAchievementsTab: 'Mostrar pestaña Logros',
+  AppLocale.showAchievementsTabSubtitle:
+      'Muestra la pestaña de RetroAchievements en la barra de navegación',
+  AppLocale.showScraperTab: 'Mostrar pestaña Scraper',
+  AppLocale.showScraperTabSubtitle:
+      'Muestra la pestaña de scraping en la barra de navegación',
+  AppLocale.showSearchTab: 'Mostrar pestaña Buscar',
+  AppLocale.showSearchTabSubtitle:
+      'Muestra la pestaña de búsqueda en la barra de navegación',
+
   AppLocale.configureDirectories: 'Directorios',
   AppLocale.configureRomsFolder: 'Configurar carpeta de ROMs',
   AppLocale.cannotAccessFolder: 'No se puede acceder a la carpeta',
@@ -201,6 +220,24 @@ const Map<String, dynamic> appLocaleEs = {
       'No se pudieron organizar los juegos multidisco: {error}',
   AppLocale.organizeMultiDiscWarning:
       'Esto moverá los archivos ROM coincidentes a nuevas carpetas de juegos y creará listas .m3u en tu almacenamiento. No se puede deshacer automáticamente.',
+  AppLocale.cleanOrphanedMetadata: 'Limpiar metadata huérfana',
+  AppLocale.cleanOrphanedMetadataSubtitle:
+      'Elimina la metadata y los medios dejados por ROMs borrados',
+  AppLocale.cleanOrphanedMetadataWarning:
+      'Esto eliminará permanentemente las filas de metadata y archivos multimedia de ROMs que ya no están en tu biblioteca. Las entradas importadas de ES-DE no se eliminarán.',
+  AppLocale.cleanOrphanedMetadataScanning: 'Limpiando metadata huérfana...',
+  AppLocale.cleanOrphanedMetadataCleaningItem: 'Limpiando {filename}...',
+  AppLocale.cleanOrphanedMetadataNothingFound:
+      'No se encontró metadata huérfana.',
+  AppLocale.cleanOrphanedMetadataDone:
+      'Se limpiaron {entries} entrada(s) de metadata y {files} archivo(s) multimedia.',
+  AppLocale.cleanOrphanedMetadataEsdeSkippedSuffix:
+      ' {count} entrada(s) de ES-DE se dejaron intactas.',
+  AppLocale.cleanOrphanedMetadataFailed:
+      'No se pudo limpiar la metadata huérfana: {error}',
+  AppLocale.notifications: 'Notificaciones',
+  AppLocale.clearAll: 'Borrar todo',
+  AppLocale.noActiveNotifications: 'No hay notificaciones activas',
   AppLocale.romsFolderSubtitle: 'Añadir una carpeta que contenga tus ROMs',
   AppLocale.pressToRemoveFolder:
       'Presiona confirmar para eliminar esta carpeta',
@@ -436,6 +473,8 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.stoppingScraping: 'Deteniendo el proceso de scraping...',
   AppLocale.syncError: 'Error al sincronizar IDs de sistemas',
   AppLocale.metadataError: 'Error durante el scraping de metadatos',
+  AppLocale.scrapeQuotaExceeded:
+      'Has superado la cuota diaria de scraping de ScreenScraper',
   AppLocale.start: 'Iniciar',
   AppLocale.systemsSub: 'Selecciona qué sistemas escanear',
   AppLocale.disableAll: 'Desactivar Todos',
@@ -467,6 +506,7 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.hintRefresh: 'Actualizar',
   AppLocale.hintViewMode: 'Modo Vista',
   AppLocale.hintScrape: 'Escanear',
+  AppLocale.hintMoreActions: 'Más',
 
   AppLocale.error: 'Error',
   AppLocale.loading: 'Cargando...',
@@ -859,6 +899,21 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.toolsSubtitle: 'Herramientas para ayudarte a organizar tus ROMs',
   AppLocale.addRomFolder: 'Añadir carpeta de ROMs',
   AppLocale.removeRomFolder: 'Eliminar',
+  AppLocale.searchTitle: 'Buscar',
+  AppLocale.searchNameHint: 'Buscar...',
+  AppLocale.searchNoResults: 'No se encontraron juegos',
+  AppLocale.searchResultsCount: '{count} resultados',
+  AppLocale.searchClearFilters: 'Borrar filtros',
+  AppLocale.searchFilters: 'Filtros',
+  AppLocale.searchViewResults: 'Ver resultados',
+  AppLocale.searchOpen: 'Buscar',
+  AppLocale.searchGoToGame: 'Ir al juego',
+  AppLocale.filterPlatform: 'Plataforma',
+  AppLocale.filterDeveloper: 'Desarrollador',
+  AppLocale.filterGenre: 'Género',
+  AppLocale.filterRating: 'Valoración',
+  AppLocale.filterYear: 'Año',
+  AppLocale.filterAny: 'Cualquiera',
   AppLocale.resetPlayTimeConfirm: 'Restablecer tiempo de juego',
   AppLocale.resetPlayTimeConfirmBody:
       'Esto restablecerá permanentemente a cero el tiempo de juego registrado de este juego. Esta acción no se puede deshacer.',
@@ -903,6 +958,9 @@ const Map<String, dynamic> appLocaleEs = {
       'RetroAchievements está ocupado en este momento. Espera un momento e inténtalo de nuevo.',
   AppLocale.raApiKey: 'Clave API',
   AppLocale.raEnterApiKey: 'Introduce tu clave API',
+  AppLocale.raGetApiKey: 'Obtener clave API',
+  AppLocale.raApiKeyHelp:
+      'Abre tu panel de control de RetroAchievements para copiar tu clave API web personal.',
   AppLocale.raNoRecentUnlocks:
       'No hay desbloqueos recientes en los últimos 30 días',
   AppLocale.raRecentlyPlayedTitle: 'Jugados Recientemente',
@@ -958,13 +1016,15 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.wizardArtPackUnavailable:
       'No se pudo acceder al paquete de arte en este momento. Puedes instalarlo '
       'más tarde desde Ajustes cuando estés en línea.',
-  AppLocale.armsx2Sync: 'Sincronización de guardados de ARMSX2',
-  AppLocale.armsx2SelectDataFolder: 'Seleccionar carpeta de datos de ARMSX2',
-  AppLocale.armsx2SelectDataFolderSubtitle:
-      'Elige la carpeta que contiene los memcards de ARMSX2',
-  AppLocale.armsx2ResetDataFolder: 'Borrar carpeta de datos de ARMSX2',
-  AppLocale.armsx2ResetDataFolderSubtitle:
-      'Dejar de sincronizar las tarjetas de memoria de ARMSX2 en este dispositivo',
-  AppLocale.armsx2MemcardsMissing:
-      'La carpeta seleccionada debe contener una carpeta memcards',
+  AppLocale.customSaveFoldersTitle: 'Carpetas de guardado personalizadas',
+  AppLocale.customSaveFoldersStorageAccessTitle: 'Acceso al almacenamiento',
+  AppLocale.customSaveFoldersStorageAccessBody:
+      'Debido a los permisos de almacenamiento de Android, NeoSync solo puede '
+      'sincronizar estas carpetas de forma fiable cuando el emulador usa una '
+      'carpeta de datos personalizada y accesible. El almacenamiento interno '
+      'no es compatible.',
+  AppLocale.customSaveFolderNotSet: 'Ninguna carpeta seleccionada',
+  AppLocale.customSaveFolderSelect: 'Seleccionar carpeta',
+  AppLocale.customSaveFolderReset: 'Borrar carpeta',
+  AppLocale.customSaveFolderSync: 'Sincronizar ahora',
 };

@@ -180,6 +180,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
       onNavigateRight: _navigateNext,
       onSelectItem: _selectCurrentSystem,
       onSettings: _openSystemSettingsFromCarousel,
+      onBack: AppNavigation.requestExit,
       onXButton: () {
         HeaderSortDropdown.globalKey.currentState?.showDropdown();
       },
@@ -791,6 +792,20 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                           itemCount: allSystems.length,
                           initialIndex: _currentIndex,
                           footerHeight: 60.r,
+                          // System cards are height-bound (square art + footer)
+                          // so ~3.6 of them fit across the screen. With the
+                          // default envelope the 4th card is already down to
+                          // 44% scale / 10% opacity by the time it reaches the
+                          // edge, leaving a ~16px sliver. Floor the scale, lift
+                          // the fade, and pull the outer pair back toward the
+                          // pack so the row visibly continues past both edges.
+                          depth: const CarouselDepth(
+                            minScale: 0.7,
+                            opacityBase: 0.75,
+                            opacityFalloff: 0.55,
+                            minOpacity: 0.3,
+                            edgePull: 0.15,
+                          ),
                           itemBuilder: (context, index) {
                             final system = allSystems[index];
                             final isSelected = index == _currentIndex;
@@ -802,7 +817,13 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                               isSelected: isSelected,
                               backgroundCacheWidth: 1024,
                               onTap: () {
-                                if (!isSelected) {
+                                // Tapping an off-centre card brings it to the
+                                // middle; tapping the centred one enters it, so
+                                // touch users never need the footer's A button.
+                                // (SystemCard plays the sound.)
+                                if (isSelected) {
+                                  _selectCurrentSystem();
+                                } else {
                                   _carouselKey.currentState?.animateToPage(
                                     index,
                                   );

@@ -14,6 +14,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../services/game_service.dart';
 import '../services/game_launch_manager.dart';
+import '../repositories/neosync_save_folder_repository.dart';
 import '../utils/gamepad_nav.dart';
 import '../constants/system_folder_names.dart';
 
@@ -140,12 +141,15 @@ class _GameLaunchDialogState extends State<GameLaunchDialog> {
   Future<void> _performPostSync() async {
     final systemFolderName =
         widget.game.systemFolderName ?? widget.system.folderName;
-    if (systemFolderName == 'ps2') {
-      // Give ARMSX2 a moment to flush the memory card after its activity has
-      // returned us to NeoStation, then upload any changed cards.
+    // Give a standalone emulator a moment to flush its memory card after its
+    // activity has returned us to NeoStation, then upload any changed saves
+    // if this system has a user-configured custom save folder.
+    if (systemFolderName.isNotEmpty &&
+        await NeoSyncSaveFolderRepository.getFolder(systemFolderName) !=
+            null) {
       await Future<void>.delayed(const Duration(seconds: 1));
       if (mounted) {
-        await context.read<NeoSyncProvider>().syncArmsx2MemoryCards(
+        await context.read<NeoSyncProvider>().syncCustomSaveFolders(
           respectAutoSyncEnabled: true,
         );
       }

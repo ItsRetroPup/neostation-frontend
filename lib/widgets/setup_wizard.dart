@@ -15,7 +15,7 @@ import 'package:neostation/providers/neo_assets_provider.dart';
 import 'package:neostation/services/neo_assets_service.dart';
 import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/services/esde_import_service.dart';
-import 'package:neostation/widgets/custom_notification.dart';
+import 'package:neostation/services/global_notification_service.dart';
 import '../providers/sqlite_config_provider.dart';
 import '../utils/gamepad_nav.dart';
 import 'package:flutter_localization/flutter_localization.dart';
@@ -69,6 +69,10 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
   /// Whether the accessibility requirement is satisfied — either it's granted,
   /// or it doesn't apply on this device.
   bool get _accessibilityDone => !_needsAccessibility || _accessibilityGranted;
+
+  /// True once setup is being finalised, so the per-frame secondary-display
+  /// push stops re-asserting `setupWizardActive` and the dock can come in.
+  bool _finishing = false;
 
   static final _log = LoggerService.instance;
 
@@ -147,7 +151,18 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
       onSelectItem: () {
         if (_isSelectingFolder || _isSelectingUserDataFolder) return;
 
-        if (_isImportingEsde) return;
+        if (_isImportingEsde || _isDownloadingArt) return;
+        // Mirror the on-screen button's disabled state on the final step: while
+        // the theme manifest is still in flight we can't tell whether a pack is
+        // available, and letting A through would finish setup with no art.
+        if (_isLastStep) {
+          final neoAssets = context.read<NeoAssetsProvider>();
+          if (neoAssets.loading &&
+              !neoAssets.hasActiveTheme &&
+              neoAssets.themes.isEmpty) {
+            return;
+          }
+        }
         if (_currentStep == _stepScanning) {
           // A advances to the ES-DE step once the scan is done.
           final provider = Provider.of<SqliteConfigProvider>(
@@ -155,10 +170,11 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
             listen: false,
           );
           if (provider.scanCompleted) _handleMainAction();
-        } else if (_isLastStep) {
-          // Final (art-pack) step: A finishes setup.
-          _finishSetup();
         } else {
+          // Every step — including the final art-pack one — goes through the
+          // same primary action as the on-screen button. Shortcutting the last
+          // step to _finishSetup() here meant an A press completed setup
+          // without ever downloading/applying the art pack.
           _handleMainAction();
         }
       },
@@ -182,6 +198,11 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
   void _updateSecondaryScreen(int bgColor, bool isOled) {
     if (_secondaryDisplayState == null) return;
     _secondaryDisplayState!.updateState(
+      // Re-asserted on every push: the shared state is written by both engines
+      // and the secondary's own pushes copyWith from a snapshot that may
+      // predate the flag, so a single push can be echoed away (same hazard as
+      // `appReady`). Stops once we're finishing so it can't undo the clear.
+      setupWizardActive: !_finishing,
       systemName: AppLocale.welcomeNeoStation.getString(context),
       useFluidShader: true,
       backgroundColor: bgColor,
@@ -1441,6 +1462,23 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
       selected = selected.substring(0, selected.length - 1);
     }
 
+    // Resolve ES-DE strings before the async import so progress callbacks can
+    // use them without a BuildContext.
+    final localeEsdeImporting = AppLocale.esdeImporting.getString(context);
+    final localeEsdeImportNotEsdeFolder = AppLocale.esdeImportNotEsdeFolder
+        .getString(context);
+    final localeEsdeImportNothingFound = AppLocale.esdeImportNothingFound
+        .getString(context);
+    final localeEsdeImportComplete = AppLocale.esdeImportComplete.getString(
+      context,
+    );
+    final localeEsdeSummaryGames = AppLocale.esdeSummaryGames.getString(
+      context,
+    );
+    final localeEsdeSummarySystems = AppLocale.esdeSummarySystems.getString(
+      context,
+    );
+
     await context.read<SqliteConfigProvider>().updateEsdeFolderPath(selected);
 
     setState(() {
@@ -1448,6 +1486,14 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
       _esdeProgress = 0.0;
       _esdeLabel = '';
     });
+
+    const notificationId = 'esde_import_progress';
+    GlobalNotificationService().show(
+      id: notificationId,
+      message: localeEsdeImporting,
+      type: GlobalNotificationType.info,
+      progress: 0,
+    );
 
     EsdeImportResult? result;
     String? error;
@@ -1461,6 +1507,14 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
               _esdeLabel = label;
             });
           }
+          GlobalNotificationService().update(
+            id: notificationId,
+            message: label.isEmpty
+                ? localeEsdeImporting
+                : '$localeEsdeImporting: $label',
+            type: GlobalNotificationType.info,
+            progress: p,
+          );
         },
       );
       // Rebuild the artwork fallback map now esde_media_dir rows exist.
@@ -1484,22 +1538,36 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
     });
 
     if (error != null) {
-      AppNotification.showNotification(
-        context,
-        error,
-        type: NotificationType.error,
+      GlobalNotificationService().update(
+        id: notificationId,
+        message: error,
+        type: GlobalNotificationType.error,
+        progress: null,
       );
     } else if (result != null && !result.gamelistsDirFound) {
-      AppNotification.showNotification(
-        context,
-        AppLocale.esdeImportNotEsdeFolder.getString(context),
-        type: NotificationType.error,
+      GlobalNotificationService().update(
+        id: notificationId,
+        message: localeEsdeImportNotEsdeFolder,
+        type: GlobalNotificationType.error,
+        progress: null,
       );
     } else if (!matched) {
-      AppNotification.showNotification(
-        context,
-        AppLocale.esdeImportNothingFound.getString(context),
-        type: NotificationType.info,
+      GlobalNotificationService().update(
+        id: notificationId,
+        message: localeEsdeImportNothingFound,
+        type: GlobalNotificationType.info,
+        progress: null,
+      );
+    } else {
+      final importResult = result;
+      GlobalNotificationService().update(
+        id: notificationId,
+        message:
+            '$localeEsdeImportComplete: '
+            '${importResult.gamesImported} $localeEsdeSummaryGames, '
+            '${importResult.systemsMatched} $localeEsdeSummarySystems',
+        type: GlobalNotificationType.success,
+        progress: null,
       );
     }
   }
@@ -1911,6 +1979,11 @@ class _SetupWizardState extends State<SetupWizard> with WidgetsBindingObserver {
   }
 
   Future<void> _finishSetup() async {
+    // Stop pinning the secondary display's dock/launcher off-screen. Set before
+    // any await so a rebuild racing the save can't re-assert the flag; the
+    // wrapper pushes the clear once completeSetup() lands.
+    _finishing = true;
+
     // Verificar que la configuración está guardada
     final configProvider = Provider.of<SqliteConfigProvider>(
       context,

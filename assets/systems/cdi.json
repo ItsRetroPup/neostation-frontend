@@ -18,7 +18,8 @@
       "cdi",
       "cdimono1",
       "philipscdi",
-      "Philips CD-i"
+      "Philips CD-i",
+      "philips-cd-i"
     ],
     "colors": [
       "#B0BEC5",
@@ -71,6 +72,8 @@
         },
         "linux": {
           "executable": "retroarch",
+          "flatpak": "org.libretro.RetroArch",
+          "emudeck_launcher": "retroarch.sh",
           "args": "-L same_cdi_libretro.so \"{file.path}\""
         },
         "macos": {

@@ -234,9 +234,9 @@ extension NeoSyncCore on NeoSyncProvider {
     await autoSyncUploads(); // Only upload local changes after the game
   }
 
-  /// Syncs cloud changes down and local ARMSX2 memory-card changes up at app
-  /// startup. ARMSX2 uses a standalone, user-selected folder, so it is not
-  /// covered by RetroArch's normal startup flow.
+  /// Syncs cloud changes down and local custom save-folder changes up at app
+  /// startup. Standalone emulators (ARMSX2, ARMSX1, etc.) use a user-selected
+  /// folder, so they are not covered by RetroArch's normal startup flow.
   Future<void> syncOnAppStart() async {
     if (!isNeoSyncAuthenticated) {
       return;
@@ -245,7 +245,7 @@ extension NeoSyncCore on NeoSyncProvider {
 
     _processedItems.add('🚀 Checking for cloud updates on app start...');
     await autoSyncDownloads();
-    await syncArmsx2MemoryCards(respectAutoSyncEnabled: true);
+    await syncCustomSaveFolders(respectAutoSyncEnabled: true);
   }
 
   /// Resets the state of the quota exceeded dialog

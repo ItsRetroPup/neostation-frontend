@@ -29,6 +29,24 @@ extension _GamepadNav on _SystemGamesListState {
     _selectButtonAction?.call();
   }
 
+  /// Handles the X button: opens the game view-mode picker (list/grid/carousel
+  /// + card size/style). For the music library, X keeps its shuffle toggle.
+  void _handleXButton() {
+    if (widget.system.folderName == 'music') {
+      final service = MusicPlayerService();
+      service.toggleShuffle();
+      AppNotification.showNotification(
+        context,
+        service.isShuffle
+            ? AppLocale.shuffleEnabled.getString(context)
+            : AppLocale.shuffleDisabled.getString(context),
+        type: NotificationType.info,
+      );
+      return;
+    }
+    GameViewModeDropdown.globalKey.currentState?.showDropdown();
+  }
+
   /// Registers gamepad and keyboard input mappings for the screen.
   void _initializeGamepad() {
     _gamepadNav = GamepadNavigation(
@@ -36,26 +54,18 @@ extension _GamepadNav on _SystemGamesListState {
       onNavigateDown: _navigateDown,
       onNavigateLeft: _navigateLeft, // Page Up (10 items).
       onNavigateRight: _navigateRight, // Page Down (10 items).
+      onLetterJump: _letterJump, // Held D-pad up/down → alphabet skipping.
+      accelerateRepeats: true, // Text-only rows keep up with a ramping repeat.
       onSelectItem: _selectCurrentGame,
       onBack: _goBack,
       onFavorite: _toggleFavorite, // Button Y.
-      onXButton: () {
-        if (widget.system.folderName == 'music') {
-          final service = MusicPlayerService();
-          service.toggleShuffle();
-          AppNotification.showNotification(
-            context,
-            service.isShuffle
-                ? AppLocale.shuffleEnabled.getString(context)
-                : AppLocale.shuffleDisabled.getString(context),
-            type: NotificationType.info,
-          );
-        } else {
-          _showRandomGameDialog();
-        }
-      }, // Button X - Random.
+      onXButton:
+          _handleXButton, // Button X - View mode picker (music: shuffle).
       onSettings: _openGameSettingsDialog, // Button Start.
-      onSelectButton: _handleSelectButton, // Button Select (View).
+      onSelectButton: _handleSelectButton, // Button Select (View) - tap.
+      onSelectModifierA: () => _scrapeAction?.call(), // Select + A - Scrape.
+      onSelectModifierB: _toggleLegend, // Select + B - Hide/show legend.
+      onSelectModifierY: _showRandomGameDialog, // Select + Y - Random.
       onRightStickClick: null,
       onLeftBumper: _handleLeftBumper,
       onRightBumper: _handleRightBumper,
@@ -99,6 +109,26 @@ extension _GamepadNav on _SystemGamesListState {
 
     _resetVideoState();
     _updateSelectedGame((_selectedGameIndex + 1) % _games.length);
+  }
+
+  /// Skips to the neighbouring alphabetical group once up/down has been held
+  /// long enough (ES-DE style). Returns false when there is no further letter
+  /// in that direction, letting the caller fall back to a normal step so the
+  /// selection still wraps at the ends of the list.
+  bool _letterJump(bool forward) {
+    if (_games.isEmpty) return false;
+    if (_isAchievementsOpen != null && _isAchievementsOpen!()) return false;
+
+    final target = LetterJump.targetIndex(
+      length: _games.length,
+      currentIndex: _selectedGameIndex,
+      forward: forward,
+      letterAt: (index) => LetterJump.letterFor(_games[index]),
+    );
+    if (target == null) return false;
+
+    _updateSelectedGame(target, forceFast: true);
+    return true;
   }
 
   /// Jumps back by 10 games (Page Up logic).

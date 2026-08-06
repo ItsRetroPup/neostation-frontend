@@ -75,6 +75,7 @@ class DatabaseTestHelper {
         players TEXT,
         app_system_id TEXT,
         ra_hash TEXT,
+        ss_hash TEXT,
         id_ra INTEGER,
         is_favorite INTEGER DEFAULT 0,
         play_time INTEGER DEFAULT 0,
@@ -84,6 +85,7 @@ class DatabaseTestHelper {
         updated_at TEXT,
         app_emulator_unique_id TEXT,
         app_emulator_os_id INTEGER,
+        app_alternative_emulators_id INTEGER,
         box2d_aspect_ratio TEXT
       )
     ''');
@@ -117,8 +119,9 @@ class DatabaseTestHelper {
         auto_update_app INTEGER,
         auto_update_systems INTEGER,
         system_grid_columns TEXT DEFAULT 'M',
-        use_12_hour_clock INTEGER DEFAULT 0
-        ,armsx2_data_folder_path TEXT DEFAULT ''
+        use_12_hour_clock INTEGER DEFAULT 0,
+        game_details_tab TEXT DEFAULT 'wheel',
+        esde_folder_path TEXT
       )
     ''');
 
@@ -126,6 +129,14 @@ class DatabaseTestHelper {
       CREATE TABLE user_rom_folders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         path TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE user_custom_save_folders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        system_folder_name TEXT NOT NULL UNIQUE,
+        folder_path TEXT NOT NULL
       )
     ''');
 
@@ -141,6 +152,8 @@ class DatabaseTestHelper {
         android_package_name TEXT,
         android_activity_name TEXT,
         is_default INTEGER,
+        is_default_core INTEGER,
+        is_default_standalone INTEGER NOT NULL DEFAULT 0,
         is_ra_compatible INTEGER
       )
     ''');

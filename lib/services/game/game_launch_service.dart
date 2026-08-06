@@ -14,6 +14,10 @@ import '../../utils/emulator_loader.dart';
 import '../config_service.dart';
 import '../android_service.dart';
 import '../launcher_service.dart';
+import '../linux_emulator_discovery.dart';
+import '../linux_host_process.dart';
+import '../macos_application_service.dart';
+import 'emulator_launch_diagnostics.dart';
 import 'favorites_service.dart';
 import 'game_session_manager.dart';
 import '../gamepad/gamepad_navigation_manager.dart';
@@ -106,16 +110,46 @@ class GameLaunchService {
         configFileName,
       );
 
-      if (configLoaded) {
-        String? preferredPlayerId = game.emulatorName;
+      // Resolved once and threaded through every fallback below. `isExplicit`
+      // distinguishes a choice the user actually made (a per-game override, or a
+      // system default they set) from one we guessed for them — only the former
+      // is worth failing the launch over.
+      String? preferredPlayerId = game.emulatorName;
+      bool isExplicitChoice = preferredPlayerId != null;
+      String source = isExplicitChoice ? 'per-game override' : 'none';
 
-        if (preferredPlayerId == null) {
+      if (preferredPlayerId == null && system.id != null) {
+        final userDefault =
+            await EmulatorRepository.getUserDefaultEmulatorForSystem(
+              system.id!,
+            );
+        if (userDefault != null) {
+          preferredPlayerId = userDefault.uniqueId;
+          isExplicitChoice = true;
+          source = 'system default (user-selected)';
+        } else {
           final defaultEmu = await _resolveDefaultInstalledEmulator(system);
           if (defaultEmu != null) {
             preferredPlayerId = defaultEmu.uniqueId;
+            source = 'auto-resolved default';
           }
         }
+      }
 
+      // Emulator selection has been the source of repeated, hard-to-reproduce
+      // reports ("I picked melonDS, RetroArch launched"). One tagged line per
+      // launch makes the decision auditable from a user's logcat without any
+      // debug build or flag.
+      _log.i(
+        '[EmuSel] ${system.folderName}/${game.romname}: '
+        'emulator=${preferredPlayerId ?? "<none>"} source=$source '
+        'explicit=$isExplicitChoice configLoaded=$configLoaded',
+      );
+      if (system.id != null) {
+        await _logSystemEmulatorState(system);
+      }
+
+      if (configLoaded) {
         final launchCmd = LauncherService.instance.getLaunchCommand(
           system,
           game,
@@ -222,10 +256,23 @@ class GameLaunchService {
         }
       }
 
-      final standaloneEmulator = await _getStandaloneEmulatorForSystem(system);
+      _log.i(
+        '[EmuSel] JSON launch path did not handle '
+        '${preferredPlayerId ?? "<none>"}; trying standalone fallback',
+      );
+
+      final standaloneEmulator = await _getStandaloneEmulatorForSystem(
+        system,
+        preferredUniqueId: preferredPlayerId,
+      );
       if (!context.mounted) return GameLaunchResult.failure('', '');
 
       if (standaloneEmulator != null) {
+        _log.i(
+          '[EmuSel] route=standalone '
+          'emulator=${standaloneEmulator['unique_identifier']} '
+          '(${standaloneEmulator['name']})',
+        );
         if (Platform.isAndroid) {
           return await _launchStandaloneAndroid(
             context,
@@ -248,13 +295,42 @@ class GameLaunchService {
         }
       }
 
-      final coreName = await _getCoreForSystem(system);
+      final coreName = await _getCoreForSystem(
+        system,
+        preferredUniqueId: preferredPlayerId,
+      );
       if (!context.mounted) return GameLaunchResult.failure('', '');
 
       if (coreName == null) {
         return GameLaunchResult.failure(
           AppLocale.coreNotConfigured.getString(context),
           'No core found for system ${system.folderName}',
+        );
+      }
+
+      // Every route above declined to launch the emulator the user actually
+      // picked, and the only thing left is a core we chose for them. Launching
+      // it would silently substitute a *different* emulator — the exact failure
+      // that made a deliberate melonDS/standalone selection boot a RetroArch
+      // core. Surface the misconfiguration by name instead.
+      _log.i('[EmuSel] route=core core=$coreName');
+
+      final bool substitutesUserChoice =
+          isExplicitChoice &&
+          preferredPlayerId != null &&
+          !await _emulatorProvidesCore(system, preferredPlayerId, coreName);
+      if (!context.mounted) return GameLaunchResult.failure('', '');
+
+      if (substitutesUserChoice) {
+        _log.e(
+          'Refusing to substitute a fallback core for the user-selected '
+          'emulator "$preferredPlayerId" on ${system.folderName}',
+        );
+        return GameLaunchResult.failure(
+          AppLocale.emulatorNotConfigured.getString(context),
+          'The selected emulator "$preferredPlayerId" could not be launched '
+          'for ${system.folderName}. Re-select it in the system or per-game '
+          'emulator settings, or check that it is installed.',
         );
       }
 
@@ -292,20 +368,35 @@ class GameLaunchService {
     String coreName,
   ) async {
     try {
-      final packages = await EmulatorRepository.getAndroidRetroArchPackages();
+      // Installed variants only. The database lists every RetroArch package
+      // that exists (com.retroarch, .ra32, .aarch64), so taking `.first` of the
+      // raw list addressed the intent to whichever one the seed happened to
+      // return — routinely one the user does not have, which fails with no
+      // explanation the user can act on.
+      final packages =
+          await EmulatorRepository.getInstalledAndroidRetroArchPackages();
 
       if (packages.isNotEmpty) {
         try {
           final defaultEmu =
               await EmulatorRepository.getDefaultEmulatorForSystem(system.id!);
-          if (defaultEmu != null &&
-              defaultEmu.androidPackageName != null &&
-              defaultEmu.androidPackageName!.isNotEmpty) {
-            final specificPackage = defaultEmu.androidPackageName!;
-            _log.i(
-              'Android: User selected specific RetroArch package: $specificPackage',
-            );
-            packages.insert(0, specificPackage);
+          final specificPackage = defaultEmu?.androidPackageName;
+          if (specificPackage != null && specificPackage.isNotEmpty) {
+            // Promote the configured variant only if it is really present.
+            // `is_default` is stale whenever variant alignment has been skipped,
+            // and an absent package must never outrank an installed one.
+            if (packages.contains(specificPackage)) {
+              _log.i(
+                'Android: Using configured RetroArch package: $specificPackage',
+              );
+              packages.remove(specificPackage);
+              packages.insert(0, specificPackage);
+            } else {
+              _log.w(
+                'Android: Configured RetroArch package "$specificPackage" is '
+                'not installed; falling back to ${packages.first}',
+              );
+            }
           }
         } catch (e) {
           _log.e('Error getting default emulator package: $e');
@@ -395,7 +486,33 @@ class GameLaunchService {
     try {
       final detectedEmulators =
           await EmulatorRepository.getUserDetectedEmulators();
-      final retroArch = detectedEmulators['RetroArch'];
+      var retroArch = detectedEmulators['RetroArch'];
+
+      // On Linux a database entry is not required to find RetroArch: it ships
+      // as a Flatpak or behind an EmuDeck launcher script, both of which live
+      // at well-known paths. Discovery runs when there is no configured path or
+      // the configured one has gone stale, so a working install is not reported
+      // as "not detected" just because the user never opened the file picker.
+      if (Platform.isLinux &&
+          (retroArch == null || !await File(retroArch.path).exists())) {
+        final discovered = await LinuxEmulatorDiscovery.resolveExecutable(
+          executable: 'retroarch',
+          flatpakId: 'org.libretro.RetroArch',
+          emudeckLauncher: 'retroarch.sh',
+        );
+        if (discovered != null) {
+          _log.i('Discovered RetroArch on Linux at $discovered');
+          retroArch =
+              (retroArch ??
+                      const EmulatorModel(
+                        name: 'RetroArch',
+                        path: '',
+                        detected: false,
+                      ))
+                  .copyWith(path: discovered, detected: true);
+        }
+      }
+
       if (!context.mounted) return GameLaunchResult.failure('', '');
       if (retroArch == null) {
         return GameLaunchResult.failure(
@@ -452,33 +569,37 @@ class GameLaunchService {
       }
 
       Process process;
+      String executable = retroArch.path;
+      List<String> args;
 
       if (Platform.isMacOS) {
-        String executable = retroArch.path;
         if (executable.endsWith('.app')) {
           executable = path.join(executable, 'Contents', 'MacOS', 'RetroArch');
         }
 
-        final args = ['-L', coreFullPath, game.romPath!];
+        args = ['-L', coreFullPath, game.romPath!];
         final env = Map<String, String>.from(Platform.environment);
         env['HOME'] = ConfigService.getRealHomePath();
 
         process = await Process.start(executable, args, environment: env);
       } else {
-        String executable = retroArch.path;
-        final args = ['-f', '-L', coreFullPath, game.romPath!];
+        args = ['-f', '-L', coreFullPath, game.romPath!];
 
-        process = await Process.start(executable, args);
+        process = await LinuxHostProcess.start(executable, args);
       }
 
-      process.stdout.listen((_) {});
-      process.stderr.listen((_) {});
+      final diagnostics = EmulatorLaunchDiagnostics.attach(
+        process,
+        executable,
+        args,
+      );
 
       GamepadNavigationManager.deactivateAll();
 
       process.exitCode
           .then((exitCode) async {
             _log.i('RetroArch exited with code: $exitCode');
+            diagnostics.reportExit(exitCode);
             await Future.delayed(Duration(seconds: 2));
             bool stillRunning = await _isDefaultEmulatorRunning();
 
@@ -519,7 +640,7 @@ class GameLaunchService {
     try {
       String executable = launchCmd['executable'].toString();
 
-      if ((Platform.isWindows || Platform.isLinux)) {
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
         final detected = await EmulatorRepository.getUserDetectedEmulators();
 
         if (executable.toLowerCase().contains('retroarch')) {
@@ -560,25 +681,43 @@ class GameLaunchService {
             executable = resolvedPath;
           }
         }
-      } else if (Platform.isMacOS &&
-          executable.toLowerCase().contains('retroarch')) {
-        final detected = await EmulatorRepository.getUserDetectedEmulators();
-        final ra = detected['RetroArch'];
-        if (ra != null && ra.path.isNotEmpty) {
-          if (executable != ra.path) {
+
+        if (Platform.isMacOS) {
+          final resolvedExecutable =
+              await MacOsApplicationService.resolveExecutable(
+                executable,
+                applicationName: launchCmd['player_name']?.toString(),
+                bundleIdentifierHint: launchCmd['unique_id']?.toString(),
+                homePath: ConfigService.getRealHomePath(),
+              );
+          if (resolvedExecutable != null && resolvedExecutable != executable) {
             _log.i(
-              'Resolving RetroArch executable on macOS from "$executable" to user-configured path: ${ra.path}',
+              'Resolving macOS application "$executable" to executable: '
+              '$resolvedExecutable',
             );
+            executable = resolvedExecutable;
           }
-          executable = ra.path;
-          if (executable.endsWith('.app')) {
-            executable = path.join(
-              executable,
-              'Contents',
-              'MacOS',
-              'RetroArch',
-            );
-          }
+        }
+      }
+
+      // Last resort on Linux: nothing the database knows about resolved to a
+      // real file. Emulators there are Flatpaks, EmuDeck launcher scripts or
+      // AppImages rather than binaries sitting next to the frontend, so the
+      // bare `executable` from the systems JSON ("retroarch", "dolphin") never
+      // exists as written and every launch failed until the user hunted the
+      // real path down in a file picker. Only runs when the configured path is
+      // already broken, so an explicit user choice is never overridden.
+      if (Platform.isLinux && !await File(executable).exists()) {
+        final discovered = await LinuxEmulatorDiscovery.resolveExecutable(
+          executable: executable,
+          flatpakId: launchCmd['flatpak']?.toString(),
+          emudeckLauncher: launchCmd['emudeck_launcher']?.toString(),
+        );
+        if (discovered != null) {
+          _log.i(
+            'Resolved "$executable" to $discovered via Linux emulator discovery',
+          );
+          executable = discovered;
         }
       }
 
@@ -593,23 +732,52 @@ class GameLaunchService {
       }
 
       final argsStr = launchCmd['args']?.toString() ?? '';
-      final args = LauncherService.splitArgs(argsStr);
+      var args = LauncherService.splitArgs(argsStr);
+
+      // The systems JSON names cores by filename alone (`-L snes9x_libretro.so`),
+      // which RetroArch resolves against the working directory — ours, not its
+      // own. macOS already rewrote these to absolute paths; Linux did not, and
+      // there the cores are further away than anywhere a relative lookup could
+      // reach (a Flatpak keeps them under ~/.var, a distro under /usr/lib).
+      if (Platform.isLinux &&
+          executable.toLowerCase().contains('retroarch') &&
+          args.contains('-L')) {
+        final coresDir = await LinuxEmulatorDiscovery.resolveRetroArchCoresDir(
+          executable,
+        );
+        if (coresDir != null) {
+          args = await _absolutizeRetroArchCore(args, coresDir);
+        } else {
+          _log.w(
+            'No RetroArch cores directory found for $executable; passing the '
+            'core name through unchanged',
+          );
+        }
+      }
 
       final env = Map<String, String>.from(Platform.environment);
       if (Platform.isMacOS) {
         env['HOME'] = ConfigService.getRealHomePath();
       }
 
-      final process = await Process.start(executable, args, environment: env);
+      final process = await LinuxHostProcess.start(
+        executable,
+        args,
+        environment: env,
+      );
 
-      process.stdout.listen((_) {});
-      process.stderr.listen((_) {});
+      final diagnostics = EmulatorLaunchDiagnostics.attach(
+        process,
+        executable,
+        args,
+      );
 
       GamepadNavigationManager.deactivateAll();
 
       process.exitCode
           .then((exitCode) async {
             _log.i('Process exited with code: $exitCode');
+            diagnostics.reportExit(exitCode);
             await Future.delayed(Duration(seconds: 2));
             bool stillRunning = false;
             if (GameSessionManager.launchedEmulatorExe != null) {
@@ -722,27 +890,136 @@ class GameLaunchService {
     return configured;
   }
 
+  /// Logs the raw default-emulator state for [system] under the `[EmuSel]` tag.
+  ///
+  /// The bugs in this area were all *state* bugs — two emulators flagged as the
+  /// system default, or an app default contradicting the user's pick — and they
+  /// are invisible in a launch trace that only reports the winner. This prints
+  /// the underlying rows so a log alone is enough to diagnose a report.
+  static Future<void> _logSystemEmulatorState(SystemModel system) async {
+    try {
+      // Deliberately `loadEmulatorsForSystem`, the same probe the resolver uses,
+      // NOT getEmulatorsForSystemCurrentOs: the latter cannot answer the install
+      // question from a database row at all and leaves `isInstalled` false,
+      // which would make this dump actively misleading.
+      final all = await loadEmulatorsForSystem(system);
+      final userDefault =
+          await EmulatorRepository.getUserDefaultEmulatorForSystem(system.id!);
+      final appDefaults = all.where((e) => e.isDefault).toList();
+
+      _log.i(
+        '[EmuSel]   available=${all.length} '
+        'userDefault=${userDefault?.uniqueId ?? "<none>"} '
+        'appDefaults=${appDefaults.map((e) => e.uniqueId).join(",")}',
+      );
+      if (appDefaults.length > 1) {
+        _log.w(
+          '[EmuSel]   anomaly - ${appDefaults.length} app defaults flagged for '
+          '${system.folderName}',
+        );
+      }
+      for (final e in all) {
+        _log.i(
+          '[EmuSel]     - ${e.uniqueId} name="${e.name}" '
+          'standalone=${e.isStandalone} installed=${e.isInstalled} '
+          'isDefault=${e.isDefault} core=${e.coreFilename ?? "-"} '
+          'pkg=${e.androidPackageName ?? "-"}',
+        );
+      }
+    } catch (e) {
+      _log.w('[EmuSel] Could not dump emulator state: $e');
+    }
+  }
+
+  /// Whether [uniqueId] is the emulator that supplies [coreName] for [system].
+  ///
+  /// Used to tell "we fell back to a core, but it happens to be the very core
+  /// the user picked" (fine) from "we fell back to somebody else's core" (a
+  /// silent substitution of the user's choice).
+  static Future<bool> _emulatorProvidesCore(
+    SystemModel system,
+    String uniqueId,
+    String coreName,
+  ) async {
+    if (system.id == null) return false;
+    try {
+      final all = await EmulatorRepository.getEmulatorsForSystemCurrentOs(
+        system.id!,
+      );
+      for (final e in all) {
+        if (e.uniqueId != uniqueId) continue;
+        final file = e.coreFilename;
+        if (file == null || file.isEmpty) return false;
+        return file == coreName || _stripLibraryExtension(file) == coreName;
+      }
+    } catch (e) {
+      // Enumeration failed — don't block a launch on a diagnostic check.
+      _log.w('Could not verify emulator/core correspondence: $e');
+      return true;
+    }
+    return false;
+  }
+
+  /// Strips a platform dynamic-library extension from a core filename.
+  static String _stripLibraryExtension(String coreFilename) {
+    if (coreFilename.endsWith('.dll')) {
+      return coreFilename.substring(0, coreFilename.length - 4);
+    }
+    if (coreFilename.endsWith('.so')) {
+      return coreFilename.substring(0, coreFilename.length - 3);
+    }
+    return coreFilename;
+  }
+
   /// Resolves the identifier for the core assigned to the given system.
-  static Future<String?> _getCoreForSystem(SystemModel system) async {
+  ///
+  /// When [preferredUniqueId] names an emulator that is itself a core, that core
+  /// wins: the caller already resolved the user's choice and re-deriving the
+  /// system default here would discard it.
+  static Future<String?> _getCoreForSystem(
+    SystemModel system, {
+    String? preferredUniqueId,
+  }) async {
+    if (preferredUniqueId != null && system.id != null) {
+      try {
+        final all = await EmulatorRepository.getEmulatorsForSystemCurrentOs(
+          system.id!,
+        );
+        for (final e in all) {
+          if (e.uniqueId != preferredUniqueId) continue;
+          final file = e.coreFilename;
+          if (file == null || file.isEmpty) break;
+          return Platform.isAndroid ? file : _stripLibraryExtension(file);
+        }
+      } catch (e) {
+        _log.w('Could not resolve preferred core "$preferredUniqueId": $e');
+      }
+    }
+
     final emulator = await EmulatorRepository.getDefaultEmulatorForSystem(
       system.id!,
     );
 
     if (emulator != null) {
-      final coreFilename = emulator['core_filename'].toString();
+      // `?.` matters: a SQL NULL arrives as Dart null, and `null.toString()`
+      // launders it into the string "null", which passes every null check
+      // downstream and reaches RetroArch as LIBRETRO="null" — a blank screen
+      // with nothing in the log to explain it. Emulators that supply no core of
+      // their own (a standalone, a malformed config entry) can hold the system
+      // default, so this is a reachable state, not a defensive one.
+      final coreFilename = emulator['core_filename']?.toString();
 
-      if (Platform.isAndroid) {
-        return coreFilename;
-      } else {
-        String coreName = coreFilename;
-        if (coreName.endsWith('.dll')) {
-          coreName = coreName.substring(0, coreName.length - 4);
-        } else if (coreName.endsWith('.so')) {
-          coreName = coreName.substring(0, coreName.length - 3);
-        }
-
-        return coreName;
+      if (coreFilename == null || coreFilename.isEmpty) {
+        _log.e(
+          'Default emulator "${emulator['unique_identifier']}" for system '
+          '${system.folderName} has no core filename',
+        );
+        return null;
       }
+
+      return Platform.isAndroid
+          ? coreFilename
+          : _stripLibraryExtension(coreFilename);
     }
 
     _log.e('No default emulator found for system ${system.folderName}');
@@ -750,9 +1027,16 @@ class GameLaunchService {
   }
 
   /// Retrieves the user-assigned standalone emulator for a system if applicable.
+  ///
+  /// [preferredUniqueId] is the emulator the caller already resolved for this
+  /// launch (a per-game override or the system default). If it names one of this
+  /// system's standalones, it wins outright — re-deriving the default here is
+  /// what used to drop the user's choice on the floor when the JSON launch path
+  /// declined to handle it.
   static Future<Map<String, dynamic>?> _getStandaloneEmulatorForSystem(
-    SystemModel system,
-  ) async {
+    SystemModel system, {
+    String? preferredUniqueId,
+  }) async {
     if (system.id == null) return null;
 
     try {
@@ -764,10 +1048,22 @@ class GameLaunchService {
       }
 
       Map<String, dynamic>? userDefault;
-      for (final standalone in standalones) {
-        if (standalone['is_user_default'] == 1) {
-          userDefault = standalone;
-          break;
+      if (preferredUniqueId != null) {
+        for (final standalone in standalones) {
+          if (standalone['unique_identifier']?.toString() ==
+              preferredUniqueId) {
+            userDefault = standalone;
+            break;
+          }
+        }
+      }
+
+      if (userDefault == null) {
+        for (final standalone in standalones) {
+          if (standalone['is_user_default'] == 1) {
+            userDefault = standalone;
+            break;
+          }
         }
       }
 
@@ -910,16 +1206,20 @@ class GameLaunchService {
           .replaceAll('{emulator_path}', emulatorPath);
 
       final argList = _parseCommandArguments(args);
-      final process = await Process.start(emulatorPath, argList);
+      final process = await LinuxHostProcess.start(emulatorPath, argList);
 
-      process.stdout.listen((_) {});
-      process.stderr.listen((_) {});
+      final diagnostics = EmulatorLaunchDiagnostics.attach(
+        process,
+        emulatorPath,
+        argList,
+      );
 
       GamepadNavigationManager.deactivateAll();
 
       process.exitCode
           .then((exitCode) async {
             _log.i('Standalone emulator exited with code: $exitCode');
+            diagnostics.reportExit(exitCode);
             await Future.delayed(Duration(seconds: 2));
             bool stillRunning = false;
             if (GameSessionManager.launchedEmulatorExe != null) {
@@ -987,7 +1287,19 @@ class GameLaunchService {
         system.id!,
       );
       if (defaultEmu != null && defaultEmu.isRetroArch) {
-        resolved = defaultEmu.androidPackageName!;
+        final candidate = defaultEmu.androidPackageName!;
+        // Substitute only a variant that is actually installed. `is_default`
+        // records which variant was *configured*, not which one exists, and
+        // trusting it blindly is how a launch gets addressed to a RetroArch
+        // build the user never had.
+        if (await EmulatorRepository.isRetroArchVariantInstalled(candidate)) {
+          resolved = candidate;
+        } else {
+          _log.w(
+            'Android: Configured RetroArch variant "$candidate" is not '
+            'installed; keeping "$package"',
+          );
+        }
       }
     } catch (e) {
       _log.e('Error resolving RetroArch package variant: $e');
@@ -1076,6 +1388,41 @@ class GameLaunchService {
     return result;
   }
 
+  /// Rewrites a relative `-L <core>` argument to an absolute path in [coresDir].
+  ///
+  /// Leaves the value alone when it is already absolute, and when the file is
+  /// not actually in [coresDir] — a wrong absolute path turns RetroArch's own
+  /// "core not found" message into a silent black screen, so an unresolvable
+  /// name is better left for RetroArch to report.
+  @visibleForTesting
+  static Future<List<String>> absolutizeRetroArchCore(
+    List<String> args,
+    String coresDir,
+  ) => _absolutizeRetroArchCore(args, coresDir);
+
+  static Future<List<String>> _absolutizeRetroArchCore(
+    List<String> args,
+    String coresDir,
+  ) async {
+    final out = List<String>.from(args);
+    for (var i = 0; i < out.length - 1; i++) {
+      if (out[i] != '-L') continue;
+
+      final core = out[i + 1];
+      if (core.isEmpty || path.isAbsolute(core)) continue;
+
+      // Some entries write `cores/foo_libretro.so`; only the filename is ours
+      // to relocate.
+      final resolved = path.join(coresDir, path.basename(core));
+      if (await File(resolved).exists()) {
+        out[i + 1] = resolved;
+      } else {
+        _log.w('RetroArch core "$core" not found in $coresDir');
+      }
+    }
+    return out;
+  }
+
   /// Resolves the absolute path for a specific RetroArch core library.
   static Future<String?> _getCoreFullPath(String coreName) async {
     try {
@@ -1147,21 +1494,21 @@ class GameLaunchService {
     final retroArchDir = path.dirname(retroArch.path);
 
     if (Platform.isLinux) {
-      final homeDir = Platform.environment['HOME'] ?? '';
+      // Cores are almost never beside the executable here, and the install type
+      // is not readable from the path: an EmuDeck launcher script is a
+      // `flatpak run` wrapper but looks like a plain shell script, so the old
+      // `path.contains('flatpak')` test missed it and sent the launch at a
+      // cores directory that does not exist. Probe the known layouts instead.
+      final resolved = await LinuxEmulatorDiscovery.resolveRetroArchCoresDir(
+        retroArch.path,
+      );
+      if (resolved != null) return resolved;
 
-      if (retroArch.path.contains('flatpak')) {
-        return path.join(
-          homeDir,
-          '.var/app/org.libretro.RetroArch/config/retroarch/cores',
-        );
-      }
-
-      final configCores = path.join(homeDir, '.config/retroarch/cores');
-      if (await Directory(configCores).exists()) {
-        return configCores;
-      }
-
-      return path.join(retroArchDir, 'cores');
+      // Nothing exists yet; hand back the most likely location so the caller's
+      // "cores directory not found" message names somewhere actionable.
+      return LinuxEmulatorDiscovery.retroArchCoresDirCandidates(
+        retroArch.path,
+      ).first;
     } else if (Platform.isMacOS) {
       final homeDir = ConfigService.getRealHomePath();
       return path.join(homeDir, 'Library/Application Support/RetroArch/cores');
@@ -1203,7 +1550,13 @@ class GameLaunchService {
     if (!Platform.isLinux && !Platform.isMacOS) return false;
 
     try {
-      final result = await Process.run('pgrep', ['-i', '-f', processName]);
+      // On the host, because a sandbox has its own PID namespace and would see
+      // none of the emulators it started.
+      final result = await LinuxHostProcess.run('pgrep', [
+        '-i',
+        '-f',
+        processName,
+      ]);
       return result.exitCode == 0;
     } catch (e) {
       _log.e('Error checking if $processName is running (unix): $e');

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
 import 'package:neostation/l10n/app_locale.dart';
+import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/models/game_model.dart';
 import 'package:neostation/models/retro_achievements_game_info.dart';
 import 'package:neostation/services/sfx_service.dart';
@@ -24,6 +26,12 @@ class GameViewFooter extends StatelessWidget {
   final GameInfoAndUserProgress? currentGameInfo;
   final VoidCallback? onShowAchievements;
 
+  /// Toggles global video sound. The grid and carousel have no video surface of
+  /// their own — the preview plays on the secondary display — so this pill is
+  /// their only mute affordance, mirroring the Select hint on the details card.
+  /// Omit it to hide the pill.
+  final VoidCallback? onToggleMute;
+
   const GameViewFooter({
     super.key,
     required this.game,
@@ -32,6 +40,7 @@ class GameViewFooter extends StatelessWidget {
     this.isLoadingAchievements = false,
     this.currentGameInfo,
     this.onShowAchievements,
+    this.onToggleMute,
   });
 
   @override
@@ -63,25 +72,32 @@ class GameViewFooter extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (game.showRomFileNameSubtitle) ...[
-                  Text(
-                    game.romname,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.72),
-                      fontSize: 12.r,
-                      fontWeight: FontWeight.w400,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 2.r,
-                          color: Colors.black.withValues(alpha: 0.45),
-                          offset: const Offset(2, 2),
-                        ),
-                      ],
-                    ),
+                // Always reserve the ROM-filename subtitle's line height so the
+                // identity column stays a constant height. Unscraped games have
+                // no subtitle; without this reservation the shorter column
+                // re-centers the rating/RA pill + PLAY row upward. The empty
+                // string still lays out a full line box via the forced strut.
+                Text(
+                  game.showRomFileNameSubtitle ? game.romname : '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  strutStyle: StrutStyle(
+                    fontSize: 12.r,
+                    forceStrutHeight: true,
                   ),
-                ],
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    fontSize: 12.r,
+                    fontWeight: FontWeight.w400,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 2.r,
+                        color: Colors.black.withValues(alpha: 0.45),
+                        offset: const Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -92,6 +108,10 @@ class GameViewFooter extends StatelessWidget {
           ExcludeFocus(
             child: Row(
               children: [
+                if (onToggleMute != null) ...[
+                  _MuteHintPill(onToggleMute: onToggleMute!),
+                  SizedBox(width: 6.r),
+                ],
                 if (game.rating > 0) ...[
                   _SteamStyleRating(game: game),
                   SizedBox(width: 6.r),
@@ -104,6 +124,13 @@ class GameViewFooter extends StatelessWidget {
                   ),
                   SizedBox(width: 6.r),
                 ],
+                // Accumulated play time as its own pill to the left of PLAY
+                // (only once the game has been played), mirroring the details
+                // card footer.
+                if (GameUtils.formatPlayTime(game.playTime ?? 0) != '0s') ...[
+                  _PlayTimePill(game: game),
+                  SizedBox(width: 6.r),
+                ],
                 _buildPlayButton(context),
               ],
             ),
@@ -114,7 +141,6 @@ class GameViewFooter extends StatelessWidget {
   }
 
   Widget _buildPlayButton(BuildContext context) {
-    final playTimeText = GameUtils.formatPlayTime(game.playTime ?? 0);
     return Builder(
       builder: (context) {
         final radii =
@@ -165,35 +191,15 @@ class GameViewFooter extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onPrimary,
                     ),
                     SizedBox(width: 5.r),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocale.playButton.getString(context),
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 11.r,
-                            letterSpacing: 1.5,
-                            height: 1.0,
-                          ),
-                        ),
-                        if (playTimeText.isNotEmpty && playTimeText != '0s')
-                          Text(
-                            playTimeText.toUpperCase(),
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimary.withValues(alpha: 0.8),
-                              fontSize: 7.r,
-                              fontWeight: FontWeight.bold,
-                              height: 1.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
+                    Text(
+                      AppLocale.playButton.getString(context),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11.r,
+                        letterSpacing: 1.5,
+                        height: 1.0,
+                      ),
                     ),
                   ],
                 ),
@@ -207,6 +213,67 @@ class GameViewFooter extends StatelessWidget {
 }
 
 /// A Steam-inspired rating badge that interpolates color based on the score intensity.
+/// Compact pill showing accumulated play time as a clock (HH:MM:SS), sized to
+/// match the rating / achievements pills in this footer.
+class _PlayTimePill extends StatelessWidget {
+  final GameModel game;
+
+  const _PlayTimePill({required this.game});
+
+  String _formatClock(int seconds) {
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    final s = seconds % 60;
+    String pad(int v) => v.toString().padLeft(2, '0');
+    return '${pad(h)}:${pad(m)}:${pad(s)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final radii = Theme.of(context).extension<CornerRadii>() ?? CornerRadii.m();
+    return Container(
+      height: 32.r,
+      padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+        borderRadius: radii.radiusExternal,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline,
+          width: 1.r,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.5),
+            blurRadius: 3.r,
+            offset: Offset(2.0.r, 2.0.r),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Symbols.schedule_rounded,
+            color: Theme.of(context).colorScheme.onSurface,
+            size: 15.r,
+          ),
+          SizedBox(width: 4.r),
+          Text(
+            _formatClock(game.playTime ?? 0),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 12.r,
+              fontWeight: FontWeight.w800,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SteamStyleRating extends StatelessWidget {
   final GameModel game;
 
@@ -248,13 +315,28 @@ class _SteamStyleRating extends StatelessWidget {
         children: [
           Icon(Symbols.star_rounded, color: ratingColor, size: 15.r),
           SizedBox(width: 4.r),
-          Text(
-            ratingValue.toStringAsFixed(1),
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 13.r,
-              fontWeight: FontWeight.w900,
-            ),
+          // Reserve width for the widest possible value ("10") so the pill
+          // stays a static size regardless of the current score (e.g. "1"
+          // no longer renders narrower than "10"). Scale/font-independent.
+          Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              Opacity(
+                opacity: 0,
+                child: Text(
+                  '10',
+                  style: TextStyle(fontSize: 13.r, fontWeight: FontWeight.w900),
+                ),
+              ),
+              Text(
+                ratingValue.toStringAsFixed(0),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 13.r,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -315,7 +397,7 @@ class _CompactAchievementsIndicator extends StatelessWidget {
         splashColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
         borderRadius: radii.radiusInternal,
         child: Container(
-          width: 88.r,
+          width: 101.r,
           height: 32.r,
           decoration: BoxDecoration(
             color: theme.colorScheme.surface.withValues(alpha: 0.9),
@@ -330,7 +412,11 @@ class _CompactAchievementsIndicator extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 3.r, vertical: 3.r),
+            // Match the rating pill's 8.r horizontal inset so the trophy icon
+            // doesn't hug the pill's left border (the pill's width above is
+            // widened to 101.r to absorb the padding + the 6.r icon→text gap
+            // without squeezing the 56.r text/progress column).
+            padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 3.r),
             child: Row(
               children: [
                 ClipRRect(
@@ -356,7 +442,7 @@ class _CompactAchievementsIndicator extends StatelessWidget {
                           ),
                   ),
                 ),
-                SizedBox(width: 3.r),
+                SizedBox(width: 6.r),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,8 +462,11 @@ class _CompactAchievementsIndicator extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 2.r),
+                    // Bar is deliberately narrower than the 56.r text row so it
+                    // doesn't run to the pill's right edge — leaves a right
+                    // margin under the progress count.
                     SizedBox(
-                      width: 56.r,
+                      width: 46.r,
                       child: ClipRRect(
                         borderRadius: radii.radiusInternal,
                         child: LinearProgressIndicator(
@@ -398,6 +487,67 @@ class _CompactAchievementsIndicator extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Select-tap hint + current sound state for the preview video, tappable for
+/// touchscreen users. Watches the config provider on its own so the memoized
+/// footer instance around it never has to rebuild when sound is toggled.
+class _MuteHintPill extends StatelessWidget {
+  final VoidCallback onToggleMute;
+
+  const _MuteHintPill({required this.onToggleMute});
+
+  @override
+  Widget build(BuildContext context) {
+    final radii = Theme.of(context).extension<CornerRadii>() ?? CornerRadii.m();
+    final scheme = Theme.of(context).colorScheme;
+
+    return Selector<SqliteConfigProvider, bool>(
+      selector: (_, provider) => !provider.config.videoSound,
+      builder: (context, isMuted, _) {
+        return Material(
+          color: scheme.surface.withValues(alpha: 0.9),
+          borderRadius: radii.radiusExternal,
+          child: InkWell(
+            onTap: () {
+              SfxService().playNavSound();
+              onToggleMute();
+            },
+            canRequestFocus: false,
+            borderRadius: radii.radiusExternal,
+            child: Container(
+              height: 32.r,
+              padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
+              decoration: BoxDecoration(
+                borderRadius: radii.radiusExternal,
+                border: Border.all(color: scheme.outline, width: 1.r),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/gamepad/Xbox_View_button.png',
+                    width: 15.r,
+                    height: 15.r,
+                    color: scheme.onSurface,
+                  ),
+                  SizedBox(width: 4.r),
+                  Icon(
+                    isMuted
+                        ? Symbols.volume_off_rounded
+                        : Symbols.volume_up_rounded,
+                    size: 15.r,
+                    color: scheme.onSurface,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

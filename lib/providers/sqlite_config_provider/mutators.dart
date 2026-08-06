@@ -78,15 +78,38 @@ extension SqliteConfigMutators on SqliteConfigProvider {
     _notify();
   }
 
-  /// Persists the ARMSX2 data folder selected for NeoSync memory-card backup.
-  Future<void> updateArmsx2DataFolderPath(String path) async {
-    _config = _config.copyWith(armsx2DataFolderPath: path);
+  Future<void> updateHideRecentCard(bool value) async {
+    _config = _config.copyWith(hideRecentCard: value);
     await SqliteConfigService.saveConfig(_config);
     _notify();
   }
 
-  Future<void> updateHideRecentCard(bool value) async {
-    _config = _config.copyWith(hideRecentCard: value);
+  /// Persists whether the game action-button legend is hidden (Select + B).
+  Future<void> updateLegendHidden(bool value) async {
+    _config = _config.copyWith(legendHidden: value);
+    await SqliteConfigService.saveConfig(_config);
+    _notify();
+  }
+
+  /// Persists the game details card tab last chosen with L1/R1, as the
+  /// `DetailTab` enum name, so it carries across games, systems and restarts.
+  Future<void> updateGameDetailsTab(String tabName) async {
+    if (_config.gameDetailsTab == tabName) return;
+    _config = _config.copyWith(gameDetailsTab: tabName);
+    await SqliteConfigService.saveConfig(_config);
+    _notify();
+  }
+
+  /// Shows or hides [tab] in the header strip and the L1/R1 tab cycle.
+  ///
+  /// Routed through the tab's [NavTabSpec] so a future tab needs only a spec
+  /// entry, not another mutator. A tab with no `withHidden` (Systems, Settings)
+  /// can't be hidden and is ignored.
+  Future<void> updateNavTabHidden(NavTab tab, bool hidden) async {
+    final applyHidden = navTabSpec(tab).withHidden;
+    if (applyHidden == null) return;
+
+    _config = applyHidden(_config, hidden);
     await SqliteConfigService.saveConfig(_config);
     _notify();
   }

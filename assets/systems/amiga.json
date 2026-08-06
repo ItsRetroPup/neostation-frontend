@@ -22,7 +22,10 @@
       "amigacd32",
       "amiga500",
       "amiga4000",
-      "amigacdtv"
+      "amigacdtv",
+      "amiga-cd",
+      "amiga-cd32",
+      "commodore-cdtv"
     ],
     "colors": [
       "#E57373",
@@ -115,6 +118,8 @@
         },
         "linux": {
           "executable": "retroarch",
+          "flatpak": "org.libretro.RetroArch",
+          "emudeck_launcher": "retroarch.sh",
           "args": "-L puae_libretro.so \"{file.path}\""
         },
         "macos": {
@@ -138,6 +143,8 @@
         },
         "linux": {
           "executable": "retroarch",
+          "flatpak": "org.libretro.RetroArch",
+          "emudeck_launcher": "retroarch.sh",
           "args": "-L puae2021_libretro.so \"{file.path}\""
         },
         "macos": {

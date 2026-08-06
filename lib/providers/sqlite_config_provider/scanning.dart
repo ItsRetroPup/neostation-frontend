@@ -74,7 +74,7 @@ extension SqliteConfigScanning on SqliteConfigProvider {
   /// Orchestrates permission checks, platform identification, and background
   /// ROM file scanning. Supports special handling for Android-specific
   /// virtual systems (e.g., 'Android Apps').
-  Future<void> scanSystems() async {
+  Future<void> scanSystems({bool waitForAndroidStorage = false}) async {
     // Allow scanning even if there are no folders (to clean systems or inject Android Apps)
     // if (_config.romFolders.isEmpty) return;
 
@@ -88,6 +88,9 @@ extension SqliteConfigScanning on SqliteConfigProvider {
 
     _setScanning(true);
     _error = null;
+    // Re-probe the fast SAF walk once per scan: the permission behind it can be
+    // granted or revoked between scans, but not during one.
+    SafDirectoryService.resetFastWalkAvailability();
     SqliteConfigProvider._log.i(
       'scanSystems starting (romFolders=${_config.romFolders.length}, fastScan=$_isFastScan)',
     );
@@ -126,6 +129,24 @@ extension SqliteConfigScanning on SqliteConfigProvider {
           _notify();
           return;
         }
+      }
+
+      // On some handhelds launched as the default launcher, Android starts the
+      // app before the SD card is ready. A scan at that point finds no folders
+      // and subsequently prunes every existing ROM record. Only delay the
+      // automatic startup scan, and only when a previous library exists: manual
+      // scans must remain immediate and an intentionally empty library must not
+      // be held up.
+      if (waitForAndroidStorage &&
+          await _hasStoredRoms() &&
+          !await _waitForAndroidRomFolders()) {
+        _scanStatus = 'ROM storage is not ready; existing games were kept.';
+        SqliteConfigProvider._log.w(
+          'Startup scan skipped because Android ROM storage never became ready',
+        );
+        _setScanning(false);
+        _notify();
+        return;
       }
     }
 
@@ -322,6 +343,38 @@ extension SqliteConfigScanning on SqliteConfigProvider {
     }
   }
 
+  /// Returns whether the local library contains ROMs that a premature scan
+  /// could otherwise remove as missing.
+  Future<bool> _hasStoredRoms() async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery('SELECT EXISTS(SELECT 1 FROM user_roms)');
+    return rows.isNotEmpty && rows.first.values.first == 1;
+  }
+
+  /// Waits briefly for configured Android ROM roots to expose at least one
+  /// directory. SAF can report a valid persisted permission while the physical
+  /// SD volume is still mounting, so [canAccessDirectory] alone is insufficient.
+  Future<bool> _waitForAndroidRomFolders() async {
+    const retryDelay = Duration(seconds: 3);
+    const maxAttempts = 10;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      final folders = await SqliteDatabaseService.getExistingSubdirectories(
+        _config.romFolders,
+      );
+      if (folders.values.any((subdirectories) => subdirectories.isNotEmpty)) {
+        return true;
+      }
+
+      if (attempt < maxAttempts) {
+        _scanStatus = 'Waiting for ROM storage ($attempt/$maxAttempts)...';
+        _notify();
+        await Future<void>.delayed(retryDelay);
+      }
+    }
+    return false;
+  }
+
   /// Executes a full ROM scan across all detected systems in the background.
   ///
   /// This multi-phase process identifies new ROMs, prunes missing entries,
@@ -381,9 +434,13 @@ extension SqliteConfigScanning on SqliteConfigProvider {
 
         _notify();
 
-        // Small pause to avoid overloading
+        // Yield to the event loop so the progress UI can paint between systems.
+        // This used to be a fixed 100 ms sleep, which cost 3.3 s (65% of the
+        // whole scan) across 37 systems while throttling nothing — the loop is
+        // already await-serialized. A zero-duration yield keeps the paint
+        // opportunity at no measurable cost.
         if (endIndex < _detectedSystems.length) {
-          await Future.delayed(Duration(milliseconds: 100));
+          await Future<void>.delayed(Duration.zero);
         }
       }
 

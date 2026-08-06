@@ -21,14 +21,6 @@ extension NeoSyncPathResolver on NeoSyncProvider {
       resolvedPaths.addAll(resolved);
     }
 
-    // ARMSX2 lets Android users relocate its data folder. The system
-    // definitions cannot know that per-device location, so append the selected
-    // PS2 memory-card folder here rather than hard-coding it in assets.
-    if (Platform.isAndroid && system.folderName == 'ps2') {
-      final armsx2Memcards = await _getArmsx2MemcardsPath();
-      if (armsx2Memcards != null) resolvedPaths.add(armsx2Memcards);
-    }
-
     // Eliminar duplicados y rutas inexistentes si requireExists es true
     var result = resolvedPaths.toSet();
     if (ensureExists) {
@@ -156,6 +148,14 @@ extension NeoSyncPathResolver on NeoSyncProvider {
     if (pathStr == '{RETROARCH_SYSTEM}') {
       final p = await _getRetroArchSystemPath();
       return p != null ? [p] : [];
+    }
+
+    // 5. Placeholder {CUSTOM_SAVES_FOLDER} (user-selected save/memcard folder
+    // for standalone emulators with relocatable data directories, e.g. ARMSX2)
+    if (pathStr == '{CUSTOM_SAVES_FOLDER}') {
+      final p = await _getCustomSaveFolder(system.folderName);
+      if (p != null) return [p];
+      return [];
     }
 
     // 4. Resolución estándar vía ConfigService (Home, AppData, etc.)
@@ -612,18 +612,18 @@ extension NeoSyncPathResolver on NeoSyncProvider {
     return null;
   }
 
-  /// Returns the `memcards` child of the user-selected ARMSX2 data folder.
+  /// Returns the user-selected save folder for [systemFolderName], if any.
   ///
-  /// ARMSX2 intentionally makes this root configurable, so deriving it from
-  /// the package's private Android directory would fail for custom locations.
-  Future<String?> _getArmsx2MemcardsPath() async {
-    if (!Platform.isAndroid) return null;
-
-    final dataFolder = await ConfigRepository.getArmsx2DataFolderPath();
-    if (dataFolder.trim().isEmpty) return null;
-
-    final memcards = path.join(dataFolder, 'memcards');
-    return Directory(memcards).existsSync() ? memcards : null;
+  /// Standalone emulators like ARMSX2 let users relocate their data directory,
+  /// so the folder cannot be derived from the package's private Android
+  /// directory. The user picks it in the NeoSync screen and it is stored in the
+  /// dedicated [NeoSyncSaveFolderRepository] table.
+  Future<String?> _getCustomSaveFolder(String systemFolderName) async {
+    final folder = await NeoSyncSaveFolderRepository.getFolder(
+      systemFolderName,
+    );
+    if (folder == null || folder.trim().isEmpty) return null;
+    return Directory(folder).existsSync() ? folder : null;
   }
 
   Future<String?> _getFlycastSavesPath() async {

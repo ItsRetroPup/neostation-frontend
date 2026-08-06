@@ -39,13 +39,14 @@ extension NeoSyncDownload on NeoSyncProvider {
 
       // Collect RetroArch folders to resolve locally
       final savesPath = await _getRetroArchSavesPath();
-      final armsx2MemcardsPath = await _getArmsx2MemcardsPath();
+      final customSaveFolders =
+          await NeoSyncSaveFolderRepository.getAllFolders();
 
       for (final cloudFile in cloudFiles) {
         await _processAutoDownloadFile(
           cloudFile,
           savesPath ?? '',
-          armsx2MemcardsPath: armsx2MemcardsPath,
+          customSaveFolders: customSaveFolders,
         );
         _processedFiles++;
         _syncProgress = _totalFiles > 0 ? _processedFiles / _totalFiles : 0.0;
@@ -99,23 +100,27 @@ extension NeoSyncDownload on NeoSyncProvider {
   Future<void> _processAutoDownloadFile(
     NeoSyncFile cloudFile,
     String savesPath, {
-    String? armsx2MemcardsPath,
+    Map<String, String> customSaveFolders = const {},
   }) async {
     try {
-      // PS2 memory cards are shared between games, so their cloud filename
-      // intentionally does not identify one ROM. Route them directly to the
-      // configured ARMSX2 folder instead of relying on game-name lookup.
-      if (armsx2MemcardsPath != null &&
-          cloudFile.fileName.startsWith('saves/PS2/')) {
+      // Files under a custom save folder namespace (e.g. saves/custom/ps2/)
+      // are shared between games, so their cloud filename intentionally does
+      // not identify one ROM. Route them directly to the configured folder
+      // instead of relying on game-name lookup.
+      final customTarget = _resolveCustomSaveFolderTarget(
+        cloudFile,
+        customSaveFolders,
+      );
+      if (customTarget != null) {
         final localFile = File(
-          path.join(armsx2MemcardsPath, path.basename(cloudFile.fileName)),
+          path.join(customTarget, path.basename(cloudFile.fileName)),
         );
         await localFile.parent.create(recursive: true);
         if (!localFile.existsSync() ||
             cloudFile.uploadedAt.isAfter(await localFile.lastModified())) {
           await _downloadCloudFileImpl(cloudFile, localFile);
           _downloadedFiles++;
-          _processedItems.add('⬇️ ARMSX2 memory card: ${cloudFile.fileName}');
+          _processedItems.add('⬇️ Custom save: ${cloudFile.fileName}');
         } else {
           _skippedFiles++;
         }
@@ -158,6 +163,20 @@ extension NeoSyncDownload on NeoSyncProvider {
     } catch (e) {
       _processedItems.add('Error downloading ${cloudFile.fileName}: $e');
     }
+  }
+
+  /// Returns the configured local folder a cloud file should be routed to for
+  /// custom save namespaces (`saves/custom/<system>/...`), or null.
+  String? _resolveCustomSaveFolderTarget(
+    NeoSyncFile cloudFile,
+    Map<String, String> customSaveFolders,
+  ) {
+    final prefix = RegExp(r'^saves/custom/([^/]+)/');
+    final match = prefix.firstMatch(cloudFile.fileName);
+    if (match == null) return null;
+    final systemFolderName = match.group(1);
+    if (systemFolderName == null) return null;
+    return customSaveFolders[systemFolderName];
   }
 
   /// Helper para encontrar el juego de un archivo de nube

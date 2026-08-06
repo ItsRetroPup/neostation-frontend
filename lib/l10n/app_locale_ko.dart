@@ -18,6 +18,11 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.download: '다운로드',
   AppLocale.stop: '중지',
   AppLocale.reset: '재설정',
+  AppLocale.startupStorageUnavailable:
+      'NeoStation이 데이터가 저장된 폴더에 접근하지 못했습니다. SD 카드나 드라이브가 연결되어 있는지 확인하세요.',
+  AppLocale.startupStorageRetry: '다시 시도',
+  AppLocale.startupStorageUseDefault: '이대로 계속',
+  AppLocale.startupLoading: 'NeoStation을 준비 중입니다. 저장소와 서비스를 기다리고 있습니다…',
 
   AppLocale.play: '플레이',
   AppLocale.playButton: '플레이',
@@ -138,6 +143,15 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.bartopShutdown: '종료할 때 BarTOP 전원 끄기',
   AppLocale.bartopShutdownSubtitle: '앱을 종료할 때 컴퓨터도 함께 종료합니다',
 
+  AppLocale.showSyncTab: '동기화 탭 표시',
+  AppLocale.showSyncTabSubtitle: '내비게이션 바에 클라우드 동기화 탭을 표시합니다',
+  AppLocale.showAchievementsTab: '업적 탭 표시',
+  AppLocale.showAchievementsTabSubtitle: '내비게이션 바에 RetroAchievements 탭을 표시합니다',
+  AppLocale.showScraperTab: '스크레이퍼 탭 표시',
+  AppLocale.showScraperTabSubtitle: '내비게이션 바에 스크래핑 탭을 표시합니다',
+  AppLocale.showSearchTab: '검색 탭 표시',
+  AppLocale.showSearchTabSubtitle: '내비게이션 바에 검색 탭을 표시합니다',
+
   AppLocale.configureDirectories: '폴더',
   AppLocale.configureRomsFolder: 'ROM 폴더 설정',
   AppLocale.cannotAccessFolder: '폴더에 접근할 수 없습니다',
@@ -165,6 +179,21 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.organizeMultiDiscFailed: '멀티 디스크 게임 정리 실패: {error}',
   AppLocale.organizeMultiDiscWarning:
       '일치하는 ROM 파일을 새 게임 폴더로 옮기고 저장소에 .m3u 재생목록을 만듭니다. 이 작업은 자동으로 되돌릴 수 없습니다.',
+  AppLocale.cleanOrphanedMetadata: '고아 메타데이터 정리',
+  AppLocale.cleanOrphanedMetadataSubtitle: '삭제된 ROM 이 남긴 메타데이터와 미디어를 제거합니다',
+  AppLocale.cleanOrphanedMetadataWarning:
+      '라이브러리에 더 이상 없는 ROM 의 메타데이터 행과 미디어 파일을 영구적으로 삭제합니다. ES-DE 에서 가져온 항목은 삭제되지 않습니다.',
+  AppLocale.cleanOrphanedMetadataScanning: '고아 메타데이터 정리 중...',
+  AppLocale.cleanOrphanedMetadataCleaningItem: '{filename} 정리 중...',
+  AppLocale.cleanOrphanedMetadataNothingFound: '고아 메타데이터를 찾을 수 없습니다.',
+  AppLocale.cleanOrphanedMetadataDone:
+      '{entries}개의 메타데이터 항목과 {files}개의 미디어 파일을 정리했습니다.',
+  AppLocale.cleanOrphanedMetadataEsdeSkippedSuffix:
+      '{count}개의 ES-DE 에서 가져온 항목은 그대로 유지되었습니다.',
+  AppLocale.cleanOrphanedMetadataFailed: '고아 메타데이터 정리 실패: {error}',
+  AppLocale.notifications: '알림',
+  AppLocale.clearAll: '모두 지우기',
+  AppLocale.noActiveNotifications: '활성 알림 없음',
   AppLocale.romsFolderSubtitle: 'ROM 파일이 포함된 폴더를 추가하세요',
   AppLocale.pressToRemoveFolder: '이 폴더를 제거하려면 확인을 누르세요',
   AppLocale.maxRomFoldersReached: 'ROM 폴더는 최대 5개까지 추가할 수 있습니다',
@@ -382,6 +411,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.stoppingScraping: '게임 정보 가져오기를 중지하는 중...',
   AppLocale.syncError: '시스템 ID를 동기화하는 중 오류가 발생했습니다',
   AppLocale.metadataError: '게임 정보 가져오기 오류',
+  AppLocale.scrapeQuotaExceeded: 'ScreenScraper 일일 스크래핑 할당량 초과',
   AppLocale.start: '시작',
   AppLocale.systemsSub: '게임 정보를 가져올 시스템을 선택합니다',
   AppLocale.disableAll: '모두 비활성화',
@@ -413,6 +443,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.hintRefresh: '새로고침',
   AppLocale.hintViewMode: '보기 모드',
   AppLocale.hintScrape: '정보 가져오기',
+  AppLocale.hintMoreActions: '더보기',
 
   AppLocale.error: '오류',
   AppLocale.loading: '불러오는 중...',
@@ -811,6 +842,8 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.raRateLimited: 'RetroAchievements 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.',
   AppLocale.raApiKey: 'API 키',
   AppLocale.raEnterApiKey: 'API 키를 입력하세요',
+  AppLocale.raGetApiKey: 'API 키 가져오기',
+  AppLocale.raApiKeyHelp: 'RetroAchievements 제어판을 열어 개인 Web API 키를 복사하세요.',
   AppLocale.raNoRecentUnlocks: '최근 30일 동안 달성한 업적이 없습니다',
   AppLocale.raRecentlyPlayedTitle: '최근 플레이한 게임',
   AppLocale.raNoRecentlyPlayed: '최근에 플레이한 게임이 없습니다',
@@ -859,10 +892,31 @@ const Map<String, dynamic> appLocaleKo = {
       '아트 팩이 설치되었습니다! 나중에 설정에서 더 많은 테마를 살펴볼 수 있습니다.',
   AppLocale.wizardArtPackUnavailable:
       '현재 아트 팩에 접근할 수 없습니다. 온라인 상태가 되면 설정에서 설치할 수 있습니다.',
-  AppLocale.armsx2Sync: 'ARMSX2 저장 데이터 동기화',
-  AppLocale.armsx2SelectDataFolder: 'ARMSX2 데이터 폴더 선택',
-  AppLocale.armsx2SelectDataFolderSubtitle: 'ARMSX2 memcards가 있는 폴더를 선택하세요',
-  AppLocale.armsx2ResetDataFolder: 'ARMSX2 데이터 폴더 지우기',
-  AppLocale.armsx2ResetDataFolderSubtitle: '이 기기에서 ARMSX2 메모리 카드 동기화를 중지합니다',
-  AppLocale.armsx2MemcardsMissing: '선택한 폴더에 memcards 폴더가 있어야 합니다',
+  AppLocale.customSaveFoldersTitle: '사용자 지정 저장 폴더',
+  AppLocale.customSaveFoldersStorageAccessTitle: '저장소 접근',
+  AppLocale.customSaveFoldersStorageAccessBody:
+      'Android 저장소 권한 때문에 NeoSync는 에뮬레이터가 사용자 지정 접근 가능한 '
+      '데이터 폴더를 사용하는 경우에만 이 폴더를 안정적으로 동기화할 수 있습니다. '
+      '내부 저장소는 지원되지 않습니다.',
+  AppLocale.customSaveFolderNotSet: '선택된 폴더 없음',
+  AppLocale.customSaveFolderSelect: '폴더 선택',
+  AppLocale.customSaveFolderReset: '폴더 지우기',
+  AppLocale.customSaveFolderSync: '지금 동기화',
+
+  // Library search & filtering.
+  AppLocale.searchTitle: '검색',
+  AppLocale.searchNameHint: '검색...',
+  AppLocale.searchNoResults: '게임을 찾을 수 없습니다',
+  AppLocale.searchResultsCount: '결과 {count}개',
+  AppLocale.searchClearFilters: '필터 지우기',
+  AppLocale.searchFilters: '필터',
+  AppLocale.searchViewResults: '결과 보기',
+  AppLocale.searchOpen: '검색',
+  AppLocale.searchGoToGame: '게임으로 이동',
+  AppLocale.filterPlatform: '플랫폼',
+  AppLocale.filterDeveloper: '개발사',
+  AppLocale.filterGenre: '장르',
+  AppLocale.filterRating: '평점',
+  AppLocale.filterYear: '연도',
+  AppLocale.filterAny: '전체',
 };

@@ -99,6 +99,36 @@ class ConfigModel {
   /// Whether to hide the "Recently Played" card from the main dashboard.
   final bool hideRecentCard;
 
+  /// Whether the vertical action-button legend is hidden across every game view
+  /// (list, grid, carousel). Toggled by the Select + B chord.
+  final bool legendHidden;
+
+  /// The game details card tab the user last selected with L1/R1, stored as the
+  /// `DetailTab` enum name (e.g. 'wheel', 'box2d', 'screenshotVideo').
+  ///
+  /// Persisting it keeps the choice across games, systems and restarts. A tab
+  /// that is unavailable for the current game (no achievements, for instance)
+  /// falls back to the wheel for display only — the preference is kept so it
+  /// comes back on a game that supports it.
+  final String gameDetailsTab;
+
+  /// Whether the Sync navigation tab is hidden from the header strip and the
+  /// L1/R1 tab cycle.
+  ///
+  /// Stored as "hidden" rather than "shown" so the default (`false`) is
+  /// visible: a tab added in a future version appears for upgrading users
+  /// instead of silently staying hidden. See `NavTab` in utils/nav_tabs.dart.
+  final bool hideTabSync;
+
+  /// Whether the Achievements navigation tab is hidden. See [hideTabSync].
+  final bool hideTabAchievements;
+
+  /// Whether the Scraper navigation tab is hidden. See [hideTabSync].
+  final bool hideTabScraper;
+
+  /// Whether the Search navigation tab is hidden. See [hideTabSync].
+  final bool hideTabSearch;
+
   /// Seconds of inactivity before the secondary "Now Playing" panel dims, or `0`
   /// to never dim. Only meaningful when a secondary display is active.
   final int nowPlayingDimDelay;
@@ -146,10 +176,6 @@ class ConfigModel {
   /// by the ES-DE import and read-time fallback artwork resolution.
   final String esdeFolderPath;
 
-  /// Absolute path to the ARMSX2 data folder. Its `memcards/` child is synced
-  /// by NeoSync on Android. Empty when ARMSX2 has not been configured.
-  final String armsx2DataFolderPath;
-
   const ConfigModel({
     this.romFolders = const [],
     this.detectedSystems = const [],
@@ -172,6 +198,12 @@ class ConfigModel {
     this.systemSortOrder = 'asc',
     this.appLanguage = 'es',
     this.hideRecentCard = false,
+    this.legendHidden = false,
+    this.gameDetailsTab = 'wheel',
+    this.hideTabSync = false,
+    this.hideTabAchievements = false,
+    this.hideTabScraper = false,
+    this.hideTabSearch = false,
     this.activeSyncProvider = 'neosync',
     this.autoUpdateApp = true,
     this.autoUpdateSystems = true,
@@ -185,7 +217,6 @@ class ConfigModel {
     this.dockEnabled = true,
     this.dockSlotCount = 3,
     this.esdeFolderPath = '',
-    this.armsx2DataFolderPath = '',
   });
 
   /// Convenience getter that returns the primary ROM folder, if any are configured.
@@ -274,6 +305,34 @@ class ConfigModel {
                   .toString() ==
               '1' ||
           (json['hideRecentCard'] ?? false).toString().toLowerCase() == 'true',
+      legendHidden:
+          (json['legendHidden'] ?? json['legend_hidden'] ?? 0).toString() ==
+              '1' ||
+          (json['legendHidden'] ?? false).toString().toLowerCase() == 'true',
+      gameDetailsTab:
+          (json['gameDetailsTab'] ?? json['game_details_tab'] ?? 'wheel')
+              .toString(),
+      // Absent key => false => tab visible. Keeps a config written by an older
+      // build (or restored from cloud sync) from hiding tabs it never knew about.
+      hideTabSync:
+          (json['hideTabSync'] ?? json['hide_tab_sync'] ?? 0).toString() ==
+              '1' ||
+          (json['hideTabSync'] ?? false).toString().toLowerCase() == 'true',
+      hideTabAchievements:
+          (json['hideTabAchievements'] ?? json['hide_tab_achievements'] ?? 0)
+                  .toString() ==
+              '1' ||
+          (json['hideTabAchievements'] ?? false).toString().toLowerCase() ==
+              'true',
+      hideTabScraper:
+          (json['hideTabScraper'] ?? json['hide_tab_scraper'] ?? 0)
+                  .toString() ==
+              '1' ||
+          (json['hideTabScraper'] ?? false).toString().toLowerCase() == 'true',
+      hideTabSearch:
+          (json['hideTabSearch'] ?? json['hide_tab_search'] ?? 0).toString() ==
+              '1' ||
+          (json['hideTabSearch'] ?? false).toString().toLowerCase() == 'true',
       activeSyncProvider:
           (json['activeSyncProvider'] ??
                   json['active_sync_provider'] ??
@@ -331,11 +390,6 @@ class ConfigModel {
               .clamp(dockMinSlotCount, dockMaxSlotCount),
       esdeFolderPath: (json['esdeFolderPath'] ?? json['esde_folder_path'] ?? '')
           .toString(),
-      armsx2DataFolderPath:
-          (json['armsx2DataFolderPath'] ??
-                  json['armsx2_data_folder_path'] ??
-                  '')
-              .toString(),
     );
   }
 
@@ -368,6 +422,12 @@ class ConfigModel {
       'systemSortOrder': systemSortOrder,
       'appLanguage': appLanguage,
       'hideRecentCard': hideRecentCard,
+      'legendHidden': legendHidden,
+      'gameDetailsTab': gameDetailsTab,
+      'hideTabSync': hideTabSync,
+      'hideTabAchievements': hideTabAchievements,
+      'hideTabScraper': hideTabScraper,
+      'hideTabSearch': hideTabSearch,
       'activeSyncProvider': activeSyncProvider,
       'autoUpdateApp': autoUpdateApp,
       'autoUpdateSystems': autoUpdateSystems,
@@ -381,7 +441,6 @@ class ConfigModel {
       'dockEnabled': dockEnabled,
       'dockSlotCount': dockSlotCount,
       'esdeFolderPath': esdeFolderPath,
-      'armsx2DataFolderPath': armsx2DataFolderPath,
     };
   }
 
@@ -408,6 +467,12 @@ class ConfigModel {
     String? systemSortOrder,
     String? appLanguage,
     bool? hideRecentCard,
+    bool? legendHidden,
+    String? gameDetailsTab,
+    bool? hideTabSync,
+    bool? hideTabAchievements,
+    bool? hideTabScraper,
+    bool? hideTabSearch,
     String? activeSyncProvider,
     bool? autoUpdateApp,
     bool? autoUpdateSystems,
@@ -421,7 +486,6 @@ class ConfigModel {
     bool? dockEnabled,
     int? dockSlotCount,
     String? esdeFolderPath,
-    String? armsx2DataFolderPath,
   }) {
     return ConfigModel(
       romFolders: romFolders ?? this.romFolders,
@@ -445,6 +509,12 @@ class ConfigModel {
       systemSortOrder: systemSortOrder ?? this.systemSortOrder,
       appLanguage: appLanguage ?? this.appLanguage,
       hideRecentCard: hideRecentCard ?? this.hideRecentCard,
+      legendHidden: legendHidden ?? this.legendHidden,
+      gameDetailsTab: gameDetailsTab ?? this.gameDetailsTab,
+      hideTabSync: hideTabSync ?? this.hideTabSync,
+      hideTabAchievements: hideTabAchievements ?? this.hideTabAchievements,
+      hideTabScraper: hideTabScraper ?? this.hideTabScraper,
+      hideTabSearch: hideTabSearch ?? this.hideTabSearch,
       activeSyncProvider: activeSyncProvider ?? this.activeSyncProvider,
       autoUpdateApp: autoUpdateApp ?? this.autoUpdateApp,
       autoUpdateSystems: autoUpdateSystems ?? this.autoUpdateSystems,
@@ -459,7 +529,6 @@ class ConfigModel {
       dockEnabled: dockEnabled ?? this.dockEnabled,
       dockSlotCount: dockSlotCount ?? this.dockSlotCount,
       esdeFolderPath: esdeFolderPath ?? this.esdeFolderPath,
-      armsx2DataFolderPath: armsx2DataFolderPath ?? this.armsx2DataFolderPath,
     );
   }
 

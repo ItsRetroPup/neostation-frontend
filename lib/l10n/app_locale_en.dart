@@ -18,6 +18,12 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.download: 'Download',
   AppLocale.stop: 'Stop',
   AppLocale.reset: 'Reset',
+  AppLocale.startupStorageUnavailable:
+      'NeoStation could not reach the folder where your data is stored. Check that the SD card or drive is connected.',
+  AppLocale.startupStorageRetry: 'Retry',
+  AppLocale.startupStorageUseDefault: 'Continue without it',
+  AppLocale.startupLoading:
+      'Preparing NeoStation. Waiting for storage and services...',
 
   AppLocale.play: 'Play',
   AppLocale.playButton: 'PLAY',
@@ -160,6 +166,19 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.bartopShutdownSubtitle:
       'Shut down the computer when exiting the application',
 
+  AppLocale.showSyncTab: 'Show Sync tab',
+  AppLocale.showSyncTabSubtitle:
+      'Display the Cloud Sync tab in the navigation bar',
+  AppLocale.showAchievementsTab: 'Show Achievements tab',
+  AppLocale.showAchievementsTabSubtitle:
+      'Display the RetroAchievements tab in the navigation bar',
+  AppLocale.showScraperTab: 'Show Scraper tab',
+  AppLocale.showScraperTabSubtitle:
+      'Display the Scraping tab in the navigation bar',
+  AppLocale.showSearchTab: 'Show Search tab',
+  AppLocale.showSearchTabSubtitle:
+      'Display the Search tab in the navigation bar',
+
   AppLocale.configureDirectories: 'Directories',
   AppLocale.configureRomsFolder: 'Configure ROMs folder',
   AppLocale.cannotAccessFolder: 'Cannot Access Folder',
@@ -192,6 +211,23 @@ const Map<String, dynamic> appLocaleEn = {
       'Failed to organize multi-disc games: {error}',
   AppLocale.organizeMultiDiscWarning:
       'This moves matching ROM files into new game folders and creates .m3u playlists on your storage. This cannot be undone automatically.',
+  AppLocale.cleanOrphanedMetadata: 'Clean Orphaned Metadata',
+  AppLocale.cleanOrphanedMetadataSubtitle:
+      'Remove metadata and media left behind by deleted ROMs',
+  AppLocale.cleanOrphanedMetadataWarning:
+      'This permanently deletes metadata rows and media files for ROMs that are no longer in your library. ES-DE imported entries will not be removed.',
+  AppLocale.cleanOrphanedMetadataScanning: 'Cleaning orphaned metadata...',
+  AppLocale.cleanOrphanedMetadataCleaningItem: 'Cleaning {filename}...',
+  AppLocale.cleanOrphanedMetadataNothingFound: 'No orphaned metadata found.',
+  AppLocale.cleanOrphanedMetadataDone:
+      'Cleaned {entries} metadata entr(y/ies) and {files} media file(s).',
+  AppLocale.cleanOrphanedMetadataEsdeSkippedSuffix:
+      ' {count} ES-DE entr(y/ies) were left untouched.',
+  AppLocale.cleanOrphanedMetadataFailed:
+      'Failed to clean orphaned metadata: {error}',
+  AppLocale.notifications: 'Notifications',
+  AppLocale.clearAll: 'Clear all',
+  AppLocale.noActiveNotifications: 'No active notifications',
   AppLocale.romsFolderSubtitle: 'Add a folder containing your ROM files',
   AppLocale.pressToRemoveFolder: 'Press confirm to remove this folder',
   AppLocale.maxRomFoldersReached: 'Maximum 5 ROM folders allowed',
@@ -421,6 +457,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.stoppingScraping: 'Stopping scraping process...',
   AppLocale.syncError: 'Error synchronizing system IDs',
   AppLocale.metadataError: 'Error during metadata scraping',
+  AppLocale.scrapeQuotaExceeded: 'ScreenScraper daily scraping quota exceeded',
   AppLocale.start: 'Start',
   AppLocale.systemsSub: 'Select which systems to scrape',
   AppLocale.disableAll: 'Disable All',
@@ -452,6 +489,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.hintRefresh: 'Refresh',
   AppLocale.hintViewMode: 'View Mode',
   AppLocale.hintScrape: 'Scrape',
+  AppLocale.hintMoreActions: 'More',
 
   AppLocale.error: 'Error',
   AppLocale.loading: 'Loading...',
@@ -834,6 +872,21 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.toolsSubtitle: 'Tools to help organise your ROMs',
   AppLocale.addRomFolder: 'Add ROM Folder',
   AppLocale.removeRomFolder: 'Remove',
+  AppLocale.searchTitle: 'Search',
+  AppLocale.searchNameHint: 'Search...',
+  AppLocale.searchNoResults: 'No games found',
+  AppLocale.searchResultsCount: '{count} results',
+  AppLocale.searchClearFilters: 'Clear filters',
+  AppLocale.searchFilters: 'Filters',
+  AppLocale.searchViewResults: 'View results',
+  AppLocale.searchOpen: 'Search',
+  AppLocale.searchGoToGame: 'Go to game',
+  AppLocale.filterPlatform: 'Platform',
+  AppLocale.filterDeveloper: 'Developer',
+  AppLocale.filterGenre: 'Genre',
+  AppLocale.filterRating: 'Rating',
+  AppLocale.filterYear: 'Year',
+  AppLocale.filterAny: 'Any',
   AppLocale.resetPlayTimeConfirm: 'Reset Play Time',
   AppLocale.resetPlayTimeConfirmBody:
       'This will permanently reset the recorded play time for this game to zero. This cannot be undone.',
@@ -877,6 +930,9 @@ const Map<String, dynamic> appLocaleEn = {
       'RetroAchievements is busy right now. Please wait a moment and try again.',
   AppLocale.raApiKey: 'API Key',
   AppLocale.raEnterApiKey: 'Enter your API key',
+  AppLocale.raGetApiKey: 'Get API Key',
+  AppLocale.raApiKeyHelp:
+      'Open your RetroAchievements control panel to copy your personal Web API key.',
   AppLocale.raNoRecentUnlocks: 'No recent unlocks in the last 30 days',
   AppLocale.raRecentlyPlayedTitle: 'Recently Played',
   AppLocale.raNoRecentlyPlayed: 'No recently played games',
@@ -929,13 +985,14 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.wizardArtPackUnavailable:
       'The art pack couldn\'t be reached right now. You can install it later '
       'from Settings once you\'re online.',
-  AppLocale.armsx2Sync: 'ARMSX2 Save Sync',
-  AppLocale.armsx2SelectDataFolder: 'Select ARMSX2 Data Folder',
-  AppLocale.armsx2SelectDataFolderSubtitle:
-      'Choose the folder that contains ARMSX2 memcards',
-  AppLocale.armsx2ResetDataFolder: 'Clear ARMSX2 Data Folder',
-  AppLocale.armsx2ResetDataFolderSubtitle:
-      'Stop syncing ARMSX2 memory cards on this device',
-  AppLocale.armsx2MemcardsMissing:
-      'The selected folder must contain a memcards folder',
+  AppLocale.customSaveFoldersTitle: 'Custom save folders',
+  AppLocale.customSaveFoldersStorageAccessTitle: 'Storage access',
+  AppLocale.customSaveFoldersStorageAccessBody:
+      'Due to Android storage permissions, NeoSync can only reliably sync these '
+      'folders when the emulator uses a custom, accessible data folder. '
+      'Internal storage is not supported.',
+  AppLocale.customSaveFolderNotSet: 'No folder selected',
+  AppLocale.customSaveFolderSelect: 'Select folder',
+  AppLocale.customSaveFolderReset: 'Clear folder',
+  AppLocale.customSaveFolderSync: 'Sync now',
 };
