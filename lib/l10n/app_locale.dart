@@ -26,6 +26,7 @@ mixin AppLocale {
   static const String cancel = 'cancel';
   static const String ok = 'ok';
   static const String retry = 'retry';
+  static const String openNetworkFolder = 'open_network_folder';
   static const String confirm = 'confirm';
   static const String apply = 'apply';
   static const String save = 'save';

@@ -76,6 +76,9 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// Human-readable status message for the current scanning phase.
   String _scanStatus = '';
 
+  /// Windows UNC roots that failed the SMB preflight for the current scan.
+  Set<String> _unreachableNetworkRomFolders = {};
+
   // Systems download progress
   final bool _isDownloadingSystems = false;
   final double _downloadProgress = 0.0;
@@ -157,6 +160,8 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
   int get scannedSystemsCount => _scannedSystemsCount;
   double get scanProgress => _scanProgress;
   String get scanStatus => _scanStatus;
+  List<String> get unreachableNetworkRomFolders =>
+      List.unmodifiable(_unreachableNetworkRomFolders);
 
   // Getters for systems download progress
   bool get isDownloadingSystems => _isDownloadingSystems;

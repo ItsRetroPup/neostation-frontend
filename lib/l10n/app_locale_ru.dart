@@ -8,6 +8,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.cancel: 'Отмена',
   AppLocale.ok: 'ОК',
   AppLocale.retry: 'Повторить',
+  AppLocale.openNetworkFolder: 'Открыть сетевую папку',
   AppLocale.confirm: 'Подтвердить',
   AppLocale.apply: 'Применить',
   AppLocale.save: 'Сохранить',

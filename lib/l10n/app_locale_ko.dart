@@ -8,6 +8,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.cancel: '취소',
   AppLocale.ok: '확인',
   AppLocale.retry: '재시도',
+  AppLocale.openNetworkFolder: '네트워크 폴더 열기',
   AppLocale.confirm: '확인',
   AppLocale.apply: '적용',
   AppLocale.save: '저장',

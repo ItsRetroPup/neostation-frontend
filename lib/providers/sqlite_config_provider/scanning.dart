@@ -9,6 +9,25 @@ part of '../sqlite_config_provider.dart';
 /// `notifyListeners()` routes through the host's `_notify()` bridge and the
 /// static `_log` is host-qualified (both required from an extension).
 extension SqliteConfigScanning on SqliteConfigProvider {
+  /// Opens an unavailable UNC share in Windows Explorer so Windows can show
+  /// its native credential prompt. Credentials never pass through NeoStation.
+  Future<bool> openNetworkFolder(String folder) async {
+    if (!Platform.isWindows ||
+        !_unreachableNetworkRomFolders.contains(folder)) {
+      return false;
+    }
+
+    try {
+      await Process.start('explorer.exe', [
+        folder,
+      ], mode: ProcessStartMode.detached);
+      return true;
+    } catch (e) {
+      SqliteConfigProvider._log.e('Error opening network folder $folder: $e');
+      return false;
+    }
+  }
+
   /// Registers a new filesystem directory as a ROM source.
   ///
   /// Automatically triggers a system detection scan unless [scan] is set to false.
@@ -154,7 +173,18 @@ extension SqliteConfigScanning on SqliteConfigProvider {
     _totalSystemsToScan = 0;
     _scannedSystemsCount = 0;
     _scanProgress = 0.0;
-    _scanStatus = 'Please Wait...';
+    _scanStatus = 'Checking ROM folders...';
+    _unreachableNetworkRomFolders = {
+      ...await SqliteDatabaseService.findUnreachableNetworkFolders(
+        _config.romFolders,
+      ),
+    };
+    if (_unreachableNetworkRomFolders.isNotEmpty) {
+      _scanStatus =
+          'Network ROM folder unavailable: '
+          '${_unreachableNetworkRomFolders.join(', ')}';
+      _notify();
+    }
 
     try {
       // Reload from synchronized database during initialization
@@ -174,7 +204,11 @@ extension SqliteConfigScanning on SqliteConfigProvider {
       } else {
         // On Desktop, use File IO based detection
         detectedSystems = await SqliteConfigService.detectSystems(
-          romFolders: _config.romFolders,
+          romFolders: _config.romFolders
+              .where(
+                (folder) => !_unreachableNetworkRomFolders.contains(folder),
+              )
+              .toList(),
           availableSystems: _availableSystems,
         );
       }
@@ -397,6 +431,7 @@ extension SqliteConfigScanning on SqliteConfigProvider {
       final rootFoldersMap =
           await SqliteDatabaseService.getExistingSubdirectories(
             _config.romFolders,
+            skipFolders: _unreachableNetworkRomFolders,
           );
 
       const batchSize = 1; // Process 1 system at a time for better granularity
@@ -532,7 +567,10 @@ extension SqliteConfigScanning on SqliteConfigProvider {
       await _refreshDetectedSystemsFromDatabase();
 
       // Completar al 100%
-      _scanStatus = 'ROMs Scanned';
+      _scanStatus = _unreachableNetworkRomFolders.isEmpty
+          ? 'ROMs Scanned'
+          : 'ROMs scanned; unavailable network folder(s) skipped: '
+                '${_unreachableNetworkRomFolders.join(', ')}';
       _scanProgress = 1.0;
       _notify();
     } catch (e) {

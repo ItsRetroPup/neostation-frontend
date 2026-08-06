@@ -8,6 +8,7 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.cancel: '取消',
   AppLocale.ok: '確定',
   AppLocale.retry: '重試',
+  AppLocale.openNetworkFolder: '開啟網路資料夾',
   AppLocale.confirm: '確認',
   AppLocale.apply: '套用',
   AppLocale.save: '儲存',

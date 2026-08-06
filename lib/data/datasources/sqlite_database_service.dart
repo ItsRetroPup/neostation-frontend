@@ -63,6 +63,38 @@ class RomEntry {
 class SqliteDatabaseService {
   static final _log = LoggerService.instance;
 
+  // Windows can block on an unavailable SMB/UNC share while resolving or
+  // listing a directory. A bounded operation prevents the entire scan from
+  // appearing stuck at 0%.
+  static const _fileSystemOperationTimeout = Duration(seconds: 15);
+
+  /// Probes Windows UNC roots by starting a directory listing and waiting for
+  /// the first result. This checks the actual SMB share rather than ICMP, which
+  /// is commonly disabled even when the share itself is reachable.
+  static Future<List<String>> findUnreachableNetworkFolders(
+    List<String> folders,
+  ) async {
+    if (!Platform.isWindows) return [];
+
+    final networkFolders = folders
+        .where((folder) => RegExp(r'^\\\\[^\\/]+[\\/]').hasMatch(folder))
+        .toList();
+    final results = await Future.wait(
+      networkFolders.map((folder) async {
+        try {
+          await Directory(
+            folder,
+          ).list().take(1).toList().timeout(_fileSystemOperationTimeout);
+          return null;
+        } catch (e) {
+          _log.w('Network ROM folder is unreachable: $folder ($e)');
+          return folder;
+        }
+      }),
+    );
+    return results.whereType<String>().toList();
+  }
+
   /// Retrieves the complete game database, grouped by system folder name.
   static Future<Map<String, List<DatabaseGameModel>>> loadDatabase() async {
     try {
@@ -1041,11 +1073,16 @@ class SqliteDatabaseService {
 
   /// Quickly identifies existing subdirectories within multiple ROM root folders.
   static Future<Map<String, Map<String, String>>> getExistingSubdirectories(
-    List<String> romFolders,
-  ) async {
+    List<String> romFolders, {
+    Set<String> skipFolders = const {},
+  }) async {
     final Map<String, Map<String, String>> result = {};
     for (final folder in romFolders) {
       final Map<String, String> subdirs = {};
+      if (skipFolders.contains(folder)) {
+        result[folder] = subdirs;
+        continue;
+      }
       try {
         if (Platform.isAndroid && folder.startsWith('content://')) {
           final children = await SafDirectoryService.listFiles(folder);
@@ -1057,8 +1094,10 @@ class SqliteDatabaseService {
           }
         } else {
           final dir = Directory(folder);
-          if (await dir.exists()) {
-            final entities = await dir.list().toList();
+          if (await dir.exists().timeout(_fileSystemOperationTimeout)) {
+            final entities = await dir.list().toList().timeout(
+              _fileSystemOperationTimeout,
+            );
             for (final entity in entities) {
               if (entity is Directory) {
                 subdirs[path.basename(entity.path).toLowerCase()] = entity.path;
@@ -1113,7 +1152,9 @@ class SqliteDatabaseService {
   }) async {
     if (useSaf) return dirPath;
     try {
-      return await Directory(dirPath).resolveSymbolicLinks();
+      return await Directory(
+        dirPath,
+      ).resolveSymbolicLinks().timeout(_fileSystemOperationTimeout);
     } catch (e) {
       // Unreadable, or gone between listing and resolving. Fall back to the
       // literal path so the directory is still walked exactly once.
@@ -1200,9 +1241,14 @@ class SqliteDatabaseService {
   }) async {
     try {
       final rootDir = Directory(romFolderPath);
-      if (!await rootDir.exists()) return null;
+      if (!await rootDir.exists().timeout(_fileSystemOperationTimeout)) {
+        return null;
+      }
       try {
-        final List<FileSystemEntity> children = await rootDir.list().toList();
+        final List<FileSystemEntity> children = await rootDir
+            .list()
+            .toList()
+            .timeout(_fileSystemOperationTimeout);
         for (final child in children) {
           if (await _shouldSkipStandardEntity(
             child,
@@ -1219,7 +1265,11 @@ class SqliteDatabaseService {
       } catch (e) {
         _log.e('Error listing standard directory $romFolderPath: $e');
         final directPath = path.join(romFolderPath, folderName);
-        if (await Directory(directPath).exists()) return directPath;
+        if (await Directory(
+          directPath,
+        ).exists().timeout(_fileSystemOperationTimeout)) {
+          return directPath;
+        }
       }
       return null;
     } catch (e) {
@@ -1239,9 +1289,10 @@ class SqliteDatabaseService {
   }) async {
     final entries = <RomEntry>[];
     try {
-      final entities = await Directory(
-        pathStr,
-      ).list(recursive: recursive, followLinks: false).toList();
+      final entities = await Directory(pathStr)
+          .list(recursive: recursive, followLinks: false)
+          .toList()
+          .timeout(_fileSystemOperationTimeout);
       for (final entity in entities) {
         if (await _shouldSkipStandardEntity(
           entity,

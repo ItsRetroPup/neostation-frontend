@@ -12,7 +12,8 @@ class SystemScanProgressWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<SqliteConfigProvider>(
       builder: (context, configProvider, child) {
-        if (!configProvider.isScanning) {
+        if (!configProvider.isScanning &&
+            configProvider.unreachableNetworkRomFolders.isEmpty) {
           return SizedBox.shrink();
         }
 
@@ -119,6 +120,39 @@ class SystemScanProgressWidget extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
+                ),
+              ],
+              if (configProvider.unreachableNetworkRomFolders.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                for (final folder
+                    in configProvider.unreachableNetworkRomFolders) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          folder,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () =>
+                            configProvider.openNetworkFolder(folder),
+                        icon: const Icon(Symbols.folder_open_rounded, size: 18),
+                        label: Text(
+                          AppLocale.openNetworkFolder.getString(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                TextButton.icon(
+                  onPressed: configProvider.isScanning
+                      ? null
+                      : configProvider.scanSystems,
+                  icon: const Icon(Symbols.refresh_rounded, size: 18),
+                  label: Text(AppLocale.retry.getString(context)),
                 ),
               ],
             ],

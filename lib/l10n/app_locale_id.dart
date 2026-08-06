@@ -8,6 +8,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.cancel: 'Batal',
   AppLocale.ok: 'Oke',
   AppLocale.retry: 'Coba Lagi',
+  AppLocale.openNetworkFolder: 'Buka Folder Jaringan',
   AppLocale.confirm: 'Konfirmasi',
   AppLocale.apply: 'Terapkan',
   AppLocale.save: 'Simpan',

@@ -8,6 +8,7 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.cancel: 'Annulla',
   AppLocale.ok: 'OK',
   AppLocale.retry: 'Riprova',
+  AppLocale.openNetworkFolder: 'Apri cartella di rete',
   AppLocale.confirm: 'Conferma',
   AppLocale.apply: 'Applica',
   AppLocale.save: 'Salva',

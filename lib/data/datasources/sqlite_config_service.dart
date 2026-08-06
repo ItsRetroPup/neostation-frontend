@@ -18,6 +18,11 @@ import '../../repositories/system_repository.dart';
 class SqliteConfigService {
   static final _log = LoggerService.instance;
 
+  // Directory operations against an unavailable SMB/UNC share can wait
+  // indefinitely on Windows. Keep discovery responsive and let the scan
+  // continue with any other configured ROM roots.
+  static const _fileSystemOperationTimeout = Duration(seconds: 15);
+
   /// Counts valid ROM files within a given directory.
   ///
   /// Filters files based on valid extensions retrieved from the database
@@ -45,7 +50,8 @@ class SqliteConfigService {
           .list(recursive: recursive, followLinks: false)
           .where((entity) => entity is File)
           .cast<File>()
-          .toList();
+          .toList()
+          .timeout(_fileSystemOperationTimeout);
 
       int count = 0;
       for (final file in files) {
@@ -342,7 +348,16 @@ class SqliteConfigService {
     final detectedSystemsMap = <String, SystemModel>{};
 
     for (final romFolder in romFolders) {
-      if (!Directory(romFolder).existsSync()) {
+      bool folderExists;
+      try {
+        folderExists = await Directory(
+          romFolder,
+        ).exists().timeout(_fileSystemOperationTimeout);
+      } catch (e) {
+        _log.w('Error checking ROM folder $romFolder: $e');
+        continue;
+      }
+      if (!folderExists) {
         _log.w('ROM folder does not exist: $romFolder');
         continue;
       }
@@ -350,7 +365,9 @@ class SqliteConfigService {
       final romDir = Directory(romFolder);
       List<FileSystemEntity> entities;
       try {
-        entities = await romDir.list().toList();
+        entities = await romDir.list().toList().timeout(
+          _fileSystemOperationTimeout,
+        );
       } catch (e) {
         _log.w('Error listing directory $romFolder: $e');
         continue;
