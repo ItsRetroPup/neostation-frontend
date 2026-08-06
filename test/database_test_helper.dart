@@ -128,7 +128,7 @@ class DatabaseTestHelper {
     await db.execute('''
       CREATE TABLE user_rom_folders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        path TEXT
+        path TEXT NOT NULL UNIQUE
       )
     ''');
 

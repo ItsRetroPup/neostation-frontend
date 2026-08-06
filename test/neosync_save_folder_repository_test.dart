@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:neostation/data/datasources/sqlite_service.dart';
 import 'package:neostation/repositories/neosync_save_folder_repository.dart';
 
 import 'database_test_helper.dart';
@@ -50,6 +51,36 @@ void main() {
 
       final folder = await NeoSyncSaveFolderRepository.getFolder('ps2');
       expect(folder, isNull);
+    });
+  });
+
+  group('ROM folder persistence', () {
+    final dbHelper = DatabaseTestHelper();
+
+    setUp(() async => dbHelper.setUp());
+    tearDown(() async => dbHelper.tearDown());
+
+    test('deduplicates repeated paths instead of failing the UNIQUE constraint',
+        () async {
+      await SqliteService.saveUserRomFolders([
+        'content://com.android.externalstorage.documents/tree/primary%3AROMs',
+        'content://com.android.externalstorage.documents/tree/primary%3AROMs',
+        '/storage/emulated/0/Games',
+      ]);
+
+      final folders = await SqliteService.getUserRomFolders();
+      expect(folders, [
+        'content://com.android.externalstorage.documents/tree/primary%3AROMs',
+        '/storage/emulated/0/Games',
+      ]);
+    });
+
+    test('replaces the existing folder list', () async {
+      await SqliteService.saveUserRomFolders(['/old/folder']);
+      await SqliteService.saveUserRomFolders(['/new/folder']);
+
+      final folders = await SqliteService.getUserRomFolders();
+      expect(folders, ['/new/folder']);
     });
   });
 }

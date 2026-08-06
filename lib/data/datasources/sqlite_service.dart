@@ -2470,9 +2470,13 @@ class SqliteService {
   /// Persists a complete list of ROM directories, replacing existing ones.
   static Future<void> saveUserRomFolders(List<String> folders) async {
     final db = await instance.database;
+    // The user_rom_folders table enforces UNIQUE on path. Deduplicate here so
+    // callers that accumulate folders from multiple sources cannot trip the
+    // constraint when the same path appears more than once.
+    final uniqueFolders = folders.toSet().toList();
     await db.transaction((txn) async {
       await txn.delete('user_rom_folders');
-      for (final folder in folders) {
+      for (final folder in uniqueFolders) {
         if (folder.isNotEmpty) {
           await txn.insert('user_rom_folders', {'path': folder});
         }

@@ -5293,6 +5293,10 @@ class SqliteMigrations {
   /// standalone emulators with relocatable data directories (ARMSX2, ARMSX1,
   /// etc.). Keeping it in its own table keeps the module's configuration
   /// separate from the global [user_config].
+  ///
+  /// Also deduplicates any legacy duplicate rows in [user_rom_folders]. The
+  /// table enforces UNIQUE on path, so duplicates from older scans made every
+  /// subsequent config save crash with a UNIQUE constraint failure.
   static Future<void> _migrateToVersion111(Database db) async {
     _log.i('Migration v111: Creating user_custom_save_folders table');
     try {
@@ -5304,6 +5308,15 @@ class SqliteMigrations {
         );
       ''');
       _log.i('Table user_custom_save_folders created');
+
+      _log.i('Migration v111: Deduplicating user_rom_folders');
+      db.execute('''
+        DELETE FROM user_rom_folders
+        WHERE id NOT IN (
+          SELECT MIN(id) FROM user_rom_folders GROUP BY path
+        );
+      ''');
+      _log.i('Migration v111 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v111: $e');
       _log.e('   StackTrace: $stackTrace');
