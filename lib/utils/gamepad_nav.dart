@@ -97,6 +97,12 @@ class GamepadNavigation {
   /// cursor — a fixed cadence there stays in step with the cache.
   final bool accelerateRepeats;
 
+  /// Whether holding a direction auto-repeats. Turn it off for small fixed
+  /// layouts (login forms, dialogs) where one move per press is the whole
+  /// interaction: with a wrapping selection there is no boundary to stop the
+  /// timer, so a held direction would otherwise spin the cursor round the form.
+  final bool allowRepeat;
+
   /// Optional override that reports whether a text field is currently focused
   /// in the active UI layer. When provided, it takes precedence over the global
   /// focus search, preventing off-stage text fields from blocking navigation.
@@ -179,10 +185,10 @@ class GamepadNavigation {
 
   /// How long a direction must be held before repeats escalate from stepping
   /// item-by-item to ES-DE style alphabetical jumping (see [onLetterJump]).
-  /// Long enough that the accelerated step scroll (~30 items by this point) is
-  /// the normal way to browse, and letter jumping only takes over on a
-  /// deliberate hold.
-  static const Duration _letterJumpAfter = Duration(milliseconds: 1600);
+  /// Long enough that the accelerated step scroll (~17 items by this point) is
+  /// still the normal way to browse a short list, but short enough that holding
+  /// a direction to skim a big library reaches the alphabet quickly.
+  static const Duration _letterJumpAfter = Duration(milliseconds: 1200);
 
   /// Dwell time on each letter while letter jumping — long enough to read the
   /// letter and release on it, short enough to cross the alphabet quickly.
@@ -289,6 +295,7 @@ class GamepadNavigation {
     this.onLetterJump,
     this.letterJumpAxis = LetterJumpAxis.vertical,
     this.accelerateRepeats = false,
+    this.allowRepeat = true,
     this.isTextFieldFocused,
   });
 
@@ -1175,6 +1182,8 @@ class GamepadNavigation {
       cancelAllRepeatTimers();
       return;
     }
+
+    if (!allowRepeat) return;
 
     _startRepeatTimer(key, action);
   }
