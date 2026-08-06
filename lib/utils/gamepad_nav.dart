@@ -587,6 +587,13 @@ class GamepadNavigation {
         );
         _currentGamepadId = event.gamepadId;
         await _ensureConnectionTypeDetected(event.gamepadId);
+
+        // Device detection is asynchronous. A modal dialog can take focus
+        // while it is in flight, which deactivates this navigator. Do not let
+        // the event that started on the old layer continue into its callback
+        // after that handoff (Linux/SteamOS can otherwise launch the game
+        // underneath a newly displayed dialog).
+        if (!_isActive) return;
       }
 
       if (_debugLogging) {
