@@ -9,6 +9,18 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.ok: '확인',
   AppLocale.retry: '재시도',
   AppLocale.openNetworkFolder: '네트워크 폴더 열기',
+  AppLocale.checkingRomFolders: 'Checking ROM folders...',
+  AppLocale.networkRomFolderUnavailable:
+      'Network ROM folder unavailable: {folders}',
+  AppLocale.waitingForRomStorage:
+      'Waiting for ROM storage ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'Updating systems list...',
+  AppLocale.romsScanned: 'ROMs scanned',
+  AppLocale.romsScannedNetworkFoldersSkipped:
+      'ROMs scanned; unavailable network folder(s) skipped: {folders}',
+  AppLocale.errorScanningRoms: 'Error scanning ROMs',
+  AppLocale.romStorageNotReady:
+      'ROM storage is not ready; existing games were kept.',
   AppLocale.confirm: '확인',
   AppLocale.apply: '적용',
   AppLocale.save: '저장',

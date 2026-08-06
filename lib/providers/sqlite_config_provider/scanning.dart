@@ -12,20 +12,15 @@ extension SqliteConfigScanning on SqliteConfigProvider {
   /// Opens an unavailable UNC share in Windows Explorer so Windows can show
   /// its native credential prompt. Credentials never pass through NeoStation.
   Future<bool> openNetworkFolder(String folder) async {
-    if (!Platform.isWindows ||
-        !_unreachableNetworkRomFolders.contains(folder)) {
+    if (!_unreachableNetworkRomFolders.contains(folder)) {
       return false;
     }
+    return NetworkFolderService.openFolder(folder);
+  }
 
-    try {
-      await Process.start('explorer.exe', [
-        folder,
-      ], mode: ProcessStartMode.detached);
-      return true;
-    } catch (e) {
-      SqliteConfigProvider._log.e('Error opening network folder $folder: $e');
-      return false;
-    }
+  void clearUnreachableNetworkRomFolders() {
+    _unreachableNetworkRomFolders = {};
+    _notify();
   }
 
   /// Registers a new filesystem directory as a ROM source.
@@ -159,7 +154,7 @@ extension SqliteConfigScanning on SqliteConfigProvider {
       if (waitForAndroidStorage &&
           await _hasStoredRoms() &&
           !await _waitForAndroidRomFolders()) {
-        _scanStatus = 'ROM storage is not ready; existing games were kept.';
+        _scanStatus = AppLocale.romStorageNotReady;
         SqliteConfigProvider._log.w(
           'Startup scan skipped because Android ROM storage never became ready',
         );
@@ -173,16 +168,12 @@ extension SqliteConfigScanning on SqliteConfigProvider {
     _totalSystemsToScan = 0;
     _scannedSystemsCount = 0;
     _scanProgress = 0.0;
-    _scanStatus = 'Checking ROM folders...';
+    _scanStatus = AppLocale.checkingRomFolders;
     _unreachableNetworkRomFolders = {
-      ...await SqliteDatabaseService.findUnreachableNetworkFolders(
-        _config.romFolders,
-      ),
+      ...await NetworkFolderService.findUnreachableFolders(_config.romFolders),
     };
     if (_unreachableNetworkRomFolders.isNotEmpty) {
-      _scanStatus =
-          'Network ROM folder unavailable: '
-          '${_unreachableNetworkRomFolders.join(', ')}';
+      _scanStatus = AppLocale.networkRomFolderUnavailable;
       _notify();
     }
 
@@ -360,7 +351,7 @@ extension SqliteConfigScanning on SqliteConfigProvider {
         );
       } else {
         _totalSystemsToScan = _detectedSystems.length;
-        _scanStatus = 'Scanning ROMs...';
+        _scanStatus = AppLocale.scanningRoms;
         await _scanRomsInBackground();
       }
 
@@ -401,7 +392,9 @@ extension SqliteConfigScanning on SqliteConfigProvider {
       }
 
       if (attempt < maxAttempts) {
-        _scanStatus = 'Waiting for ROM storage ($attempt/$maxAttempts)...';
+        _scanStatus = AppLocale.waitingForRomStorage
+            .replaceFirst('{attempt}', '$attempt')
+            .replaceFirst('{max}', '$maxAttempts');
         _notify();
         await Future<void>.delayed(retryDelay);
       }
@@ -480,7 +473,7 @@ extension SqliteConfigScanning on SqliteConfigProvider {
       }
 
       // Phase 2: Update the systems list (0.95 - 1.0)
-      _scanStatus = 'Updating systems list...';
+      _scanStatus = AppLocale.updatingSystemsList;
       _scanProgress = scanPhaseWeight; // 95%
       _notify();
 
@@ -524,7 +517,14 @@ extension SqliteConfigScanning on SqliteConfigProvider {
         final bool isAndroidVirtual =
             (system.folderName == 'android' && Platform.isAndroid);
 
-        if (romCount > 0 || hasFolderWhenNonRecursive || isAndroidVirtual) {
+        final sourceUnavailable = _unreachableNetworkRomFolders.any(
+          _config.romFolders.contains,
+        );
+        if (romCount > 0 ||
+            hasFolderWhenNonRecursive ||
+            isAndroidVirtual ||
+            (sourceUnavailable &&
+                _detectedSystems.any((detected) => detected.id == system.id))) {
           systemsToKeep.add(system.copyWith(romCount: romCount));
 
           // Increment count for 'all' logic if it's a real emulator system with games
@@ -568,14 +568,16 @@ extension SqliteConfigScanning on SqliteConfigProvider {
 
       // Completar al 100%
       _scanStatus = _unreachableNetworkRomFolders.isEmpty
-          ? 'ROMs Scanned'
-          : 'ROMs scanned; unavailable network folder(s) skipped: '
-                '${_unreachableNetworkRomFolders.join(', ')}';
+          ? AppLocale.romsScanned
+          : AppLocale.romsScannedNetworkFoldersSkipped.replaceFirst(
+              '{folders}',
+              _unreachableNetworkRomFolders.join(', '),
+            );
       _scanProgress = 1.0;
       _notify();
     } catch (e) {
       SqliteConfigProvider._log.e('Error scanning ROMs: $e');
-      _scanStatus = 'Error scanning ROMs';
+      _scanStatus = AppLocale.errorScanningRoms;
       _notify();
     } finally {
       _isScanningRoms = false; // Liberar el lock
@@ -603,10 +605,13 @@ extension SqliteConfigScanning on SqliteConfigProvider {
         _config.romFolders,
         ignoreHiddenFiles: _config.ignoreHiddenFiles,
         rootFoldersMap: rootFoldersMap,
+        skippedNetworkFolders: _unreachableNetworkRomFolders,
       );
 
       // Update ROM count in system
-      await refreshSystem(system, rootFoldersMap: rootFoldersMap);
+      if (!summary.sourceUnavailable) {
+        await refreshSystem(system, rootFoldersMap: rootFoldersMap);
+      }
 
       // Trigger Steam scraper if it's the Steam system
       if (system.folderName == 'steam') {

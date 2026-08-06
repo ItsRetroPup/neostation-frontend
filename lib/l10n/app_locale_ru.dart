@@ -9,6 +9,18 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.ok: 'ОК',
   AppLocale.retry: 'Повторить',
   AppLocale.openNetworkFolder: 'Открыть сетевую папку',
+  AppLocale.checkingRomFolders: 'Checking ROM folders...',
+  AppLocale.networkRomFolderUnavailable:
+      'Network ROM folder unavailable: {folders}',
+  AppLocale.waitingForRomStorage:
+      'Waiting for ROM storage ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'Updating systems list...',
+  AppLocale.romsScanned: 'ROMs scanned',
+  AppLocale.romsScannedNetworkFoldersSkipped:
+      'ROMs scanned; unavailable network folder(s) skipped: {folders}',
+  AppLocale.errorScanningRoms: 'Error scanning ROMs',
+  AppLocale.romStorageNotReady:
+      'ROM storage is not ready; existing games were kept.',
   AppLocale.confirm: 'Подтвердить',
   AppLocale.apply: 'Применить',
   AppLocale.save: 'Сохранить',

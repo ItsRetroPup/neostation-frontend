@@ -26,11 +26,15 @@ class ScanSummary {
   /// Human-readable name of the system scanned.
   final String systemName;
 
+  /// True when a configured source was skipped because it was unreachable.
+  final bool sourceUnavailable;
+
   ScanSummary({
     required this.added,
     required this.removed,
     required this.total,
     required this.systemName,
+    this.sourceUnavailable = false,
   });
 
   /// Returns true if any files were added or removed during the scan.
@@ -62,38 +66,6 @@ class RomEntry {
 /// - Batch database operations with performance-tuned SQLite PRAGMAs.
 class SqliteDatabaseService {
   static final _log = LoggerService.instance;
-
-  // Windows can block on an unavailable SMB/UNC share while resolving or
-  // listing a directory. A bounded operation prevents the entire scan from
-  // appearing stuck at 0%.
-  static const _fileSystemOperationTimeout = Duration(seconds: 15);
-
-  /// Probes Windows UNC roots by starting a directory listing and waiting for
-  /// the first result. This checks the actual SMB share rather than ICMP, which
-  /// is commonly disabled even when the share itself is reachable.
-  static Future<List<String>> findUnreachableNetworkFolders(
-    List<String> folders,
-  ) async {
-    if (!Platform.isWindows) return [];
-
-    final networkFolders = folders
-        .where((folder) => RegExp(r'^\\\\[^\\/]+[\\/]').hasMatch(folder))
-        .toList();
-    final results = await Future.wait(
-      networkFolders.map((folder) async {
-        try {
-          await Directory(
-            folder,
-          ).list().take(1).toList().timeout(_fileSystemOperationTimeout);
-          return null;
-        } catch (e) {
-          _log.w('Network ROM folder is unreachable: $folder ($e)');
-          return folder;
-        }
-      }),
-    );
-    return results.whereType<String>().toList();
-  }
 
   /// Retrieves the complete game database, grouped by system folder name.
   static Future<Map<String, List<DatabaseGameModel>>> loadDatabase() async {
@@ -138,6 +110,7 @@ class SqliteDatabaseService {
     List<String> romFolders, {
     bool ignoreHiddenFiles = true,
     Map<String, Map<String, String>>? rootFoldersMap,
+    Set<String> skippedNetworkFolders = const {},
   }) async {
     if (system.id == null) {
       _log.e('System without ID: ${system.realName}');
@@ -159,6 +132,7 @@ class SqliteDatabaseService {
     // Support for metadata-only .steam files
     validExtensionsSet.add('steam');
 
+    final scanTimedOut = [false];
     return await Future.any([
       _performSystemScan(
         system,
@@ -166,8 +140,11 @@ class SqliteDatabaseService {
         validExtensionsSet,
         ignoreHiddenFiles: ignoreHiddenFiles,
         rootFoldersMap: rootFoldersMap,
+        skippedNetworkFolders: skippedNetworkFolders,
+        scanTimedOut: scanTimedOut,
       ),
       Future.delayed(const Duration(minutes: 10), () {
+        scanTimedOut[0] = true;
         throw Exception('Timeout scanning ${system.realName}');
       }),
     ]).catchError((error) {
@@ -188,6 +165,8 @@ class SqliteDatabaseService {
     Set<String> validExtensionsSet, {
     bool ignoreHiddenFiles = true,
     Map<String, Map<String, String>>? rootFoldersMap,
+    Set<String> skippedNetworkFolders = const {},
+    List<bool>? scanTimedOut,
   }) async {
     final initialCount = await SqliteService.getRomCountForSystem(system.id!);
 
@@ -307,11 +286,24 @@ class SqliteDatabaseService {
       ..addAll(deduplicatedEntries);
 
     // Clean orphaned entries (files deleted from disk)
+    final sourceUnavailable = romFolders.any(skippedNetworkFolders.contains);
     final cleanup = await _cleanupOrphanedRomsOptimized(
       system.id!,
       romEntries.map((e) => e.path).toSet(),
+      allowRemoval: !sourceUnavailable && !(scanTimedOut?[0] ?? false),
     );
     final removedCount = cleanup.removed;
+
+    if (scanTimedOut?[0] ?? false) {
+      final finalCount = await SqliteService.getRomCountForSystem(system.id!);
+      return ScanSummary(
+        added: 0,
+        removed: 0,
+        total: finalCount,
+        systemName: system.realName,
+        sourceUnavailable: true,
+      );
+    }
 
     if (romEntries.isEmpty) {
       final finalCount = await SqliteService.getRomCountForSystem(system.id!);
@@ -320,6 +312,7 @@ class SqliteDatabaseService {
         removed: removedCount,
         total: finalCount,
         systemName: system.realName,
+        sourceUnavailable: sourceUnavailable || (scanTimedOut?[0] ?? false),
       );
     }
 
@@ -777,8 +770,9 @@ class SqliteDatabaseService {
   static Future<({int removed, Set<String> knownPaths})>
   _cleanupOrphanedRomsOptimized(
     String systemId,
-    Set<String> existingRomPaths,
-  ) async {
+    Set<String> existingRomPaths, {
+    bool allowRemoval = true,
+  }) async {
     try {
       final db = await SqliteService.getDatabase();
       final existingRoms = await db.rawQuery(
@@ -787,6 +781,16 @@ class SqliteDatabaseService {
       );
       if (existingRoms.isEmpty) {
         return (removed: 0, knownPaths: <String>{});
+      }
+
+      if (!allowRemoval) {
+        return (
+          removed: 0,
+          knownPaths: existingRoms
+              .map((row) => row['rom_path'].toString())
+              .where(existingRomPaths.contains)
+              .toSet(),
+        );
       }
 
       final knownPaths = <String>{};
@@ -1094,10 +1098,8 @@ class SqliteDatabaseService {
           }
         } else {
           final dir = Directory(folder);
-          if (await dir.exists().timeout(_fileSystemOperationTimeout)) {
-            final entities = await dir.list().toList().timeout(
-              _fileSystemOperationTimeout,
-            );
+          if (await dir.exists()) {
+            final entities = await dir.list().toList();
             for (final entity in entities) {
               if (entity is Directory) {
                 subdirs[path.basename(entity.path).toLowerCase()] = entity.path;
@@ -1152,9 +1154,7 @@ class SqliteDatabaseService {
   }) async {
     if (useSaf) return dirPath;
     try {
-      return await Directory(
-        dirPath,
-      ).resolveSymbolicLinks().timeout(_fileSystemOperationTimeout);
+      return await Directory(dirPath).resolveSymbolicLinks();
     } catch (e) {
       // Unreadable, or gone between listing and resolving. Fall back to the
       // literal path so the directory is still walked exactly once.
@@ -1241,14 +1241,11 @@ class SqliteDatabaseService {
   }) async {
     try {
       final rootDir = Directory(romFolderPath);
-      if (!await rootDir.exists().timeout(_fileSystemOperationTimeout)) {
+      if (!await rootDir.exists()) {
         return null;
       }
       try {
-        final List<FileSystemEntity> children = await rootDir
-            .list()
-            .toList()
-            .timeout(_fileSystemOperationTimeout);
+        final List<FileSystemEntity> children = await rootDir.list().toList();
         for (final child in children) {
           if (await _shouldSkipStandardEntity(
             child,
@@ -1265,9 +1262,7 @@ class SqliteDatabaseService {
       } catch (e) {
         _log.e('Error listing standard directory $romFolderPath: $e');
         final directPath = path.join(romFolderPath, folderName);
-        if (await Directory(
-          directPath,
-        ).exists().timeout(_fileSystemOperationTimeout)) {
+        if (await Directory(directPath).exists()) {
           return directPath;
         }
       }
@@ -1289,10 +1284,9 @@ class SqliteDatabaseService {
   }) async {
     final entries = <RomEntry>[];
     try {
-      final entities = await Directory(pathStr)
-          .list(recursive: recursive, followLinks: false)
-          .toList()
-          .timeout(_fileSystemOperationTimeout);
+      final entities = await Directory(
+        pathStr,
+      ).list(recursive: recursive, followLinks: false).toList();
       for (final entity in entities) {
         if (await _shouldSkipStandardEntity(
           entity,

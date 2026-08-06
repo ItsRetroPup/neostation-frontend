@@ -9,6 +9,18 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.ok: 'OK',
   AppLocale.retry: 'Réessayer',
   AppLocale.openNetworkFolder: 'Ouvrir le dossier réseau',
+  AppLocale.checkingRomFolders: 'Checking ROM folders...',
+  AppLocale.networkRomFolderUnavailable:
+      'Network ROM folder unavailable: {folders}',
+  AppLocale.waitingForRomStorage:
+      'Waiting for ROM storage ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'Updating systems list...',
+  AppLocale.romsScanned: 'ROMs scanned',
+  AppLocale.romsScannedNetworkFoldersSkipped:
+      'ROMs scanned; unavailable network folder(s) skipped: {folders}',
+  AppLocale.errorScanningRoms: 'Error scanning ROMs',
+  AppLocale.romStorageNotReady:
+      'ROM storage is not ready; existing games were kept.',
   AppLocale.confirm: 'Confirmer',
   AppLocale.apply: 'Appliquer',
   AppLocale.save: 'Enregistrer',

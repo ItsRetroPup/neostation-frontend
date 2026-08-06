@@ -9,6 +9,18 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.ok: 'Oke',
   AppLocale.retry: 'Coba Lagi',
   AppLocale.openNetworkFolder: 'Buka Folder Jaringan',
+  AppLocale.checkingRomFolders: 'Checking ROM folders...',
+  AppLocale.networkRomFolderUnavailable:
+      'Network ROM folder unavailable: {folders}',
+  AppLocale.waitingForRomStorage:
+      'Waiting for ROM storage ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'Updating systems list...',
+  AppLocale.romsScanned: 'ROMs scanned',
+  AppLocale.romsScannedNetworkFoldersSkipped:
+      'ROMs scanned; unavailable network folder(s) skipped: {folders}',
+  AppLocale.errorScanningRoms: 'Error scanning ROMs',
+  AppLocale.romStorageNotReady:
+      'ROM storage is not ready; existing games were kept.',
   AppLocale.confirm: 'Konfirmasi',
   AppLocale.apply: 'Terapkan',
   AppLocale.save: 'Simpan',

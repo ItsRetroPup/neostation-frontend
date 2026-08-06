@@ -27,6 +27,16 @@ mixin AppLocale {
   static const String ok = 'ok';
   static const String retry = 'retry';
   static const String openNetworkFolder = 'open_network_folder';
+  static const String checkingRomFolders = 'checking_rom_folders';
+  static const String networkRomFolderUnavailable =
+      'network_rom_folder_unavailable';
+  static const String waitingForRomStorage = 'waiting_for_rom_storage';
+  static const String updatingSystemsList = 'updating_systems_list';
+  static const String romsScanned = 'roms_scanned';
+  static const String romsScannedNetworkFoldersSkipped =
+      'roms_scanned_network_folders_skipped';
+  static const String errorScanningRoms = 'error_scanning_roms';
+  static const String romStorageNotReady = 'rom_storage_not_ready';
   static const String confirm = 'confirm';
   static const String apply = 'apply';
   static const String save = 'save';

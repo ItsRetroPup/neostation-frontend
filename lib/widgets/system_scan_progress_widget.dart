@@ -4,14 +4,76 @@ import 'package:neostation/l10n/app_locale.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:provider/provider.dart';
 import '../providers/sqlite_config_provider.dart';
+import '../utils/gamepad_nav.dart';
+import '../services/game_service.dart' show GamepadNavigationManager;
 
-class SystemScanProgressWidget extends StatelessWidget {
+class SystemScanProgressWidget extends StatefulWidget {
   const SystemScanProgressWidget({super.key});
+
+  @override
+  State<SystemScanProgressWidget> createState() =>
+      _SystemScanProgressWidgetState();
+}
+
+class _SystemScanProgressWidgetState extends State<SystemScanProgressWidget> {
+  GamepadNavigation? _gamepadNavigation;
+  int _selectedRecoveryAction = 0;
+
+  void _syncGamepadNavigation(SqliteConfigProvider provider) {
+    final hasRecovery = provider.unreachableNetworkRomFolders.isNotEmpty;
+    if (!hasRecovery && _gamepadNavigation != null) {
+      GamepadNavigationManager.popLayer('system_scan_recovery');
+      _gamepadNavigation!.dispose();
+      _gamepadNavigation = null;
+    } else if (hasRecovery && _gamepadNavigation == null) {
+      _gamepadNavigation = GamepadNavigation(
+        onNavigateUp: () => _moveRecoveryAction(provider, -1),
+        onNavigateDown: () => _moveRecoveryAction(provider, 1),
+        onSelectItem: () => _activateRecoveryAction(provider),
+        onBack: provider.clearUnreachableNetworkRomFolders,
+      )..initialize();
+      _gamepadNavigation!.activate();
+      GamepadNavigationManager.pushLayer(
+        'system_scan_recovery',
+        onActivate: () => _gamepadNavigation?.activate(),
+        onDeactivate: () => _gamepadNavigation?.deactivate(),
+      );
+    }
+  }
+
+  void _moveRecoveryAction(SqliteConfigProvider provider, int delta) {
+    final actionCount = provider.unreachableNetworkRomFolders.length + 2;
+    setState(() {
+      _selectedRecoveryAction =
+          (_selectedRecoveryAction + delta + actionCount) % actionCount;
+    });
+  }
+
+  void _activateRecoveryAction(SqliteConfigProvider provider) {
+    final folders = provider.unreachableNetworkRomFolders;
+    if (_selectedRecoveryAction < folders.length) {
+      provider.openNetworkFolder(folders[_selectedRecoveryAction]);
+    } else if (_selectedRecoveryAction == folders.length) {
+      provider.scanSystems();
+    } else {
+      provider.clearUnreachableNetworkRomFolders();
+    }
+  }
+
+  @override
+  void dispose() {
+    GamepadNavigationManager.popLayer('system_scan_recovery');
+    _gamepadNavigation?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<SqliteConfigProvider>(
       builder: (context, configProvider, child) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _syncGamepadNavigation(configProvider),
+        );
         if (!configProvider.isScanning &&
             configProvider.unreachableNetworkRomFolders.isEmpty) {
           return SizedBox.shrink();
@@ -51,7 +113,7 @@ class SystemScanProgressWidget extends StatelessWidget {
                   Expanded(
                     child: Text(
                       configProvider.scanStatus.isNotEmpty
-                          ? configProvider.scanStatus
+                          ? _localizedScanStatus(context, configProvider)
                           : AppLocale.scanningSystemsRoms.getString(context),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
@@ -143,6 +205,17 @@ class SystemScanProgressWidget extends StatelessWidget {
                         label: Text(
                           AppLocale.openNetworkFolder.getString(context),
                         ),
+                        style: TextButton.styleFrom(
+                          backgroundColor:
+                              _selectedRecoveryAction ==
+                                  configProvider.unreachableNetworkRomFolders
+                                      .toList()
+                                      .indexOf(folder)
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.2)
+                              : null,
+                        ),
                       ),
                     ],
                   ),
@@ -153,6 +226,30 @@ class SystemScanProgressWidget extends StatelessWidget {
                       : configProvider.scanSystems,
                   icon: const Icon(Symbols.refresh_rounded, size: 18),
                   label: Text(AppLocale.retry.getString(context)),
+                  style: TextButton.styleFrom(
+                    backgroundColor:
+                        _selectedRecoveryAction ==
+                            configProvider.unreachableNetworkRomFolders.length
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.2)
+                        : null,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: configProvider.clearUnreachableNetworkRomFolders,
+                  icon: const Icon(Symbols.close_rounded, size: 18),
+                  label: Text(AppLocale.close.getString(context)),
+                  style: TextButton.styleFrom(
+                    backgroundColor:
+                        _selectedRecoveryAction ==
+                            configProvider.unreachableNetworkRomFolders.length +
+                                1
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.2)
+                        : null,
+                  ),
                 ),
               ],
             ],
@@ -160,6 +257,20 @@ class SystemScanProgressWidget extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _localizedScanStatus(
+    BuildContext context,
+    SqliteConfigProvider configProvider,
+  ) {
+    final status = configProvider.scanStatus;
+    var localized = status.getString(context);
+    localized = localized.replaceFirst(
+      '{folders}',
+      configProvider.unreachableNetworkRomFolders.join(', '),
+    );
+    if (localized != status) return localized;
+    return status;
   }
 }
 
