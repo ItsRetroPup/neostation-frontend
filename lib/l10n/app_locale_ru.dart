@@ -932,6 +932,9 @@ const Map<String, dynamic> appLocaleRu = {
       'RetroAchievements сейчас перегружен. Подождите немного и попробуйте снова.',
   AppLocale.raApiKey: 'API-ключ',
   AppLocale.raEnterApiKey: 'Введите ваш API-ключ',
+  AppLocale.raGetApiKey: 'Получить API-ключ',
+  AppLocale.raApiKeyHelp:
+      'Откройте панель управления RetroAchievements, чтобы скопировать личный Web API-ключ.',
   AppLocale.raNoRecentUnlocks: 'Нет недавних достижений за последние 30 дней',
   AppLocale.raRecentlyPlayedTitle: 'Недавно сыгранные',
   AppLocale.raNoRecentlyPlayed: 'Нет недавно сыгранных игр',

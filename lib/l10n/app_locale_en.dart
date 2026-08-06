@@ -930,6 +930,9 @@ const Map<String, dynamic> appLocaleEn = {
       'RetroAchievements is busy right now. Please wait a moment and try again.',
   AppLocale.raApiKey: 'API Key',
   AppLocale.raEnterApiKey: 'Enter your API key',
+  AppLocale.raGetApiKey: 'Get API Key',
+  AppLocale.raApiKeyHelp:
+      'Open your RetroAchievements control panel to copy your personal Web API key.',
   AppLocale.raNoRecentUnlocks: 'No recent unlocks in the last 30 days',
   AppLocale.raRecentlyPlayedTitle: 'Recently Played',
   AppLocale.raNoRecentlyPlayed: 'No recently played games',

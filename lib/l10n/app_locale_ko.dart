@@ -842,6 +842,8 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.raRateLimited: 'RetroAchievements 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.',
   AppLocale.raApiKey: 'API 키',
   AppLocale.raEnterApiKey: 'API 키를 입력하세요',
+  AppLocale.raGetApiKey: 'API 키 가져오기',
+  AppLocale.raApiKeyHelp: 'RetroAchievements 제어판을 열어 개인 Web API 키를 복사하세요.',
   AppLocale.raNoRecentUnlocks: '최근 30일 동안 달성한 업적이 없습니다',
   AppLocale.raRecentlyPlayedTitle: '최근 플레이한 게임',
   AppLocale.raNoRecentlyPlayed: '최근에 플레이한 게임이 없습니다',

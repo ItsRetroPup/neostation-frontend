@@ -934,6 +934,9 @@ const Map<String, dynamic> appLocaleId = {
       'RetroAchievements sedang sibuk saat ini. Tunggu sebentar lalu coba lagi.',
   AppLocale.raApiKey: 'Kunci API',
   AppLocale.raEnterApiKey: 'Masukkan kunci API Anda',
+  AppLocale.raGetApiKey: 'Dapatkan Kunci API',
+  AppLocale.raApiKeyHelp:
+      'Buka panel kontrol RetroAchievements untuk menyalin kunci API Web pribadi Anda.',
   AppLocale.raNoRecentUnlocks:
       'Tidak ada pembukaan baru dalam 30 hari terakhir',
   AppLocale.raRecentlyPlayedTitle: 'Baru Dimainkan',
