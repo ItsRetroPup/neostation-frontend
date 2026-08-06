@@ -943,6 +943,9 @@ const Map<String, dynamic> appLocaleDe = {
       'RetroAchievements ist gerade ausgelastet. Bitte warte einen Moment und versuche es erneut.',
   AppLocale.raApiKey: 'API-Schlüssel',
   AppLocale.raEnterApiKey: 'Gib deinen API-Schlüssel ein',
+  AppLocale.raGetApiKey: 'API-Schlüssel holen',
+  AppLocale.raApiKeyHelp:
+      'Öffne dein RetroAchievements-Kontrollzentrum, um deinen persönlichen Web-API-Schlüssel zu kopieren.',
   AppLocale.raNoRecentUnlocks:
       'Keine kürzlichen Freischaltungen in den letzten 30 Tagen',
   AppLocale.raRecentlyPlayedTitle: 'Kürzlich Gespielt',

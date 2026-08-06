@@ -940,6 +940,9 @@ const Map<String, dynamic> appLocaleEs = {
       'RetroAchievements está ocupado en este momento. Espera un momento e inténtalo de nuevo.',
   AppLocale.raApiKey: 'Clave API',
   AppLocale.raEnterApiKey: 'Introduce tu clave API',
+  AppLocale.raGetApiKey: 'Obtener clave API',
+  AppLocale.raApiKeyHelp:
+      'Abre tu panel de control de RetroAchievements para copiar tu clave API web personal.',
   AppLocale.raNoRecentUnlocks:
       'No hay desbloqueos recientes en los últimos 30 días',
   AppLocale.raRecentlyPlayedTitle: 'Jugados Recientemente',

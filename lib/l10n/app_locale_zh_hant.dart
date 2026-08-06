@@ -386,8 +386,7 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.stoppingScraping: '正在停止抓取程序...',
   AppLocale.syncError: '同步系統 ID 時發生錯誤',
   AppLocale.metadataError: '中繼資料抓取過程中發生錯誤',
-  AppLocale.scrapeQuotaExceeded:
-      'ScreenScraper 每日刮削配額已超出',
+  AppLocale.scrapeQuotaExceeded: 'ScreenScraper 每日刮削配額已超出',
   AppLocale.start: '開始',
   AppLocale.systemsSub: '選擇要抓取的系統',
   AppLocale.disableAll: '全部停用',
@@ -821,6 +820,8 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.raRateLimited: 'RetroAchievements 目前忙碌中。請稍候片刻後再試一次。',
   AppLocale.raApiKey: 'API 金鑰',
   AppLocale.raEnterApiKey: '輸入您的 API 金鑰',
+  AppLocale.raGetApiKey: '取得 API 金鑰',
+  AppLocale.raApiKeyHelp: '開啟 RetroAchievements 控制台以複製您的個人 Web API 金鑰。',
   AppLocale.raNoRecentUnlocks: '最近 30 天內沒有解鎖紀錄',
   AppLocale.raRecentlyPlayedTitle: '最近遊玩',
   AppLocale.raNoRecentlyPlayed: '沒有最近遊玩的遊戲',

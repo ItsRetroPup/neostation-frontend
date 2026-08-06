@@ -396,8 +396,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.stoppingScraping: '게임 정보 가져오기를 중지하는 중...',
   AppLocale.syncError: '시스템 ID를 동기화하는 중 오류가 발생했습니다',
   AppLocale.metadataError: '게임 정보 가져오기 오류',
-  AppLocale.scrapeQuotaExceeded:
-      'ScreenScraper 일일 스크래핑 할당량 초과',
+  AppLocale.scrapeQuotaExceeded: 'ScreenScraper 일일 스크래핑 할당량 초과',
   AppLocale.start: '시작',
   AppLocale.systemsSub: '게임 정보를 가져올 시스템을 선택합니다',
   AppLocale.disableAll: '모두 비활성화',
@@ -828,6 +827,8 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.raRateLimited: 'RetroAchievements 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.',
   AppLocale.raApiKey: 'API 키',
   AppLocale.raEnterApiKey: 'API 키를 입력하세요',
+  AppLocale.raGetApiKey: 'API 키 가져오기',
+  AppLocale.raApiKeyHelp: 'RetroAchievements 제어판을 열어 개인 Web API 키를 복사하세요.',
   AppLocale.raNoRecentUnlocks: '최근 30일 동안 달성한 업적이 없습니다',
   AppLocale.raRecentlyPlayedTitle: '최근 플레이한 게임',
   AppLocale.raNoRecentlyPlayed: '최근에 플레이한 게임이 없습니다',

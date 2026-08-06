@@ -74,7 +74,7 @@ class _RAContentState extends State<RAContent> {
   bool _moveSelection(int delta) {
     if (_isAnyFieldFocused()) return false;
     setState(() {
-      _selectedFieldIndex = (_selectedFieldIndex + delta + 3) % 3;
+      _selectedFieldIndex = (_selectedFieldIndex + delta + 4) % 4;
     });
     return true;
   }
@@ -89,6 +89,8 @@ class _RAContentState extends State<RAContent> {
       _usernameFocus.requestFocus();
     } else if (_selectedFieldIndex == 1) {
       _apiKeyFocus.requestFocus();
+    } else if (_selectedFieldIndex == 2) {
+      _openRaControlPanel();
     } else {
       _connectToRA();
     }
@@ -153,6 +155,15 @@ class _RAContentState extends State<RAContent> {
         raProvider.error!,
         type: NotificationType.error,
       );
+    }
+  }
+
+  Future<void> _openRaControlPanel() async {
+    final url = Uri.parse(
+      'https://retroachievements.org/settings?tab=applications',
+    );
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -460,10 +471,57 @@ class _RAContentState extends State<RAContent> {
           ),
           SizedBox(height: 6.r),
 
-          // Connect button
+          // Direct users to the page where RetroAchievements exposes their
+          // personal Web API key, without asking the app to handle passwords.
           Container(
             constraints: BoxConstraints(maxWidth: 220.r),
             decoration: _isSelected(2)
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.35,
+                        ),
+                        blurRadius: 8.r,
+                        spreadRadius: 1.r,
+                      ),
+                    ],
+                  )
+                : null,
+            child: OutlinedButton.icon(
+              onPressed: _openRaControlPanel,
+              icon: Icon(Symbols.key_rounded, size: 14.r),
+              label: Text(
+                AppLocale.raGetApiKey.getString(context),
+                style: TextStyle(fontSize: 11.r, fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(double.infinity, 32.r),
+                side: BorderSide(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 4.r),
+          Text(
+            AppLocale.raApiKeyHelp.getString(context),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+              fontSize: 8.r,
+            ),
+          ),
+          SizedBox(height: 6.r),
+
+          // Connect button
+          Container(
+            constraints: BoxConstraints(maxWidth: 220.r),
+            decoration: _isSelected(3)
                 ? BoxDecoration(
                     borderRadius: BorderRadius.circular(8.r),
                     boxShadow: [

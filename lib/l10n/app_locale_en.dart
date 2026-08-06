@@ -440,8 +440,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.stoppingScraping: 'Stopping scraping process...',
   AppLocale.syncError: 'Error synchronizing system IDs',
   AppLocale.metadataError: 'Error during metadata scraping',
-  AppLocale.scrapeQuotaExceeded:
-      'ScreenScraper daily scraping quota exceeded',
+  AppLocale.scrapeQuotaExceeded: 'ScreenScraper daily scraping quota exceeded',
   AppLocale.start: 'Start',
   AppLocale.systemsSub: 'Select which systems to scrape',
   AppLocale.disableAll: 'Disable All',
@@ -914,6 +913,9 @@ const Map<String, dynamic> appLocaleEn = {
       'RetroAchievements is busy right now. Please wait a moment and try again.',
   AppLocale.raApiKey: 'API Key',
   AppLocale.raEnterApiKey: 'Enter your API key',
+  AppLocale.raGetApiKey: 'Get API Key',
+  AppLocale.raApiKeyHelp:
+      'Open your RetroAchievements control panel to copy your personal Web API key.',
   AppLocale.raNoRecentUnlocks: 'No recent unlocks in the last 30 days',
   AppLocale.raRecentlyPlayedTitle: 'Recently Played',
   AppLocale.raNoRecentlyPlayed: 'No recently played games',
