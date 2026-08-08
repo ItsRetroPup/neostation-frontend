@@ -389,7 +389,8 @@ void main() async {
 
   // Initialize SFX service for navigation sounds (fire-and-forget).
   SfxService().init().then((_) {
-    // Apply the persisted enabled/disabled preference immediately.
+    // Apply persisted SFX preferences immediately.
+    SfxService().setVolume(sqliteConfigProvider.config.sfxVolume);
     SfxService().setEnabled(sqliteConfigProvider.config.sfxEnabled);
   });
 }

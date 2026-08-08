@@ -153,6 +153,11 @@ class SqliteConfigService {
             (int.tryParse(userConfig?['sfx_enabled']?.toString() ?? '1') ??
                 1) ==
             1,
+        sfxVolume:
+            (double.tryParse(userConfig?['sfx_volume']?.toString() ?? '0.75') ??
+                    0.75)
+                .clamp(0.0, 0.75)
+                .toDouble(),
         use12HourClock:
             (int.tryParse(
                   userConfig?['use_12_hour_clock']?.toString() ?? '0',
@@ -267,6 +272,7 @@ class SqliteConfigService {
         hideBottomScreen: config.hideBottomScreen ? 1 : 0,
         videoSound: config.videoSound ? 1 : 0,
         sfxEnabled: config.sfxEnabled ? 1 : 0,
+        sfxVolume: config.sfxVolume,
         use12HourClock: config.use12HourClock ? 1 : 0,
         systemSortBy: config.systemSortBy,
         systemSortOrder: config.systemSortOrder,

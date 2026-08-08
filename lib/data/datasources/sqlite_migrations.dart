@@ -336,6 +336,9 @@ class SqliteMigrations {
       case 110:
         await _migrateToVersion110(db);
         break;
+      case 111:
+        await _migrateToVersion111(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -5280,6 +5283,28 @@ class SqliteMigrations {
       _log.i('Migration v110 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v110: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v111: Stores the user's UI sound-effects playback volume.
+  static Future<void> _migrateToVersion111(Database db) async {
+    _log.i('Migration v111: Adding sfx_volume to user_config');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('sfx_volume')) {
+        db.execute(
+          'ALTER TABLE user_config ADD COLUMN sfx_volume REAL DEFAULT 0.75',
+        );
+        _log.i('Column sfx_volume added via v111');
+      } else {
+        _log.i('Column sfx_volume already exists');
+      }
+      _log.i('Migration v111 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v111: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

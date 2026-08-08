@@ -161,6 +161,8 @@ mixin AppLocale {
       'auto_update_systems_subtitle';
   static const String sfxSounds = 'sfx_sounds';
   static const String sfxSoundsSubtitle = 'sfx_sounds_subtitle';
+  static const String sfxVolume = 'sfx_volume';
+  static const String sfxVolumeSubtitle = 'sfx_volume_subtitle';
   static const String use12HourClock = 'use_12_hour_clock';
   static const String use12HourClockSubtitle = 'use_12_hour_clock_subtitle';
   static const String fullscreenMode = 'fullscreen_mode';

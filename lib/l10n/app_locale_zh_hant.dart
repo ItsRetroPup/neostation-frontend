@@ -126,6 +126,8 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.autoUpdateSystemsSubtitle: '啟動時檢查系統和模擬器設定更新',
   AppLocale.sfxSounds: '介面導航音效',
   AppLocale.sfxSoundsSubtitle: '播放手把、鍵盤和觸控導航的音效',
+  AppLocale.sfxVolume: '介面音效音量',
+  AppLocale.sfxVolumeSubtitle: '調整音量並播放預覽音效',
   AppLocale.use12HourClock: '12小時制',
   AppLocale.use12HourClockSubtitle: '以 12 小時制（AM/PM）顯示時間，而非 24 小時制',
   AppLocale.fullscreenMode: '全螢幕模式',

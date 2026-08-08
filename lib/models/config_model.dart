@@ -84,6 +84,9 @@ class ConfigModel {
   /// Whether UI sound effects (navigation, clicks) are enabled.
   final bool sfxEnabled;
 
+  /// Playback volume for UI sound effects, from silent (0.0) to full (0.75).
+  final double sfxVolume;
+
   /// Whether the header clock should use a 12-hour format with AM/PM (false = 24-hour).
   final bool use12HourClock;
 
@@ -193,6 +196,7 @@ class ConfigModel {
     this.hideBottomScreen = false,
     this.videoSound = false,
     this.sfxEnabled = true,
+    this.sfxVolume = 0.75,
     this.use12HourClock = false,
     this.systemSortBy = 'alphabetical',
     this.systemSortOrder = 'asc',
@@ -287,6 +291,14 @@ class ConfigModel {
       sfxEnabled:
           (json['sfxEnabled'] ?? true).toString().toLowerCase() == 'true' ||
           (json['sfx_enabled'] ?? 1).toString() == '1',
+      sfxVolume:
+          (double.tryParse(
+                    (json['sfxVolume'] ?? json['sfx_volume'] ?? 0.75)
+                        .toString(),
+                  ) ??
+                  0.75)
+              .clamp(0.0, 0.75)
+              .toDouble(),
       use12HourClock:
           (json['use12HourClock'] ?? json['use_12_hour_clock'] ?? 0)
                   .toString() ==
@@ -417,6 +429,7 @@ class ConfigModel {
       'hideBottomScreen': hideBottomScreen,
       'videoSound': videoSound,
       'sfxEnabled': sfxEnabled,
+      'sfxVolume': sfxVolume,
       'use12HourClock': use12HourClock,
       'systemSortBy': systemSortBy,
       'systemSortOrder': systemSortOrder,
@@ -462,6 +475,7 @@ class ConfigModel {
     bool? hideBottomScreen,
     bool? videoSound,
     bool? sfxEnabled,
+    double? sfxVolume,
     bool? use12HourClock,
     String? systemSortBy,
     String? systemSortOrder,
@@ -504,6 +518,7 @@ class ConfigModel {
       hideBottomScreen: hideBottomScreen ?? this.hideBottomScreen,
       videoSound: videoSound ?? this.videoSound,
       sfxEnabled: sfxEnabled ?? this.sfxEnabled,
+      sfxVolume: sfxVolume ?? this.sfxVolume,
       use12HourClock: use12HourClock ?? this.use12HourClock,
       systemSortBy: systemSortBy ?? this.systemSortBy,
       systemSortOrder: systemSortOrder ?? this.systemSortOrder,

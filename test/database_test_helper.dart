@@ -106,6 +106,7 @@ class DatabaseTestHelper {
         setup_completed INTEGER,
         hide_bottom_screen INTEGER,
         sfx_enabled INTEGER,
+        sfx_volume REAL,
         system_sort_by TEXT,
         system_sort_order TEXT,
         app_language TEXT,
