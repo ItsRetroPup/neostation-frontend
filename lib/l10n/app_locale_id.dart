@@ -154,6 +154,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.sfxSounds: 'Suara Antarmuka',
   AppLocale.sfxSoundsSubtitle:
       'Putar suara untuk navigasi dengan kontroler, keyboard, dan sentuhan',
+  AppLocale.sfxVolume: 'Volume suara antarmuka',
+  AppLocale.sfxVolumeSubtitle: 'Sesuaikan volume dan putar suara pratinjau',
   AppLocale.use12HourClock: 'Format 12 Jam',
   AppLocale.use12HourClockSubtitle:
       'Tampilkan jam dalam format 12 jam dengan AM/PM, bukan 24 jam',

@@ -39,6 +39,7 @@ class NewSettingsScreen extends StatefulWidget {
   static void navigateLeft() => _currentInstance?._navigateLeft();
   static void navigateRight() => _currentInstance?._navigateRight();
   static void selectCurrent() => _currentInstance?._selectItem();
+  static bool backCurrent() => _currentInstance?._backCurrent() ?? false;
   static void deleteCurrent() => _currentInstance?._deleteCurrentItem();
 
   static _NewSettingsScreenState? _currentInstance;
@@ -236,6 +237,10 @@ class _NewSettingsScreenState extends State<NewSettingsScreen> {
 
     // Content-Specific Navigation Overrides.
     final selectedKey = _menuItems[_selectedMenuIndex].localeKey;
+    if (selectedKey == AppLocale.general &&
+        _generalSettingsKey.currentState?.isSfxVolumeEditing == true) {
+      return true;
+    }
     if (selectedKey == AppLocale.themes) {
       _themesSettingsKey.currentState?.navigateUp();
       return true;
@@ -287,6 +292,10 @@ class _NewSettingsScreenState extends State<NewSettingsScreen> {
     }
 
     final selectedKey = _menuItems[_selectedMenuIndex].localeKey;
+    if (selectedKey == AppLocale.general &&
+        _generalSettingsKey.currentState?.isSfxVolumeEditing == true) {
+      return true;
+    }
     if (selectedKey == AppLocale.themes) {
       _themesSettingsKey.currentState?.navigateDown();
       return true;
@@ -312,6 +321,10 @@ class _NewSettingsScreenState extends State<NewSettingsScreen> {
     if (_focusOnMenu) return;
 
     final selectedKey = _menuItems[_selectedMenuIndex].localeKey;
+    if (selectedKey == AppLocale.general &&
+        _generalSettingsKey.currentState?.adjustSfxVolume(-1) == true) {
+      return;
+    }
     if (selectedKey == AppLocale.themes) {
       final returnToMenu =
           _themesSettingsKey.currentState?.navigateLeft() ?? true;
@@ -350,6 +363,10 @@ class _NewSettingsScreenState extends State<NewSettingsScreen> {
     }
 
     final selectedKey = _menuItems[_selectedMenuIndex].localeKey;
+    if (selectedKey == AppLocale.general &&
+        _generalSettingsKey.currentState?.adjustSfxVolume(1) == true) {
+      return;
+    }
     if (selectedKey == AppLocale.themes) {
       _themesSettingsKey.currentState?.navigateRight();
     } else if (selectedKey == AppLocale.systemArt) {
@@ -364,6 +381,17 @@ class _NewSettingsScreenState extends State<NewSettingsScreen> {
     } else {
       _selectContentItem();
     }
+  }
+
+  /// Lets B commit an in-progress settings control before its normal tab-level
+  /// back behavior runs.
+  bool _backCurrent() {
+    if (_focusOnMenu) return false;
+    if (_menuItems[_selectedMenuIndex].localeKey == AppLocale.general) {
+      return _generalSettingsKey.currentState?.commitSfxVolumeEditing() ??
+          false;
+    }
+    return false;
   }
 
   /// Delete Protocol: routes the X button to a delete action on the focused

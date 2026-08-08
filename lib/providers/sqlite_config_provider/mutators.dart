@@ -164,6 +164,21 @@ extension SqliteConfigMutators on SqliteConfigProvider {
     _notify();
   }
 
+  /// Updates and persists the UI SFX volume.
+  ///
+  /// The gamepad slider previews each temporary adjustment itself, then calls
+  /// this with [playPreview] false when the user confirms the final value.
+  Future<void> updateSfxVolume(double value, {bool playPreview = true}) async {
+    final volume = value.clamp(0.0, SfxService.maxVolume).toDouble();
+    _config = _config.copyWith(sfxVolume: volume);
+    SfxService().setVolume(volume);
+    _notify();
+    if (playPreview) {
+      unawaited(SfxService().playVolumePreview());
+    }
+    await SqliteConfigService.saveConfig(_config);
+  }
+
   /// Updates the app display language and applies it immediately
   Future<void> updateAppLanguage(String langCode) async {
     _config = _config.copyWith(appLanguage: langCode);

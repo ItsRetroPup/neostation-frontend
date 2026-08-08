@@ -131,6 +131,8 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.autoUpdateSystemsSubtitle: '시작할 때 시스템과 에뮬레이터 설정 업데이트를 확인합니다',
   AppLocale.sfxSounds: 'UI 조작음',
   AppLocale.sfxSoundsSubtitle: '게임패드, 키보드, 터치로 조작할 때 효과음을 재생합니다',
+  AppLocale.sfxVolume: 'UI 소리 볼륨',
+  AppLocale.sfxVolumeSubtitle: '볼륨을 조절하고 미리 듣기 소리를 재생합니다',
   AppLocale.use12HourClock: '12시간제 사용',
   AppLocale.use12HourClockSubtitle: '시계를 24시간제가 아닌 오전/오후 12시간제로 표시합니다',
   AppLocale.fullscreenMode: '전체 화면 모드',
