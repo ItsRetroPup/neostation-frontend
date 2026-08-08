@@ -103,7 +103,8 @@ flutter:
     - assets/manifest.json
     - assets/data/
     - assets/systems/
-    - assets/sounds/
+    - assets/sounds/neostation/
+    - assets/sounds/maple/
   shaders:
     - assets/shaders/stripes.frag
     - assets/shaders/fluid.frag

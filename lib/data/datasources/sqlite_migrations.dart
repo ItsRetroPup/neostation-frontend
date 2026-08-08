@@ -336,6 +336,9 @@ class SqliteMigrations {
       case 110:
         await _migrateToVersion110(db);
         break;
+      case 112:
+        await _migrateToVersion112(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -5280,6 +5283,26 @@ class SqliteMigrations {
       _log.i('Migration v110 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v110: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v112: Persists the selected UI sound-effect theme.
+  static Future<void> _migrateToVersion112(Database db) async {
+    _log.i('Migration v112: Adding sfx_theme to user_config');
+    try {
+      final columns = db
+          .select('PRAGMA table_info(user_config)')
+          .map((column) => column['name'].toString())
+          .toList();
+      if (!columns.contains('sfx_theme')) {
+        db.execute(
+          "ALTER TABLE user_config ADD COLUMN sfx_theme TEXT DEFAULT 'NeoStation'",
+        );
+      }
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v111: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

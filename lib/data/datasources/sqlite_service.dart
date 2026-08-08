@@ -421,7 +421,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 110;
+  static const int _databaseVersion = 112;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -1750,6 +1750,7 @@ class SqliteService {
         setup_completed INTEGER DEFAULT 0,
         hide_bottom_screen INTEGER DEFAULT 0,
         sfx_enabled INTEGER DEFAULT 1,
+        sfx_theme TEXT DEFAULT 'NeoStation',
         system_sort_by TEXT DEFAULT 'alphabetical',
         system_sort_order TEXT DEFAULT 'asc',
         app_language TEXT DEFAULT 'en',
@@ -2521,6 +2522,7 @@ class SqliteService {
     int? setupCompleted,
     int? hideBottomScreen,
     int? sfxEnabled,
+    String? sfxTheme,
     int? use12HourClock,
     String? systemSortBy,
     String? systemSortOrder,
@@ -2590,6 +2592,7 @@ class SqliteService {
     if (sfxEnabled != null) {
       newConfig['sfx_enabled'] = sfxEnabled;
     }
+    if (sfxTheme != null) newConfig['sfx_theme'] = sfxTheme;
     if (use12HourClock != null) {
       newConfig['use_12_hour_clock'] = use12HourClock;
     }

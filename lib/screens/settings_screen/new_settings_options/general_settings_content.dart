@@ -18,6 +18,7 @@ import 'settings_title.dart';
 import 'widgets/setting_row.dart';
 import 'widgets/setting_value_chip.dart';
 import 'widgets/language_picker_overlay.dart';
+import 'widgets/sound_theme_picker_overlay.dart';
 import '../../../services/permission_service.dart';
 
 /// A specialized content panel for system-wide configuration, including platform-specific orchestration (Windows/Android/Linux).
@@ -237,6 +238,15 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
       return;
     }
     currentItemIndex++;
+
+    // Protocol: Sound theme. This row only exists while SFX are enabled.
+    if (configProvider.config.sfxEnabled) {
+      if (index == currentItemIndex) {
+        _showSoundThemePicker(context, _itemKeys[currentItemIndex]);
+        return;
+      }
+      currentItemIndex++;
+    }
 
     // Protocol: 12-Hour Clock Format.
     if (index == currentItemIndex) {
@@ -465,6 +475,29 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                     ),
                   );
                 }(),
+
+                if (config.sfxEnabled) ...[
+                  SizedBox(height: 12.r),
+                  () {
+                    final index = currentItemIdx++;
+                    return SettingRow(
+                      key: _itemKeys[index],
+                      focused:
+                          widget.isContentFocused &&
+                          widget.selectedContentIndex == index,
+                      title: AppLocale.sfxTheme.getString(context),
+                      subtitle: AppLocale.sfxThemeSubtitle.getString(context),
+                      trailing: GestureDetector(
+                        onTap: () =>
+                            _showSoundThemePicker(context, _itemKeys[index]),
+                        child: SettingValueChip(
+                          text: config.sfxTheme,
+                          trailingIcon: Symbols.arrow_drop_down_rounded,
+                        ),
+                      ),
+                    );
+                  }(),
+                ],
 
                 // Setting: 12-Hour Clock Format.
                 SizedBox(height: 12.r),
@@ -736,6 +769,31 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
 
     if (result != null && mounted) {
       context.read<SqliteConfigProvider>().updateAppLanguage(result);
+    }
+  }
+
+  /// Displays the sound-theme dropdown and persists the selected theme.
+  void _showSoundThemePicker(BuildContext ctx, GlobalKey rowKey) async {
+    final RenderBox? box =
+        rowKey.currentContext?.findRenderObject() as RenderBox?;
+    final offset = box?.localToGlobal(Offset.zero) ?? Offset.zero;
+    final size = box?.size ?? Size.zero;
+    final currentTheme = ctx.read<SqliteConfigProvider>().config.sfxTheme;
+    final selectedTheme = await showGeneralDialog<String>(
+      context: ctx,
+      barrierDismissible: true,
+      barrierLabel: 'Sound theme picker',
+      barrierColor: Colors.transparent,
+      pageBuilder: (context, animation, _) => FadeTransition(
+        opacity: animation,
+        child: SoundThemePickerOverlay(
+          anchorOffset: offset + Offset(size.width, size.height / 2),
+          currentTheme: currentTheme,
+        ),
+      ),
+    );
+    if (selectedTheme != null && ctx.mounted) {
+      await ctx.read<SqliteConfigProvider>().updateSfxTheme(selectedTheme);
     }
   }
 }

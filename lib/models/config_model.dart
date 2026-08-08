@@ -84,6 +84,9 @@ class ConfigModel {
   /// Whether UI sound effects (navigation, clicks) are enabled.
   final bool sfxEnabled;
 
+  /// Name of the UI sound-effect theme to use.
+  final String sfxTheme;
+
   /// Whether the header clock should use a 12-hour format with AM/PM (false = 24-hour).
   final bool use12HourClock;
 
@@ -193,6 +196,7 @@ class ConfigModel {
     this.hideBottomScreen = false,
     this.videoSound = false,
     this.sfxEnabled = true,
+    this.sfxTheme = 'NeoStation',
     this.use12HourClock = false,
     this.systemSortBy = 'alphabetical',
     this.systemSortOrder = 'asc',
@@ -287,6 +291,8 @@ class ConfigModel {
       sfxEnabled:
           (json['sfxEnabled'] ?? true).toString().toLowerCase() == 'true' ||
           (json['sfx_enabled'] ?? 1).toString() == '1',
+      sfxTheme: (json['sfxTheme'] ?? json['sfx_theme'] ?? 'NeoStation')
+          .toString(),
       use12HourClock:
           (json['use12HourClock'] ?? json['use_12_hour_clock'] ?? 0)
                   .toString() ==
@@ -417,6 +423,7 @@ class ConfigModel {
       'hideBottomScreen': hideBottomScreen,
       'videoSound': videoSound,
       'sfxEnabled': sfxEnabled,
+      'sfxTheme': sfxTheme,
       'use12HourClock': use12HourClock,
       'systemSortBy': systemSortBy,
       'systemSortOrder': systemSortOrder,
@@ -462,6 +469,7 @@ class ConfigModel {
     bool? hideBottomScreen,
     bool? videoSound,
     bool? sfxEnabled,
+    String? sfxTheme,
     bool? use12HourClock,
     String? systemSortBy,
     String? systemSortOrder,
@@ -504,6 +512,7 @@ class ConfigModel {
       hideBottomScreen: hideBottomScreen ?? this.hideBottomScreen,
       videoSound: videoSound ?? this.videoSound,
       sfxEnabled: sfxEnabled ?? this.sfxEnabled,
+      sfxTheme: sfxTheme ?? this.sfxTheme,
       use12HourClock: use12HourClock ?? this.use12HourClock,
       systemSortBy: systemSortBy ?? this.systemSortBy,
       systemSortOrder: systemSortOrder ?? this.systemSortOrder,

@@ -158,10 +158,18 @@ extension SqliteConfigMutators on SqliteConfigProvider {
   /// Updates whether UI navigation SFX sounds are enabled
   Future<void> updateSfxEnabled(bool value) async {
     _config = _config.copyWith(sfxEnabled: value);
-    await SqliteConfigService.saveConfig(_config);
     // Apply immediately to the running service — no restart needed.
     SfxService().setEnabled(value);
     _notify();
+    await SqliteConfigService.saveConfig(_config);
+  }
+
+  /// Updates the active UI sound-effect theme and applies it immediately.
+  Future<void> updateSfxTheme(String value) async {
+    _config = _config.copyWith(sfxTheme: value);
+    _notify();
+    await SfxService().setTheme(value);
+    await SqliteConfigService.saveConfig(_config);
   }
 
   /// Updates the app display language and applies it immediately

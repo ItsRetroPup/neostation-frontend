@@ -5,6 +5,21 @@ import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// The complete set of sounds used for UI feedback.
+class SfxTheme {
+  final String name;
+  final List<String> navigationSounds;
+  final String enterSound;
+  final String backSound;
+
+  const SfxTheme({
+    required this.name,
+    required this.navigationSounds,
+    required this.enterSound,
+    required this.backSound,
+  });
+}
+
 /// Independent service for managing user interface sound effects (SFX).
 ///
 /// Operates in isolation from [MusicPlayerService] but shares the same
@@ -21,18 +36,25 @@ class SfxService {
   factory SfxService() => _instance;
   SfxService._internal();
 
-  /// List of navigation sound asset paths.
-  static const List<String> _navSounds = [
-    'assets/sounds/nav1.wav',
-    'assets/sounds/nav2.wav',
-    'assets/sounds/nav3.wav',
-  ];
+  static const SfxTheme neoStationTheme = SfxTheme(
+    name: 'NeoStation',
+    navigationSounds: [
+      'assets/sounds/neostation/nav1.wav',
+      'assets/sounds/neostation/nav2.wav',
+      'assets/sounds/neostation/nav3.wav',
+    ],
+    enterSound: 'assets/sounds/neostation/enter.wav',
+    backSound: 'assets/sounds/neostation/back.wav',
+  );
 
-  /// Path to the enter/confirm sound asset.
-  static const String _enterSound = 'assets/sounds/enter.wav';
+  static const SfxTheme mapleTheme = SfxTheme(
+    name: 'Maple',
+    navigationSounds: ['assets/sounds/maple/nav.wav'],
+    enterSound: 'assets/sounds/maple/enter.wav',
+    backSound: 'assets/sounds/maple/back.wav',
+  );
 
-  /// Path to the back/cancel sound asset.
-  static const String _backSound = 'assets/sounds/back.wav';
+  static const List<SfxTheme> availableThemes = [neoStationTheme, mapleTheme];
 
   /// Threshold to collapse rapid duplicate calls into a single playback event.
   static const int _debounceMs = 60;
@@ -55,12 +77,15 @@ class SfxService {
   /// Global toggle for SFX audio.
   bool _enabled = true;
 
+  SfxTheme _theme = neoStationTheme;
+
   /// Global SFX playback volume (0.0 to 0.75).
   double _volume = 0.75;
 
   double get volume => _volume;
   bool get isInitialized => _isInitialized;
   bool get isEnabled => _enabled;
+  String get themeName => _theme.name;
 
   Completer<void>? _initCompleter;
 
@@ -94,7 +119,11 @@ class SfxService {
         await SoLoud.instance.init();
       }
 
-      final allPaths = [..._navSounds, _enterSound, _backSound];
+      final allPaths = [
+        ..._theme.navigationSounds,
+        _theme.enterSound,
+        _theme.backSound,
+      ];
       for (final path in allPaths) {
         try {
           AudioSource? source;
@@ -180,7 +209,7 @@ class SfxService {
     if (!_isInitialized || _sources.isEmpty) return;
 
     final index = _pickRandomNavIndex();
-    final path = _navSounds[index];
+    final path = _theme.navigationSounds[index];
     await _play(path);
     _log.d('[SfxService] nav[$index]: $path');
   }
@@ -191,7 +220,7 @@ class SfxService {
     if (!_debounce()) return;
     await _ensureInitialized();
     if (!_isInitialized) return;
-    await _play(_enterSound);
+    await _play(_theme.enterSound);
     _log.d('[SfxService] enter');
   }
 
@@ -201,7 +230,7 @@ class SfxService {
     if (!_debounce()) return;
     await _ensureInitialized();
     if (!_isInitialized) return;
-    await _play(_backSound);
+    await _play(_theme.backSound);
     _log.d('[SfxService] back');
   }
 
@@ -217,6 +246,24 @@ class SfxService {
   void setEnabled(bool value) {
     _enabled = value;
     _log.d('[SfxService] SFX ${value ? 'enabled' : 'disabled'}');
+  }
+
+  /// Selects a sound theme and reloads only that theme when the service is live.
+  Future<void> setTheme(String name) async {
+    final theme = availableThemes.firstWhere(
+      (candidate) => candidate.name == name,
+      orElse: () => neoStationTheme,
+    );
+    if (theme.name == _theme.name) return;
+
+    _theme = theme;
+    _lastNavIndex = -1;
+    _log.i('[SfxService] Theme selected: ${theme.name}');
+
+    if (_isInitialized) {
+      await dispose();
+      await init();
+    }
   }
 
   /// Validates if a playback request should proceed based on the debounce threshold.
@@ -251,11 +298,11 @@ class SfxService {
 
   /// Selects a random navigation sound index that differs from the last played index.
   int _pickRandomNavIndex() {
-    if (_navSounds.length == 1) return 0;
+    if (_theme.navigationSounds.length == 1) return 0;
 
     int index;
     do {
-      index = _random.nextInt(_navSounds.length);
+      index = _random.nextInt(_theme.navigationSounds.length);
     } while (index == _lastNavIndex);
 
     _lastNavIndex = index;

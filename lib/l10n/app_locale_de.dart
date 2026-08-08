@@ -151,6 +151,8 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.sfxSounds: 'Benutzeroberflächen-Sounds',
   AppLocale.sfxSoundsSubtitle:
       'Spielt Sounds für die Navigation mit Controller, Tastatur und Touch ab',
+  AppLocale.sfxTheme: 'Soundthema',
+  AppLocale.sfxThemeSubtitle: 'Wählt die Sounds für die UI-Rückmeldung',
   AppLocale.use12HourClock: '12-Stunden-Format',
   AppLocale.use12HourClockSubtitle:
       'Uhrzeit im 12-Stunden-Format mit AM/PM statt im 24-Stunden-Format anzeigen',

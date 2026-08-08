@@ -388,10 +388,15 @@ void main() async {
   // Background music initialization removed
 
   // Initialize SFX service for navigation sounds (fire-and-forget).
-  SfxService().init().then((_) {
-    // Apply the persisted enabled/disabled preference immediately.
-    SfxService().setEnabled(sqliteConfigProvider.config.sfxEnabled);
-  });
+  SfxService()
+      .setTheme(sqliteConfigProvider.config.sfxTheme)
+      .then((_) {
+        return SfxService().init();
+      })
+      .then((_) {
+        // Apply the persisted enabled/disabled preference immediately.
+        SfxService().setEnabled(sqliteConfigProvider.config.sfxEnabled);
+      });
 }
 
 /// Startup strings for the current device locale.
