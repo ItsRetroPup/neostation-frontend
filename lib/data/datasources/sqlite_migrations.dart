@@ -336,6 +336,15 @@ class SqliteMigrations {
       case 110:
         await _migrateToVersion110(db);
         break;
+      case 111:
+        await _migrateToVersion111(db);
+        break;
+      case 112:
+        await _migrateToVersion112(db);
+        break;
+      case 113:
+        await _migrateToVersion113(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -5280,6 +5289,75 @@ class SqliteMigrations {
       _log.i('Migration v110 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v110: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v111: Adds the per-system `subfolder_view` flag to
+  /// `user_system_settings`, which decides whether that system's ROM
+  /// subfolders are shown as navigable folders instead of a flat game list.
+  static Future<void> _migrateToVersion111(Database db) async {
+    _log.i('Migration v111: Adding subfolder_view to user_system_settings');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_system_settings)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('subfolder_view')) {
+        db.execute(
+          'ALTER TABLE user_system_settings ADD COLUMN subfolder_view INTEGER DEFAULT 0',
+        );
+        _log.i('Column subfolder_view added via v111');
+      } else {
+        _log.i('Column subfolder_view already exists');
+      }
+      _log.i('Migration v111 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v111: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v112: intentionally a no-op.
+  ///
+  /// It originally added `user_config.subfolder_view_default`, the master
+  /// toggle for the subfolder view. That global setting was dropped before
+  /// release in favour of the per-system toggle alone, so nothing reads the
+  /// column. The version number is kept (rather than renumbered away) so
+  /// devices that already migrated to v112 do not read as a downgrade, which
+  /// would recreate the whole database.
+  static Future<void> _migrateToVersion112(Database db) async {
+    _log.i('Migration v112: no-op (global subfolder toggle removed)');
+  }
+
+  /// Migration v113: Backfills the per-system subfolder column if absent.
+  ///
+  /// v111/v112 were originally authored as v96/v97 on this feature branch and
+  /// renumbered when main claimed those numbers. A device that ran a *different*
+  /// branch's v111 first is already past that version, so its `case 111` never
+  /// fires and `user_system_settings.subfolder_view` is never created — every
+  /// query joining it then fails with "no such column" and the library reads as
+  /// 0 systems. Same failure mode main fixed in v97 for `game_carousel_card_style`.
+  ///
+  /// Idempotent: adds the column only when missing, so it is a no-op on
+  /// databases that took the normal v111 path.
+  static Future<void> _migrateToVersion113(Database db) async {
+    _log.i('Migration v113: Backfilling subfolder columns if absent');
+    try {
+      final settingsColumns = db
+          .select('PRAGMA table_info(user_system_settings)')
+          .map((c) => c['name'].toString())
+          .toList();
+      if (!settingsColumns.contains('subfolder_view')) {
+        db.execute(
+          'ALTER TABLE user_system_settings ADD COLUMN subfolder_view INTEGER DEFAULT 0',
+        );
+        _log.i('Column subfolder_view backfilled via v113');
+      }
+
+      _log.i('Migration v113 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v113: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

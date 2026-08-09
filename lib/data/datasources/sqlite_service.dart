@@ -421,7 +421,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 110;
+  static const int _databaseVersion = 113;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -469,7 +469,8 @@ class SqliteService {
              ss.hide_logo,
              ss.hide_extension,
              ss.hide_parentheses,
-             ss.hide_brackets
+             ss.hide_brackets,
+             ss.subfolder_view
       FROM app_systems s
       LEFT JOIN user_system_settings ss ON s.id = ss.app_system_id
     ''');
@@ -1928,6 +1929,7 @@ class SqliteService {
         custom_logo_path TEXT,
         hide_logo INTEGER DEFAULT 0,
         prefer_file_name INTEGER DEFAULT 0,
+        subfolder_view INTEGER DEFAULT 0,
         esde_media_dir TEXT,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (app_system_id) REFERENCES app_systems(id) ON DELETE CASCADE,
@@ -2806,6 +2808,14 @@ class SqliteService {
     await _updateSystemSetting(systemId, 'prefer_file_name', enabled ? 1 : 0);
   }
 
+  /// Sets whether ROM subfolders are shown as navigable folders in the game list.
+  static Future<void> setSystemSubfolderView(
+    String systemId,
+    bool enabled,
+  ) async {
+    await _updateSystemSetting(systemId, 'subfolder_view', enabled ? 1 : 0);
+  }
+
   /// Retrieves the complete configuration for a system.
   static Future<Map<String, dynamic>> getSystemSettings(String systemId) async {
     final db = await instance.database;
@@ -2987,7 +2997,8 @@ class SqliteService {
              ss.custom_background_path,
              ss.custom_logo_path,
              ss.hide_logo,
-             ss.prefer_file_name
+             ss.prefer_file_name,
+             ss.subfolder_view
       FROM app_systems s
       LEFT JOIN user_detected_systems uds ON s.id = uds.app_system_id
       LEFT JOIN user_system_settings ss ON s.id = ss.app_system_id
@@ -3155,6 +3166,7 @@ class SqliteService {
           'custom_logo_path',
           'hide_logo',
           'prefer_file_name',
+          'subfolder_view',
         ],
         where: 'app_system_id = ?',
         whereArgs: [system.id],
@@ -3180,6 +3192,9 @@ class SqliteService {
               (int.tryParse(row['hide_logo']?.toString() ?? '0') ?? 0) == 1,
           preferFileName:
               (int.tryParse(row['prefer_file_name']?.toString() ?? '0') ?? 0) ==
+              1,
+          subfolderView:
+              (int.tryParse(row['subfolder_view']?.toString() ?? '0') ?? 0) ==
               1,
         );
       }
@@ -3464,7 +3479,8 @@ class SqliteService {
              ss.hide_extension,
              ss.hide_parentheses,
              ss.hide_brackets,
-             ss.prefer_file_name
+             ss.prefer_file_name,
+             ss.subfolder_view
       FROM app_systems s
       LEFT JOIN user_system_settings ss ON s.id = ss.app_system_id
       ORDER BY s.real_name ASC
