@@ -577,7 +577,8 @@ class SqliteMigrations {
       case 141:
         await _migrateToVersion141(db);
         break;
-      // 142 and 143 are claimed by another branch that is not merged yet.
+      // 142 and 143 were reserved for a branch that renumbered above this
+      // version before merging, so they stay permanently unused.
       case 144:
         await _migrateToVersion144(db);
         break;
@@ -643,6 +644,12 @@ class SqliteMigrations {
         break;
       case 170:
         await _migrateToVersion170(db);
+        break;
+      case 175:
+        await _migrateToVersion175(db);
+        break;
+      case 176:
+        await _migrateToVersion176(db);
         break;
       default:
         _log.w('No migration defined for version $version');
@@ -6885,6 +6892,69 @@ class SqliteMigrations {
     }
   }
 
+  /// Migration v175: Adds the `user_discovery_picks` table backing the weekly
+  /// Discovery board.
+  ///
+  /// One row per slot per ISO week (`'2026-W33'` + `'gotw'`), so re-rolling a
+  /// single section is a one-row write rather than the read-modify-write a JSON
+  /// blob in `user_config` would need — the dual-engine narrow-write discipline
+  /// the concurrent-write test enforces.
+  ///
+  /// Deliberately no foreign key to `user_roms`: when a rescan removes a ROM,
+  /// the pick should be re-resolved into a fresh choice for that slot, not
+  /// silently cascade-deleted and leave the section blank for the rest of the
+  /// week. `COLLATE NOCASE` matches `user_roms.rom_path`.
+  ///
+  /// Numbered 175, having started at 132 and passed through 142, 151, 160 and
+  /// 161. A reserved slot is not a safe slot: each time main's own version
+  /// climbed past the pair, a device upgrading from main would already sit past
+  /// both and skip them silently — the table would simply never exist. Every
+  /// rebase onto main therefore has to re-check the pair against the highest
+  /// number in use anywhere, not just against the numbers main itself occupies:
+  /// main reached 170, with 169 and 171-174 still claimed by open PRs (#604,
+  /// #665, #674, #677), by the time this landed on 175.
+  static Future<void> _migrateToVersion175(Database db) async {
+    _log.i('Migration v175: Adding user_discovery_picks table');
+
+    try {
+      final tableExists = db.select('''
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='user_discovery_picks'
+        LIMIT 1
+      ''');
+
+      if (tableExists.isEmpty) {
+        db.execute('''
+          CREATE TABLE user_discovery_picks (
+            week_key TEXT NOT NULL,
+            slot_id TEXT NOT NULL,
+            section TEXT NOT NULL,
+            genre_bucket TEXT,
+            slot_order INTEGER NOT NULL DEFAULT 0,
+            rom_path TEXT NOT NULL COLLATE NOCASE,
+            reroll_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (week_key, slot_id)
+          )
+        ''');
+        _log.i('Table user_discovery_picks created');
+      } else {
+        _log.i('Table user_discovery_picks already exists');
+      }
+
+      db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_user_discovery_picks_week
+        ON user_discovery_picks(week_key)
+      ''');
+
+      _log.i('Migration v175 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v175: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
   /// Migration v154: Reopens ROMs parked because their archive could not be
   /// extracted.
   ///
@@ -7257,6 +7327,40 @@ class SqliteMigrations {
       _log.i('Migration v165 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v165: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v176: Adds `user_config.hide_tab_discovery`, the visibility
+  /// toggle for the Discovery tab.
+  ///
+  /// Split from [_migrateToVersion175] rather than folded into it so that a
+  /// collision with a version another branch claims in the meantime only forces
+  /// one of the two to move — which is exactly what happened: both started at
+  /// 132/133 and moved together, to 142/143, then 151/152, then 160/161, then
+  /// 161/162, then 175/176, on successive rebases onto main.
+  ///
+  /// Dev builds that ran this branch at 161/162 already sit past main's own
+  /// v161 (`game_list_size`) and v162 (`android_apps_as_tab`) and would skip
+  /// both, so they are re-run here first; every step is idempotent.
+  static Future<void> _migrateToVersion176(Database db) async {
+    await _migrateToVersion162(db);
+    _log.i('Migration v176: Adding hide_tab_discovery to user_config');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('hide_tab_discovery')) {
+        db.execute(
+          'ALTER TABLE user_config ADD COLUMN hide_tab_discovery INTEGER DEFAULT 0',
+        );
+        _log.i('Column hide_tab_discovery added via v176');
+      } else {
+        _log.i('Column hide_tab_discovery already exists');
+      }
+      _log.i('Migration v176 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v176: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }
