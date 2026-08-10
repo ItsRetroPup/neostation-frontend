@@ -230,22 +230,33 @@ class _DiscoveryStorefrontState extends State<DiscoveryStorefront> {
             ? 108.r
             : 92.r;
 
-        return SingleChildScrollView(
-          controller: _scrollController,
-          padding: EdgeInsets.symmetric(horizontal: 12.r),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Clears the global header, as every other tab does.
-              SizedBox(height: 64.r),
-              for (var i = 0; i < widget.rows.length; i++) ...[
-                _buildRow(context, i, widget.rows[i], cardWidth),
-                SizedBox(height: 14.r),
-              ],
-              // Clears the footer legend, which floats over the content.
-              SizedBox(height: 48.r),
-            ],
-          ),
+        // The header clearance sits OUTSIDE the scroll view on purpose: the
+        // global header floats over the whole tab, so a spacer inside the
+        // scrollable would scroll away with the content and let the shelves
+        // ride up behind it. Reserving the space here starts the viewport
+        // below the header, which is what the other tabs do.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: 64.r),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: EdgeInsets.symmetric(horizontal: 12.r),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < widget.rows.length; i++) ...[
+                      _buildRow(context, i, widget.rows[i], cardWidth),
+                      SizedBox(height: 14.r),
+                    ],
+                    // Clears the footer legend, which floats over the content.
+                    SizedBox(height: 48.r),
+                  ],
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
