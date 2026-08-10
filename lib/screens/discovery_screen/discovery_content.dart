@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,20 +7,13 @@ import 'package:provider/provider.dart';
 import 'package:neostation/data/datasources/sqlite_service.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/models/discovery_models.dart';
-import 'package:neostation/models/game_model.dart';
-import 'package:neostation/models/secondary_display_state.dart';
 import 'package:neostation/providers/discovery_provider.dart';
 import 'package:neostation/providers/file_provider.dart';
-import 'package:neostation/providers/retro_achievements_provider.dart';
 import 'package:neostation/screens/app_screen.dart';
 import 'package:neostation/screens/game_screen/my_games_list.dart';
 import 'package:neostation/services/game_service.dart';
-import 'package:neostation/services/secondary_achievements_controller.dart';
 import 'package:neostation/services/sfx_service.dart';
-import 'package:neostation/sync/sync_manager.dart';
-import 'package:neostation/utils/game_launch_utils.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
-import 'package:neostation/widgets/custom_notification.dart';
 
 import 'discovery_footer.dart';
 import 'discovery_storefront.dart';
@@ -42,9 +33,6 @@ class DiscoveryContent extends StatefulWidget {
 
 class _DiscoveryContentState extends State<DiscoveryContent> {
   late final GamepadNavigation _gamepadNav;
-  final SecondaryAchievementsController _achievementsController =
-      SecondaryAchievementsController();
-  SecondaryDisplayState? _secondaryDisplayState;
 
   int _selectedRow = 0;
   int _selectedColumn = 0;
@@ -62,8 +50,7 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
       onNavigateDown: _navigateDown,
       onNavigateLeft: _navigateLeft,
       onNavigateRight: _navigateRight,
-      onSelectItem: _launchSelected,
-      onXButton: _goToSelected,
+      onSelectItem: _openSelected,
       // Y is wired through the favourite callback: that is simply what the
       // translator routes the Y button to, and this tab has no favourites.
       onFavorite: _rerollSelected,
@@ -91,16 +78,11 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
         if (mounted) context.read<DiscoveryProvider>().load();
       });
     });
-
-    if (Platform.isAndroid) {
-      _secondaryDisplayState = SecondaryDisplayState.instance;
-    }
   }
 
   @override
   void dispose() {
     GamepadNavigationManager.popLayer('discovery_content');
-    _achievementsController.dispose();
     _gamepadNav.dispose();
     super.dispose();
   }
@@ -181,80 +163,20 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
       _selectedRow = row;
       _selectedColumn = column;
     });
-    _launchSelected();
+    _openSelected();
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  /// A: launch the focused pick.
+  /// A: open the focused pick in its system's library, selected.
   ///
-  /// Mirrors `SearchScreen._launch` — the same secondary-display push, the same
-  /// sync-provider guard and the same reactivation on close.
-  Future<void> _launchSelected() async {
-    final entry = _selectedEntry;
-    if (entry == null) return;
-
-    final dbGame = entry.game;
-    final folder = dbGame.systemFolderName;
-    if (folder == null || folder.isEmpty) return;
-
-    final fileProvider = context.read<FileProvider>();
-    final syncProvider = context.read<SyncManager>().active;
-    if (syncProvider == null) return;
-
-    final system = await SqliteService.getSystemByFolderName(folder);
-    if (!mounted) return;
-
-    final game = GameModel.fromDatabaseModel(dbGame);
-
-    _gamepadNav.deactivate();
-
-    // Drives the bottom screen's "Now Playing" page and the live RA panel for
-    // this session. Not awaited so it never blocks the emulator handoff.
-    // ignore: unawaited_futures
-    _achievementsController.pushForLaunch(
-      state: _secondaryDisplayState,
-      provider: context.read<RetroAchievementsProvider>(),
-      game: game,
-      systemFolderName: system.primaryFolderName,
-      boxartPath: SecondaryAchievementsController.resolveBoxart(
-        game,
-        system.primaryFolderName,
-        fileProvider,
-      ),
-    );
-
-    await launchGameWithDialog(
-      context: context,
-      game: game,
-      system: system,
-      fileProvider: fileProvider,
-      syncProvider: syncProvider,
-      onGameClosed: () {
-        _achievementsController.stop(hidePanel: true);
-        GamepadNavigationManager.reactivate();
-        // Play time and last-played just changed, and both feed the picks'
-        // "never played" badges and the hero's eligibility.
-        if (mounted) context.read<DiscoveryProvider>().load(force: true);
-      },
-      onLaunchFailed: (ctx, result) async {
-        _achievementsController.stop(hidePanel: true);
-        if (mounted) {
-          AppNotification.showNotification(
-            context,
-            AppLocale.errorLaunchingGame
-                .getString(context)
-                .replaceFirst('{error}', ''),
-            type: NotificationType.error,
-          );
-        }
-        GamepadNavigationManager.reactivate();
-      },
-    );
-  }
-
-  /// X: open the pick's system list with that game selected.
-  Future<void> _goToSelected() async {
+  /// Discovery deliberately does not launch anything itself. A pick is a
+  /// suggestion, and the useful next step is to look at it — description,
+  /// video, screenshots, achievements — which is exactly what the games list
+  /// already shows for a selected game, Play button included. Rebuilding that
+  /// card here would duplicate the whole of `my_games_list`'s state machine
+  /// (video controller, artwork versioning, scrape progress) for no gain.
+  Future<void> _openSelected() async {
     final entry = _selectedEntry;
     if (entry == null) return;
 
@@ -265,7 +187,7 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
     final system = await SqliteService.getSystemByFolderName(folder);
     if (!mounted) return;
 
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => SystemGamesList(
           system: system,
@@ -274,6 +196,10 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
         ),
       ),
     );
+
+    // The user may well have played the game from in there, and play time feeds
+    // both the "never played" badges and the hero's eligibility.
+    if (mounted) await context.read<DiscoveryProvider>().load(force: true);
   }
 
   /// Y: swap the focused section's pick for a different game.
@@ -337,8 +263,7 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
               ),
             ),
             DiscoveryFooter(
-              onPlay: _launchSelected,
-              onGoToGame: _goToSelected,
+              onOpen: _openSelected,
               onReroll: _rerollSelected,
               onBack: _handleBack,
             ),
