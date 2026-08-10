@@ -250,8 +250,10 @@ class _DiscoveryStorefrontState extends State<DiscoveryStorefront> {
                       _buildRow(context, i, widget.rows[i], cardWidth),
                       SizedBox(height: 14.r),
                     ],
-                    // Clears the footer legend, which floats over the content.
-                    SizedBox(height: 48.r),
+                    // Breathing room at the end of the board. The footer takes
+                    // its own space below this viewport, so there is nothing to
+                    // clear here.
+                    SizedBox(height: 8.r),
                   ],
                 ),
               ),

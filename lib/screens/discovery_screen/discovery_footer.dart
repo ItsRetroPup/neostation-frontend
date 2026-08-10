@@ -20,29 +20,25 @@ class DiscoveryFooter extends CoreFooter {
   final VoidCallback onReroll;
   final VoidCallback onBack;
 
-  /// The version label is positioned over the right end of the centred control
-  /// row, and this legend carries five controls — enough to run underneath it
-  /// and render both unreadable. The controls win; the version is on every
-  /// other screen already.
+  /// Right-aligns the controls rather than centring them.
+  ///
+  /// The split layout is what puts Play against the right edge of the screen;
+  /// the centred layout would leave it in the middle of a floating group. It
+  /// also drops the version label, which the centred layout positions on the
+  /// right — directly on top of a five-control row.
   @override
-  bool get showVersion => false;
+  bool get centerControls => false;
 
   @override
   List<Widget> buildControls(BuildContext context) {
     final theme = Theme.of(context);
 
+    // Ordered so the primary action sits furthest right, under the thumb, with
+    // Back next to it: Navigate, Go to game, Re-roll, Back, Play.
     return [
       GamepadControl(
         iconPath: 'assets/images/gamepad/Xbox_D-pad_ALL.png',
         label: AppLocale.hintNavigate.getString(context),
-      ),
-      SizedBox(width: 8.r),
-      GamepadControl(
-        iconPath: 'assets/images/gamepad/Xbox_A_button.png',
-        label: AppLocale.play.getString(context),
-        onTap: onPlay,
-        textColor: Colors.white,
-        backgroundColor: const Color(0xFF2ECC71),
       ),
       SizedBox(width: 8.r),
       GamepadControl(
@@ -67,6 +63,14 @@ class DiscoveryFooter extends CoreFooter {
         onTap: onBack,
         backgroundColor: theme.colorScheme.tertiary,
         textColor: theme.colorScheme.onTertiary,
+      ),
+      SizedBox(width: 8.r),
+      GamepadControl(
+        iconPath: 'assets/images/gamepad/Xbox_A_button.png',
+        label: AppLocale.play.getString(context),
+        onTap: onPlay,
+        textColor: Colors.white,
+        backgroundColor: const Color(0xFF2ECC71),
       ),
     ];
   }

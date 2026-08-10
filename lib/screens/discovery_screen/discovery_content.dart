@@ -320,26 +320,27 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
         }
         _clampCursor();
 
-        return Stack(
+        // The footer takes real space in a Column rather than floating over the
+        // board in a Stack: an overlaid legend leaves the bottom shelf half
+        // hidden behind it, and the cards there are the ones the cursor reaches
+        // last.
+        return Column(
           children: [
-            DiscoveryStorefront(
-              board: board,
-              rows: _rows,
-              fileProvider: context.watch<FileProvider>(),
-              selectedRow: _selectedRow,
-              selectedColumn: _selectedColumn,
-              onEntryTapped: _onEntryTapped,
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: DiscoveryFooter(
-                onPlay: _launchSelected,
-                onGoToGame: _goToSelected,
-                onReroll: _rerollSelected,
-                onBack: _handleBack,
+            Expanded(
+              child: DiscoveryStorefront(
+                board: board,
+                rows: _rows,
+                fileProvider: context.watch<FileProvider>(),
+                selectedRow: _selectedRow,
+                selectedColumn: _selectedColumn,
+                onEntryTapped: _onEntryTapped,
               ),
+            ),
+            DiscoveryFooter(
+              onPlay: _launchSelected,
+              onGoToGame: _goToSelected,
+              onReroll: _rerollSelected,
+              onBack: _handleBack,
             ),
           ],
         );
