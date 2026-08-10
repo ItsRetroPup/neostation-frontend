@@ -20,6 +20,13 @@ class DiscoveryFooter extends CoreFooter {
   final VoidCallback onReroll;
   final VoidCallback onBack;
 
+  /// The version label is positioned over the right end of the centred control
+  /// row, and this legend carries five controls — enough to run underneath it
+  /// and render both unreadable. The controls win; the version is on every
+  /// other screen already.
+  @override
+  bool get showVersion => false;
+
   @override
   List<Widget> buildControls(BuildContext context) {
     final theme = Theme.of(context);
