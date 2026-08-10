@@ -149,13 +149,24 @@ class DiscoveryPick {
 
 /// A pick resolved against the library: what to show and what to launch.
 class DiscoveryBoardEntry {
-  const DiscoveryBoardEntry({required this.pick, required this.game});
+  const DiscoveryBoardEntry({
+    required this.pick,
+    required this.game,
+    this.achievementCount = 0,
+  });
 
   final DiscoveryPick pick;
 
   /// The row the pick resolved to. Kept as a [DatabaseGameModel] so launching
   /// goes through the same `GameModel.fromDatabaseModel` path search uses.
   final DatabaseGameModel game;
+
+  /// Size of this game's RetroAchievements set, or 0 when it has none.
+  ///
+  /// Carried on the entry rather than read off [game] because
+  /// [DatabaseGameModel] has no field for it — it comes from the candidate
+  /// query's aggregated join and only the achievement section displays it.
+  final int achievementCount;
 }
 
 /// Everything the Discovery tab renders for one week.

@@ -2838,6 +2838,7 @@ class SqliteService {
     int? hideTabRomm,
     int? hideSearchCard,
     int? androidAppsAsTab,
+    int? hideTabDiscovery,
     String? activeSyncProvider,
     String? systemsVersion,
     String? raSeedStamp,
@@ -2958,6 +2959,9 @@ class SqliteService {
     }
     if (androidAppsAsTab != null) {
       updates['android_apps_as_tab'] = androidAppsAsTab;
+    }
+    if (hideTabDiscovery != null) {
+      updates['hide_tab_discovery'] = hideTabDiscovery;
     }
     if (activeSyncProvider != null) {
       updates['active_sync_provider'] = activeSyncProvider;

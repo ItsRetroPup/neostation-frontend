@@ -158,7 +158,11 @@ class DiscoveryService {
       final row = byPath[pick.romPath.toLowerCase()];
       if (row == null) continue;
       entries.add(
-        DiscoveryBoardEntry(pick: pick, game: DatabaseGameModel.fromJson(row)),
+        DiscoveryBoardEntry(
+          pick: pick,
+          game: DatabaseGameModel.fromJson(row),
+          achievementCount: (row['ra_num_achievements'] as num?)?.toInt() ?? 0,
+        ),
       );
     }
     return DiscoveryBoard(

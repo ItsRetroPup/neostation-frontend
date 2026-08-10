@@ -17,6 +17,7 @@ import 'package:flutter_localization/flutter_localization.dart';
 import '../widgets/fixed_header.dart';
 import 'systems_screen/system_content.dart';
 import 'systems_screen/my_systems_section/initial_setup_widget.dart';
+import 'discovery_screen/discovery_content.dart';
 import 'retro_achievements_screen/ra_content.dart';
 import 'settings_screen/new_settings_screen.dart';
 import 'saves_screen/saves_tab.dart';
@@ -53,8 +54,11 @@ abstract final class AppTabs {
   static const int settings = 4;
   static const int androidApps = 5;
 
+  /// Appended at the end to match [NavTab]'s ordinal, which is this index.
+  static const int discovery = 6;
+
   /// Total number of tabs, used for wrap-around when cycling with the bumpers.
-  static const int count = 6;
+  static const int count = 7;
 }
 
 /// Bridge class providing static access to the main application navigation state.
@@ -760,6 +764,11 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
           onPreviousTab: AppNavigation.previousTab,
           onNextTab: AppNavigation.nextTab,
         );
+      case AppTabs.discovery:
+        // Like RAContent, Discovery pushes its own gamepad layer from initState
+        // and needs no deactivate callback here. Adding one would double-
+        // dispatch every press (#255).
+        return const DiscoveryContent();
       default:
         return SystemContent(
           selectedIndex: _selectedSystemIndex,

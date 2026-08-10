@@ -11,7 +11,15 @@ import 'package:neostation/models/config_model.dart';
 /// (`_selectedTabIndex`, `_buildCurrentTabContent`, the secondary-display tab
 /// names). Append new tabs at the end — inserting one renumbers every existing
 /// tab and silently repoints all of that dispatch.
-enum NavTab { systems, sync, achievements, romm, settings, androidApps }
+enum NavTab {
+  systems,
+  sync,
+  achievements,
+  romm,
+  settings,
+  androidApps,
+  discovery,
+}
 
 /// Static description of one navigation tab: how it is drawn, whether the user
 /// may hide it, and how that preference is read and written.
@@ -101,12 +109,24 @@ const Map<NavTab, NavTabSpec> navTabSpecs = {
     labelKey: AppLocale.androidApps,
     iconData: Symbols.android_rounded,
   ),
+  // Appended at the end because the ordinal is the tab index: inserting it
+  // in a more natural reading position would renumber every tab after it.
+  NavTab.discovery: NavTabSpec(
+    icon: '',
+    labelKey: AppLocale.discovery,
+    iconData: Symbols.storefront_rounded,
+    hidden: _hideTabDiscovery,
+    withHidden: _withHideTabDiscovery,
+    settingsTitleKey: AppLocale.showDiscoveryTab,
+    settingsSubtitleKey: AppLocale.showDiscoveryTabSubtitle,
+  ),
 };
 
 // Torn out as top-level functions so [navTabSpecs] can stay `const`.
 bool _hideTabSync(ConfigModel c) => c.hideTabSync;
 bool _hideTabAchievements(ConfigModel c) => c.hideTabAchievements;
 bool _hideTabRomm(ConfigModel c) => c.hideTabRomm;
+bool _hideTabDiscovery(ConfigModel c) => c.hideTabDiscovery;
 
 ConfigModel _withHideTabSync(ConfigModel c, bool hidden) =>
     c.copyWith(hideTabSync: hidden);
@@ -114,6 +134,8 @@ ConfigModel _withHideTabAchievements(ConfigModel c, bool hidden) =>
     c.copyWith(hideTabAchievements: hidden);
 ConfigModel _withHideTabRomm(ConfigModel c, bool hidden) =>
     c.copyWith(hideTabRomm: hidden);
+ConfigModel _withHideTabDiscovery(ConfigModel c, bool hidden) =>
+    c.copyWith(hideTabDiscovery: hidden);
 
 /// Description of [tab], never null — see [_fallbackSpec].
 NavTabSpec navTabSpec(NavTab tab) => navTabSpecs[tab] ?? _fallbackSpec;
