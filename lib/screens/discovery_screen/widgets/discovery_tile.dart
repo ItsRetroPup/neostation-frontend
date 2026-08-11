@@ -39,74 +39,74 @@ class DiscoveryGridTile extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: DecoratedBox(
-        decoration: discoveryTileDecoration(context, isSelected: isSelected),
-        child: ClipRRect(
-          borderRadius:
-              theme.extension<CornerRadii>()?.radiusInternal ??
-              BorderRadius.circular(10.r),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              DiscoveryTileArt(tile: tile, fileProvider: fileProvider),
-              const _BottomScrim(),
-              Padding(
-                padding: EdgeInsets.all(8.r),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+      child: Container(
+        decoration: discoveryTileBackground(context),
+        foregroundDecoration: discoveryTileBorder(
+          context,
+          isSelected: isSelected,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DiscoveryTileArt(tile: tile, fileProvider: fileProvider),
+            const _BottomScrim(),
+            Padding(
+              padding: EdgeInsets.all(8.r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    tile.labelKey.getString(context).toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.r,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6.r,
+                      height: 1.1,
+                      color: Colors.white,
+                      shadows: const [
+                        Shadow(blurRadius: 6, color: Colors.black87),
+                      ],
+                    ),
+                  ),
+                  if (entry != null)
                     Text(
-                      tile.labelKey.getString(context).toUpperCase(),
+                      entry.game.realName ?? entry.game.filename,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13.r,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.6.r,
-                        height: 1.1,
-                        color: Colors.white,
+                        fontSize: 8.r,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withValues(alpha: 0.72),
                         shadows: const [
-                          Shadow(blurRadius: 6, color: Colors.black87),
+                          Shadow(blurRadius: 4, color: Colors.black87),
                         ],
                       ),
                     ),
-                    if (entry != null)
-                      Text(
-                        entry.game.realName ?? entry.game.filename,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 8.r,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white.withValues(alpha: 0.72),
-                          shadows: const [
-                            Shadow(blurRadius: 4, color: Colors.black87),
-                          ],
-                        ),
-                      ),
-                  ],
+                ],
+              ),
+            ),
+            if (_isNeverPlayed(tile))
+              Positioned(
+                top: 6.r,
+                right: 6.r,
+                child: const DiscoveryNeverPlayedBadge(),
+              ),
+            if (isSelected)
+              Positioned(
+                top: 6.r,
+                left: 6.r,
+                child: Icon(
+                  tile.icon,
+                  size: 14.r,
+                  color: scheme.primary,
+                  shadows: const [Shadow(blurRadius: 6, color: Colors.black)],
                 ),
               ),
-              if (_isNeverPlayed(tile))
-                Positioned(
-                  top: 6.r,
-                  right: 6.r,
-                  child: const DiscoveryNeverPlayedBadge(),
-                ),
-              if (isSelected)
-                Positioned(
-                  top: 6.r,
-                  left: 6.r,
-                  child: Icon(
-                    tile.icon,
-                    size: 14.r,
-                    color: scheme.primary,
-                    shadows: const [Shadow(blurRadius: 6, color: Colors.black)],
-                  ),
-                ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -141,95 +141,91 @@ class DiscoveryBandTile extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: DecoratedBox(
-        decoration: discoveryTileDecoration(context, isSelected: isSelected),
-        child: ClipRRect(
-          borderRadius:
-              theme.extension<CornerRadii>()?.radiusInternal ??
-              BorderRadius.circular(10.r),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              DiscoveryTileArt(tile: tile, fileProvider: fileProvider),
-              // Wide tiles carry their text across the art rather than under
-              // it, so they need a scrim over the whole face and not just the
-              // foot of it.
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.85),
-                      Colors.black.withValues(alpha: 0.3),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 6.r),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(5.r),
-                      decoration: BoxDecoration(
-                        color: scheme.primary.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Icon(
-                        tile.icon,
-                        size: 12.r,
-                        color: scheme.onPrimary,
-                      ),
-                    ),
-                    SizedBox(width: 7.r),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            tile.labelKey.getString(context).toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 9.r,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5.r,
-                              height: 1.2,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            notice != null
-                                ? notice.getString(context)
-                                : entry?.game.realName ??
-                                      entry?.game.filename ??
-                                      '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 7.5.r,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (tile.achievementCount > 0)
-                      Text(
-                        '${tile.achievementCount}',
-                        style: TextStyle(
-                          fontSize: 8.r,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white.withValues(alpha: 0.75),
-                        ),
-                      ),
+      child: Container(
+        decoration: discoveryTileBackground(context),
+        foregroundDecoration: discoveryTileBorder(
+          context,
+          isSelected: isSelected,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DiscoveryTileArt(tile: tile, fileProvider: fileProvider),
+            // Wide tiles carry their text across the art rather than under
+            // it, so they need a scrim over the whole face and not just the
+            // foot of it.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.85),
+                    Colors.black.withValues(alpha: 0.3),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 6.r),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(5.r),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(tile.icon, size: 12.r, color: scheme.onPrimary),
+                  ),
+                  SizedBox(width: 7.r),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          tile.labelKey.getString(context).toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 9.r,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5.r,
+                            height: 1.2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          notice != null
+                              ? notice.getString(context)
+                              : entry?.game.realName ??
+                                    entry?.game.filename ??
+                                    '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 7.5.r,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (tile.achievementCount > 0)
+                    Text(
+                      '${tile.achievementCount}',
+                      style: TextStyle(
+                        fontSize: 8.r,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.75),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -329,18 +325,31 @@ class DiscoveryTileArt extends StatelessWidget {
   );
 }
 
+/// A tile's shape: its corner radius, shared by the clip and both decorations.
+BorderRadius discoveryTileRadius(BuildContext context) =>
+    Theme.of(context).extension<CornerRadii>()?.radiusInternal ??
+    BorderRadius.circular(10.r);
+
+/// What sits behind a tile, in the gap art of the wrong aspect leaves.
+BoxDecoration discoveryTileBackground(BuildContext context) => BoxDecoration(
+  color: Theme.of(context).cardColor.withValues(alpha: 0.35),
+  borderRadius: discoveryTileRadius(context),
+);
+
 /// The frame every tile shares: a hairline normally, the primary colour when
 /// the cursor is on it.
-BoxDecoration discoveryTileDecoration(
+///
+/// Belongs in a `foregroundDecoration`, never in the background one. Tile art
+/// is clipped to the same rounded rect the border is drawn on, so a background
+/// border is painted over by the art — the ring vanishes on any tile that has
+/// artwork, which is all of them.
+BoxDecoration discoveryTileBorder(
   BuildContext context, {
   required bool isSelected,
 }) {
   final theme = Theme.of(context);
   return BoxDecoration(
-    color: theme.cardColor.withValues(alpha: 0.35),
-    borderRadius:
-        theme.extension<CornerRadii>()?.radiusInternal ??
-        BorderRadius.circular(10.r),
+    borderRadius: discoveryTileRadius(context),
     border: Border.all(
       color: isSelected
           ? theme.colorScheme.primary

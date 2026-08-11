@@ -63,12 +63,20 @@ class DiscoveryHeroCard extends StatelessWidget {
     final rating = entry.game.rating;
     final hasRating = rating != null && rating > 0;
 
+    final radius = radii?.radiusExternal ?? BorderRadius.circular(14.r);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.3),
-          borderRadius: radii?.radiusExternal ?? BorderRadius.circular(14.r),
+          borderRadius: radius,
+        ),
+        // The ring goes in front of the art, not behind it: the backdrop is
+        // clipped to this same rounded rect, so a background border is painted
+        // over — which read as a corner cut off rather than as a missing ring.
+        foregroundDecoration: BoxDecoration(
+          borderRadius: radius,
           border: Border.all(
             color: isSelected
                 ? scheme.primary
