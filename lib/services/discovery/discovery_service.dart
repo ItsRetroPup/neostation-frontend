@@ -81,9 +81,17 @@ class DiscoveryService {
   /// re-rolling then restarting the app shows the game the user rolled, not
   /// another one.
   ///
+  /// [alsoExclude] holds paths the caller does not want back — the games this
+  /// slot has already rolled past this session. They are a preference, not a
+  /// rule: if honouring them leaves the slot nothing to pick, the re-roll is
+  /// retried without them rather than doing nothing at all.
+  ///
   /// Returns the rebuilt board. A slot with nothing left to offer keeps its
   /// current pick rather than emptying the section.
-  Future<DiscoveryBoard> reroll(String slotId) async {
+  Future<DiscoveryBoard> reroll(
+    String slotId, {
+    Set<String> alsoExclude = const {},
+  }) async {
     final weekKey = currentWeekKey;
     final rows = await DiscoveryRepository.getCandidates();
     if (rows.isEmpty) return DiscoveryBoard.empty(weekKey);
@@ -100,11 +108,12 @@ class DiscoveryService {
     if (current != null) {
       // Every game already on the board is off limits, including the one being
       // replaced: a re-roll that returns the same pick reads as a broken button.
-      final excluded = <String>{
+      final onBoard = <String>{
         for (final pick in pinned.values) pick.romPath.toLowerCase(),
       };
+      final alsoSeen = alsoExclude.map((path) => path.toLowerCase()).toSet();
 
-      final replacement = engine.rerollSlot(
+      DiscoveryPick? rollWith(Set<String> excluded) => engine.rerollSlot(
         slot: current.slot,
         candidates: candidates,
         weekKey: weekKey,
@@ -112,6 +121,10 @@ class DiscoveryService {
         excludedPaths: excluded,
         recentPickPaths: history,
       );
+
+      final replacement =
+          rollWith({...onBoard, ...alsoSeen}) ??
+          (alsoSeen.isEmpty ? null : rollWith(onBoard));
 
       if (replacement != null) {
         await DiscoveryRepository.upsertPick(replacement);
@@ -174,19 +187,21 @@ class DiscoveryService {
       weekKey: weekKey,
       entries: entries,
       scrapeCoverageLow: plan.scrapeCoverageLow,
-      shufflePool: _sampleShufflePool(byPath.values, weekKey),
+      shufflePool: _sampleShufflePool(byPath.values),
     );
   }
 
   /// Draws the games the tab flashes through while a slot re-rolls.
   ///
   /// Biased towards scraped games: a decoy with no artwork renders as a blank
-  /// tile, which reads as the board breaking rather than as a shuffle. Seeded
-  /// on the week so the same pool is drawn every time the board is built, which
-  /// keeps the flashed art in the image cache across re-rolls.
+  /// tile, which reads as the board breaking rather than as a shuffle.
+  ///
+  /// Drawn afresh on every build, deliberately unseeded. A week-stable sample
+  /// would keep the flashed artwork in the image cache, but it would also mean
+  /// every re-roll flickers past the same two dozen faces — which reads as the
+  /// shuffle being a canned animation rather than a look through the library.
   List<DatabaseGameModel> _sampleShufflePool(
     Iterable<Map<String, Object?>> rows,
-    String weekKey,
   ) {
     final scraped = [
       for (final row in rows)
@@ -195,7 +210,7 @@ class DiscoveryService {
     final pool = scraped.isEmpty ? rows.toList() : scraped;
     if (pool.isEmpty) return const [];
 
-    final random = Random(weekKey.hashCode);
+    final random = Random();
     final wanted = pool.length < _shufflePoolSize
         ? pool.length
         : _shufflePoolSize;

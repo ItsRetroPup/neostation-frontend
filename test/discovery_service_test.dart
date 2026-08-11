@@ -233,15 +233,51 @@ void main() {
 
       final board = await serviceAt(monday).loadBoard();
 
-      // Drawn from rows the board already read, so it costs no extra query —
-      // and seeded on the week, so a re-roll flashes the same faces and their
-      // artwork stays in the image cache.
+      // Drawn from rows the board already read, so it costs no extra query.
       expect(board.shufflePool, isNotEmpty);
-      final again = await serviceAt(monday).loadBoard();
-      expect(
-        again.shufflePool.map((g) => g.romPath),
-        board.shufflePool.map((g) => g.romPath),
+      final paths = board.shufflePool.map((g) => g.romPath).toSet();
+      expect(paths.length, board.shufflePool.length, reason: 'no repeats');
+    });
+
+    test(
+      'a re-roll can be told not to hand back what it just showed',
+      () async {
+        await seedLibrary();
+        final service = serviceAt(monday);
+        final board = await service.loadBoard();
+        final first = board.heroEntry!.pick.romPath;
+
+        final second = await service.reroll(kSlotGameOfTheWeek);
+        final secondPath = second.heroEntry!.pick.romPath;
+
+        // Rolling again while asking for neither of the two already seen.
+        final third = await service.reroll(
+          kSlotGameOfTheWeek,
+          alsoExclude: {first, secondPath},
+        );
+
+        expect(third.heroEntry!.pick.romPath, isNot(first));
+        expect(third.heroEntry!.pick.romPath, isNot(secondPath));
+      },
+    );
+
+    test('exclusions are dropped rather than leaving the slot stuck', () async {
+      await seedLibrary();
+      final service = serviceAt(monday);
+      final board = await service.loadBoard();
+      final everything = {
+        for (final entry in board.entries) entry.pick.romPath,
+        // Nothing is left once the whole library is unwanted, so the re-roll
+        // has to fall back to picking anyway.
+        ...await _allRomPaths(db),
+      };
+
+      final rerolled = await service.reroll(
+        kSlotGameOfTheWeek,
+        alsoExclude: everything,
       );
+
+      expect(rerolled.heroEntry, isNotNull);
     });
 
     test('an empty library has nothing to shuffle through', () async {
@@ -403,4 +439,10 @@ void main() {
       },
     );
   });
+}
+
+/// Every ROM path in the test library.
+Future<Set<String>> _allRomPaths(dynamic db) async {
+  final rows = await db.rawQuery('SELECT rom_path FROM user_roms');
+  return {for (final row in rows) row['rom_path'] as String};
 }

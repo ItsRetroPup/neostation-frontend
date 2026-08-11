@@ -479,6 +479,40 @@ void main() {
       expect(rerolled.rerollCount, 1);
     });
 
+    test('each re-roll reaches further down the ranking', () {
+      // Thirty rated games: the weekly pick draws from the best eight, so
+      // without widening a slot could only ever cycle through those eight no
+      // matter how many times the user pressed Y. Ratings descend with the
+      // index, so "reached past the top eight" is "picked rated08 or later".
+      final candidates = [
+        for (var i = 0; i < 30; i++)
+          candidate(
+            '/roms/snes/rated${i.toString().padLeft(2, '0')}.sfc',
+            rating: 20 - i.toDouble() / 10,
+            genre: GenreBucket.platform,
+          ),
+      ];
+
+      final reached = <String>{};
+      for (var roll = 1; roll <= 8; roll++) {
+        final pick = engine.rerollSlot(
+          slot: slot,
+          candidates: candidates,
+          weekKey: week,
+          rerollCount: roll,
+        );
+        reached.add(pick!.romPath);
+      }
+
+      final beyondTheTopEight = reached.where((path) {
+        final index = int.parse(
+          path.substring(path.length - 6, path.length - 4),
+        );
+        return index >= 8;
+      });
+      expect(beyondTheTopEight, isNotEmpty);
+    });
+
     test('the same re-roll count always gives the same game', () {
       final candidates = library();
       final first = engine.rerollSlot(

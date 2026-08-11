@@ -63,6 +63,19 @@ class DiscoveryProvider extends ChangeNotifier {
     }
   }
 
+  /// Games each slot has already shown and rolled away from this session.
+  ///
+  /// Only the pick currently on the board is off limits as far as the database
+  /// is concerned, so without this a slot re-rolled several times hands back
+  /// the game from two rolls ago. Session state on purpose: it is about the
+  /// run of presses the user is making now, and a restart should not owe them
+  /// anything.
+  final Map<String, List<String>> _rolledAway = {};
+
+  /// How many rolls back a slot remembers. Long enough to stop a short cycle,
+  /// short enough that a small library still has somewhere to go.
+  static const int _rolledAwayMemory = 12;
+
   /// Swaps the pick in [slotId] for a different game.
   ///
   /// The new pick is persisted, so it is what the tab shows for the rest of the
@@ -73,8 +86,14 @@ class DiscoveryProvider extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
+    final replaced = _pathOf(slotId);
+
     try {
-      _board = await _service.reroll(slotId);
+      _board = await _service.reroll(
+        slotId,
+        alsoExclude: {..._rolledAway[slotId] ?? const []},
+      );
+      if (replaced != null) _remember(slotId, replaced);
       _failed = false;
     } catch (e, stackTrace) {
       _log.e('DiscoveryProvider: failed to re-roll $slotId: $e');
@@ -83,5 +102,20 @@ class DiscoveryProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  /// The game currently in [slotId], or null when the slot is empty.
+  String? _pathOf(String slotId) {
+    for (final entry in _board?.entries ?? const <DiscoveryBoardEntry>[]) {
+      if (entry.pick.slotId == slotId) return entry.pick.romPath;
+    }
+    return null;
+  }
+
+  void _remember(String slotId, String romPath) {
+    final seen = _rolledAway.putIfAbsent(slotId, () => []);
+    seen.remove(romPath);
+    seen.add(romPath);
+    if (seen.length > _rolledAwayMemory) seen.removeAt(0);
   }
 }

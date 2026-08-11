@@ -136,9 +136,18 @@ class DiscoveryPickEngine {
   ///
   /// Ranking alone would show the same top game every week; pure randomness
   /// would surface junk. Taking the best [_topK] and drawing from them with a
-  /// week-seeded RNG keeps quality while making the board (and re-rolls) feel
-  /// alive.
+  /// week-seeded RNG keeps quality while making the board feel alive.
   static const int _topK = 8;
+
+  /// How much further down the ranking each successive re-roll reaches.
+  ///
+  /// A fixed window is right for the weekly pick and wrong for a re-roll: the
+  /// user pressing Y again is saying "not this either", and a slot that only
+  /// ever draws from the same eight games answers that by cycling through
+  /// them. Each re-roll therefore widens the pool by another [_topK], so the
+  /// first stays as good as the weekly pick and persistence reaches deeper
+  /// into the library.
+  static const int _rerollWidening = _topK;
 
   /// Minimum candidates a genre needs before it earns a shelf.
   static const int _minGenreCandidates = 3;
@@ -368,7 +377,12 @@ class DiscoveryPickEngine {
           .toList();
       final pool = withoutHistory.isNotEmpty ? withoutHistory : eligible;
 
-      return _draw(pool, slot.section, seed);
+      return _draw(
+        pool,
+        slot.section,
+        seed,
+        window: _topK + rerollCount * _rerollWidening,
+      );
     }
     return null;
   }
@@ -423,12 +437,13 @@ class DiscoveryPickEngine {
     }
   }
 
-  /// Ranks [pool], keeps the best [_topK] and draws one with [seed].
+  /// Ranks [pool], keeps the best [window] and draws one with [seed].
   DiscoveryCandidate _draw(
     List<DiscoveryCandidate> pool,
     DiscoverySection section,
-    int seed,
-  ) {
+    int seed, {
+    int window = _topK,
+  }) {
     final ranked = [...pool]
       ..sort((a, b) {
         final byScore = _scoreOf(b, section).compareTo(_scoreOf(a, section));
@@ -437,7 +452,7 @@ class DiscoveryPickEngine {
         return byScore != 0 ? byScore : a.romPath.compareTo(b.romPath);
       });
 
-    final top = ranked.take(_topK).toList();
+    final top = ranked.take(window < 1 ? 1 : window).toList();
     return top[Random(seed).nextInt(top.length)];
   }
 
