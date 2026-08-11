@@ -1,388 +1,160 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:neostation/l10n/app_locale.dart';
 
 import '../../models/discovery_models.dart';
 import '../../providers/file_provider.dart';
-import '../../utils/genre_buckets.dart';
+import 'discovery_mosaic.dart';
 import 'widgets/discovery_hero_card.dart';
-import 'widgets/discovery_shelf.dart';
+import 'widgets/discovery_tile.dart';
 
-/// What a band of the board is.
-enum DiscoveryRowKind {
-  /// The Game of the Week banner.
-  hero,
+/// Gap between tiles, and between the mosaic and the edge of the screen.
+const double _kGap = 10;
 
-  /// A horizontal row of picks.
-  shelf,
-
-  /// A message where a section would have been — not focusable.
-  notice,
-}
-
-/// One band of the board, as both the layout and the cursor see it.
+/// The board: a single screen, laid out as the concept has it — the headline
+/// panel down the left, a grid of picks filling the right of the top block, and
+/// a strip of wide tiles across the foot.
 ///
-/// Rows are derived from the board rather than stored, so a section with no
-/// pick simply never becomes a row: there is no such thing as an empty shelf to
-/// navigate into.
-class DiscoveryRow {
-  const DiscoveryRow({
-    required this.kind,
-    required this.titleKey,
-    required this.icon,
-    this.entries = const [],
-    this.subtitleKey,
-    this.noticeKey,
-    this.showGenreCaptions = false,
-    this.achievementCount = 0,
-  });
-
-  final DiscoveryRowKind kind;
-
-  /// [AppLocale] key for the section heading.
-  final String titleKey;
-
-  final IconData icon;
-  final List<DiscoveryBoardEntry> entries;
-  final String? subtitleKey;
-
-  /// [AppLocale] key of the message shown by a [DiscoveryRowKind.notice] row.
-  final String? noticeKey;
-
-  /// Whether each card names the genre it was picked for.
-  final bool showGenreCaptions;
-
-  /// Set size shown at the end of the achievement heading; 0 hides it. Kept as
-  /// a number rather than a formatted string because the row is built without
-  /// a [BuildContext] to localize with.
-  final int achievementCount;
-
-  /// Whether the cursor can land here. Notices carry no game, so they are
-  /// skipped by Up/Down rather than being a dead stop.
-  bool get isFocusable => entries.isNotEmpty;
-}
-
-/// Builds the board's rows in display order.
-///
-/// The order is the storefront's, not the engine's: the hero leads, then the
-/// widest shelf, then the two single-pick features.
-List<DiscoveryRow> buildDiscoveryRows(DiscoveryBoard board) {
-  final rows = <DiscoveryRow>[];
-
-  final hero = board.heroEntry;
-  if (hero != null) {
-    rows.add(
-      DiscoveryRow(
-        kind: DiscoveryRowKind.hero,
-        titleKey: AppLocale.discoveryGameOfTheWeek,
-        icon: Symbols.local_fire_department_rounded,
-        entries: [hero],
-      ),
-    );
-  }
-
-  final genres = board.genreEntries;
-  if (genres.isNotEmpty) {
-    rows.add(
-      DiscoveryRow(
-        kind: DiscoveryRowKind.shelf,
-        titleKey: AppLocale.discoveryGenrePicks,
-        icon: Symbols.category_rounded,
-        entries: genres,
-        showGenreCaptions: true,
-      ),
-    );
-  }
-
-  if (board.scrapeCoverageLow) {
-    // The gate tripped: say why the section is missing rather than leaving a
-    // gap the user cannot explain.
-    rows.add(
-      const DiscoveryRow(
-        kind: DiscoveryRowKind.notice,
-        titleKey: AppLocale.discoveryHiddenGem,
-        icon: Symbols.diamond_rounded,
-        noticeKey: AppLocale.discoveryNeedsScraping,
-      ),
-    );
-  } else {
-    final gem = board.hiddenGemEntry;
-    if (gem != null) {
-      rows.add(
-        DiscoveryRow(
-          kind: DiscoveryRowKind.shelf,
-          titleKey: AppLocale.discoveryHiddenGem,
-          icon: Symbols.diamond_rounded,
-          entries: [gem],
-          subtitleKey: AppLocale.discoveryHiddenGemSubtitle,
-        ),
-      );
-    }
-  }
-
-  final achievement = board.achievementEntry;
-  if (achievement != null) {
-    rows.add(
-      DiscoveryRow(
-        kind: DiscoveryRowKind.shelf,
-        titleKey: AppLocale.discoveryAchievementSpotlight,
-        icon: Symbols.trophy_rounded,
-        entries: [achievement],
-        achievementCount: achievement.achievementCount,
-      ),
-    );
-  }
-
-  return rows;
-}
-
-/// The [AppLocale] key naming [bucket] on a shelf.
-///
-/// Lives here rather than beside [GenreBucket] so the bucket table itself stays
-/// free of any Flutter or localization dependency and remains directly
-/// unit-testable.
-String genreBucketLabelKey(GenreBucket bucket) => switch (bucket) {
-  GenreBucket.platform => AppLocale.genrePlatform,
-  GenreBucket.rpg => AppLocale.genreRpg,
-  GenreBucket.shooter => AppLocale.genreShooter,
-  GenreBucket.fighting => AppLocale.genreFighting,
-  GenreBucket.racing => AppLocale.genreRacing,
-  GenreBucket.puzzle => AppLocale.genrePuzzle,
-  GenreBucket.sports => AppLocale.genreSports,
-  GenreBucket.adventure => AppLocale.genreAdventure,
-  GenreBucket.strategy => AppLocale.genreStrategy,
-  GenreBucket.simulation => AppLocale.genreSimulation,
-  GenreBucket.action => AppLocale.genreAction,
-  GenreBucket.arcade => AppLocale.genreArcade,
-  GenreBucket.other => AppLocale.genreOther,
-};
-
-/// The scrolling board: hero on top, shelves below.
-class DiscoveryStorefront extends StatefulWidget {
+/// Nothing here scrolls vertically. Every tile is sized from the viewport, so
+/// the whole board is visible at once on a handheld's screen and the cursor
+/// never has to travel off-screen to reach a pick. Only the bottom strip
+/// scrolls, and only on a library with more genres than it has room for.
+class DiscoveryStorefront extends StatelessWidget {
   const DiscoveryStorefront({
     super.key,
     required this.board,
-    required this.rows,
+    required this.mosaic,
     required this.fileProvider,
-    required this.selectedRow,
-    required this.selectedColumn,
-    required this.onEntryTapped,
+    required this.selectedTile,
+    required this.onTileTapped,
   });
 
   final DiscoveryBoard board;
-  final List<DiscoveryRow> rows;
+  final DiscoveryMosaic mosaic;
   final FileProvider fileProvider;
-  final int selectedRow;
-  final int selectedColumn;
+
+  /// The tile the cursor is on, or null when nothing is focusable.
+  final DiscoveryTile? selectedTile;
 
   /// Fired by touch/mouse. The tap both moves the cursor and acts, matching
-  /// what pressing A on that card would do.
-  final void Function(int row, int column) onEntryTapped;
-
-  @override
-  State<DiscoveryStorefront> createState() => _DiscoveryStorefrontState();
-}
-
-class _DiscoveryStorefrontState extends State<DiscoveryStorefront> {
-  final ScrollController _scrollController = ScrollController();
-  final Map<int, GlobalKey> _rowKeys = {};
-
-  @override
-  void didUpdateWidget(DiscoveryStorefront oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selectedRow != oldWidget.selectedRow) _scrollRowIntoView();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _scrollRowIntoView() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final context = _rowKeys[widget.selectedRow]?.currentContext;
-      if (context == null) return;
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        // Keep the row a little below the header rather than flush against it.
-        alignment: 0.1,
-      );
-    });
-  }
+  /// what pressing A on that tile would do.
+  final void Function(DiscoveryTile tile) onTileTapped;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // constraints.maxWidth is already in logical pixels — the same space
-        // .r resolves to — so these breakpoints are raw values. A .r here would
-        // double-scale and pick the narrow layout on wide screens.
-        final width = constraints.maxWidth;
-        final cardWidth = width >= 900
-            ? 128.r
-            : width >= 640
-            ? 108.r
-            : 92.r;
+    // The header clearance sits OUTSIDE the mosaic on purpose: the global
+    // header floats over the whole tab, so the board has to start below it or
+    // the top row rides up behind it.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: 64.r),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(_kGap.r, 0, _kGap.r, _kGap.r),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // The strip takes a share of the height rather than a fixed
+                // one, then is held between a legible floor and a ceiling that
+                // stops it eating the grid on a tall screen.
+                final bandHeight = mosaic.band.isEmpty
+                    ? 0.0
+                    : (constraints.maxHeight * 0.22)
+                          .clamp(46.r, 84.r)
+                          .toDouble();
 
-        // The header clearance sits OUTSIDE the scroll view on purpose: the
-        // global header floats over the whole tab, so a spacer inside the
-        // scrollable would scroll away with the content and let the shelves
-        // ride up behind it. Reserving the space here starts the viewport
-        // below the header, which is what the other tabs do.
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: 64.r),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                padding: EdgeInsets.symmetric(horizontal: 12.r),
-                child: Column(
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (var i = 0; i < widget.rows.length; i++) ...[
-                      _buildRow(context, i, widget.rows[i], cardWidth),
-                      SizedBox(height: 14.r),
+                    Expanded(child: _buildTopBlock(context)),
+                    if (mosaic.band.isNotEmpty) ...[
+                      SizedBox(height: _kGap.r),
+                      SizedBox(
+                        height: bandHeight,
+                        child: _DiscoveryBand(
+                          tiles: mosaic.band,
+                          fileProvider: fileProvider,
+                          selectedTile: selectedTile,
+                          onTileTapped: onTileTapped,
+                        ),
+                      ),
                     ],
-                    // Breathing room at the end of the board. The footer takes
-                    // its own space below this viewport, so there is nothing to
-                    // clear here.
-                    SizedBox(height: 8.r),
                   ],
-                ),
-              ),
+                );
+              },
             ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildRow(
-    BuildContext context,
-    int index,
-    DiscoveryRow row,
-    double cardWidth,
-  ) {
-    final key = _rowKeys.putIfAbsent(index, GlobalKey.new);
-    final isSelected = widget.selectedRow == index;
-
-    if (row.kind == DiscoveryRowKind.hero) {
-      return KeyedSubtree(
-        key: key,
-        child: DiscoveryHeroCard(
-          entry: row.entries.first,
-          isSelected: isSelected,
-          fileProvider: widget.fileProvider,
-          weekLabel: _weekLabel(context),
-          onTap: () => widget.onEntryTapped(index, 0),
-        ),
-      );
-    }
-
-    return KeyedSubtree(
-      key: key,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader(context, row),
-          SizedBox(height: 6.r),
-          if (row.kind == DiscoveryRowKind.notice)
-            _buildNotice(context, row)
-          else
-            DiscoveryShelf(
-              entries: row.entries,
-              fileProvider: widget.fileProvider,
-              isRowSelected: isSelected,
-              selectedIndex: widget.selectedColumn,
-              cardWidth: cardWidth,
-              onCardTapped: (column) => widget.onEntryTapped(index, column),
-              captionBuilder: row.showGenreCaptions
-                  ? (entry) => _genreCaption(context, entry)
-                  : null,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, DiscoveryRow row) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(row.icon, size: 16.r, color: theme.colorScheme.primary),
-        SizedBox(width: 8.r),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                row.titleKey.getString(context),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                  fontSize: 11.r,
-                ),
-              ),
-              if (row.subtitleKey != null)
-                Text(
-                  row.subtitleKey!.getString(context),
-                  style: TextStyle(
-                    fontSize: 8.r,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-                  ),
-                ),
-            ],
           ),
         ),
-        if (row.achievementCount > 0)
-          Text(
-            AppLocale.discoveryAchievementsCount
-                .getString(context)
-                .replaceFirst('{count}', '${row.achievementCount}'),
-            style: TextStyle(
-              fontSize: 8.r,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
+      ],
+    );
+  }
+
+  /// The headline panel and the grid beside it.
+  Widget _buildTopBlock(BuildContext context) {
+    final hero = mosaic.hero;
+    final hasGrid = mosaic.grid.isNotEmpty;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hero != null)
+          Expanded(
+            // The same shares the cursor navigates by — see [kMosaicHeroFlex].
+            flex: hasGrid ? kMosaicHeroFlex : 1,
+            child: DiscoveryHeroCard(
+              tile: hero,
+              isSelected: identical(selectedTile, hero),
+              fileProvider: fileProvider,
+              weekLabel: _weekLabel(context),
+              onTap: () => onTileTapped(hero),
             ),
+          ),
+        if (hero != null && hasGrid) SizedBox(width: _kGap.r),
+        if (hasGrid)
+          Expanded(
+            flex: hero != null ? kMosaicGridFlex : 1,
+            child: _buildGrid(),
           ),
       ],
     );
   }
 
-  Widget _buildNotice(BuildContext context, DiscoveryRow row) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 14.r),
-      decoration: BoxDecoration(
-        color: theme.cardColor.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.15),
-          width: 1.r,
-        ),
-      ),
-      child: Text(
-        row.noticeKey!.getString(context),
-        style: TextStyle(
-          fontSize: 9.r,
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-      ),
+  /// The grid block. It is as wide as the picks justify — see
+  /// [discoveryGridColumns] — and a short last row keeps its columns rather
+  /// than stretching, so its tiles stay lined up with the row above.
+  Widget _buildGrid() {
+    final columns = mosaic.gridColumns;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var row = 0; row < mosaic.gridRowCount; row++) ...[
+          if (row > 0) SizedBox(height: _kGap.r),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var column = 0; column < columns; column++) ...[
+                  if (column > 0) SizedBox(width: _kGap.r),
+                  Expanded(child: _buildGridCell(row * columns + column)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
-  String _genreCaption(BuildContext context, DiscoveryBoardEntry entry) {
-    final bucket = entry.pick.genre;
-    if (bucket == null) return '';
-    return genreBucketLabelKey(bucket).getString(context);
+  Widget _buildGridCell(int index) {
+    if (index >= mosaic.grid.length) return const SizedBox.shrink();
+    final tile = mosaic.grid[index];
+    return DiscoveryGridTile(
+      tile: tile,
+      isSelected: identical(selectedTile, tile),
+      fileProvider: fileProvider,
+      onTap: () => onTileTapped(tile),
+    );
   }
 
   /// The week the board belongs to, rendered from its own key.
@@ -392,5 +164,109 @@ class _DiscoveryStorefrontState extends State<DiscoveryStorefront> {
   /// before midnight on a Sunday.
   String _weekLabel(BuildContext context) => AppLocale.discoveryWeekOf
       .getString(context)
-      .replaceFirst('{date}', widget.board.weekKey);
+      .replaceFirst('{date}', board.weekKey);
+}
+
+/// The strip of wide tiles across the foot of the board.
+///
+/// Sized so [kMosaicBandVisible] tiles exactly fill the width. A library with
+/// more genre picks than the mosaic has room for scrolls the extras in from the
+/// right rather than losing them, which keeps every pick of the week reachable.
+class _DiscoveryBand extends StatefulWidget {
+  const _DiscoveryBand({
+    required this.tiles,
+    required this.fileProvider,
+    required this.selectedTile,
+    required this.onTileTapped,
+  });
+
+  final List<DiscoveryTile> tiles;
+  final FileProvider fileProvider;
+  final DiscoveryTile? selectedTile;
+  final void Function(DiscoveryTile tile) onTileTapped;
+
+  @override
+  State<_DiscoveryBand> createState() => _DiscoveryBandState();
+}
+
+class _DiscoveryBandState extends State<_DiscoveryBand> {
+  final ScrollController _controller = ScrollController();
+  double _tileWidth = 0;
+
+  @override
+  void didUpdateWidget(_DiscoveryBand oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.selectedTile, oldWidget.selectedTile)) {
+      _scrollSelectionIntoView();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// Keeps the selected tile on screen as the cursor walks the strip.
+  ///
+  /// Runs after the frame because the extent is only known once the list has
+  /// laid out — on the frame the cursor first arrives, it has not.
+  void _scrollSelectionIntoView() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_controller.hasClients || _tileWidth <= 0) return;
+      final selected = widget.selectedTile;
+      if (selected == null) return;
+      final index = widget.tiles.indexWhere((t) => identical(t, selected));
+      if (index < 0) return;
+
+      final extent = _tileWidth + _kGap.r;
+      final target = (index * extent) - extent / 2;
+      _controller.animateTo(
+        target.clamp(
+          _controller.position.minScrollExtent,
+          _controller.position.maxScrollExtent,
+        ),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final visible = widget.tiles.length < kMosaicBandVisible
+            ? widget.tiles.length
+            : kMosaicBandVisible;
+        final gaps = _kGap.r * (visible - 1);
+        _tileWidth = (constraints.maxWidth - gaps) / visible;
+
+        return ListView.separated(
+          controller: _controller,
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.zero,
+          // Nothing to scroll to when everything already fits, and a strip that
+          // bounces under a thumb reads as broken rather than as scrollable.
+          physics: widget.tiles.length <= kMosaicBandVisible
+              ? const NeverScrollableScrollPhysics()
+              : const ClampingScrollPhysics(),
+          itemCount: widget.tiles.length,
+          separatorBuilder: (_, _) => SizedBox(width: _kGap.r),
+          itemBuilder: (context, index) {
+            final tile = widget.tiles[index];
+            return SizedBox(
+              width: _tileWidth,
+              child: DiscoveryBandTile(
+                tile: tile,
+                isSelected: identical(widget.selectedTile, tile),
+                fileProvider: widget.fileProvider,
+                onTap: () => widget.onTileTapped(tile),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }

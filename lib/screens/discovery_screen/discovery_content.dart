@@ -16,12 +16,13 @@ import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
 
 import 'discovery_footer.dart';
+import 'discovery_mosaic.dart';
 import 'discovery_storefront.dart';
 
 /// The Discovery tab: a weekly, locally curated storefront over the user's own
 /// library.
 ///
-/// Owns the cursor (which row, which card) and the gamepad layer. The board
+/// Owns the cursor (which cell of the mosaic) and the gamepad layer. The board
 /// itself belongs to [DiscoveryProvider]; this widget only decides what is
 /// focused and what each button does to it.
 class DiscoveryContent extends StatefulWidget {
@@ -37,9 +38,9 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
   int _selectedRow = 0;
   int _selectedColumn = 0;
 
-  /// The rows the last build produced. Kept so the navigation handlers can work
-  /// out their bounds without rebuilding the whole board on every key press.
-  List<DiscoveryRow> _rows = const [];
+  /// The mosaic the last build produced. Kept so the navigation handlers can
+  /// work out their bounds without rebuilding the whole board on every press.
+  DiscoveryMosaic _mosaic = const DiscoveryMosaic.empty();
 
   @override
   void initState() {
@@ -89,79 +90,59 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
 
   // ── Cursor ────────────────────────────────────────────────────────────────
 
-  /// Indices of the rows the cursor may land on.
+  DiscoveryTile? get _selectedTile =>
+      _mosaic.tileAt(_selectedRow, _selectedColumn);
+
+  DiscoveryBoardEntry? get _selectedEntry => _selectedTile?.entry;
+
+  /// Moves the cursor one cell in a direction, if there is one to move to.
   ///
-  /// Notice rows (the scrape-coverage message) hold no game, so they are
-  /// skipped entirely rather than being a stop the user has to press through.
-  List<int> get _focusableRows => [
-    for (var i = 0; i < _rows.length; i++)
-      if (_rows[i].isFocusable) i,
-  ];
-
-  DiscoveryBoardEntry? get _selectedEntry {
-    if (_selectedRow < 0 || _selectedRow >= _rows.length) return null;
-    final entries = _rows[_selectedRow].entries;
-    if (_selectedColumn < 0 || _selectedColumn >= entries.length) return null;
-    return entries[_selectedColumn];
-  }
-
-  void _moveToRow(int row) {
-    if (!mounted) return;
+  /// Which cell that is belongs to the mosaic: the hero spans both grid rows
+  /// and notices hold no game, and both of those are layout facts rather than
+  /// input ones.
+  void _move({int dRow = 0, int dCol = 0}) {
+    final next = _mosaic.step(
+      _selectedRow,
+      _selectedColumn,
+      dRow: dRow,
+      dCol: dCol,
+    );
+    if (next == null || !mounted) return;
     setState(() {
-      _selectedRow = row;
-      // Landing on a shorter shelf must not leave the cursor past its end.
-      final length = _rows[row].entries.length;
-      _selectedColumn = _selectedColumn.clamp(0, length > 0 ? length - 1 : 0);
+      _selectedRow = next.$1;
+      _selectedColumn = next.$2;
     });
     SfxService().playNavSound();
   }
 
-  void _navigateUp() {
-    final rows = _focusableRows;
-    final position = rows.indexOf(_selectedRow);
-    if (position <= 0) return;
-    _moveToRow(rows[position - 1]);
-  }
+  void _navigateUp() => _move(dRow: -1);
 
-  void _navigateDown() {
-    final rows = _focusableRows;
-    final position = rows.indexOf(_selectedRow);
-    if (position < 0 || position >= rows.length - 1) return;
-    _moveToRow(rows[position + 1]);
-  }
+  void _navigateDown() => _move(dRow: 1);
 
-  void _navigateLeft() {
-    if (_selectedColumn <= 0) return;
-    setState(() => _selectedColumn--);
-    SfxService().playNavSound();
-  }
+  void _navigateLeft() => _move(dCol: -1);
 
-  void _navigateRight() {
-    final entry = _rows.elementAtOrNull(_selectedRow);
-    if (entry == null) return;
-    if (_selectedColumn >= entry.entries.length - 1) return;
-    setState(() => _selectedColumn++);
-    SfxService().playNavSound();
-  }
+  void _navigateRight() => _move(dCol: 1);
 
-  /// B returns to the top of the board, and does nothing once already there.
+  /// B returns to the headline tile, and does nothing once already there.
   ///
   /// Top-level tabs have no exit prompt (#308), so there is deliberately no
   /// "leave the app" path from here.
   void _handleBack() {
-    final rows = _focusableRows;
-    if (rows.isEmpty) return;
-    if (_selectedRow == rows.first && _selectedColumn == 0) return;
+    final first = _mosaic.firstFocusable;
+    if (first == null) return;
+    if (_selectedRow == first.$1 && _selectedColumn == first.$2) return;
     setState(() {
-      _selectedRow = rows.first;
-      _selectedColumn = 0;
+      _selectedRow = first.$1;
+      _selectedColumn = first.$2;
     });
   }
 
-  void _onEntryTapped(int row, int column) {
+  void _onTileTapped(DiscoveryTile tile) {
+    final cell = _mosaic.locate(tile);
+    if (cell == null || !tile.isFocusable) return;
     setState(() {
-      _selectedRow = row;
-      _selectedColumn = column;
+      _selectedRow = cell.$1;
+      _selectedColumn = cell.$2;
     });
     _openSelected();
   }
@@ -236,8 +217,8 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
           );
         }
 
-        _rows = buildDiscoveryRows(board);
-        if (_rows.every((row) => !row.isFocusable)) {
+        _mosaic = buildDiscoveryMosaic(board);
+        if (!_mosaic.hasFocusableTile) {
           return _buildMessage(
             context,
             icon: Symbols.storefront_rounded,
@@ -247,25 +228,27 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
         _clampCursor();
 
         // The footer takes real space in a Column rather than floating over the
-        // board in a Stack: an overlaid legend leaves the bottom shelf half
-        // hidden behind it, and the cards there are the ones the cursor reaches
+        // board in a Stack: an overlaid legend leaves the bottom strip half
+        // hidden behind it, and the tiles there are the ones the cursor reaches
         // last.
+        final selected = _selectedTile;
         return Column(
           children: [
             Expanded(
               child: DiscoveryStorefront(
                 board: board,
-                rows: _rows,
+                mosaic: _mosaic,
                 fileProvider: context.watch<FileProvider>(),
-                selectedRow: _selectedRow,
-                selectedColumn: _selectedColumn,
-                onEntryTapped: _onEntryTapped,
+                selectedTile: selected,
+                onTileTapped: _onTileTapped,
               ),
             ),
             DiscoveryFooter(
               onOpen: _openSelected,
               onReroll: _rerollSelected,
               onBack: _handleBack,
+              selectionIcon: selected?.icon,
+              selectionText: _selectionText(context, selected),
             ),
           ],
         );
@@ -273,21 +256,25 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
     );
   }
 
+  /// Names the selected pick for the footer, e.g. `Hidden Gem: ActRaiser`.
+  String? _selectionText(BuildContext context, DiscoveryTile? tile) {
+    final game = tile?.entry?.game;
+    if (tile == null || game == null) return null;
+    final label = tile.labelKey.getString(context);
+    return '$label: ${game.realName ?? game.filename}';
+  }
+
   /// Keeps the cursor inside the board after it changes shape.
   ///
   /// A re-roll or a rescan can drop a whole section, which would otherwise
   /// leave the cursor pointing past the end and every button silently dead.
   void _clampCursor() {
-    final rows = _focusableRows;
-    if (rows.isEmpty) return;
-    if (!rows.contains(_selectedRow)) {
-      _selectedRow = rows.first;
-      _selectedColumn = 0;
-      return;
-    }
-    final length = _rows[_selectedRow].entries.length;
-    if (_selectedColumn >= length) _selectedColumn = length - 1;
-    if (_selectedColumn < 0) _selectedColumn = 0;
+    final tile = _mosaic.tileAt(_selectedRow, _selectedColumn);
+    if (tile != null && tile.isFocusable) return;
+    final first = _mosaic.firstFocusable;
+    if (first == null) return;
+    _selectedRow = first.$1;
+    _selectedColumn = first.$2;
   }
 
   Widget _buildMessage(

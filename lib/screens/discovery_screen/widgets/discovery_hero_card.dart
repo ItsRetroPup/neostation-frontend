@@ -4,30 +4,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:neostation/l10n/app_locale.dart';
 
-import '../../../models/discovery_models.dart';
 import '../../../models/game_model.dart';
 import '../../../providers/file_provider.dart';
 import '../../../themes/corner_radii.dart';
 import '../../search_screen/search_filter.dart';
+import '../discovery_mosaic.dart';
+import 'discovery_tile.dart';
 
-/// The Game of the Week banner: the board's headline.
+/// The board's headline panel: the tall tile down the left of the mosaic.
 ///
 /// Built entirely from the user's own scraped art — fanart behind, the game's
 /// wheel logo in front — so it looks like a storefront without any of the
-/// content coming from outside the device.
+/// content coming from outside the device. It takes whatever box the mosaic
+/// gives it rather than sizing itself, since its height is the height of the
+/// grid beside it.
 class DiscoveryHeroCard extends StatelessWidget {
   const DiscoveryHeroCard({
     super.key,
-    required this.entry,
+    required this.tile,
     required this.isSelected,
     required this.fileProvider,
     required this.weekLabel,
     this.onTap,
   });
 
-  final DiscoveryBoardEntry entry;
+  final DiscoveryTile tile;
   final bool isSelected;
   final FileProvider fileProvider;
 
@@ -41,17 +43,22 @@ class DiscoveryHeroCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final radii = theme.extension<CornerRadii>();
+    final entry = tile.entry!;
     final game = GameModel.fromDatabaseModel(entry.game);
     final folder = entry.game.systemFolderName ?? '';
 
-    final backdrop = _firstExisting([
-      if (folder.isNotEmpty) game.getImagePath(folder, 'fanarts', fileProvider),
-      if (folder.isNotEmpty)
-        game.getImagePath(folder, 'screenshots', fileProvider),
-    ]);
+    final backdrop = folder.isEmpty
+        ? null
+        : discoveryFirstExistingImage([
+            game.getImagePath(folder, 'fanarts', fileProvider),
+            game.getImagePath(folder, 'screenshots', fileProvider),
+            game.getImagePath(folder, 'box2d', fileProvider),
+          ]);
     final wheel = folder.isEmpty
         ? null
-        : _firstExisting([game.getImagePath(folder, 'wheels', fileProvider)]);
+        : discoveryFirstExistingImage([
+            game.getImagePath(folder, 'wheels', fileProvider),
+          ]);
 
     final rating = entry.game.rating;
     final hasRating = rating != null && rating > 0;
@@ -59,7 +66,6 @@ class DiscoveryHeroCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 150.r,
         decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.3),
           borderRadius: radii?.radiusExternal ?? BorderRadius.circular(14.r),
@@ -82,52 +88,29 @@ class DiscoveryHeroCard extends StatelessWidget {
                 errorBuilder: (_, _, _) => const SizedBox.shrink(),
               ),
             // The art is arbitrary, so the text needs its own contrast rather
-            // than trusting whatever happens to be behind it.
+            // than trusting whatever happens to be behind it. The panel is
+            // taller than it is wide now, so the scrim runs bottom-up: it sits
+            // under the title block and leaves the middle of the art clear.
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.82),
-                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0.9),
+                    Colors.black.withValues(alpha: 0.15),
                   ],
+                  stops: const [0.15, 0.85],
                 ),
               ),
             ),
             Padding(
-              padding: EdgeInsets.all(14.r),
+              padding: EdgeInsets.all(12.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Symbols.local_fire_department_rounded,
-                        size: 14.r,
-                        color: scheme.primary,
-                      ),
-                      SizedBox(width: 6.r),
-                      Text(
-                        AppLocale.discoveryGameOfTheWeek.getString(context),
-                        style: TextStyle(
-                          fontSize: 10.r,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.1.r,
-                          color: scheme.primary,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        weekLabel,
-                        style: TextStyle(
-                          fontSize: 8.r,
-                          color: Colors.white.withValues(alpha: 0.65),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildBanner(context, scheme),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -135,14 +118,14 @@ class DiscoveryHeroCard extends StatelessWidget {
                       if (wheel != null)
                         ConstrainedBox(
                           constraints: BoxConstraints(
-                            maxHeight: 44.r,
-                            maxWidth: 220.r,
+                            maxHeight: 52.r,
+                            maxWidth: 240.r,
                           ),
                           child: Image.file(
                             File(wheel),
                             fit: BoxFit.contain,
                             alignment: Alignment.centerLeft,
-                            cacheWidth: 440,
+                            cacheWidth: 480,
                             errorBuilder: (_, _, _) =>
                                 _titleText(context, scheme),
                           ),
@@ -184,8 +167,58 @@ class DiscoveryHeroCard extends StatelessWidget {
     );
   }
 
+  /// The section banner across the top: what this panel is, and for which week.
+  ///
+  /// The label is the tile's rather than a constant, because a board with no
+  /// eligible Game of the Week promotes another pick into the headline and the
+  /// banner has to say so.
+  Widget _buildBanner(BuildContext context, ColorScheme scheme) => Row(
+    children: [
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
+        decoration: BoxDecoration(
+          color: scheme.primary.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(999.r),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(tile.icon, size: 12.r, color: scheme.onPrimary),
+            SizedBox(width: 5.r),
+            Text(
+              tile.labelKey.getString(context).toUpperCase(),
+              style: TextStyle(
+                fontSize: 9.r,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8.r,
+                color: scheme.onPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+      // Expanded rather than a Spacer and a Flexible: those two split the
+      // leftover width between them, which left the week label half the room
+      // it needed and ellipsized the year.
+      SizedBox(width: 6.r),
+      Expanded(
+        child: Text(
+          weekLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            fontSize: 8.r,
+            color: Colors.white.withValues(alpha: 0.7),
+            shadows: const [Shadow(blurRadius: 4, color: Colors.black87)],
+          ),
+        ),
+      ),
+    ],
+  );
+
   Widget _titleText(BuildContext context, ColorScheme scheme) => Text(
-    entry.game.realName ?? entry.game.filename,
+    tile.entry!.game.realName ?? tile.entry!.game.filename,
     maxLines: 2,
     overflow: TextOverflow.ellipsis,
     style: TextStyle(
@@ -195,13 +228,6 @@ class DiscoveryHeroCard extends StatelessWidget {
       shadows: const [Shadow(blurRadius: 8, color: Colors.black87)],
     ),
   );
-
-  String? _firstExisting(List<String> paths) {
-    for (final path in paths) {
-      if (path.isNotEmpty && File(path).existsSync()) return path;
-    }
-    return null;
-  }
 }
 
 class _Pill extends StatelessWidget {

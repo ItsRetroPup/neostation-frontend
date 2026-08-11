@@ -12,7 +12,19 @@ class DiscoveryFooter extends CoreFooter {
     required this.onOpen,
     required this.onReroll,
     required this.onBack,
+    this.selectionIcon,
+    this.selectionText,
   });
+
+  /// Icon of the section the cursor is in, shown beside [selectionText].
+  final IconData? selectionIcon;
+
+  /// What is currently selected, e.g. `Hidden Gem: ActRaiser`.
+  ///
+  /// The board's tiles carry a section label and a small title, so the footer
+  /// is where the selected pick is named in full — the same job the concept's
+  /// bottom-left chip does.
+  final String? selectionText;
 
   /// Opens the focused pick in its system library, where its metadata, video
   /// and screenshots live. Discovery never launches a game itself.
@@ -29,6 +41,44 @@ class DiscoveryFooter extends CoreFooter {
   /// on top of the controls.
   @override
   bool get centerControls => false;
+
+  @override
+  Widget? buildLeftContent(BuildContext context) {
+    final text = selectionText;
+    if (text == null || text.isEmpty) return null;
+
+    final theme = Theme.of(context);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.r, vertical: 5.r),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(999.r),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selectionIcon != null) ...[
+              Icon(selectionIcon, size: 13.r, color: theme.colorScheme.primary),
+              SizedBox(width: 6.r),
+            ],
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.r,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   List<Widget> buildControls(BuildContext context) {
