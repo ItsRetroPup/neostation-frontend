@@ -348,6 +348,15 @@ class SqliteMigrations {
       case 114:
         await _migrateToVersion114(db);
         break;
+      case 115:
+        await _migrateToVersion115(db);
+        break;
+      case 116:
+        await _migrateToVersion116(db);
+        break;
+      case 117:
+        await _migrateToVersion117(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -5398,6 +5407,64 @@ class SqliteMigrations {
       _log.i('Migration v114 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v114: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v115: Registers native Android games as their own library
+  /// system, separate from the Android applications launcher.
+  static Future<void> _migrateToVersion115(Database db) async {
+    _log.i('Migration v115: Adding Android Games system');
+    try {
+      db.execute('''
+        INSERT OR IGNORE INTO app_systems
+          (id, screenscraper_id, ra_id, real_name, folder_name, launch_date, description)
+        VALUES
+          ('android_games', 135, 0, 'Android Games', 'android_games', '2008-09-23',
+           'Games installed as native Android applications.')
+      ''');
+      _log.i('Migration v115 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v115: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v116: Restores Android Games on installs where a systems sync
+  /// pruned the local virtual-system entry before v116 preserved it.
+  static Future<void> _migrateToVersion116(Database db) async {
+    _log.i('Migration v116: Restoring Android Games system');
+    try {
+      db.execute('''
+        INSERT OR IGNORE INTO app_systems
+          (id, screenscraper_id, ra_id, real_name, folder_name, launch_date, description)
+        VALUES
+          ('android_games', 0, 0, 'Android Games', 'android_games', '2008-09-23',
+           'Games installed as native Android applications.')
+      ''');
+      _log.i('Migration v116 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v116: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v117: Makes Android Games eligible for ScreenScraper using the
+  /// same Android platform ID, while ordinary Android Apps remain excluded.
+  static Future<void> _migrateToVersion117(Database db) async {
+    _log.i('Migration v117: Enabling ScreenScraper for Android Games');
+    try {
+      db.execute('''
+        UPDATE app_systems
+        SET screenscraper_id = 135
+        WHERE folder_name = 'android_games'
+      ''');
+      _log.i('Migration v117 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v117: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

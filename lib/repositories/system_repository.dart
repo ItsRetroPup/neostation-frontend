@@ -59,8 +59,9 @@ class SystemRepository {
       final isPresent = allSystems.any((s) => s.folderName == d.folderName);
       if (!isPresent) return false;
 
-      // Filter out Android if not on Android platform
-      if (d.folderName == 'android' && !Platform.isAndroid) {
+      // Native Android apps and games are only meaningful on Android.
+      if ((d.folderName == 'android' || d.folderName == 'android_games') &&
+          !Platform.isAndroid) {
         return false;
       }
 

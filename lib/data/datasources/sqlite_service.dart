@@ -421,7 +421,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 114;
+  static const int _databaseVersion = 117;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -614,12 +614,17 @@ class SqliteService {
       }
 
       // PRUNING: Remove systems that are no longer present in the JSON source.
+      // Native Android apps/games and All Systems are local virtual systems,
+      // not JSON-defined consoles. Keep them so a systems sync cannot prevent
+      // a later Android scan from injecting and displaying them.
       if (syncedSystemIds.isNotEmpty) {
         final placeholders = List.filled(syncedSystemIds.length, '?').join(',');
         await txn.delete(
           'app_systems',
-          where: 'id NOT IN ($placeholders)',
-          whereArgs: syncedSystemIds.toList(),
+          where:
+              'id NOT IN ($placeholders) '
+              'AND folder_name NOT IN (?, ?, ?)',
+          whereArgs: [...syncedSystemIds, 'all', 'android', 'android_games'],
         );
       }
     });
@@ -2044,6 +2049,16 @@ class SqliteService {
           INSERT OR IGNORE INTO app_systems (id, screenscraper_id, ra_id, real_name, folder_name, launch_date, description)
           VALUES ('all', 0, 0, 'All Systems', 'all', '2024-01-01',
                   'Collection of all systems available in NeoStation.')
+        ''');
+        await txn.execute('''
+          INSERT OR IGNORE INTO app_systems (id, screenscraper_id, ra_id, real_name, folder_name, launch_date, description)
+          VALUES ('54', 135, 0, 'Android', 'android', '2008-09-23',
+                  'Android applications installed on this device.')
+        ''');
+        await txn.execute('''
+          INSERT OR IGNORE INTO app_systems (id, screenscraper_id, ra_id, real_name, folder_name, launch_date, description)
+          VALUES ('android_games', 135, 0, 'Android Games', 'android_games', '2008-09-23',
+                  'Games installed as native Android applications.')
         ''');
       });
 
@@ -3479,6 +3494,22 @@ class SqliteService {
   static Future<List<SystemModel>> getAvailableSystems() async =>
       getAllSystems();
 
+  /// Returns Android packages registered as emulators or frontend launchers.
+  /// They may declare Android's game category, but they belong in Android Apps
+  /// rather than the native Android Games library.
+  static Future<Set<String>> getAndroidEmulatorPackageNames() async {
+    final db = await instance.database;
+    final rows = await db.rawQuery('''
+      SELECT DISTINCT e.android_package_name
+      FROM app_emulators e
+      JOIN app_os os ON os.id = e.os_id
+      WHERE LOWER(os.name) = 'android'
+        AND e.android_package_name IS NOT NULL
+        AND TRIM(e.android_package_name) != ''
+    ''');
+    return rows.map((row) => row['android_package_name'].toString()).toSet();
+  }
+
   /// Retrieves all emulator cores available for a specific system and operating system.
   ///
   /// The `isInstalled` on the returned models is a *package-level* check: on
@@ -4066,16 +4097,16 @@ class SqliteService {
         ur.app_emulator_unique_id as emulator_name,
         s.id as system_id, s.real_name as system_real_name, s.folder_name as system_folder_name,
         s.short_name as system_short_name,
-        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android') THEN ur.title_name END, ur.filename) as game_display_name,
+        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.title_name END, ur.filename) as game_display_name,
         usm.real_name as ss_real_name,
-        COALESCE(usm.description_en, CASE WHEN s.folder_name IN ('android') THEN ur.description END) as description,
+        COALESCE(usm.description_en, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.description END) as description,
         usm.description_en, usm.description_es, usm.description_fr, usm.description_de, usm.description_it, usm.description_pt,
         usm.rating,
-        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android') THEN ur.year END) as year,
-        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android') THEN ur.developer END) as developer,
-        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android') THEN ur.publisher END) as publisher,
-        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android') THEN ur.genre END) as genre,
-        COALESCE(usm.players, CASE WHEN s.folder_name IN ('android') THEN ur.players END) as players,
+        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.year END) as year,
+        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.developer END) as developer,
+        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.publisher END) as publisher,
+        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.genre END) as genre,
+        COALESCE(usm.players, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.players END) as players,
         ur.box2d_aspect_ratio,
         usm.is_fully_scraped
       FROM user_roms ur
@@ -4109,16 +4140,16 @@ class SqliteService {
         ur.app_emulator_unique_id as emulator_name,
         s.id as system_id, s.real_name as system_real_name, s.folder_name as system_folder_name,
         s.short_name as system_short_name,
-        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android') THEN ur.title_name END, ur.filename) as game_display_name,
+        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.title_name END, ur.filename) as game_display_name,
         usm.real_name as ss_real_name,
-        COALESCE(usm.description_en, CASE WHEN s.folder_name IN ('android') THEN ur.description END) as description,
+        COALESCE(usm.description_en, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.description END) as description,
         usm.description_en, usm.description_es, usm.description_fr, usm.description_de, usm.description_it, usm.description_pt,
         usm.rating,
-        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android') THEN ur.year END) as year,
-        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android') THEN ur.developer END) as developer,
-        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android') THEN ur.publisher END) as publisher,
-        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android') THEN ur.genre END) as genre,
-        COALESCE(usm.players, CASE WHEN s.folder_name IN ('android') THEN ur.players END        ) as players,
+        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.year END) as year,
+        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.developer END) as developer,
+        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.publisher END) as publisher,
+        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.genre END) as genre,
+        COALESCE(usm.players, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.players END        ) as players,
         ur.box2d_aspect_ratio,
         usm.is_fully_scraped
       FROM user_roms ur
@@ -4141,16 +4172,16 @@ class SqliteService {
         ur.app_emulator_unique_id as emulator_name,
         s.id as system_id, s.real_name as system_real_name, s.folder_name as system_folder_name,
         s.short_name as system_short_name,
-        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android') THEN ur.title_name END, ur.filename) as game_display_name,
+        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.title_name END, ur.filename) as game_display_name,
         usm.real_name as ss_real_name,
-        COALESCE(usm.description_en, CASE WHEN s.folder_name IN ('android') THEN ur.description END) as description,
+        COALESCE(usm.description_en, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.description END) as description,
         usm.description_en, usm.description_es, usm.description_fr, usm.description_de, usm.description_it, usm.description_pt,
         usm.rating,
-        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android') THEN ur.year END) as year,
-        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android') THEN ur.developer END) as developer,
-        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android') THEN ur.publisher END) as publisher,
-        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android') THEN ur.genre END) as genre,
-        COALESCE(usm.players, CASE WHEN s.folder_name IN ('android') THEN ur.players END        ) as players,
+        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.year END) as year,
+        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.developer END) as developer,
+        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.publisher END) as publisher,
+        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.genre END) as genre,
+        COALESCE(usm.players, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.players END        ) as players,
         ur.box2d_aspect_ratio,
         usm.is_fully_scraped
       FROM user_roms ur
@@ -4177,16 +4208,16 @@ class SqliteService {
         ur.app_emulator_unique_id as emulator_name,
         s.id as system_id, s.real_name as system_real_name, s.folder_name as system_folder_name,
         s.short_name as system_short_name,
-        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android') THEN ur.title_name END, ur.filename) as game_display_name,
+        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.title_name END, ur.filename) as game_display_name,
         usm.real_name as ss_real_name,
-        COALESCE(usm.description_en, CASE WHEN s.folder_name IN ('android') THEN ur.description END) as description,
+        COALESCE(usm.description_en, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.description END) as description,
         usm.description_en, usm.description_es, usm.description_fr, usm.description_de, usm.description_it, usm.description_pt,
         usm.rating,
-        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android') THEN ur.year END) as year,
-        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android') THEN ur.developer END) as developer,
-        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android') THEN ur.publisher END) as publisher,
-        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android') THEN ur.genre END) as genre,
-        COALESCE(usm.players, CASE WHEN s.folder_name IN ('android') THEN ur.players END        ) as players,
+        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.year END) as year,
+        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.developer END) as developer,
+        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.publisher END) as publisher,
+        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.genre END) as genre,
+        COALESCE(usm.players, CASE WHEN s.folder_name IN ('android', 'android_games') THEN ur.players END        ) as players,
         ur.box2d_aspect_ratio,
         usm.is_fully_scraped
       FROM user_roms ur

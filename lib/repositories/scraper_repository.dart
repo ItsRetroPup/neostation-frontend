@@ -30,7 +30,7 @@ class ScraperRepository {
         s.ra_id
       FROM user_detected_systems uds
       JOIN app_systems s ON uds.app_system_id = s.id
-      WHERE s.folder_name != 'android-apps'
+      WHERE s.folder_name != 'android'
         AND s.screenscraper_id IS NOT NULL
         AND s.screenscraper_id != 0
       ORDER BY s.real_name
@@ -353,6 +353,7 @@ class ScraperRepository {
         INNER JOIN user_screenscraper_system_config ussc ON asys.id = ussc.app_system_id
         WHERE asys.screenscraper_id IS NOT NULL 
         AND asys.screenscraper_id > 0
+        AND asys.folder_name != 'android'
         AND ussc.enabled = 1
       ''');
       return mappings;

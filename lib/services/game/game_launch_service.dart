@@ -66,14 +66,20 @@ class GameLaunchService {
     GameModel game,
   ) async {
     try {
-      if (Platform.isAndroid && (system.folderName == 'android')) {
+      if (Platform.isAndroid &&
+          (system.folderName == 'android' ||
+              system.folderName == 'android_games')) {
         if (game.romPath == null) {
           return GameLaunchResult.failure(
             AppLocale.packageNameMissing.getString(context),
           );
         }
 
-        GameSessionManager.registerGameLaunch(system, game, 'android_app');
+        GameSessionManager.registerGameLaunch(
+          system,
+          game,
+          system.folderName == 'android_games' ? 'android_game' : 'android_app',
+        );
         await FavoritesService.recordGamePlayed(game);
 
         final success = await AndroidService.launchPackage(game.romPath!);

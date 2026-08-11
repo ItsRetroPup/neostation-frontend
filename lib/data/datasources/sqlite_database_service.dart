@@ -159,7 +159,9 @@ class SqliteDatabaseService {
   }) async {
     final initialCount = await SqliteService.getRomCountForSystem(system.id!);
 
-    if (Platform.isAndroid && (system.folderName == 'android')) {
+    if (Platform.isAndroid &&
+        (system.folderName == 'android' ||
+            system.folderName == 'android_games')) {
       await _performAndroidSystemScan(system, system.folderName);
       final finalCount = await SqliteService.getRomCountForSystem(system.id!);
       return ScanSummary(
@@ -964,10 +966,18 @@ class SqliteDatabaseService {
       final installedApps = await AndroidService.getInstalledApps(
         includeSystemApps: true,
       );
+      final androidEmulatorPackages =
+          await SqliteService.getAndroidEmulatorPackageNames();
+      final bool scanGames = folderName == 'android_games';
       final List<DatabaseGameModel> scannedGames = [];
 
       for (var app in installedApps) {
         final String packageName = app['package'];
+        final bool isGame =
+            app['isGame'] == true &&
+            (app['isKnownGame'] == true ||
+                !androidEmulatorPackages.contains(packageName));
+        if (isGame != scanGames) continue;
         scannedGames.add(
           DatabaseGameModel(
             filename: packageName,
@@ -975,7 +985,9 @@ class SqliteDatabaseService {
             realName: app['name'],
             emulatorName: 'Android',
             systemFolderName: folderName,
-            descriptions: {'en': 'Android Application'},
+            descriptions: {
+              'en': scanGames ? 'Android Game' : 'Android Application',
+            },
           ),
         );
       }
@@ -991,7 +1003,7 @@ class SqliteDatabaseService {
       );
       return scannedGames;
     } catch (e) {
-      _log.e('Error scanning Android apps: $e');
+      _log.e('Error scanning Android apps/games: $e');
       return [];
     }
   }

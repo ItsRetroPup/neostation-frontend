@@ -609,7 +609,10 @@ class ScreenScraperService {
           romName,
           appSystemId: appSystemId,
           maxDailyRequests: 0,
-          gameName: (systemFolder == 'android') ? gameName : null,
+          gameName:
+              (systemFolder == 'android' || systemFolder == 'android_games')
+              ? gameName
+              : null,
         );
         if (gameInfoResult != null && gameInfoResult['gameInfo'] != null) break;
         attempts++;
@@ -885,7 +888,9 @@ class ScreenScraperService {
         filename,
         appSystemId: appSystemId,
         maxDailyRequests: maxDailyRequests,
-        gameName: (systemFolder == 'android') ? titleName : null,
+        gameName: (systemFolder == 'android' || systemFolder == 'android_games')
+            ? titleName
+            : null,
       );
       var gameInfo = gameResult?['gameInfo'];
       int requestsMade = 1;
@@ -912,6 +917,7 @@ class ScreenScraperService {
 
       if (gameInfo == null &&
           systemFolder != 'android' &&
+          systemFolder != 'android_games' &&
           File(romPath).existsSync()) {
         final hash = await ScreenscraperRomHasher.calculateMd5InIsolate(
           romPath,

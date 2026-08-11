@@ -38,6 +38,25 @@ class MainActivity: MultiDisplayFlutterActivity(), GamepadsCompatibleActivity {
     // Max size the dock/picker renders an app icon at; icons are rasterized to
     // this (in px) before encoding so we don't ship/decode full-res drawables.
     private val ICON_TARGET_DP = 56f
+    // PUBG Mobile variants omit ApplicationInfo.CATEGORY_GAME, so Android
+    // reports them as ordinary apps despite being games.
+    private val knownAndroidGamePackages = setOf(
+        "com.tencent.ig",
+        "com.pubg.imobile",
+        "com.pubg.krmobile",
+        "com.rekoo.pubgm",
+        "com.vng.pubgmobile",
+    )
+    // Launchers and emulator frontends can incorrectly declare the Android
+    // game category. Keep them in Android Apps, not Android Games.
+    private val knownAndroidNonGamePackages = setOf(
+        "com.armsx2",
+        "com.armsx3",
+        "com.esde.companion",
+        "com.iisulauncher",
+        "com.nanodata.armsx",
+        "org.es_de.frontend",
+    )
     private val LAUNCHER_CHANNEL = "com.neogamelab.neostation/launcher"
     var keyListener: ((KeyEvent) -> Boolean)? = null
     var motionListener: ((MotionEvent) -> Boolean)? = null
@@ -975,8 +994,16 @@ class MainActivity: MultiDisplayFlutterActivity(), GamepadsCompatibleActivity {
                     val appInfo = activityInfo.applicationInfo 
                     val isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
                     
-                    // All Android apps are now treated the same
-                    val isGame = false
+                    // Android packages declare their category in the manifest.
+                    // Keep games out of the app launcher so Flutter can surface
+                    // them as a normal, separate library system instead.
+                    val isKnownGame = packageName in knownAndroidGamePackages
+                    val isGame = !isSystemApp &&
+                        packageName !in knownAndroidNonGamePackages && (
+                        isKnownGame ||
+                            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                                appInfo.category == ApplicationInfo.CATEGORY_GAME)
+                        )
 
                     val label = resolveInfo.loadLabel(pm).toString()
 
@@ -990,7 +1017,8 @@ class MainActivity: MultiDisplayFlutterActivity(), GamepadsCompatibleActivity {
                         "name" to label,
                         "package" to packageName,
                         "isSystemApp" to isSystemApp,
-                        "isGame" to isGame
+                        "isGame" to isGame,
+                        "isKnownGame" to isKnownGame,
                     ))
                 }
                 

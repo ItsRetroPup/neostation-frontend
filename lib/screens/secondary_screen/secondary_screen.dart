@@ -685,7 +685,9 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     if (_pickerApps != null || _loadingPickerApps) return;
     if (!mounted) return;
     setState(() => _loadingPickerApps = true);
-    final apps = await SecondaryAppsService.getInstalledApps();
+    final apps = (await SecondaryAppsService.getInstalledApps())
+        .where((app) => app['isGame'] != true)
+        .toList();
     if (!mounted) return;
     setState(() {
       _pickerApps = apps;
