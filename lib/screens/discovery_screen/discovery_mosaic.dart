@@ -83,6 +83,21 @@ class DiscoveryTile {
   /// Whether the cursor can land here. Notices carry no game, so they are
   /// stepped over rather than being a dead stop.
   bool get isFocusable => entry != null;
+
+  /// A copy of this tile showing [replacement] instead of its own pick.
+  ///
+  /// The re-roll shuffle uses it to flash games through a tile: the section
+  /// keeps its label, icon and place on the board while the game inside it
+  /// changes. The copy is deliberately a new instance — the cursor compares
+  /// tiles by identity, so callers must keep testing the original.
+  DiscoveryTile withEntry(DiscoveryBoardEntry replacement) => DiscoveryTile(
+    kind: kind,
+    labelKey: labelKey,
+    icon: icon,
+    entry: replacement,
+    noticeKey: noticeKey,
+    achievementCount: achievementCount,
+  );
 }
 
 /// The board's tiles, in display order, plus the grid the cursor walks.

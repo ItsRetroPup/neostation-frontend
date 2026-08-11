@@ -3,6 +3,7 @@ import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:neostation/l10n/app_locale.dart';
 
+import '../../models/database_game_model.dart';
 import '../../models/discovery_models.dart';
 import '../../providers/file_provider.dart';
 import 'discovery_mosaic.dart';
@@ -28,6 +29,8 @@ class DiscoveryStorefront extends StatelessWidget {
     required this.fileProvider,
     required this.selectedTile,
     required this.onTileTapped,
+    this.shuffleSlotId,
+    this.shuffleGame,
   });
 
   final DiscoveryBoard board;
@@ -36,6 +39,14 @@ class DiscoveryStorefront extends StatelessWidget {
 
   /// The tile the cursor is on, or null when nothing is focusable.
   final DiscoveryTile? selectedTile;
+
+  /// Slot currently being re-rolled, and the game flashing past in it.
+  ///
+  /// The substitution happens here rather than in the board so the tile keeps
+  /// its identity: the cursor, the selection ring and the tap target all still
+  /// belong to the real pick while the artwork inside flickers.
+  final String? shuffleSlotId;
+  final DatabaseGameModel? shuffleGame;
 
   /// Fired by touch/mouse. The tap both moves the cursor and acts, matching
   /// what pressing A on that tile would do.
@@ -77,6 +88,7 @@ class DiscoveryStorefront extends StatelessWidget {
                           fileProvider: fileProvider,
                           selectedTile: selectedTile,
                           onTileTapped: onTileTapped,
+                          present: _present,
                         ),
                       ),
                     ],
@@ -103,7 +115,7 @@ class DiscoveryStorefront extends StatelessWidget {
             // The same shares the cursor navigates by — see [kMosaicHeroFlex].
             flex: hasGrid ? kMosaicHeroFlex : 1,
             child: DiscoveryHeroCard(
-              tile: hero,
+              tile: _present(hero),
               isSelected: identical(selectedTile, hero),
               fileProvider: fileProvider,
               weekLabel: _weekLabel(context),
@@ -150,11 +162,24 @@ class DiscoveryStorefront extends StatelessWidget {
     if (index >= mosaic.grid.length) return const SizedBox.shrink();
     final tile = mosaic.grid[index];
     return DiscoveryGridTile(
-      tile: tile,
+      tile: _present(tile),
       isSelected: identical(selectedTile, tile),
       fileProvider: fileProvider,
       onTap: () => onTileTapped(tile),
     );
+  }
+
+  /// The tile as it should be drawn this frame.
+  ///
+  /// Everything but the game itself comes from the real tile; only a slot in
+  /// the middle of a re-roll shows something else.
+  DiscoveryTile _present(DiscoveryTile tile) {
+    final game = shuffleGame;
+    final slotId = shuffleSlotId;
+    final entry = tile.entry;
+    if (game == null || slotId == null || entry == null) return tile;
+    if (entry.pick.slotId != slotId) return tile;
+    return tile.withEntry(DiscoveryBoardEntry(pick: entry.pick, game: game));
   }
 
   /// The week the board belongs to, rendered from its own key.
@@ -178,12 +203,16 @@ class _DiscoveryBand extends StatefulWidget {
     required this.fileProvider,
     required this.selectedTile,
     required this.onTileTapped,
+    required this.present,
   });
 
   final List<DiscoveryTile> tiles;
   final FileProvider fileProvider;
   final DiscoveryTile? selectedTile;
   final void Function(DiscoveryTile tile) onTileTapped;
+
+  /// Substitutes the game a re-rolling tile is currently showing.
+  final DiscoveryTile Function(DiscoveryTile tile) present;
 
   @override
   State<_DiscoveryBand> createState() => _DiscoveryBandState();
@@ -258,7 +287,7 @@ class _DiscoveryBandState extends State<_DiscoveryBand> {
             return SizedBox(
               width: _tileWidth,
               child: DiscoveryBandTile(
-                tile: tile,
+                tile: widget.present(tile),
                 isSelected: identical(widget.selectedTile, tile),
                 fileProvider: widget.fileProvider,
                 onTap: () => widget.onTileTapped(tile),

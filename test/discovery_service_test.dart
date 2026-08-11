@@ -51,18 +51,23 @@ void main() {
       'play_time, last_played) VALUES (?, ?, ?, ?, ?, ?)',
       [filename, '/roms/snes/$filename', 'snes', idRa, playTime, lastPlayed],
     );
-    await db.execute(
-      'INSERT INTO user_screenscraper_metadata (app_system_id, filename, rating, '
-      'genre, is_fully_scraped, real_name) VALUES (?, ?, ?, ?, ?, ?)',
-      [
-        'snes',
-        filename,
-        rating,
-        genre,
-        isFullyScraped,
-        filename.split('.').first,
-      ],
-    );
+    // An unscraped ROM has no metadata row at all — which is what the coverage
+    // gate is really asking about. `is_fully_scraped` is a separate axis: it
+    // only goes up when a scrape's media step succeeded.
+    if (scraped) {
+      await db.execute(
+        'INSERT INTO user_screenscraper_metadata (app_system_id, filename, rating, '
+        'genre, is_fully_scraped, real_name) VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          'snes',
+          filename,
+          rating,
+          genre,
+          isFullyScraped,
+          filename.split('.').first,
+        ],
+      );
+    }
     if (idRa != null && numAchievements > 0) {
       await db.execute(
         'INSERT INTO app_ra_game_list (hash, game_id, console_id, console_name, '

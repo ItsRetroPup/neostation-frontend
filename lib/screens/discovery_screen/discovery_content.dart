@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'package:neostation/data/datasources/sqlite_service.dart';
 import 'package:neostation/l10n/app_locale.dart';
+import 'package:neostation/models/database_game_model.dart';
 import 'package:neostation/models/discovery_models.dart';
 import 'package:neostation/providers/discovery_provider.dart';
 import 'package:neostation/providers/file_provider.dart';
@@ -41,6 +44,31 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
   /// The mosaic the last build produced. Kept so the navigation handlers can
   /// work out their bounds without rebuilding the whole board on every press.
   DiscoveryMosaic _mosaic = const DiscoveryMosaic.empty();
+
+  /// The re-roll shuffle: a fast blur that decelerates into its result, in the
+  /// spirit of the random-game dialog's slot machine
+  /// (`random_game_dialog.dart`). The tail is what makes it land rather than
+  /// simply stop.
+  static const int _shuffleFastFrames = 12;
+  static const int _shuffleFastMs = 55;
+  static const List<int> _shuffleTailMs = [95, 150, 220, 300];
+
+  static int get _shuffleFrames => _shuffleFastFrames + _shuffleTailMs.length;
+
+  static int _shuffleFrameMs(int frame) => frame < _shuffleFastFrames
+      ? _shuffleFastMs
+      : _shuffleTailMs[frame - _shuffleFastFrames];
+
+  /// The slot being re-rolled and the game showing in it this frame.
+  String? _shuffleSlotId;
+  DatabaseGameModel? _shuffleGame;
+
+  /// Guards against two shuffles overlapping: a frame belonging to an older
+  /// run must not write over a newer one, or the board would flicker after it
+  /// had already landed.
+  int _shuffleToken = 0;
+
+  bool get _isShuffling => _shuffleSlotId != null;
 
   @override
   void initState() {
@@ -159,7 +187,8 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
   /// (video controller, artwork versioning, scrape progress) for no gain.
   Future<void> _openSelected() async {
     final entry = _selectedEntry;
-    if (entry == null) return;
+    // Opening mid-shuffle would leave on a game the tile is not showing.
+    if (entry == null || _isShuffling) return;
 
     final folder = entry.game.systemFolderName;
     if (folder == null || folder.isEmpty) return;
@@ -184,10 +213,48 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
   }
 
   /// Y: swap the focused section's pick for a different game.
+  ///
+  /// The tile shuffles through the library on the way there — the same slot
+  /// machine the random-game dialog runs, played out in place on the board
+  /// instead of in a modal. The re-roll itself is started first and awaited
+  /// last, so the animation covers the database work rather than following it.
   Future<void> _rerollSelected() async {
     final entry = _selectedEntry;
-    if (entry == null) return;
-    await context.read<DiscoveryProvider>().reroll(entry.pick.slotId);
+    if (entry == null || _isShuffling) return;
+
+    final slotId = entry.pick.slotId;
+    final provider = context.read<DiscoveryProvider>();
+    final pool = provider.board?.shufflePool ?? const <DatabaseGameModel>[];
+
+    // Nothing to flash through: re-roll plainly rather than sit still.
+    if (pool.isEmpty) {
+      await provider.reroll(slotId);
+      return;
+    }
+
+    final token = ++_shuffleToken;
+    final pending = provider.reroll(slotId);
+    final random = Random();
+
+    for (var frame = 0; frame < _shuffleFrames; frame++) {
+      if (!mounted || token != _shuffleToken) return;
+      setState(() {
+        _shuffleSlotId = slotId;
+        _shuffleGame = pool[random.nextInt(pool.length)];
+      });
+      // Every other frame: at this speed a tick per frame is a buzz.
+      if (frame.isEven) SfxService().playNavSound();
+      await Future.delayed(Duration(milliseconds: _shuffleFrameMs(frame)));
+    }
+
+    // The frame after the last is the real pick, so the board has to be here.
+    await pending;
+    if (!mounted || token != _shuffleToken) return;
+    setState(() {
+      _shuffleSlotId = null;
+      _shuffleGame = null;
+    });
+    SfxService().playEnterSound();
   }
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -241,6 +308,8 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
                 fileProvider: context.watch<FileProvider>(),
                 selectedTile: selected,
                 onTileTapped: _onTileTapped,
+                shuffleSlotId: _shuffleSlotId,
+                shuffleGame: _shuffleGame,
               ),
             ),
             DiscoveryFooter(
@@ -257,9 +326,15 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
   }
 
   /// Names the selected pick for the footer, e.g. `Hidden Gem: ActRaiser`.
+  ///
+  /// A shuffling slot is named by whatever is flashing past, so the footer and
+  /// the tile always agree.
   String? _selectionText(BuildContext context, DiscoveryTile? tile) {
-    final game = tile?.entry?.game;
+    var game = tile?.entry?.game;
     if (tile == null || game == null) return null;
+    if (_shuffleGame != null && tile.entry?.pick.slotId == _shuffleSlotId) {
+      game = _shuffleGame!;
+    }
     final label = tile.labelKey.getString(context);
     return '$label: ${game.realName ?? game.filename}';
   }

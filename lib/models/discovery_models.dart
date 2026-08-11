@@ -176,16 +176,24 @@ class DiscoveryBoard {
     required this.entries,
     this.scrapeCoverageLow = false,
     this.libraryIsEmpty = false,
+    this.shufflePool = const [],
   });
 
   /// An empty board for a library with nothing to pick from.
   const DiscoveryBoard.empty(this.weekKey)
     : entries = const [],
       scrapeCoverageLow = false,
-      libraryIsEmpty = true;
+      libraryIsEmpty = true,
+      shufflePool = const [];
 
   final String weekKey;
   final List<DiscoveryBoardEntry> entries;
+
+  /// Games the tab flashes through while a slot is re-rolling.
+  ///
+  /// Sampled from the rows already read to build the board: the shuffle is a
+  /// flourish, and it must not cost a second pass over the library to animate.
+  final List<DatabaseGameModel> shufflePool;
 
   /// Whether the board-level scrape gate tripped: too little of the library is
   /// scraped for a "hidden gem" to mean anything, so that section explains

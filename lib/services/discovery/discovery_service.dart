@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../../models/database_game_model.dart';
 import '../../models/discovery_models.dart';
 import '../../repositories/discovery_repository.dart';
@@ -28,6 +30,9 @@ class DiscoveryService {
 
   /// Weeks of picks kept before pruning.
   static const int _retentionWeeks = 8;
+
+  /// How many games the re-roll shuffle draws from.
+  static const int _shufflePoolSize = 24;
 
   DateTime get _now => (_clock ?? DateTime.now)();
 
@@ -169,7 +174,39 @@ class DiscoveryService {
       weekKey: weekKey,
       entries: entries,
       scrapeCoverageLow: plan.scrapeCoverageLow,
+      shufflePool: _sampleShufflePool(byPath.values, weekKey),
     );
+  }
+
+  /// Draws the games the tab flashes through while a slot re-rolls.
+  ///
+  /// Biased towards scraped games: a decoy with no artwork renders as a blank
+  /// tile, which reads as the board breaking rather than as a shuffle. Seeded
+  /// on the week so the same pool is drawn every time the board is built, which
+  /// keeps the flashed art in the image cache across re-rolls.
+  List<DatabaseGameModel> _sampleShufflePool(
+    Iterable<Map<String, Object?>> rows,
+    String weekKey,
+  ) {
+    final scraped = [
+      for (final row in rows)
+        if ((row['ss_real_name'] as String?)?.isNotEmpty == true) row,
+    ];
+    final pool = scraped.isEmpty ? rows.toList() : scraped;
+    if (pool.isEmpty) return const [];
+
+    final random = Random(weekKey.hashCode);
+    final wanted = pool.length < _shufflePoolSize
+        ? pool.length
+        : _shufflePoolSize;
+    final taken = <int>{};
+    final sample = <DatabaseGameModel>[];
+    while (sample.length < wanted) {
+      final index = random.nextInt(pool.length);
+      if (!taken.add(index)) continue;
+      sample.add(DatabaseGameModel.fromJson(pool[index]));
+    }
+    return sample;
   }
 
   /// Indexes candidate rows by lower-cased ROM path.
