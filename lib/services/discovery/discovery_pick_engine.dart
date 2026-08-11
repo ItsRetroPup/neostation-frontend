@@ -149,8 +149,23 @@ class DiscoveryPickEngine {
   /// into the library.
   static const int _rerollWidening = _topK;
 
-  /// Minimum candidates a genre needs before it earns a shelf.
+  /// Minimum candidates a genre needs before it earns a slot.
   static const int _minGenreCandidates = 3;
+
+  /// Genre picks a full board carries.
+  ///
+  /// The board shows six in its grid and the rest along the bottom strip, so
+  /// eight fills the shape with a little over for the strip. A library without
+  /// eight qualifying genres simply gets fewer.
+  static const int _genreSlots = 8;
+
+  /// How many genres are in the running for each slot of the line-up.
+  ///
+  /// Taking the biggest buckets in order makes the line-up a property of the
+  /// library rather than of the week: the same genres then head the board for
+  /// as long as the user owns those ROMs. Drawing the line-up from a band twice
+  /// the size keeps the big buckets favoured while letting the board rotate.
+  static const int _genreBandFactor = 2;
 
   /// Below this fraction of fully scraped games, "hidden gem" is
   /// indistinguishable from "not scraped yet", so the section explains itself
@@ -169,7 +184,7 @@ class DiscoveryPickEngine {
     required String weekKey,
     Set<String> recentPickPaths = const {},
     Map<String, DiscoveryPick> pinned = const {},
-    int genreSlots = 4,
+    int genreSlots = _genreSlots,
   }) {
     if (candidates.isEmpty) {
       return const DiscoveryPlan(picks: [], newPicks: []);
@@ -180,6 +195,7 @@ class DiscoveryPickEngine {
 
     final slots = _slotLineUp(
       candidates: candidates,
+      weekKey: weekKey,
       pinned: pinned,
       genreSlots: genreSlots,
       skipHiddenGem: coverageLow,
@@ -280,6 +296,7 @@ class DiscoveryPickEngine {
   /// a far more visible failure than a missing shelf.
   List<DiscoverySlot> _slotLineUp({
     required List<DiscoveryCandidate> candidates,
+    required String weekKey,
     required Map<String, DiscoveryPick> pinned,
     required int genreSlots,
     required bool skipHiddenGem,
@@ -326,7 +343,7 @@ class DiscoveryPickEngine {
               .where((e) => e.value >= _minGenreCandidates)
               .where((e) => !chosenBuckets.contains(e.key))
               .toList()
-            // Biggest shelves first; enum order breaks ties so the line-up does
+            // Biggest buckets first; enum order breaks ties so the line-up does
             // not depend on map iteration order.
             ..sort((a, b) {
               final byCount = b.value.compareTo(a.value);
@@ -334,10 +351,24 @@ class DiscoveryPickEngine {
                   ? byCount
                   : a.key.index.compareTo(b.key.index);
             });
-      for (final entry in ranked) {
-        if (chosenBuckets.length >= genreSlots) break;
-        chosenBuckets.add(entry.key);
-      }
+
+      // Drawn from a band of the biggest buckets rather than taken straight
+      // off the top: the ranking is a property of the library and never
+      // changes, so taking it in order pins the same genres to the board for
+      // as long as the user owns those ROMs. The week seeds the draw, so the
+      // line-up rotates but is still identical on every device and launch.
+      final wanted = genreSlots - chosenBuckets.length;
+      final band = ranked.take(wanted * _genreBandFactor).toList()
+        ..shuffle(Random(_fnv1aHash('$weekKey|genres')));
+      final drawn = band.take(wanted).toList()
+        // Which genres are on the board is the week's business; where they sit
+        // is not. Biggest first, so the board leads with the genres the user
+        // owns most of and the thinner ones fall to the strip below.
+        ..sort((a, b) {
+          final byCount = b.value.compareTo(a.value);
+          return byCount != 0 ? byCount : a.key.index.compareTo(b.key.index);
+        });
+      chosenBuckets.addAll(drawn.map((entry) => entry.key));
     }
 
     for (var i = 0; i < chosenBuckets.length; i++) {

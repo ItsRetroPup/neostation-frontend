@@ -166,27 +166,80 @@ void main() {
       expect(matches, 1);
     });
 
-    test(
-      'genre shelves are ordered by candidate count, capped at the limit',
-      () {
+    test('genre slots are capped, drawn from the biggest buckets', () {
+      final plan = engine.buildPlan(
+        candidates: library(),
+        weekKey: week,
+        genreSlots: 2,
+      );
+      final genres = plan.picks
+          .where((p) => p.section == DiscoverySection.genrePick)
+          .toList();
+
+      expect(genres.length, lessThanOrEqualTo(2));
+      expect(genres.map((p) => p.slotOrder), [0, 1]);
+      // Two slots draw from a band of the four biggest buckets: platform (6),
+      // rpg (5), puzzle (4), shooter (3).
+      expect(
+        genres.map((p) => p.genre),
+        everyElement(
+          isIn([
+            GenreBucket.platform,
+            GenreBucket.rpg,
+            GenreBucket.puzzle,
+            GenreBucket.shooter,
+          ]),
+        ),
+      );
+    });
+
+    test('the genre line-up rotates from week to week', () {
+      // The ranking is a property of the library, so taking it in order would
+      // pin the same genres to the board for as long as the user owns those
+      // ROMs — which reads as the tab being stuck.
+      final lineUps = <String>{};
+      for (var w = 1; w <= 13; w++) {
         final plan = engine.buildPlan(
           candidates: library(),
-          weekKey: week,
+          weekKey: '2026-W${w.toString().padLeft(2, '0')}',
           genreSlots: 2,
         );
-        final shelves = plan.picks
-            .where((p) => p.section == DiscoverySection.genrePick)
-            .toList();
+        lineUps.add(
+          plan.picks
+              .where((p) => p.section == DiscoverySection.genrePick)
+              .map((p) => p.genre!.name)
+              .join(','),
+        );
+      }
+      expect(lineUps.length, greaterThan(1));
+    });
 
-        expect(shelves.length, lessThanOrEqualTo(2));
-        expect(shelves.map((p) => p.slotOrder), [0, 1]);
-        // platform (6) and rpg (5) are the two biggest buckets.
-        expect(shelves.map((p) => p.genre), [
-          GenreBucket.platform,
-          GenreBucket.rpg,
-        ]);
-      },
-    );
+    test('a line-up already chosen for the week is kept as it is', () {
+      // Rotation is between weeks, never within one: the board a user opens on
+      // Saturday has to be the board they opened on Monday.
+      const pinnedShelf = DiscoveryPick(
+        weekKey: week,
+        slotId: 'genre:racing',
+        section: DiscoverySection.genrePick,
+        romPath: '/roms/snes/gem0.sfc',
+        genre: GenreBucket.racing,
+        slotOrder: 0,
+      );
+
+      final plan = engine.buildPlan(
+        candidates: library(),
+        weekKey: week,
+        pinned: const {'genre:racing': pinnedShelf},
+        genreSlots: 1,
+      );
+
+      expect(
+        plan.picks
+            .where((p) => p.section == DiscoverySection.genrePick)
+            .map((p) => p.genre),
+        [GenreBucket.racing],
+      );
+    });
 
     test('a genre with too few candidates gets no shelf', () {
       final candidates = [
