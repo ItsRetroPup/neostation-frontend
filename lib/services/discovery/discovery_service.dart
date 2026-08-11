@@ -200,7 +200,13 @@ class DiscoveryService {
           ? null
           : DateTime.tryParse(lastPlayedRaw.toString()),
       playTimeSeconds: (row['play_time'] as num?)?.toInt() ?? 0,
-      isFullyScraped: _isTrue(row['is_fully_scraped']),
+      // A scraped game is one with metadata to show. `is_fully_scraped` only
+      // goes up when a scrape's media step succeeds, so it is taken as
+      // sufficient evidence but never as necessary — see
+      // [DiscoveryCandidate.isScraped].
+      isScraped:
+          _isTrue(row['is_fully_scraped']) ||
+          (row['ss_real_name'] as String?)?.isNotEmpty == true,
       isFavorite: _isTrue(row['is_favorite']),
       achievementCount: (row['ra_num_achievements'] as num?)?.toInt() ?? 0,
       // Earned counts are not part of the local catalog: `app_ra_game_list` is

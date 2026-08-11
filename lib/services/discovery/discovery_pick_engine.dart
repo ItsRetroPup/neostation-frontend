@@ -20,7 +20,7 @@ class DiscoveryCandidate {
     this.rating,
     this.lastPlayed,
     this.playTimeSeconds = 0,
-    this.isFullyScraped = false,
+    this.isScraped = false,
     this.isFavorite = false,
     this.achievementCount = 0,
     this.achievementsEarned,
@@ -37,7 +37,18 @@ class DiscoveryCandidate {
 
   final DateTime? lastPlayed;
   final int playTimeSeconds;
-  final bool isFullyScraped;
+
+  /// Whether this game has scraper metadata to show.
+  ///
+  /// Deliberately NOT `user_screenscraper_metadata.is_fully_scraped`: that flag
+  /// is only set when the *media download* step of a scrape reports success, so
+  /// a fully scraped library reads as barely scraped at all (39 of 9,087 on the
+  /// maintainer's device, against 8,754 games that do have metadata). What this
+  /// engine actually needs to know is whether a game's blank rating means
+  /// "ScreenScraper rated it nothing" or "nobody has looked yet", and the
+  /// presence of metadata is what answers that.
+  final bool isScraped;
+
   final bool isFavorite;
   final GenreBucket genre;
 
@@ -155,7 +166,7 @@ class DiscoveryPickEngine {
       return const DiscoveryPlan(picks: [], newPicks: []);
     }
 
-    final scrapedCount = candidates.where((c) => c.isFullyScraped).length;
+    final scrapedCount = candidates.where((c) => c.isScraped).length;
     final coverageLow = scrapedCount / candidates.length < _minScrapeCoverage;
 
     final slots = _slotLineUp(
@@ -388,15 +399,15 @@ class DiscoveryPickEngine {
           (c) => c.genre == slot.genre,
         ];
       case DiscoverySection.hiddenGem:
-        // Single rung on purpose: relaxing `isFullyScraped` here would show a
-        // game with no art or metadata, which is the one thing this section
-        // must never do.
+        // Single rung on purpose: relaxing `isScraped` here would show a game
+        // with no metadata at all, and "unrated" would then mean "unscraped" —
+        // the one thing this section must never do.
         return [
           (c) =>
               (c.rating == null || c.rating == 0) &&
               c.lastPlayed == null &&
               c.playTimeSeconds == 0 &&
-              c.isFullyScraped,
+              c.isScraped,
         ];
       case DiscoverySection.achievementSpotlight:
         return [

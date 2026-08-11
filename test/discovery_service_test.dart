@@ -42,6 +42,7 @@ void main() {
     int playTime = 0,
     String? lastPlayed,
     int isFullyScraped = 1,
+    bool scraped = true,
     int? idRa,
     int numAchievements = 0,
   }) async {
@@ -208,9 +209,10 @@ void main() {
     );
 
     test('a sparsely scraped library skips the hidden gem section', () async {
-      // Nine unscraped games against two scraped ones is under the 25% gate.
+      // Nine games with no metadata at all against two with it: under the 25%
+      // gate, so "unrated" cannot be told from "nobody has looked yet".
       for (var i = 0; i < 9; i++) {
-        await insertGame('raw$i.sfc', isFullyScraped: 0);
+        await insertGame('raw$i.sfc', scraped: false);
       }
       await insertGame('gem0.sfc');
       await insertGame('gem1.sfc');
@@ -219,6 +221,45 @@ void main() {
 
       expect(board.scrapeCoverageLow, isTrue);
       expect(board.hiddenGemEntry, isNull);
+    });
+
+    test('the board carries games for the re-roll shuffle to flash', () async {
+      await seedLibrary();
+
+      final board = await serviceAt(monday).loadBoard();
+
+      // Drawn from rows the board already read, so it costs no extra query —
+      // and seeded on the week, so a re-roll flashes the same faces and their
+      // artwork stays in the image cache.
+      expect(board.shufflePool, isNotEmpty);
+      final again = await serviceAt(monday).loadBoard();
+      expect(
+        again.shufflePool.map((g) => g.romPath),
+        board.shufflePool.map((g) => g.romPath),
+      );
+    });
+
+    test('an empty library has nothing to shuffle through', () async {
+      final board = await serviceAt(monday).loadBoard();
+
+      expect(board.libraryIsEmpty, isTrue);
+      expect(board.shufflePool, isEmpty);
+    });
+
+    test('a scraped library is not called sparse over is_fully_scraped', () async {
+      // The flag only goes up when a scrape's media step succeeds, so a fully
+      // scraped library can carry it on almost nothing (39 of 9,087 games on
+      // the maintainer's device). Metadata is what the gate must read: telling
+      // a user with a scraped library to "scrape more" is nonsense, and it cost
+      // them the hidden gem every week.
+      for (var i = 0; i < 11; i++) {
+        await insertGame('meta$i.sfc', isFullyScraped: 0);
+      }
+
+      final board = await serviceAt(monday).loadBoard();
+
+      expect(board.scrapeCoverageLow, isFalse);
+      expect(board.hiddenGemEntry, isNotNull);
     });
 
     test('picks older than the retention window are pruned', () async {

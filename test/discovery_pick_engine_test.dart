@@ -30,7 +30,7 @@ void main() {
     rating: rating,
     lastPlayed: lastPlayed,
     playTimeSeconds: playTime,
-    isFullyScraped: scraped,
+    isScraped: scraped,
     isFavorite: favorite,
     achievementCount: achievements,
     achievementsEarned: earned,
