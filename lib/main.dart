@@ -24,6 +24,7 @@ import 'package:neostation/services/startup_theme_cache.dart';
 import 'package:neostation/widgets/shimmering_logo.dart';
 import 'package:neostation/widgets/permission_check_wrapper.dart';
 import 'package:neostation/utils/custom_scroll_behavior.dart';
+import 'package:neostation/utils/gamepad_nav.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/services/config_service.dart';
@@ -196,6 +197,7 @@ void main() async {
   final log = LoggerService.instance;
   await log.init();
   log.i('Starting NeoStation...');
+  await GamepadNavigation.initializeControllerGlyphProfile();
 
   // Resolve the user-data location before anything reads it, so the cold-boot
   // wait happens once (behind the loading screen) rather than once per caller.
@@ -372,6 +374,11 @@ void main() async {
   SyncManager.instance.restoreActive(
     sqliteConfigProvider.config.activeSyncProvider,
   );
+
+  // macOS can expose already-connected controllers only after the desktop
+  // window and plugins have finished initializing. Retry here so setup and
+  // startup surfaces receive the correct glyph profile too.
+  await GamepadNavigation.initializeControllerGlyphProfile();
 
   runApp(
     MyApp(
@@ -908,17 +915,6 @@ class _MyAppState extends State<MyApp> {
                       checkerboardRasterCacheImages: false,
                       checkerboardOffscreenLayers: false,
                       showSemanticsDebugger: false,
-                      builder: (context, child) {
-                        return MediaQuery(
-                          data: MediaQuery.of(context).copyWith(
-                            textScaler: MediaQuery.of(context).textScaler.clamp(
-                              minScaleFactor: 0.6,
-                              maxScaleFactor: 1.4,
-                            ),
-                          ),
-                          child: child!,
-                        );
-                      },
                       theme: themeProvider.currentTheme.copyWith(
                         textTheme: GoogleFonts.antaTextTheme(
                           themeProvider.currentTheme.textTheme,

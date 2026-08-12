@@ -29,7 +29,7 @@ public class GamepadsDarwinPlugin: NSObject, FlutterPlugin {
     }
 
     private func onGamepadEvent(gamepadId: Int, gamepad: GCExtendedGamepad, element: GCControllerElement) {
-        for (key, value) in getValues(element: element) {
+        for (key, value) in getValues(gamepad: gamepad, element: element) {
             let arguments: [String: Any] = [
                 "gamepadId": String(gamepadId),
                 "time": Int(getTimestamp(gamepad: gamepad)),
@@ -41,8 +41,20 @@ public class GamepadsDarwinPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    private func getValues(element: GCControllerElement) -> [(String, Float)] {
+    private func getValues(gamepad: GCExtendedGamepad, element: GCControllerElement) -> [(String, Float)] {
         if let element = element as? GCControllerButtonInput {
+            // GameController gives the PlayStation Create and Options buttons
+            // the same SF Symbol (`capsule.portrait`). Preserve the owning
+            // control here so Dart can use Create as the Select chord modifier
+            // without turning the Options button into Select as well.
+            if #available(macOS 10.15, *) {
+                if element == gamepad.buttonOptions {
+                    return [("select", element.value)]
+                }
+                if element == gamepad.buttonMenu {
+                    return [("start", element.value)]
+                }
+            }
             var button: String = "Unknown button"
             if #available(macOS 11.0, *) {
                 if (element.sfSymbolsName != nil) {
@@ -52,7 +64,7 @@ public class GamepadsDarwinPlugin: NSObject, FlutterPlugin {
             
             return [(button, element.value)]
         } else if let element = element as? GCControllerAxisInput {
-            var axis: String = "Unknown axis"
+            var axis: String = axisName(gamepad: gamepad, axis: element)
             if #available(macOS 11.0, *) {
                 if (element.sfSymbolsName != nil) {
                     axis = element.sfSymbolsName!
@@ -60,20 +72,34 @@ public class GamepadsDarwinPlugin: NSObject, FlutterPlugin {
             }
             return [(axis, element.value)]
         } else if let element = element as? GCControllerDirectionPad {
-            var directionPad: String = "Unknown direction pad"
-    
-            if #available(macOS 11.0, *) {
-                if (element.sfSymbolsName != nil) {
-                    directionPad = element.sfSymbolsName!
-                }
-            }
+            let directionPad = directionPadName(gamepad: gamepad, directionPad: element)
             return [
-                (maybeConcat(directionPad, "xAxis"), element.xAxis.value),
-                (maybeConcat(directionPad, "yAxis"), element.yAxis.value)
+                ("\(directionPad)_x_axis", element.xAxis.value),
+                ("\(directionPad)_y_axis", element.yAxis.value)
             ]
         } else {
             return []
         }
+    }
+
+    /// GCControllerAxisInput does not provide an SF Symbol name.  Name the
+    /// axes from their owning control so Dart can distinguish the two sticks
+    /// and the D-pad instead of receiving a shared "Unknown axis" key.
+    private func axisName(gamepad: GCExtendedGamepad, axis: GCControllerAxisInput) -> String {
+        if axis == gamepad.dpad.xAxis { return "dpad_x_axis" }
+        if axis == gamepad.dpad.yAxis { return "dpad_y_axis" }
+        if axis == gamepad.leftThumbstick.xAxis { return "left_thumbstick_x" }
+        if axis == gamepad.leftThumbstick.yAxis { return "left_thumbstick_y" }
+        if axis == gamepad.rightThumbstick.xAxis { return "right_thumbstick_x" }
+        if axis == gamepad.rightThumbstick.yAxis { return "right_thumbstick_y" }
+        return "unknown_axis"
+    }
+
+    private func directionPadName(gamepad: GCExtendedGamepad, directionPad: GCControllerDirectionPad) -> String {
+        if directionPad == gamepad.dpad { return "dpad" }
+        if directionPad == gamepad.leftThumbstick { return "left_thumbstick" }
+        if directionPad == gamepad.rightThumbstick { return "right_thumbstick" }
+        return "unknown_direction_pad"
     }
     
     private func getNameForElement(element: GCControllerElement) -> String? {

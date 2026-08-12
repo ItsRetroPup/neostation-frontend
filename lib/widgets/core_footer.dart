@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:neostation/utils/color.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:neostation/l10n/app_locale.dart';
+import 'package:neostation/utils/controller_glyphs.dart';
 
 import '../themes/corner_radii.dart';
 
@@ -177,14 +178,12 @@ class GamepadControl extends StatelessWidget {
                 Icon(icon, size: 12.r, color: contentColor)
               // Asset image
               else if (iconPath is String)
-                SizedBox(
+                ControllerGlyphImage(
+                  assetPath: iconPath,
                   width: 18.r,
                   height: 18.r,
-                  child: Image.asset(
-                    iconPath,
-                    color: contentColor,
-                    colorBlendMode: BlendMode.srcIn,
-                  ),
+                  color: contentColor,
+                  colorBlendMode: BlendMode.srcIn,
                 ),
               SizedBox(width: 4.r),
               Text(

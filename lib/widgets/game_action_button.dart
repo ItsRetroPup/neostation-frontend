@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../services/sfx_service.dart';
 import '../themes/corner_radii.dart';
+import '../utils/controller_glyphs.dart';
 
 /// Sound effect played when a [GameActionButton] is tapped.
 enum GameActionButtonSound {
@@ -124,8 +125,8 @@ class GameActionButton extends StatelessWidget {
                     // Gamepad hint icon centered in the lower area.
                     Expanded(
                       child: Center(
-                        child: Image.asset(
-                          iconPath,
+                        child: ControllerGlyphImage(
+                          assetPath: iconPath,
                           width: 14.r,
                           height: 14.r,
                           color: foregroundColor,

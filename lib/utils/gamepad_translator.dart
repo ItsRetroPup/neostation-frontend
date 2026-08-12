@@ -151,7 +151,7 @@ class GamepadEventTranslator {
       // Retrieve the specific mapping for this device, prioritizing VID/PID if available.
       final mapping = _mappingDetector.getMappingForGamepad(
         gamepadId,
-        'Unknown',
+        _gamepadNameCache[gamepadId] ?? 'Unknown',
         _systemInfoCache[gamepadId],
       );
 
@@ -304,6 +304,10 @@ class GamepadEventTranslator {
       }
     }
 
+    if (Platform.isMacOS) {
+      return _translateMacOSInput(key, value, mapping);
+    }
+
     // LINUX: Utilize native event type from the plugin.
     if (Platform.isLinux) {
       if (eventType == KeyType.button) {
@@ -333,6 +337,85 @@ class GamepadEventTranslator {
     }
 
     return GamepadInputType.unknown;
+  }
+
+  /// Maps GameController's macOS SF Symbol keys into NeoStation controls.
+  ///
+  /// The Darwin plugin supplies stable axis keys because the GameController
+  /// API leaves the SF Symbol name of individual axes nil. Button symbols are
+  /// normalized by the profile-specific mapping selected from productCategory.
+  GamepadInputType _translateMacOSInput(
+    String key,
+    double value,
+    GamepadMapping mapping,
+  ) {
+    switch (key) {
+      case 'dpad_x_axis':
+        if (value < -0.5) {
+          return _lastDirectionByKey[key] = GamepadInputType.dpadLeft;
+        }
+        if (value > 0.5) {
+          return _lastDirectionByKey[key] = GamepadInputType.dpadRight;
+        }
+        return _lastDirectionByKey[key] ?? GamepadInputType.unknown;
+      case 'dpad_y_axis':
+        if (value > 0.5) {
+          return _lastDirectionByKey[key] = GamepadInputType.dpadUp;
+        }
+        if (value < -0.5) {
+          return _lastDirectionByKey[key] = GamepadInputType.dpadDown;
+        }
+        return _lastDirectionByKey[key] ?? GamepadInputType.unknown;
+      case 'left_thumbstick_x':
+        return GamepadInputType.leftStickX;
+      case 'left_thumbstick_y':
+        return GamepadInputType.leftStickY;
+      case 'right_thumbstick_x':
+        return GamepadInputType.rightStickX;
+      case 'right_thumbstick_y':
+        return GamepadInputType.rightStickY;
+    }
+
+    for (final entry in mapping.buttonMapping.entries) {
+      if (entry.value == key) {
+        return _inputTypeForLogicalButton(entry.key);
+      }
+    }
+
+    return GamepadInputType.unknown;
+  }
+
+  GamepadInputType _inputTypeForLogicalButton(String logicalButton) {
+    switch (logicalButton) {
+      case 'A':
+        return GamepadInputType.buttonA;
+      case 'B':
+        return GamepadInputType.buttonB;
+      case 'X':
+        return GamepadInputType.buttonX;
+      case 'Y':
+        return GamepadInputType.buttonY;
+      case 'LB':
+        return GamepadInputType.buttonLB;
+      case 'RB':
+        return GamepadInputType.buttonRB;
+      case 'LT':
+        return GamepadInputType.buttonLT;
+      case 'RT':
+        return GamepadInputType.buttonRT;
+      case 'START':
+        return GamepadInputType.buttonStart;
+      case 'SELECT':
+        return GamepadInputType.buttonSelect;
+      case 'HOME':
+        return GamepadInputType.buttonHome;
+      case 'LS_PRESS':
+        return GamepadInputType.leftStickButton;
+      case 'RS_PRESS':
+        return GamepadInputType.rightStickButton;
+      default:
+        return GamepadInputType.unknown;
+    }
   }
 
   /// Maps a Windows GameInput named key to a [GamepadInputType].

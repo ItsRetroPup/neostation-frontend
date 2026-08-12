@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
+import 'package:neostation/utils/controller_glyphs.dart';
 import 'package:neostation/services/game_service.dart';
 import '../app_screen.dart';
 import 'login_screen/neo_sync_content.dart';
@@ -164,8 +165,8 @@ class _NeoSyncTabState extends State<NeoSyncTab> {
         SizedBox(width: 6.r),
         Text('Navigate', style: textStyle),
         SizedBox(width: 20.r),
-        Image.asset(
-          'assets/images/gamepad/Xbox_A_button.png',
+        ControllerGlyphImage(
+          assetPath: 'assets/images/gamepad/Xbox_A_button.png',
           width: 16.r,
           height: 16.r,
           color: hintColor,

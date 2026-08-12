@@ -84,6 +84,8 @@ class GamepadMappingDetector {
       return _detectLinuxMapping(gamepadId, gamepadName, systemInfo);
     } else if (Platform.isAndroid) {
       return _detectAndroidMapping(gamepadId, gamepadName, systemInfo);
+    } else if (Platform.isMacOS) {
+      return _detectMacOSMapping(gamepadId, gamepadName, systemInfo);
     } else {
       return _getDefaultMapping();
     }
@@ -150,6 +152,25 @@ class GamepadMappingDetector {
     Map<String, dynamic>? systemInfo,
   ]) {
     return _getAndroidMapping();
+  }
+
+  /// macOS GameController events are named with SF Symbols. The product
+  /// category is included in the gamepad name by the Darwin plugin, so use it
+  /// to normalize the PlayStation and Xbox symbol vocabularies.
+  GamepadMapping _detectMacOSMapping(
+    String gamepadId,
+    String gamepadName, [
+    Map<String, dynamic>? systemInfo,
+  ]) {
+    final name = gamepadName.toLowerCase();
+    final isPlayStation =
+        name.contains('dualsense') ||
+        name.contains('dualshock') ||
+        name.contains('playstation');
+
+    return isPlayStation
+        ? _getMacOSPlayStationMapping()
+        : _getMacOSXboxMapping();
   }
 
   /// Configuration for Windows controllers connected via Bluetooth.
@@ -319,6 +340,68 @@ class GamepadMappingDetector {
     );
   }
 
+  /// macOS mapping for Xbox-style GameController product categories.
+  GamepadMapping _getMacOSXboxMapping() {
+    return const GamepadMapping(
+      connectionType: GamepadConnectionType.unknown,
+      platform: 'macos',
+      dpadMapping: {'up': 1.0, 'down': -1.0, 'left': -1.0, 'right': 1.0},
+      buttonMapping: {
+        'A': 'a.circle',
+        'B': 'b.circle',
+        'X': 'x.circle',
+        'Y': 'y.circle',
+        'LB': 'lb.rectangle.roundedbottom',
+        'RB': 'rb.rectangle.roundedbottom',
+        'LT': 'lt.rectangle.roundedtop',
+        'RT': 'rt.rectangle.roundedtop',
+        'SELECT': 'rectangle.fill.on.rectangle.fill.circle',
+        'START': 'line.horizontal.3.circle',
+        'LS_PRESS': 'l.joystick.press',
+        'RS_PRESS': 'r.joystick.press',
+        'HOME': 'xbox.logo',
+      },
+      analogMapping: {
+        'LS_X': 'left_thumbstick_x',
+        'LS_Y': 'left_thumbstick_y',
+        'RS_X': 'right_thumbstick_x',
+        'RS_Y': 'right_thumbstick_y',
+      },
+    );
+  }
+
+  /// macOS mapping for DualShock and DualSense GameController categories.
+  GamepadMapping _getMacOSPlayStationMapping() {
+    return const GamepadMapping(
+      connectionType: GamepadConnectionType.unknown,
+      platform: 'macos',
+      dpadMapping: {'up': 1.0, 'down': -1.0, 'left': -1.0, 'right': 1.0},
+      buttonMapping: {
+        'A': 'xmark.circle',
+        'B': 'circle.circle',
+        'X': 'square.circle',
+        'Y': 'triangle.circle',
+        'LB': 'l1.rectangle.roundedbottom',
+        'RB': 'r1.rectangle.roundedbottom',
+        'LT': 'l2.rectangle.roundedtop',
+        'RT': 'r2.rectangle.roundedtop',
+        'SELECT': 'select',
+        // GameController gives both Create and Options this symbol on
+        // PlayStation hardware. The Darwin plugin emits stable keys for them.
+        'START': 'capsule.portrait',
+        'LS_PRESS': 'l.joystick.press',
+        'RS_PRESS': 'r.joystick.press',
+        'HOME': 'playstation.logo',
+      },
+      analogMapping: {
+        'LS_X': 'left_thumbstick_x',
+        'LS_Y': 'left_thumbstick_y',
+        'RS_X': 'right_thumbstick_x',
+        'RS_Y': 'right_thumbstick_y',
+      },
+    );
+  }
+
   /// Fallback empty mapping for unrecognized platforms or devices.
   GamepadMapping _getDefaultMapping() {
     return const GamepadMapping(
@@ -381,6 +464,15 @@ class GamepadMappingDetector {
           return mappedValue != null && eventValue == mappedValue;
         }
       }
+    }
+
+    if (Platform.isMacOS) {
+      final isVertical = logicalDirection == 'up' || logicalDirection == 'down';
+      final expectedKey = isVertical ? 'dpad_y_axis' : 'dpad_x_axis';
+      final mappedValue = mapping.dpadMapping[logicalDirection];
+      return eventKey == expectedKey &&
+          mappedValue != null &&
+          eventValue == mappedValue;
     }
 
     return false;

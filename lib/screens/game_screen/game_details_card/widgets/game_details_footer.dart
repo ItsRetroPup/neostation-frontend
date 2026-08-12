@@ -13,6 +13,7 @@ import '../../../../sync/i_sync_provider.dart';
 import 'package:neostation/themes/chrome_surface.dart';
 import '../../../../themes/corner_radii.dart';
 import '../../../../utils/game_utils.dart';
+import '../../../../utils/controller_glyphs.dart';
 import '../../../../widgets/marquee_text.dart';
 import '../../music/music_player.dart';
 
@@ -248,8 +249,8 @@ class GameDetailsFooter extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/images/gamepad/Xbox_A_button.png',
+                    ControllerGlyphImage(
+                      assetPath: 'assets/images/gamepad/Xbox_A_button.png',
                       width: 32.r,
                       height: 32.r,
                       color: Theme.of(context).colorScheme.onPrimary,

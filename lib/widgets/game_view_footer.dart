@@ -10,6 +10,7 @@ import 'package:neostation/models/retro_achievements_game_info.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/themes/app_themes.dart';
 import 'package:neostation/utils/game_utils.dart';
+import 'package:neostation/utils/controller_glyphs.dart';
 import 'package:neostation/widgets/marquee_text.dart';
 import 'package:neostation/themes/chrome_surface.dart';
 import '../../themes/corner_radii.dart';
@@ -191,8 +192,8 @@ class GameViewFooter extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Image.asset(
-                      'assets/images/gamepad/Xbox_A_button.png',
+                    ControllerGlyphImage(
+                      assetPath: 'assets/images/gamepad/Xbox_A_button.png',
                       width: 20.r,
                       height: 20.r,
                       color: Theme.of(context).colorScheme.onPrimary,

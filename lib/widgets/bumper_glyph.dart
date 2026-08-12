@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:neostation/utils/controller_glyphs.dart';
 
 /// An LB/RB bumper glyph lifted off the background by a soft halo.
 ///
@@ -50,8 +51,12 @@ class BumperGlyph extends StatelessWidget {
         ? 'assets/images/gamepad/Xbox_LB_bumper_filled.png'
         : 'assets/images/gamepad/Xbox_RB_bumper_filled.png';
 
-    Widget copy(String path, Color color) =>
-        Image.asset(path, width: dimension, height: dimension, color: color);
+    Widget copy(String path, Color color) => ControllerGlyphImage(
+      assetPath: path,
+      width: dimension,
+      height: dimension,
+      color: color,
+    );
 
     return SizedBox(
       width: dimension,

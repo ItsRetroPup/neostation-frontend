@@ -8,6 +8,7 @@ import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/sfx_service.dart';
 import '../responsive.dart';
 import 'gamepad_translator.dart';
+import 'controller_glyphs.dart';
 import 'select_tap.dart';
 import '../main.dart' show FullscreenNotifier;
 
@@ -360,6 +361,9 @@ class GamepadNavigation {
         final firstGamepad = gamepads.first;
         _currentGamepadId = firstGamepad.id;
         _currentGamepadName = firstGamepad.name;
+        ControllerGlyphProfileNotifier.updateForControllerName(
+          firstGamepad.name,
+        );
 
         _translator.updateGamepadSystemInfo(
           firstGamepad.id,
@@ -394,6 +398,9 @@ class GamepadNavigation {
       final connectionType = gamepad.deviceInfo.connectionType;
       _translator.updateGamepadConnectionType(gamepadId, connectionType);
       _currentGamepadName = gamepad.name;
+      // This method is reached after the controller has actually emitted an
+      // event, unlike startup enumeration which can include placeholders.
+      ControllerGlyphProfileNotifier.updateForControllerName(gamepad.name);
     } catch (e) {
       _log.e('[GamepadNavigation] Error detecting connection type: $e');
     }
@@ -494,6 +501,14 @@ class GamepadNavigation {
       _log.e('[GamepadNavigation] Error listing gamepads: $e');
       return [];
     }
+  }
+
+  /// Sets UI glyphs before any navigation widget has been created.
+  static Future<void> initializeControllerGlyphProfile() async {
+    final gamepads = await getConnectedGamepads();
+    ControllerGlyphProfileNotifier.updateForConnectedControllerNames(
+      gamepads.map((gamepad) => gamepad.name),
+    );
   }
 
   /// Fetches detailed information for a specific gamepad.

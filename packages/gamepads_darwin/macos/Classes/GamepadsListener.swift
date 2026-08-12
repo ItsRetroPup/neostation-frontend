@@ -12,6 +12,13 @@ class GamepadsListener {
             name: .GCControllerDidConnect,
             object: nil
         )
+
+        // Controllers may already be connected before Flutter registers this
+        // plugin. Notifications are not replayed for those devices, so attach
+        // their handlers explicitly as well.
+        for controller in GCController.controllers() {
+            addGamepad(from: controller)
+        }
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(joystickDidDisconnect),
@@ -26,15 +33,22 @@ class GamepadsListener {
  
     @objc private func joystickDidConnect(notification: NSNotification) {
         if let controller = notification.object as? GCController {
-            if let gamepad = controller.extendedGamepad {
-                gamepads.append(gamepad)
-                let gamepadId = getAndSetPlayerId(of: gamepad)
+            addGamepad(from: controller)
+        }
+    }
 
-                gamepad.valueChangedHandler = { gamepad, element in
-                    if let listener = self.listener {
-                        listener(gamepadId, gamepad, element);
-                    }
-                }
+    private func addGamepad(from controller: GCController) {
+        guard let gamepad = controller.extendedGamepad,
+              !gamepads.contains(gamepad) else {
+            return
+        }
+
+        gamepads.append(gamepad)
+        let gamepadId = getAndSetPlayerId(of: gamepad)
+
+        gamepad.valueChangedHandler = { gamepad, element in
+            if let listener = self.listener {
+                listener(gamepadId, gamepad, element)
             }
         }
     }
