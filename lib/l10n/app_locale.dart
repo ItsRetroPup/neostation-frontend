@@ -188,6 +188,8 @@ mixin AppLocale {
       'show_achievements_tab_subtitle';
   static const String showScraperTab = 'show_scraper_tab';
   static const String showScraperTabSubtitle = 'show_scraper_tab_subtitle';
+  static const String showRommTab = 'show_romm_tab';
+  static const String showRommTabSubtitle = 'show_romm_tab_subtitle';
   static const String showSearchTab = 'show_search_tab';
   static const String showSearchTabSubtitle = 'show_search_tab_subtitle';
 
@@ -303,6 +305,7 @@ mixin AppLocale {
   // NeoSync
   // ---------------------------------------------------------------------------
   static const String neoSync = 'neo_sync';
+  static const String neoSyncLogin = 'neo_sync_login';
   static const String neoSyncSynchronizing = 'neo_sync_synchronizing';
   static const String neoSyncNotConnected = 'neo_sync_not_connected';
   static const String neoSyncSynchronized = 'neo_sync_synchronized';
@@ -980,6 +983,75 @@ mixin AppLocale {
   static const String addRomFolder = 'add_rom_folder';
   static const String removeRomFolder = 'remove_rom_folder';
 
+  // ---------------------------------------------------------------------------
+  // RomM (remote library browse + download)
+  // ---------------------------------------------------------------------------
+  static const String romm = 'romm';
+  static const String rommLibrary = 'romm_library';
+  static const String rommLogin = 'romm_login';
+  static const String rommWhatIs = 'romm_what_is';
+  static const String rommDescription = 'romm_description';
+  static const String rommInfoBrowse = 'romm_info_browse';
+  static const String rommInfoSaveSync = 'romm_info_save_sync';
+  static const String rommInfoSelfHosted = 'romm_info_self_hosted';
+  static const String rommLearnMoreAt = 'romm_learn_more_at';
+  static const String rommServerUrl = 'romm_server_url';
+  static const String rommServerUrlHint = 'romm_server_url_hint';
+  static const String rommTestConnection = 'romm_test_connection';
+  static const String rommSaveConnect = 'romm_save_connect';
+  static const String rommDisconnect = 'romm_disconnect';
+  static const String rommUseForSaveSync = 'romm_use_for_save_sync';
+  static const String rommSaveSyncLabel = 'romm_save_sync_label';
+  static const String rommSaveSyncActive = 'romm_save_sync_active';
+  static const String rommBrowseLibrary = 'romm_browse_library';
+  static const String rommStatusConnected = 'romm_status_connected';
+  static const String rommStatusDisconnected = 'romm_status_disconnected';
+  static const String rommConnecting = 'romm_connecting';
+  static const String rommTesting = 'romm_testing';
+  static const String rommConnectionSuccess = 'romm_connection_success';
+  static const String rommConnectionFailed = 'romm_connection_failed';
+  static const String rommConnectedAs = 'romm_connected_as';
+  static const String rommCredentialsRequired = 'romm_credentials_required';
+  static const String rommPlatforms = 'romm_platforms';
+  static const String rommNoPlatforms = 'romm_no_platforms';
+  static const String rommCollections = 'romm_collections';
+  static const String rommNoCollections = 'romm_no_collections';
+  static const String rommNoRoms = 'romm_no_roms';
+  static const String rommSearch = 'romm_search';
+  static const String rommDownloading = 'romm_downloading';
+  static const String rommDownloaded = 'romm_downloaded';
+  static const String rommDownloadComplete = 'romm_download_complete';
+  static const String rommDownloadFailed = 'romm_download_failed';
+  static const String rommDownloadCancelled = 'romm_download_cancelled';
+  static const String rommLoadMore = 'romm_load_more';
+  static const String rommNoSystemMatch = 'romm_no_system_match';
+  static const String rommPlatformUnsupported = 'romm_platform_unsupported';
+  static const String rommNoWritableFolder = 'romm_no_writable_folder';
+  static const String rommNotConnected = 'romm_not_connected';
+
+  // Bulk "sync a whole platform/collection".
+  static const String rommSyncAll = 'romm_sync_all';
+  static const String rommSyncCancel = 'romm_sync_cancel';
+  static const String rommSyncConfirmTitle = 'romm_sync_confirm_title';
+  static const String rommSyncConfirmPlan = 'romm_sync_confirm_plan';
+  static const String rommSyncConfirmSkipped = 'romm_sync_confirm_skipped';
+  static const String rommSyncConfirmFree = 'romm_sync_confirm_free';
+  static const String rommSyncConfirmNoSpace = 'romm_sync_confirm_no_space';
+  // Per-volume variants of the two above, used when a sync's ROMs land on more
+  // than one volume and no single free-space figure can answer for them.
+  static const String rommSyncConfirmVolumeFree =
+      'romm_sync_confirm_volume_free';
+  static const String rommSyncConfirmVolumeNoSpace =
+      'romm_sync_confirm_volume_no_space';
+  static const String rommSyncConfirmVolumeUnknown =
+      'romm_sync_confirm_volume_unknown';
+  static const String rommSyncPreparing = 'romm_sync_preparing';
+  static const String rommSyncCancelling = 'romm_sync_cancelling';
+  static const String rommSyncComplete = 'romm_sync_complete';
+  static const String rommSyncCancelled = 'romm_sync_cancelled';
+  static const String rommSyncNothingToDo = 'romm_sync_nothing_to_do';
+  static const String rommSyncFailedCount = 'romm_sync_failed_count';
+
   // Library search & filtering.
   static const String searchTitle = 'search_title';
   static const String searchNameHint = 'search_name_hint';
@@ -996,6 +1068,10 @@ mixin AppLocale {
   static const String filterRating = 'filter_rating';
   static const String filterYear = 'filter_year';
   static const String filterAny = 'filter_any';
+  static const String filterSource = 'filter_source';
+  static const String sourceLocal = 'source_local';
+  static const String searchRatingLocalOnly = 'search_rating_local_only';
+  static const String searchNoRommEquivalent = 'search_no_romm_equivalent';
   // Destructive-action confirmation prompts
   static const String resetPlayTimeConfirm = 'reset_play_time_confirm';
   static const String resetPlayTimeConfirmBody = 'reset_play_time_confirm_body';

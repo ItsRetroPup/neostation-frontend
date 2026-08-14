@@ -176,15 +176,17 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.bartopShutdownSubtitle:
       'Выключать компьютер при выходе из приложения',
 
-  AppLocale.showSyncTab: 'Показывать вкладку синхронизации',
+  AppLocale.showSyncTab: 'Показывать вкладку NeoSync',
   AppLocale.showSyncTabSubtitle:
-      'Отображает вкладку облачной синхронизации на панели навигации',
+      'Отображает вкладку NeoSync на панели навигации',
   AppLocale.showAchievementsTab: 'Показывать вкладку достижений',
   AppLocale.showAchievementsTabSubtitle:
       'Отображает вкладку RetroAchievements на панели навигации',
   AppLocale.showScraperTab: 'Показывать вкладку скрапера',
   AppLocale.showScraperTabSubtitle:
       'Отображает вкладку скрапинга на панели навигации',
+  AppLocale.showRommTab: 'Показывать вкладку RomM',
+  AppLocale.showRommTabSubtitle: 'Отображает вкладку RomM на панели навигации',
   AppLocale.showSearchTab: 'Показывать вкладку поиска',
   AppLocale.showSearchTabSubtitle:
       'Отображает вкладку поиска на панели навигации',
@@ -278,6 +280,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.loadingAchievements: 'Загрузка достижений...',
 
   AppLocale.neoSync: 'NeoSync',
+  AppLocale.neoSyncLogin: 'Вход в NeoSync',
   AppLocale.neoSyncSynchronizing: 'NeoSync: Синхронизация...',
   AppLocale.neoSyncNotConnected: 'NeoSync: Не подключено',
   AppLocale.neoSyncSynchronized: 'NeoSync: Сохранения синхронизированы',
@@ -910,6 +913,79 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.toolsSubtitle: 'Инструменты для организации ваших ROM',
   AppLocale.addRomFolder: 'Добавить папку ROM',
   AppLocale.removeRomFolder: 'Удалить',
+  // RomM (remote library browse + download)
+  AppLocale.romm: 'RomM',
+  AppLocale.rommLibrary: 'Библиотека RomM',
+  AppLocale.rommLogin: 'Вход в RomM',
+  AppLocale.rommWhatIs: 'Что такое RomM?',
+  AppLocale.rommDescription:
+      'RomM — это самостоятельно размещаемый менеджер ROM. Подключитесь к своему серверу, чтобы просматривать библиотеку, скачивать игры прямо на это устройство и синхронизировать сохранения.',
+  AppLocale.rommInfoBrowse:
+      'Просматривайте и скачивайте всю свою библиотеку игр',
+  AppLocale.rommInfoSaveSync: 'Синхронизируйте сохранения между устройствами',
+  AppLocale.rommInfoSelfHosted:
+      'Собственный хостинг — ваша коллекция, ваш сервер',
+  AppLocale.rommLearnMoreAt: 'Подробнее: ',
+  AppLocale.rommServerUrl: 'URL сервера',
+  AppLocale.rommServerUrlHint: 'https://romm.example.com',
+  AppLocale.rommTestConnection: 'Проверить подключение',
+  AppLocale.rommSaveConnect: 'Сохранить и подключиться',
+  AppLocale.rommDisconnect: 'Отключиться',
+  AppLocale.rommUseForSaveSync:
+      'Использовать RomM для синхронизации сохранений',
+  AppLocale.rommSaveSyncLabel: 'Синх. RomM',
+  AppLocale.rommSaveSyncActive: 'RomM — ваш сервис синхронизации сохранений',
+  AppLocale.rommBrowseLibrary: 'Просмотр библиотеки',
+  AppLocale.rommStatusConnected: 'Подключено',
+  AppLocale.rommStatusDisconnected: 'Не подключено',
+  AppLocale.rommConnecting: 'Подключение...',
+  AppLocale.rommTesting: 'Проверка...',
+  AppLocale.rommConnectionSuccess: 'Подключение установлено',
+  AppLocale.rommConnectionFailed: 'Не удалось подключиться',
+  AppLocale.rommConnectedAs: 'Подключено как {user}',
+  AppLocale.rommCredentialsRequired:
+      'Введите URL сервера, имя пользователя и пароль',
+  AppLocale.rommPlatforms: 'Платформы',
+  AppLocale.rommNoPlatforms: 'Платформы не найдены',
+  AppLocale.rommCollections: 'Коллекции',
+  AppLocale.rommNoCollections: 'Коллекции не найдены',
+  AppLocale.rommNoRoms: 'ROM не найдены',
+  AppLocale.rommSearch: 'Поиск',
+  AppLocale.rommDownloading: 'Загрузка...',
+  AppLocale.rommDownloaded: 'Загружено',
+  AppLocale.rommDownloadComplete: 'Загрузка завершена',
+  AppLocale.rommDownloadFailed: 'Не удалось загрузить',
+  AppLocale.rommDownloadCancelled: 'Загрузка отменена',
+  AppLocale.rommLoadMore: 'Загрузить ещё',
+  AppLocale.rommNoSystemMatch:
+      'Нет подходящей локальной системы для этой платформы',
+  AppLocale.rommPlatformUnsupported: 'Не поддерживается',
+  AppLocale.rommNoWritableFolder:
+      'Не удалось записать в папку с ROM. Предоставьте NeoStation «Доступ ко всем файлам» и повторите попытку.',
+  AppLocale.rommNotConnected:
+      'Сначала подключитесь к серверу RomM в Настройках',
+  // Bulk "sync a whole platform/collection".
+  AppLocale.rommSyncAll: 'Синхронизировать всё',
+  AppLocale.rommSyncCancel: 'Отменить синхронизацию',
+  AppLocale.rommSyncConfirmTitle: 'Синхронизировать {name}?',
+  AppLocale.rommSyncConfirmPlan:
+      'Загрузит {count} игр — {size}. Это может занять много времени.',
+  AppLocale.rommSyncConfirmSkipped: '{count} уже есть на устройстве.',
+  AppLocale.rommSyncConfirmFree: 'Свободно {free}.',
+  AppLocale.rommSyncConfirmNoSpace:
+      'Недостаточно места: нужно {size}, свободно только {free}.',
+  AppLocale.rommSyncConfirmVolumeFree:
+      '{volume}: нужно {size}, свободно {free}.',
+  AppLocale.rommSyncConfirmVolumeNoSpace:
+      '{volume}: нужно {size}, свободно только {free}.',
+  AppLocale.rommSyncConfirmVolumeUnknown:
+      '{volume}: нужно {size}, свободное место неизвестно.',
+  AppLocale.rommSyncPreparing: 'Подготовка…',
+  AppLocale.rommSyncCancelling: 'Отмена…',
+  AppLocale.rommSyncComplete: 'Синхронизировано игр: {count}',
+  AppLocale.rommSyncCancelled: 'Синхронизация отменена',
+  AppLocale.rommSyncNothingToDo: 'Всё уже загружено',
+  AppLocale.rommSyncFailedCount: 'Не удалось: {count}',
   AppLocale.searchTitle: 'Поиск',
   AppLocale.searchNameHint: 'Поиск...',
   AppLocale.searchNoResults: 'Игры не найдены',
@@ -925,6 +1001,11 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.filterRating: 'Рейтинг',
   AppLocale.filterYear: 'Год',
   AppLocale.filterAny: 'Любой',
+  AppLocale.filterSource: 'Источник',
+  AppLocale.sourceLocal: 'На этом устройстве',
+  AppLocale.searchRatingLocalOnly:
+      'Фильтр рейтинга применяется только к локальным играм',
+  AppLocale.searchNoRommEquivalent: 'В RomM ничего не отнесено к «{value}»',
   AppLocale.resetPlayTimeConfirm: 'Сбросить время игры',
   AppLocale.resetPlayTimeConfirmBody:
       'Записанное время игры для этой игры будет безвозвратно сброшено до нуля. Это действие нельзя отменить.',

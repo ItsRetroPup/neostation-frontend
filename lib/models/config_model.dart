@@ -123,6 +123,9 @@ class ConfigModel {
   /// Whether the Scraper navigation tab is hidden. See [hideTabSync].
   final bool hideTabScraper;
 
+  /// Whether the RomM navigation tab is hidden. See [hideTabSync].
+  final bool hideTabRomm;
+
   /// Whether the Search navigation tab is hidden. See [hideTabSync].
   final bool hideTabSearch;
 
@@ -199,6 +202,7 @@ class ConfigModel {
     this.hideTabSync = false,
     this.hideTabAchievements = false,
     this.hideTabScraper = false,
+    this.hideTabRomm = false,
     this.hideTabSearch = false,
     this.activeSyncProvider = 'neosync',
     this.autoUpdateApp = true,
@@ -324,6 +328,10 @@ class ConfigModel {
                   .toString() ==
               '1' ||
           (json['hideTabScraper'] ?? false).toString().toLowerCase() == 'true',
+      hideTabRomm:
+          (json['hideTabRomm'] ?? json['hide_tab_romm'] ?? 0).toString() ==
+              '1' ||
+          (json['hideTabRomm'] ?? false).toString().toLowerCase() == 'true',
       hideTabSearch:
           (json['hideTabSearch'] ?? json['hide_tab_search'] ?? 0).toString() ==
               '1' ||
@@ -421,6 +429,7 @@ class ConfigModel {
       'hideTabSync': hideTabSync,
       'hideTabAchievements': hideTabAchievements,
       'hideTabScraper': hideTabScraper,
+      'hideTabRomm': hideTabRomm,
       'hideTabSearch': hideTabSearch,
       'activeSyncProvider': activeSyncProvider,
       'autoUpdateApp': autoUpdateApp,
@@ -465,6 +474,7 @@ class ConfigModel {
     bool? hideTabSync,
     bool? hideTabAchievements,
     bool? hideTabScraper,
+    bool? hideTabRomm,
     bool? hideTabSearch,
     String? activeSyncProvider,
     bool? autoUpdateApp,
@@ -506,6 +516,7 @@ class ConfigModel {
       hideTabSync: hideTabSync ?? this.hideTabSync,
       hideTabAchievements: hideTabAchievements ?? this.hideTabAchievements,
       hideTabScraper: hideTabScraper ?? this.hideTabScraper,
+      hideTabRomm: hideTabRomm ?? this.hideTabRomm,
       hideTabSearch: hideTabSearch ?? this.hideTabSearch,
       activeSyncProvider: activeSyncProvider ?? this.activeSyncProvider,
       autoUpdateApp: autoUpdateApp ?? this.autoUpdateApp,

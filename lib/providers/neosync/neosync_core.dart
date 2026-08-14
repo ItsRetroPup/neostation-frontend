@@ -948,6 +948,33 @@ extension NeoSyncCore on NeoSyncProvider {
     return allFiles.isNotEmpty ? allFiles.first : null;
   }
 
+  // ── Public reuse hooks for other sync providers (e.g. RomM) ───────────────
+
+  /// Locates local save/state files for [game], reusing NeoSync's path
+  /// resolution and filename matching. Each [LocalSaveFile.relativePath] is
+  /// prefixed with `saves/` or `states/` so callers can tell them apart.
+  Future<List<LocalSaveFile>> locateGameSaveFiles(GameModel game) =>
+      _findGameSaveFiles(game);
+
+  /// Resolves candidate local destination paths for a cloud file named
+  /// [relativeName] (e.g. `saves/Game.srm` or `states/Game.state`) belonging to
+  /// [game]. Returns an empty list if no destination can be resolved.
+  Future<List<String>> resolveLocalTargetPaths(
+    GameModel game,
+    String relativeName,
+  ) {
+    final synthetic = NeoSyncFile(
+      id: '',
+      fileName: relativeName,
+      filePath: relativeName,
+      fileSize: 0,
+      gameName: game.name,
+      uploadedAt: DateTime.now(),
+      userId: '',
+    );
+    return resolveCloudFileToLocalPath(game, synthetic);
+  }
+
   /// Obtiene TODOS los archivos de guardado de la nube para un juego específico
   Future<List<NeoSyncFile>> _getCloudSaveFilesForGame(GameModel game) async {
     try {
@@ -1064,7 +1091,10 @@ extension NeoSyncCore on NeoSyncProvider {
       }
 
       // 2. Si los hashes NO coinciden (contenido diferente), evaluar el estado guardado.
-      final syncState = await SyncRepository.getSyncState(localSave.filePath);
+      final syncState = await SyncRepository.getSyncState(
+        NeoSyncProvider.kSyncProviderId,
+        localSave.filePath,
+      );
 
       final cloudTime = cloudSave.fileModifiedAtTimestamp ?? 0;
       final localTime = localSave.lastModified.millisecondsSinceEpoch;
@@ -1186,10 +1216,16 @@ extension NeoSyncCore on NeoSyncProvider {
 
   /// Helper to calculate relative path for sync, with special handling for Dreamcast
   /// Sincroniza saves antes de iniciar un juego (al estilo Steam)
-  Future<void> syncGameSavesBeforeLaunch(GameModel game) async {
+  Future<void> syncGameSavesBeforeLaunch(
+    GameModel game, {
+    SyncDeadline? deadline,
+  }) async {
     if (!isNeoSyncAuthenticated) return;
     if (game.cloudSyncEnabled != true) return;
 
+    // Expose the deadline to the shared download path (_downloadCloudFile) so a
+    // late download abandons its write once the launch has proceeded.
+    _launchDeadline = deadline;
     try {
       // Detectar saves actuales
       await detectGameSaveFiles(game);
@@ -1252,6 +1288,8 @@ extension NeoSyncCore on NeoSyncProvider {
       );
     } catch (e) {
       NeoSyncProvider._log.w('Error in pre-launch sync for ${game.name}: $e');
+    } finally {
+      _launchDeadline = null;
     }
   }
 

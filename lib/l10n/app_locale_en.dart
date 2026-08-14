@@ -171,15 +171,17 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.bartopShutdownSubtitle:
       'Shut down the computer when exiting the application',
 
-  AppLocale.showSyncTab: 'Show Sync tab',
+  AppLocale.showSyncTab: 'Show NeoSync tab',
   AppLocale.showSyncTabSubtitle:
-      'Display the Cloud Sync tab in the navigation bar',
+      'Display the NeoSync tab in the navigation bar',
   AppLocale.showAchievementsTab: 'Show Achievements tab',
   AppLocale.showAchievementsTabSubtitle:
       'Display the RetroAchievements tab in the navigation bar',
   AppLocale.showScraperTab: 'Show Scraper tab',
   AppLocale.showScraperTabSubtitle:
       'Display the Scraping tab in the navigation bar',
+  AppLocale.showRommTab: 'Show RomM tab',
+  AppLocale.showRommTabSubtitle: 'Display the RomM tab in the navigation bar',
   AppLocale.showSearchTab: 'Show Search tab',
   AppLocale.showSearchTabSubtitle:
       'Display the Search tab in the navigation bar',
@@ -271,6 +273,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.loadingAchievements: 'Loading achievements...',
 
   AppLocale.neoSync: 'NeoSync',
+  AppLocale.neoSyncLogin: 'NeoSync Login',
   AppLocale.neoSyncSynchronizing: 'NeoSync: Synchronizing...',
   AppLocale.neoSyncNotConnected: 'NeoSync: Not connected',
   AppLocale.neoSyncSynchronized: 'NeoSync: Saves synchronized',
@@ -910,6 +913,74 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.toolsSubtitle: 'Tools to help organise your ROMs',
   AppLocale.addRomFolder: 'Add ROM Folder',
   AppLocale.removeRomFolder: 'Remove',
+  // RomM (remote library browse + download)
+  AppLocale.romm: 'RomM',
+  AppLocale.rommLibrary: 'RomM Library',
+  AppLocale.rommLogin: 'RomM Login',
+  AppLocale.rommWhatIs: 'What is RomM?',
+  AppLocale.rommDescription:
+      'RomM is a self-hosted ROM manager. Connect to your server to browse your '
+      'library, download games straight to this device, and sync your saves.',
+  AppLocale.rommInfoBrowse: 'Browse and download your full game library',
+  AppLocale.rommInfoSaveSync: 'Sync save files across your devices',
+  AppLocale.rommInfoSelfHosted: 'Self-hosted — your collection, your server',
+  AppLocale.rommLearnMoreAt: 'Learn more at ',
+  AppLocale.rommServerUrl: 'Server URL',
+  AppLocale.rommServerUrlHint: 'https://romm.example.com',
+  AppLocale.rommTestConnection: 'Test Connection',
+  AppLocale.rommSaveConnect: 'Save & Connect',
+  AppLocale.rommDisconnect: 'Disconnect',
+  AppLocale.rommUseForSaveSync: 'Use RomM for save sync',
+  AppLocale.rommSaveSyncLabel: 'RomM Sync',
+  AppLocale.rommSaveSyncActive: 'RomM is your save-sync provider',
+  AppLocale.rommBrowseLibrary: 'Browse Library',
+  AppLocale.rommStatusConnected: 'Connected',
+  AppLocale.rommStatusDisconnected: 'Not connected',
+  AppLocale.rommConnecting: 'Connecting...',
+  AppLocale.rommTesting: 'Testing...',
+  AppLocale.rommConnectionSuccess: 'Connection successful',
+  AppLocale.rommConnectionFailed: 'Connection failed',
+  AppLocale.rommConnectedAs: 'Connected as {user}',
+  AppLocale.rommCredentialsRequired:
+      'Enter the server URL, username and password',
+  AppLocale.rommPlatforms: 'Platforms',
+  AppLocale.rommNoPlatforms: 'No platforms found',
+  AppLocale.rommCollections: 'Collections',
+  AppLocale.rommNoCollections: 'No collections found',
+  AppLocale.rommNoRoms: 'No ROMs found',
+  AppLocale.rommSearch: 'Search',
+  AppLocale.rommDownloading: 'Downloading...',
+  AppLocale.rommDownloaded: 'Downloaded',
+  AppLocale.rommDownloadComplete: 'Download complete',
+  AppLocale.rommDownloadFailed: 'Download failed',
+  AppLocale.rommDownloadCancelled: 'Download cancelled',
+  AppLocale.rommLoadMore: 'Load more',
+  AppLocale.rommNoSystemMatch: 'No matching local system for this platform',
+  AppLocale.rommPlatformUnsupported: 'Unsupported',
+  AppLocale.rommNoWritableFolder:
+      'Could not write to your ROM folder. Grant "All files access" to NeoStation and try again.',
+  AppLocale.rommNotConnected: 'Connect to a RomM server in Settings first',
+  // Bulk "sync a whole platform/collection".
+  AppLocale.rommSyncAll: 'Sync all',
+  AppLocale.rommSyncCancel: 'Cancel sync',
+  AppLocale.rommSyncConfirmTitle: 'Sync {name}?',
+  AppLocale.rommSyncConfirmPlan:
+      'Downloads {count} games — {size}. This can take a long time.',
+  AppLocale.rommSyncConfirmSkipped: '{count} already on this device.',
+  AppLocale.rommSyncConfirmFree: '{free} free.',
+  AppLocale.rommSyncConfirmNoSpace:
+      'Not enough space: needs {size}, only {free} free.',
+  AppLocale.rommSyncConfirmVolumeFree: '{volume}: {size} needed, {free} free.',
+  AppLocale.rommSyncConfirmVolumeNoSpace:
+      '{volume}: needs {size}, only {free} free.',
+  AppLocale.rommSyncConfirmVolumeUnknown:
+      '{volume}: {size} needed, free space unknown.',
+  AppLocale.rommSyncPreparing: 'Preparing…',
+  AppLocale.rommSyncCancelling: 'Cancelling…',
+  AppLocale.rommSyncComplete: 'Synced {count} games',
+  AppLocale.rommSyncCancelled: 'Sync cancelled',
+  AppLocale.rommSyncNothingToDo: 'Everything is already downloaded',
+  AppLocale.rommSyncFailedCount: '{count} failed',
   AppLocale.searchTitle: 'Search',
   AppLocale.searchNameHint: 'Search...',
   AppLocale.searchNoResults: 'No games found',
@@ -925,6 +996,11 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.filterRating: 'Rating',
   AppLocale.filterYear: 'Year',
   AppLocale.filterAny: 'Any',
+  AppLocale.filterSource: 'Source',
+  AppLocale.sourceLocal: 'On this device',
+  AppLocale.searchRatingLocalOnly:
+      'The rating filter applies to local games only',
+  AppLocale.searchNoRommEquivalent: 'RomM has nothing filed under “{value}”',
   AppLocale.resetPlayTimeConfirm: 'Reset Play Time',
   AppLocale.resetPlayTimeConfirmBody:
       'This will permanently reset the recorded play time for this game to zero. This cannot be undone.',

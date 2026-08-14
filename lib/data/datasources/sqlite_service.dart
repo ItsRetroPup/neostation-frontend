@@ -422,7 +422,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 118;
+  static const int _databaseVersion = 119;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -1412,21 +1412,30 @@ class SqliteService {
       }
     }
 
-    // FIX: Ensure app_neo_sync_state exists (legacy support for v58).
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS app_neo_sync_state (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        file_path TEXT NOT NULL UNIQUE,
-        local_modified_at INTEGER NOT NULL,
-        cloud_updated_at INTEGER NOT NULL,
-        file_size INTEGER NOT NULL,
-        file_hash TEXT
-      );
-    ''');
-    await db.execute('''
-      CREATE INDEX IF NOT EXISTS idx_neo_sync_state_file_path 
-      ON app_neo_sync_state(file_path);
-    ''');
+    // FIX: Ensure app_neo_sync_state exists (legacy support for v58). New
+    // installs get the provider-scoped schema (v111); pre-existing tables are
+    // upgraded by migration v111, so IF NOT EXISTS here never masks that.
+    await db.execute(SqliteMigrations.createAppNeoSyncStateTableSql);
+    // The index spans `provider`, which migration v111 adds — and this runs
+    // *before* migrations. On a database still at the pre-v111 schema the
+    // CREATE INDEX raises "no such column: provider" and aborts init before
+    // v111 can ever run, leaving every launch to fail the same way. Create it
+    // only once the column is there; v111 creates it as part of the upgrade.
+    final neoSyncColumns = await db.rawQuery(
+      'PRAGMA table_info(app_neo_sync_state);',
+    );
+    final hasProviderColumn = neoSyncColumns.any(
+      (c) => c['name']?.toString() == 'provider',
+    );
+    if (hasProviderColumn) {
+      await db.execute(SqliteMigrations.createAppNeoSyncStateIndexSql);
+    }
+
+    // The RomM tables are created by migration v111 and by the fresh-install
+    // table list — the only two sources, per the maintainer's
+    // versioned-migrations-only policy. No on-launch CREATE safety net here:
+    // it would only mask a failed migration as a later runtime "no such table"
+    // error instead of surfacing it.
   }
 
   /// Ensures the unique_identifier column exists in app_emulators.
@@ -1820,6 +1829,7 @@ class SqliteService {
         hide_tab_sync INTEGER DEFAULT 0,
         hide_tab_achievements INTEGER DEFAULT 0,
         hide_tab_scraper INTEGER DEFAULT 0,
+        hide_tab_romm INTEGER DEFAULT 0,
         hide_tab_search INTEGER DEFAULT 0,
         active_sync_provider TEXT DEFAULT 'neosync',
         systems_version TEXT DEFAULT '',
@@ -1944,6 +1954,7 @@ class SqliteService {
         UNIQUE(app_system_id)
       );
       ''',
+      SqliteMigrations.createUserRommConfigTableSql,
       '''
       CREATE TABLE IF NOT EXISTS user_screenscraper_metadata (
         app_system_id TEXT NOT NULL,
@@ -1995,16 +2006,10 @@ class SqliteService {
         UNIQUE(app_system_id)
       );
       ''',
-      '''
-      CREATE TABLE IF NOT EXISTS app_neo_sync_state (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        file_path TEXT NOT NULL UNIQUE,
-        local_modified_at INTEGER NOT NULL,
-        cloud_updated_at INTEGER NOT NULL,
-        file_size INTEGER NOT NULL,
-        file_hash TEXT
-      );
-      ''',
+      SqliteMigrations.createAppNeoSyncStateTableSql,
+      SqliteMigrations.createAppRommRomMapTableSql,
+      SqliteMigrations.createAppRommPlaySessionsTableSql,
+      SqliteMigrations.createAppRommPlaytimeStateTableSql,
     ];
 
     for (final sql in tables) {
@@ -2073,8 +2078,12 @@ class SqliteService {
       // 5. Index for user_emulator_config
       'CREATE INDEX IF NOT EXISTS idx_user_emulator_config_is_user_default ON user_emulator_config(is_user_default);',
 
-      // 6. Index for app_neo_sync_state
-      'CREATE INDEX IF NOT EXISTS idx_neo_sync_state_file_path ON app_neo_sync_state(file_path);',
+      // 6. Index for app_neo_sync_state (provider-scoped)
+      SqliteMigrations.createAppNeoSyncStateIndexSql,
+      // 7. Index for app_romm_rom_map (RomM save-sync mapping)
+      SqliteMigrations.createAppRommRomMapIndexSql,
+      // 8. Index for app_romm_play_sessions (RomM playtime outbox)
+      SqliteMigrations.createAppRommPlaySessionsIndexSql,
     ];
 
     for (final sql in indexes) {
@@ -2616,6 +2625,7 @@ class SqliteService {
     int? hideTabSync,
     int? hideTabAchievements,
     int? hideTabScraper,
+    int? hideTabRomm,
     int? hideTabSearch,
     String? activeSyncProvider,
     String? systemsVersion,
@@ -2705,6 +2715,9 @@ class SqliteService {
     }
     if (hideTabScraper != null) {
       updates['hide_tab_scraper'] = hideTabScraper;
+    }
+    if (hideTabRomm != null) {
+      updates['hide_tab_romm'] = hideTabRomm;
     }
     if (hideTabSearch != null) {
       updates['hide_tab_search'] = hideTabSearch;
@@ -4300,6 +4313,57 @@ class SqliteService {
     }
   }
 
+  /// Adds playtime that was accumulated on *another* device (pulled from a
+  /// cloud provider) to a game's total.
+  ///
+  /// Differs from [updatePlayTime] in how `last_played` is treated: local play
+  /// stamps "now", whereas imported play must not — the game was last played
+  /// here whenever it was last played here. [remoteLastPlayed] only moves the
+  /// stamp forward when the remote session is genuinely newer, so a pull can
+  /// never rewrite a more recent local session as older.
+  static Future<void> applyRemotePlayTime(
+    String romPath,
+    int seconds, {
+    DateTime? remoteLastPlayed,
+  }) async {
+    final db = await instance.database;
+    final current = await db.query(
+      'user_roms',
+      columns: ['play_time', 'last_played'],
+      where: 'rom_path = ?',
+      whereArgs: [romPath],
+    );
+    if (current.isEmpty) return;
+
+    final row = current.first;
+    final values = <String, Object?>{};
+
+    if (seconds > 0) {
+      values['play_time'] =
+          (int.tryParse(row['play_time']?.toString() ?? '0') ?? 0) + seconds;
+    }
+
+    if (remoteLastPlayed != null) {
+      final localRaw = row['last_played']?.toString();
+      final local = (localRaw == null || localRaw.isEmpty)
+          ? null
+          : DateTime.tryParse(localRaw);
+      if (local == null || remoteLastPlayed.isAfter(local)) {
+        // Stored local-naive like every other writer of this column, so the
+        // UI's existing parse/format path keeps showing wall-clock time.
+        values['last_played'] = remoteLastPlayed.toLocal().toIso8601String();
+      }
+    }
+
+    if (values.isEmpty) return;
+    await db.update(
+      'user_roms',
+      values,
+      where: 'rom_path = ?',
+      whereArgs: [romPath],
+    );
+  }
+
   /// Toggles the favorite status for a given game path.
   ///
   /// Automatically synchronizes the 'favorites' virtual system in
@@ -4601,6 +4665,7 @@ class SqliteService {
   /// This is used to track modifications and versioning for cloud sync, bypassing
   /// filesystem limitations on Android (e.g., restricted 'lastModified' modification).
   static Future<void> saveSyncState(
+    String provider,
     String filePath,
     int localModifiedAt,
     int cloudUpdatedAt,
@@ -4609,7 +4674,10 @@ class SqliteService {
   }) async {
     try {
       final db = await instance.database;
+      // Keyed on (provider, file_path): each sync provider owns its own row for
+      // a given file so RomM and NeoSync timestamps never overwrite each other.
       await db.insert('app_neo_sync_state', {
+        'provider': provider,
         'file_path': filePath,
         'local_modified_at': localModifiedAt,
         'cloud_updated_at': cloudUpdatedAt,
@@ -4622,13 +4690,16 @@ class SqliteService {
   }
 
   /// Retrieves the recorded synchronization state for a specific file path.
-  static Future<Map<String, dynamic>?> getSyncState(String filePath) async {
+  static Future<Map<String, dynamic>?> getSyncState(
+    String provider,
+    String filePath,
+  ) async {
     try {
       final db = await instance.database;
       final results = await db.query(
         'app_neo_sync_state',
-        where: 'file_path = ?',
-        whereArgs: [filePath],
+        where: 'provider = ? AND file_path = ?',
+        whereArgs: [provider, filePath],
         limit: 1,
       );
       if (results.isNotEmpty) {

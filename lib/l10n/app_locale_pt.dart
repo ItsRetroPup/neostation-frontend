@@ -176,15 +176,16 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.bartopShutdownSubtitle:
       'Desliga o computador ao fechar o aplicativo',
 
-  AppLocale.showSyncTab: 'Mostrar aba Sincronização',
-  AppLocale.showSyncTabSubtitle:
-      'Exibe a aba de sincronização na nuvem na barra de navegação',
+  AppLocale.showSyncTab: 'Mostrar aba NeoSync',
+  AppLocale.showSyncTabSubtitle: 'Exibe a aba NeoSync na barra de navegação',
   AppLocale.showAchievementsTab: 'Mostrar aba Conquistas',
   AppLocale.showAchievementsTabSubtitle:
       'Exibe a aba do RetroAchievements na barra de navegação',
   AppLocale.showScraperTab: 'Mostrar aba Scraper',
   AppLocale.showScraperTabSubtitle:
       'Exibe a aba de scraping na barra de navegação',
+  AppLocale.showRommTab: 'Mostrar aba RomM',
+  AppLocale.showRommTabSubtitle: 'Exibe a aba RomM na barra de navegação',
   AppLocale.showSearchTab: 'Mostrar aba Pesquisar',
   AppLocale.showSearchTabSubtitle:
       'Exibe a aba de pesquisa na barra de navegação',
@@ -279,6 +280,7 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.loadingAchievements: 'Carregando conquistas...',
 
   AppLocale.neoSync: 'NeoSync',
+  AppLocale.neoSyncLogin: 'Entrar no NeoSync',
   AppLocale.neoSyncSynchronizing: 'NeoSync: Sincronizando...',
   AppLocale.neoSyncNotConnected: 'NeoSync: Não conectado',
   AppLocale.neoSyncSynchronized: 'NeoSync: Saves sincronizados',
@@ -923,6 +925,77 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.toolsSubtitle: 'Ferramentas para ajudar a organizar as suas ROMs',
   AppLocale.addRomFolder: 'Adicionar pasta de ROM',
   AppLocale.removeRomFolder: 'Remover',
+  // RomM (remote library browse + download)
+  AppLocale.romm: 'RomM',
+  AppLocale.rommLibrary: 'Biblioteca RomM',
+  AppLocale.rommLogin: 'Entrar no RomM',
+  AppLocale.rommWhatIs: 'O que é o RomM?',
+  AppLocale.rommDescription:
+      'O RomM é um gerenciador de ROMs auto-hospedado. Conecte-se ao seu servidor para navegar pela sua biblioteca, baixar jogos direto para este dispositivo e sincronizar seus saves.',
+  AppLocale.rommInfoBrowse: 'Navegue e baixe toda a sua biblioteca de jogos',
+  AppLocale.rommInfoSaveSync: 'Sincronize os saves entre seus dispositivos',
+  AppLocale.rommInfoSelfHosted: 'Auto-hospedado — sua coleção, seu servidor',
+  AppLocale.rommLearnMoreAt: 'Saiba mais em ',
+  AppLocale.rommServerUrl: 'URL do servidor',
+  AppLocale.rommServerUrlHint: 'https://romm.example.com',
+  AppLocale.rommTestConnection: 'Testar conexão',
+  AppLocale.rommSaveConnect: 'Salvar e conectar',
+  AppLocale.rommDisconnect: 'Desconectar',
+  AppLocale.rommUseForSaveSync: 'Usar o RomM para sincronizar saves',
+  AppLocale.rommSaveSyncLabel: 'Sinc. RomM',
+  AppLocale.rommSaveSyncActive:
+      'O RomM é seu provedor de sincronização de saves',
+  AppLocale.rommBrowseLibrary: 'Navegar na biblioteca',
+  AppLocale.rommStatusConnected: 'Conectado',
+  AppLocale.rommStatusDisconnected: 'Não conectado',
+  AppLocale.rommConnecting: 'Conectando...',
+  AppLocale.rommTesting: 'Testando...',
+  AppLocale.rommConnectionSuccess: 'Conexão bem-sucedida',
+  AppLocale.rommConnectionFailed: 'Falha na conexão',
+  AppLocale.rommConnectedAs: 'Conectado como {user}',
+  AppLocale.rommCredentialsRequired:
+      'Informe a URL do servidor, o usuário e a senha',
+  AppLocale.rommPlatforms: 'Plataformas',
+  AppLocale.rommNoPlatforms: 'Nenhuma plataforma encontrada',
+  AppLocale.rommCollections: 'Coleções',
+  AppLocale.rommNoCollections: 'Nenhuma coleção encontrada',
+  AppLocale.rommNoRoms: 'Nenhuma ROM encontrada',
+  AppLocale.rommSearch: 'Buscar',
+  AppLocale.rommDownloading: 'Baixando...',
+  AppLocale.rommDownloaded: 'Baixado',
+  AppLocale.rommDownloadComplete: 'Download concluído',
+  AppLocale.rommDownloadFailed: 'Falha no download',
+  AppLocale.rommDownloadCancelled: 'Download cancelado',
+  AppLocale.rommLoadMore: 'Carregar mais',
+  AppLocale.rommNoSystemMatch:
+      'Nenhum sistema local corresponde a esta plataforma',
+  AppLocale.rommPlatformUnsupported: 'Não compatível',
+  AppLocale.rommNoWritableFolder:
+      'Não foi possível gravar na sua pasta de ROMs. Conceda "Acesso a Todos os Arquivos" ao NeoStation e tente novamente.',
+  AppLocale.rommNotConnected:
+      'Conecte-se a um servidor RomM em Configurações primeiro',
+  // Bulk "sync a whole platform/collection".
+  AppLocale.rommSyncAll: 'Sincronizar tudo',
+  AppLocale.rommSyncCancel: 'Cancelar sincronização',
+  AppLocale.rommSyncConfirmTitle: 'Sincronizar {name}?',
+  AppLocale.rommSyncConfirmPlan:
+      'Baixa {count} jogos — {size}. Pode demorar bastante.',
+  AppLocale.rommSyncConfirmSkipped: '{count} já estão neste dispositivo.',
+  AppLocale.rommSyncConfirmFree: '{free} livres.',
+  AppLocale.rommSyncConfirmNoSpace:
+      'Espaço insuficiente: precisa de {size} e há apenas {free} livres.',
+  AppLocale.rommSyncConfirmVolumeFree:
+      '{volume}: precisa de {size}, {free} livres.',
+  AppLocale.rommSyncConfirmVolumeNoSpace:
+      '{volume}: precisa de {size} e há apenas {free} livres.',
+  AppLocale.rommSyncConfirmVolumeUnknown:
+      '{volume}: precisa de {size}, espaço livre desconhecido.',
+  AppLocale.rommSyncPreparing: 'Preparando…',
+  AppLocale.rommSyncCancelling: 'Cancelando…',
+  AppLocale.rommSyncComplete: '{count} jogos sincronizados',
+  AppLocale.rommSyncCancelled: 'Sincronização cancelada',
+  AppLocale.rommSyncNothingToDo: 'Tudo já foi baixado',
+  AppLocale.rommSyncFailedCount: '{count} com erros',
   AppLocale.searchTitle: 'Pesquisar',
   AppLocale.searchNameHint: 'Pesquisar...',
   AppLocale.searchNoResults: 'Nenhum jogo encontrado',
@@ -938,6 +1011,12 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.filterRating: 'Avaliação',
   AppLocale.filterYear: 'Ano',
   AppLocale.filterAny: 'Qualquer',
+  AppLocale.filterSource: 'Origem',
+  AppLocale.sourceLocal: 'Neste dispositivo',
+  AppLocale.searchRatingLocalOnly:
+      'O filtro de avaliação se aplica apenas aos jogos locais',
+  AppLocale.searchNoRommEquivalent:
+      'O RomM não tem nada classificado como “{value}”',
   AppLocale.resetPlayTimeConfirm: 'Redefinir tempo de jogo',
   AppLocale.resetPlayTimeConfirmBody:
       'Isto irá redefinir permanentemente para zero o tempo de jogo registado deste jogo. Esta ação não pode ser desfeita.',

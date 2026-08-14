@@ -5,6 +5,7 @@ import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/providers/theme_provider.dart';
 import 'package:neostation/providers/scraping_provider.dart';
 import 'package:neostation/providers/retro_achievements_provider.dart';
+import 'package:neostation/providers/romm_provider.dart';
 import 'package:neostation/providers/neo_sync_provider.dart';
 import 'package:neostation/screens/main_screen.dart';
 import 'package:neostation/services/neosync/auth_service.dart';
@@ -12,6 +13,7 @@ import 'package:neostation/services/neosync/neo_sync_service.dart';
 import 'package:neostation/services/neosync/billing_service.dart';
 import 'package:neostation/sync/sync_manager.dart';
 import 'package:neostation/sync/providers/neo_sync_adapter.dart';
+import 'package:neostation/sync/providers/romm_provider.dart';
 import 'package:neostation/services/notification_service.dart';
 import 'package:neostation/services/game_service.dart';
 import 'package:neostation/services/game_legend_visibility.dart';
@@ -370,6 +372,66 @@ void main() async {
 
   final neoSyncAdapter = NeoSyncAdapter(neoSyncProvider);
   SyncManager.instance.register(neoSyncAdapter);
+
+  // Build the RomM browse provider before runApp so the RomM save-sync provider
+  // can share its authenticated connection, and so SyncManager can register it.
+  final rommProvider = RommProvider()..initialize();
+  // After RomM downloads settle (debounced), index the new ROMs and refresh the
+  // affected systems' game lists so they appear progressively — even if the
+  // user backs out of the browse screen mid-batch.
+  //
+  // Scan only the affected systems (rescanSystemSilent), not the whole library,
+  // so downloading 100 ROMs doesn't trigger 100 full-library rescans. Fall back
+  // to a full scan only when a genuinely new (not-yet-detected) system appears,
+  // since detecting it needs the full re-detect pass.
+  rommProvider.onDownloadsSettled = (systems) async {
+    // Read the *scanned* system list, not `config.detectedSystems`. On Android
+    // scanSystems() deliberately leaves the config's copy alone while it scans
+    // in the background (see scanning.dart), so it is stale here — which made
+    // every downloaded system look new (forcing a full rescan each settle) and
+    // then look unregistered afterwards, skipping the refresh that puts the
+    // games on screen.
+    Set<String> detectedFolders() => {
+      for (final s in sqliteConfigProvider.detectedSystems) s.folderName,
+    };
+
+    final detected = detectedFolders();
+    final hasNewSystem = systems.any(
+      (s) =>
+          !detected.contains(s.folderName) && !s.folders.any(detected.contains),
+    );
+    if (hasNewSystem) {
+      await sqliteConfigProvider.scanSystems();
+    } else {
+      for (final system in systems) {
+        await sqliteConfigProvider.rescanSystemSilent(system);
+      }
+    }
+    // Re-read after the scan: a genuinely new system only becomes known here.
+    // A system still missing at this point really didn't register (scanSystems
+    // no-ops while another scan is in flight), and refreshing it would load an
+    // empty list and silently drop the freshly downloaded games — so skip it
+    // and log, leaving the gap diagnosable rather than silent.
+    final registered = detectedFolders();
+    for (final system in systems) {
+      final isKnown =
+          registered.contains(system.folderName) ||
+          system.folders.any(registered.contains);
+      if (isKnown) {
+        await sqliteDatabaseProvider.refreshSystem(system.folderName);
+      } else {
+        LoggerService.instance.w(
+          'RomM: downloaded ROMs for "${system.folderName}" but it is not '
+          'registered after scan; a manual rescan is needed for them to appear.',
+        );
+      }
+    }
+  };
+  SyncManager.instance.register(
+    RomMSyncProvider(rommProvider, neoSyncProvider),
+  );
+
+  // Restore the user's chosen provider only after both are registered.
   SyncManager.instance.restoreActive(
     sqliteConfigProvider.config.activeSyncProvider,
   );
@@ -382,6 +444,7 @@ void main() async {
       sqliteDatabaseProvider: sqliteDatabaseProvider,
       neoSyncService: neoSyncService,
       neoSyncProvider: neoSyncProvider,
+      rommProvider: rommProvider,
       themeProvider: themeProvider,
     ),
   );
@@ -785,6 +848,7 @@ class MyApp extends StatefulWidget {
   final SqliteDatabaseProvider sqliteDatabaseProvider;
   final NeoSyncService neoSyncService;
   final NeoSyncProvider neoSyncProvider;
+  final RommProvider rommProvider;
 
   /// Built in `main()` with the saved theme already resolved, so the first
   /// frame paints in the user's theme rather than the brightness fallback.
@@ -798,6 +862,7 @@ class MyApp extends StatefulWidget {
     required this.sqliteDatabaseProvider,
     required this.neoSyncService,
     required this.neoSyncProvider,
+    required this.rommProvider,
     required this.themeProvider,
   });
 
@@ -847,6 +912,7 @@ class _MyAppState extends State<MyApp> {
           lazy: false,
           create: (context) => RetroAchievementsProvider()..initialize(),
         ),
+        ChangeNotifierProvider.value(value: widget.rommProvider),
         ChangeNotifierProvider(create: (context) => SystemBackgroundProvider()),
         ChangeNotifierProvider(
           // Eager: the theme manifest is a network fetch, and during first-run

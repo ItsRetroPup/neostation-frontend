@@ -172,15 +172,16 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.bartopShutdown: 'Matikan BarTOP saat keluar',
   AppLocale.bartopShutdownSubtitle: 'Mematikan komputer saat menutup aplikasi',
 
-  AppLocale.showSyncTab: 'Tampilkan tab Sinkronisasi',
-  AppLocale.showSyncTabSubtitle:
-      'Menampilkan tab sinkronisasi cloud di bilah navigasi',
+  AppLocale.showSyncTab: 'Tampilkan tab NeoSync',
+  AppLocale.showSyncTabSubtitle: 'Menampilkan tab NeoSync di bilah navigasi',
   AppLocale.showAchievementsTab: 'Tampilkan tab Pencapaian',
   AppLocale.showAchievementsTabSubtitle:
       'Menampilkan tab RetroAchievements di bilah navigasi',
   AppLocale.showScraperTab: 'Tampilkan tab Scraper',
   AppLocale.showScraperTabSubtitle:
       'Menampilkan tab scraping di bilah navigasi',
+  AppLocale.showRommTab: 'Tampilkan tab RomM',
+  AppLocale.showRommTabSubtitle: 'Menampilkan tab RomM di bilah navigasi',
   AppLocale.showSearchTab: 'Tampilkan tab Cari',
   AppLocale.showSearchTabSubtitle:
       'Menampilkan tab pencarian di bilah navigasi',
@@ -272,6 +273,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.loadingAchievements: 'Memuat pencapaian...',
 
   AppLocale.neoSync: 'NeoSync',
+  AppLocale.neoSyncLogin: 'Masuk NeoSync',
   AppLocale.neoSyncSynchronizing: 'NeoSync: Menyingkronkan...',
   AppLocale.neoSyncNotConnected: 'NeoSync: Tidak terhubung',
   AppLocale.neoSyncSynchronized: 'NeoSync: Simpanan disinkronkan',
@@ -914,6 +916,79 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.toolsSubtitle: 'Alat untuk membantu mengatur ROM Anda',
   AppLocale.addRomFolder: 'Tambah Folder ROM',
   AppLocale.removeRomFolder: 'Hapus',
+  // RomM (remote library browse + download)
+  AppLocale.romm: 'RomM',
+  AppLocale.rommLibrary: 'Pustaka RomM',
+  AppLocale.rommLogin: 'Masuk RomM',
+  AppLocale.rommWhatIs: 'Apa itu RomM?',
+  AppLocale.rommDescription:
+      'RomM adalah pengelola ROM yang di-hosting sendiri. Hubungkan ke server Anda untuk menjelajahi pustaka, mengunduh game langsung ke perangkat ini, dan menyinkronkan data simpanan Anda.',
+  AppLocale.rommInfoBrowse: 'Jelajahi dan unduh seluruh pustaka game Anda',
+  AppLocale.rommInfoSaveSync:
+      'Sinkronkan file simpanan di seluruh perangkat Anda',
+  AppLocale.rommInfoSelfHosted:
+      'Di-hosting sendiri — koleksi Anda, server Anda',
+  AppLocale.rommLearnMoreAt: 'Pelajari lebih lanjut di ',
+  AppLocale.rommServerUrl: 'URL Server',
+  AppLocale.rommServerUrlHint: 'https://romm.example.com',
+  AppLocale.rommTestConnection: 'Uji Koneksi',
+  AppLocale.rommSaveConnect: 'Simpan & Hubungkan',
+  AppLocale.rommDisconnect: 'Putuskan',
+  AppLocale.rommUseForSaveSync: 'Gunakan RomM untuk sinkronisasi simpanan',
+  AppLocale.rommSaveSyncLabel: 'Sinkron RomM',
+  AppLocale.rommSaveSyncActive:
+      'RomM adalah penyedia sinkronisasi simpanan Anda',
+  AppLocale.rommBrowseLibrary: 'Jelajahi Pustaka',
+  AppLocale.rommStatusConnected: 'Terhubung',
+  AppLocale.rommStatusDisconnected: 'Tidak terhubung',
+  AppLocale.rommConnecting: 'Menghubungkan...',
+  AppLocale.rommTesting: 'Menguji...',
+  AppLocale.rommConnectionSuccess: 'Koneksi berhasil',
+  AppLocale.rommConnectionFailed: 'Koneksi gagal',
+  AppLocale.rommConnectedAs: 'Terhubung sebagai {user}',
+  AppLocale.rommCredentialsRequired:
+      'Masukkan URL server, nama pengguna, dan kata sandi',
+  AppLocale.rommPlatforms: 'Platform',
+  AppLocale.rommNoPlatforms: 'Tidak ada platform ditemukan',
+  AppLocale.rommCollections: 'Koleksi',
+  AppLocale.rommNoCollections: 'Tidak ada koleksi ditemukan',
+  AppLocale.rommNoRoms: 'Tidak ada ROM ditemukan',
+  AppLocale.rommSearch: 'Cari',
+  AppLocale.rommDownloading: 'Mengunduh...',
+  AppLocale.rommDownloaded: 'Terunduh',
+  AppLocale.rommDownloadComplete: 'Unduhan selesai',
+  AppLocale.rommDownloadFailed: 'Unduhan gagal',
+  AppLocale.rommDownloadCancelled: 'Unduhan dibatalkan',
+  AppLocale.rommLoadMore: 'Muat lebih banyak',
+  AppLocale.rommNoSystemMatch:
+      'Tidak ada sistem lokal yang cocok untuk platform ini',
+  AppLocale.rommPlatformUnsupported: 'Tidak didukung',
+  AppLocale.rommNoWritableFolder:
+      'Tidak dapat menulis ke folder ROM Anda. Berikan "Akses Semua File" ke NeoStation lalu coba lagi.',
+  AppLocale.rommNotConnected:
+      'Hubungkan ke server RomM di Pengaturan terlebih dahulu',
+  // Bulk "sync a whole platform/collection".
+  AppLocale.rommSyncAll: 'Sinkronkan semua',
+  AppLocale.rommSyncCancel: 'Batalkan sinkronisasi',
+  AppLocale.rommSyncConfirmTitle: 'Sinkronkan {name}?',
+  AppLocale.rommSyncConfirmPlan:
+      'Mengunduh {count} gim — {size}. Ini bisa memakan waktu lama.',
+  AppLocale.rommSyncConfirmSkipped: '{count} sudah ada di perangkat ini.',
+  AppLocale.rommSyncConfirmFree: '{free} tersedia.',
+  AppLocale.rommSyncConfirmNoSpace:
+      'Penyimpanan tidak cukup: perlu {size}, hanya {free} tersedia.',
+  AppLocale.rommSyncConfirmVolumeFree:
+      '{volume}: perlu {size}, {free} tersedia.',
+  AppLocale.rommSyncConfirmVolumeNoSpace:
+      '{volume}: perlu {size}, hanya {free} tersedia.',
+  AppLocale.rommSyncConfirmVolumeUnknown:
+      '{volume}: perlu {size}, ruang tersedia tidak diketahui.',
+  AppLocale.rommSyncPreparing: 'Menyiapkan…',
+  AppLocale.rommSyncCancelling: 'Membatalkan…',
+  AppLocale.rommSyncComplete: '{count} gim disinkronkan',
+  AppLocale.rommSyncCancelled: 'Sinkronisasi dibatalkan',
+  AppLocale.rommSyncNothingToDo: 'Semuanya sudah diunduh',
+  AppLocale.rommSyncFailedCount: '{count} gagal',
   AppLocale.searchTitle: 'Cari',
   AppLocale.searchNameHint: 'Cari...',
   AppLocale.searchNoResults: 'Tidak ada gim ditemukan',
@@ -929,6 +1004,12 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.filterRating: 'Peringkat',
   AppLocale.filterYear: 'Tahun',
   AppLocale.filterAny: 'Semua',
+  AppLocale.filterSource: 'Sumber',
+  AppLocale.sourceLocal: 'Di perangkat ini',
+  AppLocale.searchRatingLocalOnly:
+      'Filter peringkat hanya berlaku untuk gim lokal',
+  AppLocale.searchNoRommEquivalent:
+      'RomM tidak punya apa pun dengan nama “{value}”',
   AppLocale.resetPlayTimeConfirm: 'Atur Ulang Waktu Bermain',
   AppLocale.resetPlayTimeConfirmBody:
       'Ini akan mengatur ulang waktu bermain yang tercatat untuk game ini menjadi nol secara permanen. Tindakan ini tidak dapat dibatalkan.',

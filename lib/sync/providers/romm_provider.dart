@@ -1,57 +1,147 @@
-/// RomM sync provider (community skeleton).
+/// RomM save-sync provider.
 ///
-/// Connects to a self-hosted RomM instance via its REST API using a
-/// user-supplied base URL and API key.
+/// Syncs emulator save files and save states between the local device and a
+/// self-hosted RomM instance, mirroring NeoSync's per-game flow (download newer
+/// remote saves before launch, upload changed local saves after the game
+/// closes).
 ///
-/// API reference: https://github.com/rommapp/romm
+/// It reuses the existing, already-authenticated [RommProvider] (library browse)
+/// connection — no second login — and delegates local save-file *location* to
+/// [NeoSyncProvider]'s battle-tested path resolution. Sync state is tracked in
+/// the shared, provider-agnostic `app_neo_sync_state` table via [SyncRepository].
 ///
-/// ## pubspec.yaml dependencies to add
-/// ```yaml
-/// http: ^1.2.0   # already present in most Flutter projects
-/// ```
-///
-/// ## Register in main.dart
-/// ```dart
-/// // Load url + key from SqliteConfigProvider or SharedPreferences first.
-/// SyncManager.instance.register(
-///   RomMProvider(baseUrl: config.rommUrl, apiKey: config.rommApiKey),
-/// );
-/// ```
+/// Saves are keyed by RomM `rom_id`, which is only known for games downloaded
+/// from RomM (recorded in `app_romm_rom_map` at download time). Games with no
+/// mapping are treated as not-linked and skipped.
 library;
 
+import 'dart:async';
 import 'dart:io';
-// import 'dart:convert';
-// import 'package:http/http.dart' as http;
+
+import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as path;
+import 'package:neostation/models/game_model.dart';
+import 'package:neostation/models/neo_sync_models.dart';
+import 'package:neostation/models/romm_asset.dart';
+import 'package:neostation/models/romm_rom.dart';
+import 'package:neostation/providers/neo_sync_provider.dart';
+import 'package:neostation/repositories/emulator_repository.dart';
+import 'package:neostation/repositories/game_repository.dart';
+import 'package:neostation/services/retroarch_config_service.dart';
+import 'package:neostation/providers/romm_provider.dart';
+import 'package:neostation/repositories/romm_save_map_repository.dart';
+import 'package:neostation/repositories/sync_repository.dart';
+import 'package:neostation/repositories/system_repository.dart';
+import 'package:neostation/services/logger_service.dart';
+import 'package:neostation/services/romm_playtime_service.dart';
+import 'package:neostation/services/romm_service.dart';
 
 import '../i_sync_provider.dart';
+import '../retroarch_state_signature.dart';
+import '../sync_manager.dart';
 
-class RomMProvider extends ISyncProvider {
+/// Locates the local save/state files belonging to a game.
+typedef LocateGameSaves = Future<List<LocalSaveFile>> Function(GameModel game);
+
+/// Resolves the candidate local destination paths for a cloud file named
+/// [relativeName] (e.g. `saves/Game.srm`) belonging to a game.
+typedef ResolveSaveTargets =
+    Future<List<String>> Function(GameModel game, String relativeName);
+
+/// Enumerates the local library, for the pending-upload sweep.
+typedef ListLocalGames = Future<List<GameModel>> Function();
+
+class RomMSyncProvider extends ChangeNotifier implements ISyncProvider {
   static const String kProviderId = 'romm';
 
-  final String? _baseUrl;
-  final String? _apiKey;
+  /// Tolerance (ms) for local-vs-recorded mtime comparisons, matching NeoSync.
+  static const int _mtimeToleranceMs = 2000;
 
-  SyncProviderStatus _status = SyncProviderStatus.disconnected;
-  bool _isAuthenticated = false;
-  String? _lastError;
+  /// Label stamped onto RomM's `emulator` field for assets we create.
+  ///
+  /// Deliberately a *constant*, not the save's per-core subfolder. RomM uses
+  /// this value as a directory component when it stores the file, so encoding
+  /// something device-specific in it gives two devices two different storage
+  /// paths for one logical save — and because RomM matches assets on
+  /// `(rom_id, file_name)` alone, they then fight over a single row that only
+  /// ever serves whichever device created it. A device-independent label keeps
+  /// every device on one path, which is what lets a save actually round-trip.
+  ///
+  /// Where the file belongs *locally* is a local question, answered on download
+  /// from this device's own RetroArch configuration — see [_localSubfolder].
+  static const String _assetLabel = 'neostation';
 
-  /// [baseUrl] — user's RomM instance, e.g. "https://romm.example.com".
-  /// [apiKey]  — API key from RomM Settings → API Keys.
-  RomMProvider({String? baseUrl, String? apiKey})
-    : _baseUrl = baseUrl,
-      _apiKey = apiKey;
+  static final _log = LoggerService.instance;
 
-  bool get _isConfigured {
-    final url = _baseUrl;
-    final key = _apiKey;
-    return url != null && url.isNotEmpty && key != null && key.isNotEmpty;
+  /// Authenticated RomM connection, shared with the library browser.
+  final RommProvider _browse;
+
+  /// Used only to locate/place local save files (path resolution reuse).
+  final NeoSyncProvider _neoSync;
+
+  /// Test seams for NeoSync's path resolution. [NeoSyncProvider]'s
+  /// `locateGameSaveFiles`/`resolveLocalTargetPaths` live in an `extension`
+  /// (static dispatch), so they can't be faked by subclassing — tests inject
+  /// replacements here instead, mirroring [RommBulkSync.run]'s callbacks.
+  final LocateGameSaves? _locateOverride;
+  final ResolveSaveTargets? _resolveTargetsOverride;
+  final ListLocalGames? _listGamesOverride;
+
+  final Map<String, GameSyncState> _gameSyncStates = {};
+
+  RomMSyncProvider(
+    this._browse,
+    this._neoSync, {
+    @visibleForTesting LocateGameSaves? locateSaves,
+    @visibleForTesting ResolveSaveTargets? resolveTargets,
+    @visibleForTesting ListLocalGames? listGames,
+    @visibleForTesting bool autoSweep = true,
+  }) : _locateOverride = locateSaves,
+       _resolveTargetsOverride = resolveTargets,
+       _listGamesOverride = listGames,
+       _autoSweep = autoSweep {
+    if (!_autoSweep) return;
+    _wasConnected = _browse.isConnected;
+    _browse.addListener(_onBrowseChanged);
+    // Constructed *after* the browse provider restored its saved config (see
+    // main.dart) is the normal startup order, so the connect that matters has
+    // usually already happened and there is no transition left to listen for.
+    if (_wasConnected) _scheduleSweep();
   }
 
-  // ignore: unused_element
-  Map<String, String> get _headers => {
-    'Authorization': 'Bearer $_apiKey',
-    'Accept': 'application/json',
-  };
+  /// Whether the connect-triggered sweep is wired up. Off in tests, which drive
+  /// [retryPendingUploads] directly rather than waiting out a timer.
+  final bool _autoSweep;
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    if (_autoSweep) _browse.removeListener(_onBrowseChanged);
+    super.dispose();
+  }
+
+  Future<List<LocalSaveFile>> _locateSaves(GameModel game) =>
+      (_locateOverride ?? _neoSync.locateGameSaveFiles)(game);
+
+  Future<List<String>> _resolveTargets(GameModel game, String relativeName) =>
+      (_resolveTargetsOverride ?? _neoSync.resolveLocalTargetPaths)(
+        game,
+        relativeName,
+      );
+
+  /// The library, for the sweep. Injectable for the same reason the path
+  /// resolution is: reaching the real one means seeding `user_roms` and its
+  /// system join, which says nothing about the behaviour under test.
+  Future<List<GameModel>> _listGames() async {
+    final override = _listGamesOverride;
+    if (override != null) return override();
+    final rows = await GameRepository.getAllGames();
+    return rows.map(GameModel.fromDatabaseModel).toList();
+  }
+
+  RommService get _svc => _browse.service;
 
   // ── Identity ───────────────────────────────────────────────────────────────
 
@@ -63,73 +153,672 @@ class RomMProvider extends ISyncProvider {
     id: kProviderId,
     name: 'RomM',
     description:
-        'Self-hosted sync via your own RomM instance. Bring your own server.',
+        'Self-hosted sync via your own RomM instance. Uses your RomM '
+        'connection — only games downloaded from RomM are synced.',
     author: 'Community',
     iconAssetPath: 'assets/icons/romm.png',
   );
 
-  @override
-  SyncProviderStatus get status => _status;
+  // ── State ──────────────────────────────────────────────────────────────────
 
   @override
-  bool get isAuthenticated => _isAuthenticated;
+  SyncProviderStatus get status {
+    switch (_browse.status) {
+      case RommConnectionStatus.connected:
+        return SyncProviderStatus.connected;
+      case RommConnectionStatus.connecting:
+        return SyncProviderStatus.connecting;
+      case RommConnectionStatus.error:
+        return SyncProviderStatus.error;
+      case RommConnectionStatus.disconnected:
+        return SyncProviderStatus.disconnected;
+    }
+  }
 
   @override
-  String? get lastError => _lastError;
+  bool get isAuthenticated => _browse.isConnected;
+
+  @override
+  String? get lastError => _browse.lastError;
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   @override
   Future<void> initialize() async {
-    if (!_isConfigured) return;
-    // TODO: Ping $_baseUrl/api/heartbeat (or /api/users/me) to verify
-    // the instance is reachable and the key is valid.
-    // On HTTP 200 → _status = connected, _isAuthenticated = true.
-    // On HTTP 401 → _status = error, _lastError = 'Invalid API key'.
-    // On SocketException → _status = error, _lastError = 'Unreachable'.
+    // The browse RommProvider restores config + tokens in its own initialize().
   }
-
-  @override
-  void dispose() {}
 
   // ── Authentication ─────────────────────────────────────────────────────────
 
   @override
   Future<SyncResult> login() async {
-    if (!_isConfigured) {
-      return SyncResult.fail(
-        SyncError.configInvalid,
-        message: 'Set RomM URL and API Key in Settings → Sync → RomM',
-      );
-    }
-    _status = SyncProviderStatus.connecting;
-    try {
-      // TODO:
-      // final response = await http.get(
-      //   Uri.parse('$_baseUrl/api/users/me'),
-      //   headers: _headers,
-      // );
-      // if (response.statusCode == 401) {
-      //   throw Exception('Invalid API key');
-      // }
-      // response.statusCode == 200 → success
-      _isAuthenticated = true;
-      _status = SyncProviderStatus.connected;
-      return SyncResult.ok(message: 'Connected to RomM at $_baseUrl');
-    } catch (e) {
-      _status = SyncProviderStatus.error;
-      _lastError = e.toString();
-      return SyncResult.fail(SyncError.networkError, message: e.toString());
-    }
+    if (_browse.isConnected) return SyncResult.ok();
+    return SyncResult.fail(
+      SyncError.authRequired,
+      message: 'Connect to RomM in Settings → RomM first',
+    );
   }
 
   @override
   Future<void> logout() async {
-    _isAuthenticated = false;
-    _status = SyncProviderStatus.disconnected;
+    await _browse.disconnect();
   }
 
-  // ── Core Sync Operations ───────────────────────────────────────────────────
+  // ── Mapping / discovery helpers ─────────────────────────────────────────────
+
+  /// Resolves the RomM `rom_id` for [game], or null if the game isn't linked
+  /// to a RomM ROM (i.e. wasn't downloaded from RomM).
+  Future<int?> _resolveRomId(GameModel game) async {
+    final systemFolder = game.systemFolderName;
+    if (systemFolder == null || systemFolder.isEmpty) return null;
+    return RommSaveMapRepository.getRommRomId(game.romname, systemFolder);
+  }
+
+  GameSyncState _buildState(
+    GameModel game,
+    GameSyncStatus status, {
+    String? errorMessage,
+  }) => GameSyncState(
+    gameId: game.romname,
+    gameName: game.name,
+    status: status,
+    // Null counts as disabled, matching the [_syncGame] gate and NeoSync.
+    cloudEnabled: game.cloudSyncEnabled == true,
+    errorMessage: errorMessage,
+  );
+
+  // ── Core per-game sync ──────────────────────────────────────────────────────
+
+  /// Bidirectional sync for [game]. When [downloadOnly] is true (pre-launch),
+  /// only newer/missing remote files are pulled; otherwise local changes are
+  /// also pushed.
+  ///
+  /// [statusOnly] reconciles without transferring anything, for the cloud-state
+  /// indicator. Moving the highlight onto a game in the list must not push or
+  /// pull a save: the transfers belong to the launch lifecycle, where the user
+  /// has actually asked for the game.
+  Future<GameSyncStatus> _syncGame(
+    GameModel game, {
+    required bool downloadOnly,
+    bool statusOnly = false,
+    bool uploadOnly = false,
+    SyncDeadline? deadline,
+  }) async {
+    if (!_browse.isConnected) return GameSyncStatus.error;
+    // Honour the sync opt-outs exactly the way NeoSync does: a null per-game
+    // flag counts as disabled, and a system whose config sets `sync: false`
+    // (e.g. shared-memcard systems the user deliberately excluded) is skipped
+    // regardless of the per-game flag.
+    if (game.cloudSyncEnabled != true) return GameSyncStatus.disabled;
+    final systemFolder = game.systemFolderName;
+    if (systemFolder != null && systemFolder.isNotEmpty) {
+      final system = await SystemRepository.getSystemByFolderName(systemFolder);
+      if (system != null && !system.neosync.sync) {
+        return GameSyncStatus.disabled;
+      }
+    }
+
+    final romId = await _resolveRomId(game);
+    if (romId == null) {
+      // Not a RomM-linked game (wasn't downloaded through the app). Report
+      // "disabled" — sync simply doesn't apply — rather than "no save found",
+      // which would be a lie whenever the game has perfectly good local saves.
+      return GameSyncStatus.disabled;
+    }
+
+    final localFiles = syncableSaves(game, await _locateSaves(game));
+
+    final List<RommAsset> remote;
+    try {
+      // The two listings are independent GETs; fetch them concurrently so the
+      // launch-blocking sync pays one round-trip, not two serial ones.
+      final results = await Future.wait([
+        _svc.listSaves(romId: romId),
+        _svc.listStates(romId: romId),
+      ]);
+      remote = [...results[0], ...results[1]];
+    } catch (e) {
+      _log.e('RomM listSaves/listStates failed for ${game.romname}: $e');
+      return GameSyncStatus.error;
+    }
+
+    final matchedRemote = <int>{}; // asset ids already paired with a local file
+    int uploaded = 0, downloaded = 0, coreMismatched = 0;
+    bool anyLocal = localFiles.isNotEmpty;
+    bool anyRemote = remote.isNotEmpty;
+
+    // 1) Reconcile each local file against its remote counterpart.
+    for (final local in localFiles) {
+      final isState = local.relativePath.startsWith('states/');
+      final baseName = path.basename(local.filePath);
+      RommAsset? match;
+      for (final a in remote) {
+        if (a.isState == isState && a.fileName == baseName) {
+          match = a;
+          break;
+        }
+      }
+      if (match != null) matchedRemote.add(match.id);
+
+      final localMs = local.lastModified.millisecondsSinceEpoch;
+      final recorded = await SyncRepository.getSyncState(
+        kProviderId,
+        local.filePath,
+      );
+      final recordedLocalMs = (recorded?['local_modified_at'] as int?) ?? 0;
+      final recordedCloudMs = (recorded?['cloud_updated_at'] as int?) ?? 0;
+
+      final localChanged =
+          recorded == null || localMs > recordedLocalMs + _mtimeToleranceMs;
+
+      if (match == null) {
+        // Local only → upload (unless pre-launch download-only pass).
+        if (!downloadOnly && !statusOnly) {
+          if (await _upload(romId, local, isState)) uploaded++;
+        }
+        continue;
+      }
+
+      final remoteChanged = match.updatedAtMs > recordedCloudMs;
+
+      // Pull when the server has moved on. Requiring an *untouched* local copy
+      // here sounds safer than it is: RetroArch rewrites `<game>.state.auto` on
+      // every exit whenever auto-save-state is on — a common setting — so
+      // `localChanged` is true essentially always, and a pre-launch pass that
+      // insisted on it would never pull anything. Cross-device sync would be
+      // dead for those users rather than merely occasionally stale.
+      //
+      // Attempting the pull is safe because it is not the decision that
+      // overwrites anything: [_download]'s per-target mtime guard refuses to
+      // write over a local file newer than the remote, so a genuinely-ahead
+      // local save survives and simply uploads on the next upload-capable pass.
+      // What changes is only the case where the server copy is strictly newer
+      // than the local one, which is exactly the other device's session.
+      //
+      // Deliberately scoped to the download-only (pre-launch) pass. After a
+      // game closes, the session that just ended still wins outright — that is
+      // the [localChanged] branch below, untouched.
+      if (statusOnly) {
+        continue;
+      } else if (remoteChanged && (!localChanged || downloadOnly)) {
+        // A retry sweep exists to push what a failed upload left behind; the
+        // pull belongs to the pre-launch hook, which knows a game is about to
+        // start and has a deadline to answer to.
+        if (uploadOnly) continue;
+        final r = await _download(
+          game,
+          match,
+          localFiles: localFiles,
+          deadline: deadline,
+        );
+        if (r.wrote) downloaded++;
+        if (r.coreMismatch) coreMismatched++;
+      } else if (localChanged && !downloadOnly) {
+        // Local newer (or both changed → prefer local). The asset exists, so
+        // this replaces it in place rather than creating a second one.
+        //
+        // "Prefer local" is only defensible when a session just ended, which is
+        // the post-close hook's authority and not a sweep's: a sweep runs on
+        // connect, with nothing to say the local copy is the newer *session*.
+        // Pushing a both-changed file from here is exactly how the item-5
+        // hazard comes back — the other device's newer save overwritten by an
+        // older local one — so a sweep leaves ties to the hook that can settle
+        // them.
+        if (uploadOnly && remoteChanged) continue;
+        if (await _upload(romId, local, isState, existing: match)) uploaded++;
+      }
+    }
+
+    // 2) Remote-only files → download.
+    for (final a in remote) {
+      if (statusOnly || uploadOnly) break;
+      if (matchedRemote.contains(a.id)) continue;
+      final r = await _download(
+        game,
+        a,
+        localFiles: localFiles,
+        deadline: deadline,
+      );
+      if (r.wrote) downloaded++;
+      if (r.coreMismatch) coreMismatched++;
+    }
+
+    _log.i(
+      'RomM sync ${game.romname}: $uploaded up, $downloaded down '
+      '(${localFiles.length} local, ${remote.length} remote)'
+      '${coreMismatched > 0 ? ', $coreMismatched kept (different core)' : ''}',
+    );
+
+    // Playtime rides along with the upload-capable passes only. The pre-launch
+    // pass is on the launch's critical path and playtime changes nothing about
+    // the game that's about to start, so it stays out of that budget.
+    if (!downloadOnly && !statusOnly) {
+      await _syncPlaytime(game, romId);
+    }
+
+    if (!anyLocal && !anyRemote) return GameSyncStatus.noSaveFound;
+    if (!anyRemote) return GameSyncStatus.localOnly;
+    if (!anyLocal && downloaded == 0) return GameSyncStatus.cloudOnly;
+    return GameSyncStatus.upToDate;
+  }
+
+  /// Pushes queued play sessions and pulls back playtime recorded elsewhere.
+  ///
+  /// Best-effort by design: playtime is a statistic, so a failure here must
+  /// never change the save-sync status the user is shown, and never throw into
+  /// the launch/close flow. [RommPlaytimeService] throttles the pull itself, so
+  /// this is cheap to call from the per-selection save detection.
+  Future<void> _syncPlaytime(GameModel game, int romId) async {
+    if (!_svc.playtimeSyncAvailable) return;
+    try {
+      await RommPlaytimeService.flushQueuedSessions(_svc);
+      final romPath = game.romPath;
+      if (romPath != null && romPath.isNotEmpty) {
+        await RommPlaytimeService.pullPlaytime(
+          _svc,
+          romId: romId,
+          romPath: romPath,
+        );
+      }
+    } catch (e) {
+      _log.w('RomM playtime sync failed for ${game.romname}: $e');
+    }
+  }
+
+  /// Extracts the save-folder subpath (e.g. RetroArch's per-core `FCEUmm`
+  /// folder) from a local file's `saves/…`/`states/…` relative path, so it can
+  /// be preserved across the round-trip via RomM's `emulator` field. Returns
+  /// empty when the file sits directly in the saves/states root.
+  /// Extensions RetroArch writes *beside* a save state as its thumbnail. These
+  /// are screenshots, not save data — RetroArch regenerates them, and RomM has
+  /// a dedicated `screenshotFile` field for the one place a thumbnail belongs.
+  static const Set<String> _thumbnailExtensions = {
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.bmp',
+  };
+
+  /// Narrows the locator's results to files that are really [game]'s save data.
+  ///
+  /// NeoSync's locator matches any file whose name *contains* the game name and
+  /// applies no extension filter at all. That looseness is load-bearing for the
+  /// cases it was built for — shared PS2/Dreamcast memory cards and Switch
+  /// saves matched by title id, neither of which carries the game's name in the
+  /// filename — so it is left alone and tightened here, at RomM's door.
+  ///
+  /// Two things get dropped:
+  ///
+  /// * **Thumbnails.** A `.state.png` was being uploaded to RomM as a save
+  ///   state. Confirmed on device: one play session produced four "states",
+  ///   two of which were screenshots.
+  /// * **A longer-named game's saves.** `contains` makes the match one-way:
+  ///   a game called `Extra Mario Bros.` matches `Extra Mario Bros. [Hacks].state`,
+  ///   so the shorter title would sync the longer one's saves as its own. A
+  ///   file is rejected only when it can be *proved* to belong elsewhere —
+  ///   its name starts with this game's name but continues with something
+  ///   other than an extension. Files that don't start with the game's name at
+  ///   all are left untouched, which is what keeps the memory-card and Switch
+  ///   paths working.
+  @visibleForTesting
+  static List<LocalSaveFile> syncableSaves(
+    GameModel game,
+    List<LocalSaveFile> found,
+  ) {
+    final romName = _romNameWithoutExtension(game.romname).toLowerCase();
+
+    return found.where((f) {
+      final name = path.basename(f.filePath);
+      final lower = name.toLowerCase();
+
+      if (_thumbnailExtensions.contains(path.extension(lower))) {
+        _log.i('RomM: skipping thumbnail $name');
+        return false;
+      }
+
+      if (romName.isNotEmpty && lower.startsWith(romName)) {
+        final remainder = lower.substring(romName.length);
+        // '' is the game's own name verbatim; '.state', '.state.auto', '.srm'
+        // are its saves. Anything else — ' [Hacks].state' — is another title's.
+        if (remainder.isNotEmpty && !remainder.startsWith('.')) {
+          _log.i('RomM: skipping $name (belongs to a longer-named title)');
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+  }
+
+  /// Drops a single trailing extension, matching how the library indexes a
+  /// ROM's name. Only the last one: a title may contain dots of its own.
+  static String _romNameWithoutExtension(String romname) {
+    final dot = romname.lastIndexOf('.');
+    if (dot <= 0) return romname;
+    final ext = romname.substring(dot);
+    // Guard against clipping a title that simply ends in a period ("Mr. Do.").
+    return RegExp(r'^\.[A-Za-z0-9]{1,5}$').hasMatch(ext)
+        ? romname.substring(0, dot)
+        : romname;
+  }
+
+  String _subfolderOf(LocalSaveFile local) {
+    final parts = local.relativePath.split('/');
+    if (parts.length <= 2) return '';
+    return parts.sublist(1, parts.length - 1).join('/');
+  }
+
+  /// The subfolder a downloaded file belongs in under *this* device's RetroArch
+  /// save/state directory — its per-core folder, or `''` for the directory root.
+  ///
+  /// Placement is a local question and is answered locally. The alternative,
+  /// replaying a subfolder recorded on the server, breaks the moment two
+  /// devices are configured differently: a handheld with
+  /// `sort_savestates_enable` on wants `states/FCEUmm/`, while a Steam Deck
+  /// with it off wants the root — and whichever uploaded first would dictate a
+  /// path the other's emulator never reads.
+  ///
+  /// The RetroArch setting decides *whether* there is a subfolder; the core
+  /// name is taken from an existing local file of the same kind when one is
+  /// present (ground truth, and immune to core renames) and derived from the
+  /// emulator's name otherwise.
+  Future<String> _localSubfolder(
+    GameModel game,
+    bool isState,
+    List<LocalSaveFile> localFiles,
+  ) async {
+    try {
+      final cfg = await RetroArchConfigService().getMergedConfig();
+      final sorts = isState
+          ? cfg.sortSavestatesByCore
+          : cfg.sortSavefilesByCore;
+      if (!sorts) return '';
+
+      final prefix = isState ? 'states/' : 'saves/';
+      for (final f in localFiles) {
+        if (!f.relativePath.startsWith(prefix)) continue;
+        final sub = _subfolderOf(f);
+        if (sub.isNotEmpty) return sub;
+      }
+
+      final folder = game.systemFolderName;
+      if (folder == null || folder.isEmpty) return '';
+      final system = await SystemRepository.getSystemByFolderName(folder);
+      if (system?.id == null) return '';
+      final emulator =
+          await EmulatorRepository.getUserDefaultEmulatorForSystem(
+            system!.id!,
+          ) ??
+          await EmulatorRepository.getDefaultEmulatorForSystem(system.id!);
+      return RetroArchConfigService.coreFolderName(emulator?.name) ?? '';
+    } catch (e) {
+      // Placement is a best-effort refinement; the directory root is always a
+      // valid destination and must never be the reason a sync fails.
+      _log.w('RomM: could not resolve local save subfolder: $e');
+      return '';
+    }
+  }
+
+  /// A `403` that reaches the provider is a *persistent* permission denial: the
+  /// service layer ([RommService._sendWithAuthRetry]) already re-authenticated
+  /// and retried once, so a stale/empty-scope token would have recovered. What
+  /// remains is a genuine authorization failure — e.g. a RomM 5.0 account that
+  /// lacks `assets.write` under the granular per-user permission system.
+  ///
+  /// These must abort the sync with an error status; swallowing them to a
+  /// `false` (no-op) return would make a dropped save look like a clean,
+  /// up-to-date sync — silently losing the user's progress.
+  @visibleForTesting
+  static bool isPermissionDenied(Object e) =>
+      e is RommException && e.statusCode == 403;
+
+  /// Sends [local] to RomM, updating [existing] in place when the asset is
+  /// already there and creating it otherwise.
+  ///
+  /// The update path matters: see [RommService.updateSave] for why a repeat
+  /// `POST` corrupts the row/file relationship instead of overwriting.
+  Future<bool> _upload(
+    int romId,
+    LocalSaveFile local,
+    bool isState, {
+    RommAsset? existing,
+  }) async {
+    try {
+      final file = File(local.filePath);
+      if (!await file.exists()) return false;
+      final RommAsset asset;
+      if (existing != null) {
+        asset = isState
+            ? await _svc.updateState(existing.id, file)
+            : await _svc.updateSave(existing.id, file);
+      } else {
+        asset = isState
+            ? await _svc.uploadState(romId, file, emulator: _assetLabel)
+            : await _svc.uploadSave(romId, file, emulator: _assetLabel);
+      }
+      final stat = await file.stat();
+      await SyncRepository.saveSyncState(
+        kProviderId,
+        local.filePath,
+        stat.modified.millisecondsSinceEpoch,
+        asset.updatedAtMs,
+        local.fileSize,
+        fileHash: asset.contentHash,
+      );
+      return true;
+    } catch (e) {
+      if (isPermissionDenied(e)) rethrow;
+      _log.e('RomM upload failed (${local.filePath}): $e');
+      return false;
+    }
+  }
+
+  /// Fetches [asset] and writes it to this device's local target(s).
+  ///
+  /// [coreMismatch] reports the one refusal a caller needs to distinguish from
+  /// an ordinary no-op: the transfer was declined because the remote state was
+  /// written by a different core (see the guard below). Everything else — no
+  /// target, an expired deadline, a newer local copy — is a routine `wrote:
+  /// false`.
+  Future<({bool wrote, bool coreMismatch})> _download(
+    GameModel game,
+    RommAsset asset, {
+    required List<LocalSaveFile> localFiles,
+    SyncDeadline? deadline,
+  }) async {
+    var skippedCoreMismatch = false;
+    try {
+      // Placement comes from this device's own RetroArch layout, never from the
+      // asset's `emulator` field — that value belongs to whichever device
+      // created the asset and says nothing about where this one reads saves.
+      final prefix = asset.isState ? 'states' : 'saves';
+      final sub = await _localSubfolder(game, asset.isState, localFiles);
+      final relativeName = sub.isNotEmpty
+          ? '$prefix/$sub/${asset.fileName}'
+          : '$prefix/${asset.fileName}';
+      final targets = await _resolveTargets(game, relativeName);
+      if (targets.isEmpty) {
+        _log.w('RomM download: no local target for ${asset.fileName}');
+        return (wrote: false, coreMismatch: false);
+      }
+      // Both saves and states download via the asset's download_path; only
+      // saves have the /content convenience route (used as a fallback).
+      final Uint8List bytes;
+      final dp = asset.downloadPath;
+      if (dp != null && dp.isNotEmpty) {
+        bytes = await _svc.downloadAssetByPath(dp);
+      } else if (!asset.isState) {
+        bytes = await _svc.downloadSaveContent(asset.id);
+      } else {
+        _log.w('RomM download: state ${asset.fileName} has no download_path');
+        return (wrote: false, coreMismatch: false);
+      }
+
+      // Pre-launch deadline guard: the network fetch is done, but if the
+      // launch-blocking wait has already elapsed the game is running on the
+      // local save. Abandon here — before any write — so we never clobber the
+      // .srm the emulator now has open or record bogus sync state.
+      if (deadline?.isExpired ?? false) {
+        _log.i(
+          'RomM download: abandon ${asset.fileName} (launch deadline passed)',
+        );
+        return (wrote: false, coreMismatch: false);
+      }
+
+      var wroteAny = false;
+      for (final target in targets) {
+        final f = File(target);
+        // Per-target guard (mirrors NeoSync): never overwrite a copy that is
+        // newer than the remote asset. resolveLocalTargetPaths can return
+        // several folders and the higher-level decision only inspected one, so
+        // a different folder may hold newer local progress we must not clobber.
+        if (await f.exists()) {
+          final localMs = (await f.stat()).modified.millisecondsSinceEpoch;
+          if (localMs > asset.updatedAtMs + _mtimeToleranceMs) {
+            _log.i('RomM download: skip $target (local newer than remote)');
+            continue;
+          }
+          // Core guard. A save state only loads in the core that wrote it, and
+          // RetroArch fails silently when it doesn't — so replacing a local
+          // state with another device's incompatible one destroys a working
+          // save with nothing to show for it. Confirmed on device: a Thor
+          // (FCEUmm) and a Deck (Mesen) alternating sessions overwrite each
+          // other's state every launch, leaving neither able to resume.
+          //
+          // Deliberately compares the bytes rather than a label on the asset:
+          // saves are shared with other frontends, which upload a plain
+          // `<game>.state` and know nothing of any convention we invent. RomM
+          // 5.1.0 could not carry one anyway — it identifies an asset by
+          // (rom_id, file_name) and ignores `emulator`, so a second core's
+          // state cannot coexist and the field keeps whichever label created
+          // the asset.
+          //
+          // [RetroArchStateSignature.differ] answers false whenever either side
+          // is unidentifiable, so states from cores without a magic, and
+          // standalone emulators' own formats, keep syncing exactly as before.
+          if (asset.isState &&
+              RetroArchStateSignature.differ(await f.readAsBytes(), bytes)) {
+            _log.w(
+              'RomM download: skip $target — the remote state was written by a '
+              'different core and would not load here',
+            );
+            skippedCoreMismatch = true;
+            continue;
+          }
+        }
+        await f.parent.create(recursive: true);
+        await f.writeAsBytes(bytes, flush: true);
+        final stat = await f.stat();
+        await SyncRepository.saveSyncState(
+          kProviderId,
+          target,
+          stat.modified.millisecondsSinceEpoch,
+          asset.updatedAtMs,
+          bytes.length,
+          fileHash: asset.contentHash,
+        );
+        wroteAny = true;
+      }
+      return (wrote: wroteAny, coreMismatch: skippedCoreMismatch);
+    } catch (e) {
+      if (isPermissionDenied(e)) rethrow;
+      _log.e('RomM download failed (${asset.fileName}): $e');
+      return (wrote: false, coreMismatch: skippedCoreMismatch);
+    }
+  }
+
+  // ── Game-specific sync operations (interface) ───────────────────────────────
+
+  /// Records [game] as failed in the visible sync state and returns the matching
+  /// fail result. Used by every per-game sync entry point so a hard failure
+  /// (notably a RomM 5.0 permission denial that [isPermissionDenied] let bubble
+  /// up) surfaces as an error state instead of leaving stale state that would
+  /// read as a clean, up-to-date sync.
+  SyncResult _failGame(GameModel game, Object error) {
+    _gameSyncStates[game.romname] = _buildState(
+      game,
+      GameSyncStatus.error,
+      errorMessage: error.toString(),
+    );
+    notifyListeners();
+    return SyncResult.fail(SyncError.unknown, message: error.toString());
+  }
+
+  @override
+  Future<SyncResult> detectGameSaveFiles(GameModel game) =>
+      _runGameSync(game, downloadOnly: true, statusOnly: true);
+
+  /// Runs a per-game sync and publishes the resulting cloud state.
+  Future<SyncResult> _runGameSync(
+    GameModel game, {
+    required bool downloadOnly,
+    bool statusOnly = false,
+  }) async {
+    try {
+      final status = await _syncGame(
+        game,
+        downloadOnly: downloadOnly,
+        statusOnly: statusOnly,
+      );
+      _gameSyncStates[game.romname] = _buildState(game, status);
+      notifyListeners();
+      return SyncResult.ok();
+    } catch (e) {
+      return _failGame(game, e);
+    }
+  }
+
+  @override
+  GameSyncState? getGameSyncState(String gameId) => _gameSyncStates[gameId];
+
+  @override
+  Future<SyncResult> syncGameSavesBeforeLaunch(
+    GameModel game, {
+    SyncDeadline? deadline,
+  }) async {
+    try {
+      final status = await _syncGame(
+        game,
+        downloadOnly: true,
+        deadline: deadline,
+      );
+      if (status == GameSyncStatus.error) {
+        // A status-level failure (server unreachable, listing failed) must be
+        // as visible as a thrown one: record the error state and report
+        // failure. The launch flow treats any failure as best-effort, so this
+        // never blocks the game from starting — it only keeps the UI honest.
+        return _failGame(game, _browse.lastError ?? 'RomM save sync failed');
+      }
+      return SyncResult.ok();
+    } catch (e) {
+      // Surface a permission denial (or any hard failure) as an error state so a
+      // dropped pre-launch download isn't invisible; without this the UI would
+      // keep whatever state it had and read as a clean sync.
+      return _failGame(game, e);
+    }
+  }
+
+  @override
+  Future<SyncResult> syncGameSavesAfterClose(GameModel game) =>
+      // Deliberately not [detectGameSaveFiles]: this is the one hook that must
+      // actually push. Detection went status-only so that merely highlighting a
+      // game stops moving saves, and routing the post-close hook through it
+      // would silently strand every save the user just made.
+      _runGameSync(game, downloadOnly: false);
+
+  @override
+  Future<void> updateGameCloudSyncEnabled(String gameId, bool enabled) async {
+    final existing = _gameSyncStates[gameId];
+    if (existing != null) {
+      _gameSyncStates[gameId] = existing.copyWith(
+        cloudEnabled: enabled,
+        status: enabled ? existing.status : GameSyncStatus.disabled,
+      );
+      notifyListeners();
+    }
+  }
+
+  // ── Core sync operations (interface) ────────────────────────────────────────
 
   @override
   Future<SyncResult> uploadSave(
@@ -137,62 +826,346 @@ class RomMProvider extends ISyncProvider {
     File file, {
     String? customFileName,
   }) async {
-    // TODO: POST $_baseUrl/api/saves
-    // Multipart form-data: file + game_id field.
-    // RomM save upload endpoint: POST /api/saves?rom_id={gameId}
-    //
-    // final request = http.MultipartRequest(
-    //   'POST',
-    //   Uri.parse('$_baseUrl/api/saves').replace(queryParameters: {'rom_id': gameId}),
-    // );
-    // request.headers.addAll(_headers);
-    // request.files.add(await http.MultipartFile.fromPath('saves', file.path));
-    // final response = await request.send();
-    throw UnimplementedError('RomMProvider.uploadSave');
+    final romId = int.tryParse(gameId);
+    if (romId == null) {
+      return SyncResult.fail(
+        SyncError.configInvalid,
+        message: 'uploadSave expects a RomM rom_id',
+      );
+    }
+    try {
+      await _svc.uploadSave(romId, file);
+      return SyncResult.ok();
+    } catch (e) {
+      return SyncResult.fail(SyncError.networkError, message: e.toString());
+    }
   }
 
   @override
   Future<SyncResult> downloadSave(String gameId, String fileId) async {
-    // TODO: GET $_baseUrl/api/saves/{fileId}/download
-    // Stream response bytes → write to temp file → SyncResult.data = File.
-    throw UnimplementedError('RomMProvider.downloadSave');
+    final assetId = int.tryParse(fileId);
+    if (assetId == null) {
+      return SyncResult.fail(SyncError.fileNotFound, message: 'Invalid fileId');
+    }
+    try {
+      final bytes = await _svc.downloadSaveContent(assetId);
+      return SyncResult.ok(data: bytes);
+    } catch (e) {
+      return SyncResult.fail(SyncError.networkError, message: e.toString());
+    }
   }
 
   @override
   Future<List<SyncFile>> listSaves({String? gameId}) async {
-    // TODO: GET $_baseUrl/api/saves[?rom_id={gameId}]
-    // Parse JSON array → List<SyncFile>.
-    //
-    // final uri = Uri.parse('$_baseUrl/api/saves').replace(
-    //   queryParameters: gameId != null ? {'rom_id': gameId} : null,
-    // );
-    // final response = await http.get(uri, headers: _headers);
-    // final List<dynamic> json = jsonDecode(response.body);
-    // return json.map((s) => SyncFile(
-    //   id: s['id'].toString(),
-    //   fileName: s['file_name'],
-    //   gameName: s['rom_name'],
-    //   fileSize: s['file_size_bytes'] ?? 0,
-    //   uploadedAt: DateTime.parse(s['created_at']),
-    // )).toList();
-    throw UnimplementedError('RomMProvider.listSaves');
+    final romId = gameId == null ? null : int.tryParse(gameId);
+    if (romId == null) return const [];
+    try {
+      // Independent GETs → fetch concurrently rather than serially.
+      final results = await Future.wait([
+        _svc.listSaves(romId: romId),
+        _svc.listStates(romId: romId),
+      ]);
+      final assets = [...results[0], ...results[1]];
+      return assets
+          .map(
+            (a) => SyncFile(
+              id: a.id.toString(),
+              fileName: a.fileName,
+              gameId: gameId,
+              fileSize: a.fileSizeBytes,
+              uploadedAt: a.createdAt ?? DateTime.now(),
+              modifiedAt: a.updatedAt,
+              checksum: a.contentHash,
+            ),
+          )
+          .toList();
+    } catch (e) {
+      _log.e('RomM listSaves failed: $e');
+      return const [];
+    }
   }
 
   @override
   Future<SyncResult> fullSync() async {
-    // TODO: Bidirectional sync based on RomM save metadata timestamps.
-    // 1. listSaves() → remote files
-    // 2. Scan local save folders → local files
-    // 3. Upload local-only / local-newer
-    // 4. Download remote-only / remote-newer
-    throw UnimplementedError('RomMProvider.fullSync');
+    // Not a bidirectional sync of the library, and deliberately so: pulls are
+    // scoped to the game about to launch, where a deadline and a known target
+    // make them safe. What a global pass *can* honestly do is push what never
+    // made it up, so this is the pending-upload sweep. Anything calling it gets
+    // real work rather than the "syncs per-game on launch/close" no-op it used
+    // to answer with, which looked like success and did nothing.
+    return retryPendingUploads();
+  }
+
+  // ── Pending-upload sweep ───────────────────────────────────────────────────
+
+  /// How long after connecting the automatic sweep waits before starting.
+  ///
+  /// Long enough to stay off the cold-start path: connecting happens during
+  /// `initialize()`, and phase one walks the save folders of every linked game.
+  /// Startup is this app's measured bottleneck, and a retry that has already
+  /// waited for an offline stretch to end can wait another half minute.
+  static const Duration _sweepStartupDelay = Duration(seconds: 30);
+
+  /// Guard against overlapping sweeps (connect + a manual [fullSync]).
+  bool _sweeping = false;
+
+  /// Whether [_browse] was connected at the last notification, so the sweep
+  /// fires on the *transition* rather than on every notify a connected provider
+  /// emits (which is one per browse page, download tick and token refresh).
+  bool _wasConnected = false;
+
+  /// Re-attempts the uploads a failed post-close hook left behind.
+  ///
+  /// Uploads happen on one hook only — shortly after a game closes — so a
+  /// failure there (offline, server unreachable, app killed mid-upload) used to
+  /// wait for the next play-and-quit *of that same game* before anything tried
+  /// again. This sweeps every RomM-linked game instead, making connect (or a
+  /// manual [fullSync]) the catch-up point after an offline stretch.
+  ///
+  /// Upload-only, and narrower than the post-close hook on purpose: a file is
+  /// pushed only when the local copy has moved since we last recorded it **and
+  /// the server's has not**. See the both-changed note in [_syncGame] — a sweep
+  /// has no just-ended session to break a tie with, and claiming that authority
+  /// is how it would overwrite another device's newer save.
+  ///
+  /// Two-phase on purpose. Phase one is local only (locate saves, compare with
+  /// the recorded sync state) and decides which games are candidates; only those
+  /// pay the two listing round-trips of phase two. A library with nothing
+  /// pending therefore costs no network at all, which is what makes this safe to
+  /// fire automatically.
+  ///
+  /// Never throws. A game that fails is counted and stepped over — except a
+  /// permission denial, which would fail identically for every remaining game
+  /// and so ends the sweep.
+  Future<SyncResult> retryPendingUploads() async {
+    if (!_browse.isConnected) return SyncResult.fail(SyncError.authRequired);
+    // Not an error: whichever call got here first is doing the same work.
+    if (_sweeping) return SyncResult.ok(message: 'Sweep already running');
+    _sweeping = true;
+    try {
+      final index = await RommSaveMapRepository.getRomIdIndex();
+      if (index.isEmpty) {
+        _log.i('RomM upload sweep: no linked games');
+        return SyncResult.ok(message: 'No RomM-linked games to sweep');
+      }
+
+      var linked = 0, candidates = 0, synced = 0, failed = 0;
+      final touched = <String>[];
+      for (final game in await _listGames()) {
+        // A disconnect (or a sign-out) mid-sweep ends it; every remaining game
+        // would fail against a server we no longer have credentials for.
+        if (!_browse.isConnected) break;
+
+        final folder = game.systemFolderName;
+        if (folder == null || folder.isEmpty) continue;
+        if (index.lookup(game.romname, folder) == null) continue;
+        if (game.cloudSyncEnabled != true) continue;
+        linked++;
+        if (!await _hasPendingUpload(game)) continue;
+
+        candidates++;
+        try {
+          final status = await _syncGame(
+            game,
+            downloadOnly: false,
+            uploadOnly: true,
+          );
+          if (status == GameSyncStatus.error) {
+            failed++;
+          } else {
+            synced++;
+          }
+          _gameSyncStates[game.romname] = _buildState(game, status);
+          touched.add(game.romname);
+        } catch (e) {
+          if (isPermissionDenied(e)) {
+            _log.e('RomM upload sweep: permission denied, stopping: $e');
+            _gameSyncStates[game.romname] = _buildState(
+              game,
+              GameSyncStatus.error,
+              errorMessage: e.toString(),
+            );
+            if (touched.isNotEmpty) notifyListeners();
+            // Same error shape [_failGame] uses for a bubbled-up 403, so a
+            // sweep failure reads like any other hard sync failure.
+            return SyncResult.fail(SyncError.unknown, message: e.toString());
+          }
+          _log.e('RomM upload sweep: ${game.romname} failed: $e');
+          failed++;
+        }
+      }
+
+      // One notification for the whole sweep: it can touch hundreds of games,
+      // and notifying per game would rebuild the library UI hundreds of times.
+      if (touched.isNotEmpty) notifyListeners();
+      if (candidates == 0) {
+        // Logged even when it does nothing: this is the only outward sign the
+        // automatic sweep ran at all, and phase one costs no network.
+        _log.i('RomM upload sweep: nothing pending ($linked linked games)');
+        return SyncResult.ok(message: 'Nothing pending');
+      }
+      _log.i(
+        'RomM upload sweep: $candidates pending, $synced synced, $failed failed',
+      );
+      return SyncResult.ok(
+        message: '$synced of $candidates pending games synced',
+      );
+    } finally {
+      _sweeping = false;
+    }
+  }
+
+  /// True when [game] has a local save the server has not been told about —
+  /// either never recorded, or changed since it was recorded.
+  ///
+  /// The point of this check is that it touches only the disk and the local
+  /// sync-state table, so the sweep can rule a game out without a round trip.
+  Future<bool> _hasPendingUpload(GameModel game) async {
+    final List<LocalSaveFile> localFiles;
+    try {
+      localFiles = syncableSaves(game, await _locateSaves(game));
+    } catch (e) {
+      // Unreadable save folder: not a pending upload, and not worth a round
+      // trip to find out. The post-close hook will report it properly.
+      _log.w('RomM upload sweep: cannot locate saves for ${game.romname}: $e');
+      return false;
+    }
+    for (final local in localFiles) {
+      final recorded = await SyncRepository.getSyncState(
+        kProviderId,
+        local.filePath,
+      );
+      // No record at all: either a first upload that failed, or a save made
+      // before RomM sync was on. Both want pushing.
+      if (recorded == null) return true;
+      final recordedLocalMs = (recorded['local_modified_at'] as int?) ?? 0;
+      if (local.lastModified.millisecondsSinceEpoch >
+          recordedLocalMs + _mtimeToleranceMs) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Fires the connect-time work once, on a disconnected → connected
+  /// transition.
+  ///
+  /// A skipped run is not rescheduled; the next connect picks it up.
+  void _onBrowseChanged() {
+    final connected = _browse.isConnected;
+    if (connected == _wasConnected) return;
+    _wasConnected = connected;
+    if (!connected) return;
+    _scheduleSweep();
+  }
+
+  void _scheduleSweep() {
+    unawaited(
+      Future<void>.delayed(_sweepStartupDelay).then((_) async {
+        if (_disposed) return;
+        if (!_browse.isConnected) {
+          _log.i('RomM upload sweep: skipped, disconnected before it ran');
+          return;
+        }
+        if (_browse.bulkSync.isRunning) {
+          _log.i('RomM upload sweep: skipped, a bulk ROM sync is running');
+          return;
+        }
+
+        // Playtime first, and deliberately *not* behind the active-provider
+        // gate below: it is a statistic, not save authority. See
+        // [pullRecentPlaytime].
+        try {
+          await pullRecentPlaytime();
+        } catch (e) {
+          _log.w('RomM playtime pull failed: $e');
+        }
+        if (_disposed || !_browse.isConnected) return;
+
+        if (SyncManager.instance.activeProviderId != kProviderId) {
+          _log.i('RomM upload sweep: skipped, RomM is not the save provider');
+          return;
+        }
+        try {
+          await retryPendingUploads();
+        } catch (e) {
+          // retryPendingUploads is documented not to throw; this is the
+          // belt-and-braces that keeps an unawaited future from going unhandled.
+          _log.w('RomM upload sweep failed: $e');
+        }
+      }),
+    );
+  }
+
+  /// Folds playtime recorded on other devices into the local totals.
+  ///
+  /// Sessions are *pushed* on connect whatever the save-sync toggle says, but
+  /// the matching pull only ever ran inside a RomM-active save sync — so a user
+  /// who keeps NeoSync as their save provider uploaded their play and never got
+  /// anyone else's back. This closes that half, and is therefore **not** gated
+  /// on RomM being the active save provider: playtime is a statistic, and
+  /// nothing about it decides which copy of a save wins.
+  ///
+  /// Bounded by asking the server which ROMs are worth asking about:
+  /// [RommService.getRecentlyPlayedRoms] returns only ROMs that have ever been
+  /// played (5 of 9,899 on the dev library), newest first. Without that the
+  /// pull would be one session request per linked game — hundreds after a bulk
+  /// sync, on every connect. The per-ROM pull is throttled again by
+  /// [RommPlaytimeService.pullInterval], so reconnecting inside that window
+  /// costs one request in total.
+  ///
+  /// Never throws: a failure here must not stop the upload sweep that follows.
+  Future<void> pullRecentPlaytime() async {
+    if (!_browse.isConnected || !_svc.playtimeSyncAvailable) return;
+
+    final List<RommRom> recent;
+    try {
+      recent = await _svc.getRecentlyPlayedRoms();
+    } catch (e) {
+      _log.w('RomM playtime pull: could not list recently played: $e');
+      return;
+    }
+    if (recent.isEmpty) return;
+
+    final paths = await RommSaveMapRepository.getRomPathsForRomIds(
+      recent.map((r) => r.id),
+    );
+    if (paths.isEmpty) {
+      _log.i(
+        'RomM playtime pull: ${recent.length} played on the server, '
+        'none linked here',
+      );
+      return;
+    }
+
+    var applied = 0;
+    for (final rom in recent) {
+      if (_disposed || !_browse.isConnected) break;
+      final romPath = paths[rom.id];
+      if (romPath == null) continue;
+      try {
+        if (await RommPlaytimeService.pullPlaytime(
+          _svc,
+          romId: rom.id,
+          romPath: romPath,
+        )) {
+          applied++;
+        }
+      } catch (e) {
+        _log.w('RomM playtime pull failed for rom ${rom.id}: $e');
+      }
+    }
+    _log.i(
+      'RomM playtime pull: ${paths.length} of ${recent.length} played games '
+      'linked here, $applied updated',
+    );
   }
 
   @override
-  Future<SyncResult> deleteRemote(String fileId) async {
-    // TODO: DELETE $_baseUrl/api/saves/{fileId}
-    throw UnimplementedError('RomMProvider.deleteRemote');
-  }
+  Future<SyncResult> deleteRemote(String fileId) async => SyncResult.fail(
+    SyncError.unknown,
+    message: 'deleteRemote not supported by $providerId',
+  );
 
   @override
   Future<SyncQuota?> getQuota() async => null;

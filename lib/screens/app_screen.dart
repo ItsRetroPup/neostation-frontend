@@ -16,7 +16,8 @@ import 'search_screen/search_screen.dart';
 import 'retro_achievements_screen/ra_content.dart';
 import 'settings_screen/new_settings_screen.dart';
 import 'scraper_screen/new_scraper_options_screen.dart';
-import 'neo_sync_screen/neo_sync_tab.dart';
+import 'neo_sync_screen/login_screen/neo_sync_content.dart';
+import 'romm_screen/romm_tab.dart';
 import '../widgets/scraper_content.dart';
 import 'package:neostation/services/game_service.dart';
 import 'package:neostation/providers/theme_provider.dart';
@@ -47,10 +48,11 @@ abstract final class AppTabs {
   static const int sync = 2;
   static const int achievements = 3;
   static const int scraper = 4;
-  static const int settings = 5;
+  static const int romm = 5;
+  static const int settings = 6;
 
   /// Total number of tabs, used for wrap-around when cycling with the bumpers.
-  static const int count = 6;
+  static const int count = 7;
 }
 
 /// Bridge class providing static access to the main application navigation state.
@@ -526,6 +528,9 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
         case AppTabs.scraper:
           tabName = 'Scraper';
           break;
+        case AppTabs.romm:
+          tabName = 'RomM';
+          break;
         case AppTabs.settings:
           tabName = 'Settings';
           break;
@@ -668,11 +673,18 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _gamepadNav.deactivate();
         });
-        return const NeoSyncTab();
+        return const NeoSyncContent();
       case AppTabs.achievements:
         return RAContent();
       case AppTabs.scraper:
         return ScraperContent();
+      case AppTabs.romm:
+        // RomM tab hosts its own gamepad navigation layer (browse/connect),
+        // so hand off focus like the NeoSync tab does.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _gamepadNav.deactivate();
+        });
+        return const RommTab();
       case AppTabs.settings:
         return NewSettingsScreen();
       default:

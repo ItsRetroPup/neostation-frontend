@@ -137,6 +137,7 @@ class NeoSyncService extends ChangeNotifier {
           if (ts is String) cloudTime = int.tryParse(ts) ?? cloudTime;
         }
         await SyncRepository.saveSyncState(
+          'neosync', // NeoSync-owned row in app_neo_sync_state.
           file.path,
           localModifiedAt.millisecondsSinceEpoch,
           cloudTime,
@@ -209,6 +210,7 @@ class NeoSyncService extends ChangeNotifier {
           if (ts is String) cloudTime = int.tryParse(ts) ?? cloudTime;
         }
         await SyncRepository.saveSyncState(
+          'neosync', // NeoSync-owned row in app_neo_sync_state.
           file.path,
           localModifiedAt.millisecondsSinceEpoch,
           cloudTime,
