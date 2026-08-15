@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import 'widgets/setting_row.dart';
 import 'widgets/setting_value_chip.dart';
 import 'widgets/language_picker_overlay.dart';
 import '../../../services/permission_service.dart';
+import '../../../services/sfx_service.dart';
 
 /// A specialized content panel for system-wide configuration, including platform-specific orchestration (Windows/Android/Linux).
 ///
@@ -53,6 +55,14 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
 
   /// Snaps during rapid D-pad navigation, animates on a single move.
   final AdaptiveScroller _scroller = AdaptiveScroller();
+
+  /// The UI sound volume stops the SFX volume row cycles through, quietest
+  /// first. The last entry is the level the app has always played at.
+  static const List<double> _sfxVolumeCycle = [
+    SfxService.maxVolume / 3,
+    SfxService.maxVolume * 2 / 3,
+    SfxService.maxVolume,
+  ];
 
   @override
   void initState() {
@@ -175,6 +185,7 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     count++; // Auto-update App
     count++; // Auto-update Systems
     count++; // SFX Sounds
+    count++; // SFX volume (dimmed, but still navigable, while SFX are off)
     count++; // 12-Hour Clock
     count += hidableNavTabs().length; // Navigation tab visibility
     count++; // Language
@@ -234,6 +245,17 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     if (index == currentItemIndex) {
       final sfxEnabled = configProvider.config.sfxEnabled;
       configProvider.updateSfxEnabled(!sfxEnabled);
+      return;
+    }
+    currentItemIndex++;
+
+    // Protocol: Interface Sound Effects Volume. The row stays navigable while
+    // SFX are off so the setting is still discoverable, but selecting it then
+    // does nothing — there is no level to hear.
+    if (index == currentItemIndex) {
+      if (configProvider.config.sfxEnabled) {
+        _cycleSfxVolume(configProvider);
+      }
       return;
     }
     currentItemIndex++;
@@ -311,6 +333,35 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
       }
       currentItemIndex++;
     }
+  }
+
+  /// Advances the UI sound volume to the next stop and persists it, wrapping
+  /// round at the loudest. If the stored value isn't on a stop — a database
+  /// written by an older build, or one hand-edited — snaps to the nearest one
+  /// first so the first press is never a silent no-op.
+  void _cycleSfxVolume(SqliteConfigProvider provider) {
+    final current = provider.config.sfxVolume;
+    final index = _sfxVolumeCycle.indexWhere(
+      (stop) => (stop - current).abs() < 0.001,
+    );
+    final next = index < 0
+        ? _sfxVolumeCycle.reduce(
+            (a, b) => (a - current).abs() <= (b - current).abs() ? a : b,
+          )
+        : _sfxVolumeCycle[(index + 1) % _sfxVolumeCycle.length];
+    provider.updateSfxVolume(next);
+  }
+
+  /// The localized label for a UI sound volume stop.
+  String _sfxVolumeLabel(BuildContext context, double volume) {
+    final index = _sfxVolumeCycle.indexWhere(
+      (stop) => (stop - volume).abs() < 0.001,
+    );
+    return switch (index) {
+      0 => AppLocale.sfxVolumeLow.getString(context),
+      1 => AppLocale.sfxVolumeMedium.getString(context),
+      _ => AppLocale.sfxVolumeHigh.getString(context),
+    };
   }
 
   /// Synchronizes the scroll viewport with the currently focused setting item.
@@ -462,6 +513,33 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                         );
                       },
                       activeColor: theme.colorScheme.primary,
+                    ),
+                  );
+                }(),
+
+                // Setting: SFX Volume. Only meaningful when SFX are on, so it
+                // greys out and ignores input while they are off — the same
+                // treatment Secondary Screen gives its dependent value rows.
+                SizedBox(height: 12.r),
+                () {
+                  final index = currentItemIdx++;
+                  return Opacity(
+                    opacity: config.sfxEnabled ? 1.0 : 0.4,
+                    child: SettingRow(
+                      key: _itemKeys[index],
+                      focused:
+                          widget.isContentFocused &&
+                          widget.selectedContentIndex == index,
+                      title: AppLocale.sfxVolume.getString(context),
+                      subtitle: AppLocale.sfxVolumeSubtitle.getString(context),
+                      trailing: GestureDetector(
+                        onTap: config.sfxEnabled
+                            ? () => _cycleSfxVolume(provider)
+                            : null,
+                        child: SettingValueChip(
+                          text: _sfxVolumeLabel(context, config.sfxVolume),
+                        ),
+                      ),
                     ),
                   );
                 }(),

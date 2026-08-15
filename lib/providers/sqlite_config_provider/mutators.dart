@@ -164,6 +164,18 @@ extension SqliteConfigMutators on SqliteConfigProvider {
     _notify();
   }
 
+  /// Updates and persists the UI SFX volume, playing a sound at the new level
+  /// so the choice can be heard as it is made.
+  Future<void> updateSfxVolume(double value) async {
+    final volume = value.clamp(0.0, SfxService.maxVolume).toDouble();
+    _config = _config.copyWith(sfxVolume: volume);
+    // Apply immediately to the running service — no restart needed.
+    SfxService().setVolume(volume);
+    _notify();
+    unawaited(SfxService().playVolumePreview());
+    await SqliteConfigService.saveConfig(_config);
+  }
+
   /// Updates the app display language and applies it immediately
   Future<void> updateAppLanguage(String langCode) async {
     _config = _config.copyWith(appLanguage: langCode);

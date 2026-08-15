@@ -475,6 +475,9 @@ class SqliteMigrations {
       case 122:
         await _migrateToVersion122(db);
         break;
+      case 125:
+        await _migrateToVersion125(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -5410,6 +5413,36 @@ class SqliteMigrations {
       _log.i('Migration v122 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v122: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v125: Stores the user's UI sound-effects playback level.
+  ///
+  /// Numbered above every slot in use anywhere — main is at v122 and
+  /// `feat/ra-improvements` claims v123 and v124 — rather than at main + 1,
+  /// so the step stays reachable whatever order the branches merge in.
+  /// Defaults to `0.75`, the volume the service has always played at, so
+  /// nothing changes for existing users on upgrade.
+  static Future<void> _migrateToVersion125(Database db) async {
+    _log.i('Migration v125: Adding sfx_volume to user_config');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+
+      if (!columns.contains('sfx_volume')) {
+        db.execute(
+          'ALTER TABLE user_config ADD COLUMN sfx_volume REAL DEFAULT 0.75',
+        );
+        _log.i('Column sfx_volume added via v125');
+      } else {
+        _log.i('Column sfx_volume already exists');
+      }
+
+      _log.i('Migration v125 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v125: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }
