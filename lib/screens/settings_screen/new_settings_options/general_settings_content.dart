@@ -56,11 +56,13 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
   /// Snaps during rapid D-pad navigation, animates on a single move.
   final AdaptiveScroller _scroller = AdaptiveScroller();
 
-  /// The volume being auditioned by gamepad input. It is only written to the
-  /// configuration when the user confirms with A or B.
-  double? _pendingSfxVolume;
-
-  bool get isSfxVolumeEditing => _pendingSfxVolume != null;
+  /// The UI sound volume stops the SFX volume row cycles through, quietest
+  /// first. The last entry is the level the app has always played at.
+  static const List<double> _sfxVolumeCycle = [
+    SfxService.maxVolume / 3,
+    SfxService.maxVolume * 2 / 3,
+    SfxService.maxVolume,
+  ];
 
   @override
   void initState() {
@@ -252,11 +254,7 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     // Protocol: Interface Sound Effects Volume.
     if (configProvider.config.sfxEnabled) {
       if (index == currentItemIndex) {
-        if (isSfxVolumeEditing) {
-          commitSfxVolumeEditing();
-        } else {
-          beginSfxVolumeEditing();
-        }
+        _cycleSfxVolume(configProvider);
         return;
       }
       currentItemIndex++;
@@ -337,53 +335,33 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     }
   }
 
-  /// Enters gamepad editing mode without changing the saved volume.
-  void beginSfxVolumeEditing() {
-    if (isSfxVolumeEditing) return;
-    setState(() {
-      _pendingSfxVolume = context.read<SqliteConfigProvider>().config.sfxVolume;
-    });
-  }
-
-  /// Adjusts the selected UI volume by one 5% step and plays its preview.
-  bool adjustSfxVolume(int direction) {
-    if (!isSfxVolumeEditing || direction == 0) return false;
-
-    const steps = 20;
-    final currentStep = (_pendingSfxVolume! / SfxService.maxVolume * steps)
-        .round();
-    final nextStep = (currentStep + direction).clamp(0, steps);
-    if (nextStep == currentStep) return true;
-
-    final volume = nextStep / steps * SfxService.maxVolume;
-    setState(() => _pendingSfxVolume = volume);
-    SfxService().setVolume(volume);
-    unawaited(SfxService().playVolumePreview());
-    return true;
-  }
-
-  /// Commits the auditioned volume and leaves gamepad editing mode.
-  bool commitSfxVolumeEditing() {
-    final volume = _pendingSfxVolume;
-    if (volume == null) return false;
-
-    setState(() => _pendingSfxVolume = null);
-    unawaited(
-      context.read<SqliteConfigProvider>().updateSfxVolume(
-        volume,
-        playPreview: false,
-      ),
+  /// Advances the UI sound volume to the next stop and persists it, wrapping
+  /// round at the loudest. If the stored value isn't on a stop — a database
+  /// written by an older build, or one hand-edited — snaps to the nearest one
+  /// first so the first press is never a silent no-op.
+  void _cycleSfxVolume(SqliteConfigProvider provider) {
+    final current = provider.config.sfxVolume;
+    final index = _sfxVolumeCycle.indexWhere(
+      (stop) => (stop - current).abs() < 0.001,
     );
-    return true;
+    final next = index < 0
+        ? _sfxVolumeCycle.reduce(
+            (a, b) => (a - current).abs() <= (b - current).abs() ? a : b,
+          )
+        : _sfxVolumeCycle[(index + 1) % _sfxVolumeCycle.length];
+    provider.updateSfxVolume(next);
   }
 
-  /// Applies a touch-dragged slider value immediately. Touch input does not
-  /// require, or remain in, the separate gamepad editing mode.
-  void updateSfxVolumeFromTouch(double value) {
-    if (isSfxVolumeEditing) {
-      setState(() => _pendingSfxVolume = null);
-    }
-    unawaited(context.read<SqliteConfigProvider>().updateSfxVolume(value));
+  /// The localized label for a UI sound volume stop.
+  String _sfxVolumeLabel(BuildContext context, double volume) {
+    final index = _sfxVolumeCycle.indexWhere(
+      (stop) => (stop - volume).abs() < 0.001,
+    );
+    return switch (index) {
+      0 => AppLocale.sfxVolumeLow.getString(context),
+      1 => AppLocale.sfxVolumeMedium.getString(context),
+      _ => AppLocale.sfxVolumeHigh.getString(context),
+    };
   }
 
   /// Synchronizes the scroll viewport with the currently focused setting item.
@@ -544,9 +522,6 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                   SizedBox(height: 12.r),
                   () {
                     final index = currentItemIdx++;
-                    final displayVolume = _pendingSfxVolume ?? config.sfxVolume;
-                    final percentage =
-                        (displayVolume / SfxService.maxVolume * 100).round();
                     return SettingRow(
                       key: _itemKeys[index],
                       focused:
@@ -554,27 +529,10 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                           widget.selectedContentIndex == index,
                       title: AppLocale.sfxVolume.getString(context),
                       subtitle: AppLocale.sfxVolumeSubtitle.getString(context),
-                      trailing: SizedBox(
-                        width: 136.r,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '$percentage%',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontSize: 9.r,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                            Slider(
-                              value: displayVolume,
-                              min: 0,
-                              max: SfxService.maxVolume,
-                              divisions: 20,
-                              label: '$percentage%',
-                              onChanged: updateSfxVolumeFromTouch,
-                            ),
-                          ],
+                      trailing: GestureDetector(
+                        onTap: () => _cycleSfxVolume(provider),
+                        child: SettingValueChip(
+                          text: _sfxVolumeLabel(context, config.sfxVolume),
                         ),
                       ),
                     );

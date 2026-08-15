@@ -153,6 +153,9 @@ const Map<String, dynamic> appLocaleEn = {
       'Play sound effects for gamepad, keyboard and touch navigation',
   AppLocale.sfxVolume: 'UI Sounds Volume',
   AppLocale.sfxVolumeSubtitle: 'Adjust volume and play a preview sound',
+  AppLocale.sfxVolumeLow: 'Low',
+  AppLocale.sfxVolumeMedium: 'Medium',
+  AppLocale.sfxVolumeHigh: 'High',
   AppLocale.use12HourClock: 'Use 12-Hour Clock',
   AppLocale.use12HourClockSubtitle:
       'Show the clock in 12-hour format with AM/PM instead of 24-hour',

@@ -160,6 +160,9 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.sfxVolume: 'Volume suoni interfaccia',
   AppLocale.sfxVolumeSubtitle:
       'Regola il volume e riproduci un suono di anteprima',
+  AppLocale.sfxVolumeLow: 'Basso',
+  AppLocale.sfxVolumeMedium: 'Medio',
+  AppLocale.sfxVolumeHigh: 'Alto',
   AppLocale.use12HourClock: 'Orologio a 12 ore',
   AppLocale.use12HourClockSubtitle:
       'Mostra l\'ora nel formato a 12 ore con AM/PM invece di 24 ore',

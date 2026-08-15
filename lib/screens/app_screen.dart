@@ -441,8 +441,6 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
   void _handleBackNavigation() {
     if (_selectedTabIndex == AppTabs.scraper) {
       NewScraperOptionsScreen.backCurrent();
-    } else if (_selectedTabIndex == AppTabs.settings) {
-      NewSettingsScreen.backCurrent();
     }
   }
 

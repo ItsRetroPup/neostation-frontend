@@ -163,6 +163,9 @@ const Map<String, dynamic> appLocaleFr = {
       'Joue des sons pour la navigation à la manette, au clavier et au tactile',
   AppLocale.sfxVolume: 'Volume des sons de l’interface',
   AppLocale.sfxVolumeSubtitle: 'Ajustez le volume et écoutez un son de test',
+  AppLocale.sfxVolumeLow: 'Faible',
+  AppLocale.sfxVolumeMedium: 'Moyen',
+  AppLocale.sfxVolumeHigh: 'Élevé',
   AppLocale.use12HourClock: 'Horloge 12 heures',
   AppLocale.use12HourClockSubtitle:
       'Afficher l\'heure au format 12 heures avec AM/PM au lieu de 24 heures',

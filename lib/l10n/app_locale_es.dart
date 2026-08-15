@@ -159,6 +159,9 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.sfxVolume: 'Volumen de sonidos de interfaz',
   AppLocale.sfxVolumeSubtitle:
       'Ajusta el volumen y reproduce un sonido de prueba',
+  AppLocale.sfxVolumeLow: 'Bajo',
+  AppLocale.sfxVolumeMedium: 'Medio',
+  AppLocale.sfxVolumeHigh: 'Alto',
   AppLocale.use12HourClock: 'Reloj de 12 horas',
   AppLocale.use12HourClockSubtitle:
       'Mostrar la hora en formato de 12 horas con AM/PM en lugar de 24 horas',
