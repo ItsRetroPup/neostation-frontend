@@ -185,9 +185,7 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     count++; // Auto-update App
     count++; // Auto-update Systems
     count++; // SFX Sounds
-    if (context.read<SqliteConfigProvider>().config.sfxEnabled) {
-      count++; // SFX volume
-    }
+    count++; // SFX volume (dimmed, but still navigable, while SFX are off)
     count++; // 12-Hour Clock
     count += hidableNavTabs().length; // Navigation tab visibility
     count++; // Language
@@ -251,14 +249,16 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     }
     currentItemIndex++;
 
-    // Protocol: Interface Sound Effects Volume.
-    if (configProvider.config.sfxEnabled) {
-      if (index == currentItemIndex) {
+    // Protocol: Interface Sound Effects Volume. The row stays navigable while
+    // SFX are off so the setting is still discoverable, but selecting it then
+    // does nothing — there is no level to hear.
+    if (index == currentItemIndex) {
+      if (configProvider.config.sfxEnabled) {
         _cycleSfxVolume(configProvider);
-        return;
       }
-      currentItemIndex++;
+      return;
     }
+    currentItemIndex++;
 
     // Protocol: 12-Hour Clock Format.
     if (index == currentItemIndex) {
@@ -517,12 +517,15 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                   );
                 }(),
 
-                // Setting: SFX Volume. This is only meaningful when SFX are on.
-                if (config.sfxEnabled) ...[
-                  SizedBox(height: 12.r),
-                  () {
-                    final index = currentItemIdx++;
-                    return SettingRow(
+                // Setting: SFX Volume. Only meaningful when SFX are on, so it
+                // greys out and ignores input while they are off — the same
+                // treatment Secondary Screen gives its dependent value rows.
+                SizedBox(height: 12.r),
+                () {
+                  final index = currentItemIdx++;
+                  return Opacity(
+                    opacity: config.sfxEnabled ? 1.0 : 0.4,
+                    child: SettingRow(
                       key: _itemKeys[index],
                       focused:
                           widget.isContentFocused &&
@@ -530,14 +533,16 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                       title: AppLocale.sfxVolume.getString(context),
                       subtitle: AppLocale.sfxVolumeSubtitle.getString(context),
                       trailing: GestureDetector(
-                        onTap: () => _cycleSfxVolume(provider),
+                        onTap: config.sfxEnabled
+                            ? () => _cycleSfxVolume(provider)
+                            : null,
                         child: SettingValueChip(
                           text: _sfxVolumeLabel(context, config.sfxVolume),
                         ),
                       ),
-                    );
-                  }(),
-                ],
+                    ),
+                  );
+                }(),
 
                 // Setting: 12-Hour Clock Format.
                 SizedBox(height: 12.r),
