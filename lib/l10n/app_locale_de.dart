@@ -250,6 +250,31 @@ const Map<String, dynamic> appLocaleDe = {
       '{count} aus ES-DE importierte Einträge wurden unverändert gelassen.',
   AppLocale.cleanOrphanedMetadataFailed:
       'Fehler beim Bereinigen verwaister Metadaten: {error}',
+  AppLocale.rematchAchievements: 'RetroAchievements-Spiele zuordnen',
+  AppLocale.rematchAchievementsSubtitle:
+      'Durchsucht die gesamte Bibliothek nach Achievement-Sets, statt Spiel für Spiel',
+  AppLocale.rematchAchievementsWarning:
+      'Dies liest jedes nicht zugeordnete ROM aus, um es zu identifizieren, was bei einer großen Bibliothek eine Weile dauern kann. Erneut auswählen, um zu pausieren: Alle bisherigen Treffer bleiben erhalten, und ein erneuter Start macht dort weiter, wo er aufgehört hat. Disc-basierte Systeme werden vorerst übersprungen. Es wird nichts verschoben oder gelöscht.',
+  AppLocale.rematchAchievementsSignedOut:
+      'Der Abgleich läuft auch im abgemeldeten Zustand, aber du musst dich bei RetroAchievements anmelden, um die Ergebnisse zu sehen.',
+  AppLocale.rematchAchievementsLookingUp:
+      'Bereits gehashte Spiele werden geprüft ...',
+  AppLocale.rematchAchievementsHashing: '{filename} wird identifiziert',
+  AppLocale.rematchAchievementsDone:
+      'Fertig: {matched} Spiel(e) zugeordnet, {hashed} neu identifiziert.',
+  AppLocale.rematchAchievementsNothingToDo:
+      'Alle unterstützten Spiele wurden bereits geprüft.',
+  AppLocale.rematchAchievementsPaused:
+      'Pausiert: bisher {matched} Spiel(e) zugeordnet. Erneut starten, um fortzufahren.',
+  AppLocale.rematchAchievementsFailed:
+      'RetroAchievements-Spiele konnten nicht zugeordnet werden: {error}',
+  AppLocale.raFixMatch: 'Zuordnung korrigieren',
+  AppLocale.raFixMatchTitle: 'Das richtige Spiel auswählen',
+  AppLocale.raFixMatchSearchHint: 'RetroAchievements-Titel suchen',
+  AppLocale.raFixMatchNoResults: 'Keine passenden Spiele gefunden.',
+  AppLocale.raFixMatchUseAutomatic: 'Automatische Zuordnung verwenden',
+  AppLocale.raFixMatchUpdated: 'Zuordnung aktualisiert.',
+  AppLocale.raFixMatchAchievements: '{count} Achievements',
   AppLocale.notifications: 'Benachrichtigungen',
   AppLocale.clearAll: 'Alle löschen',
   AppLocale.noActiveNotifications: 'Keine aktiven Benachrichtigungen',

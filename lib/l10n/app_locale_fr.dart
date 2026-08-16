@@ -255,6 +255,31 @@ const Map<String, dynamic> appLocaleFr = {
       ' {count} entrée(s) importée(s) depuis ES-DE ont été laissées intactes.',
   AppLocale.cleanOrphanedMetadataFailed:
       'Échec du nettoyage des métadonnées orphelines : {error}',
+  AppLocale.rematchAchievements: 'Associer les jeux RetroAchievements',
+  AppLocale.rematchAchievementsSubtitle:
+      'Analyse toute la bibliothèque à la recherche de sets de succès, au lieu d\'un jeu à la fois',
+  AppLocale.rematchAchievementsWarning:
+      'Cela lit chaque ROM non associée pour l’identifier, ce qui peut prendre du temps sur une grande bibliothèque. Sélectionnez-le à nouveau pour mettre en pause : tout ce qui a été trouvé est conservé, et une nouvelle exécution reprend là où elle s’est arrêtée. Les systèmes à disque sont ignorés pour le moment. Rien n’est déplacé ni supprimé.',
+  AppLocale.rematchAchievementsSignedOut:
+      'La correspondance fonctionne même déconnecté, mais vous devez vous connecter à RetroAchievements pour voir les résultats.',
+  AppLocale.rematchAchievementsLookingUp:
+      'Vérification des jeux déjà hachés...',
+  AppLocale.rematchAchievementsHashing: 'Identification de {filename}',
+  AppLocale.rematchAchievementsDone:
+      'Terminé : {matched} jeu(x) associé(s), {hashed} nouvellement identifié(s).',
+  AppLocale.rematchAchievementsNothingToDo:
+      'Tous les jeux pris en charge ont déjà été vérifiés.',
+  AppLocale.rematchAchievementsPaused:
+      'En pause : {matched} jeu(x) associé(s) jusqu’ici. Relancez-le pour continuer.',
+  AppLocale.rematchAchievementsFailed:
+      'Échec de l\'association des jeux RetroAchievements : {error}',
+  AppLocale.raFixMatch: 'Corriger l’association',
+  AppLocale.raFixMatchTitle: 'Choisir le bon jeu',
+  AppLocale.raFixMatchSearchHint: 'Rechercher des titres RetroAchievements',
+  AppLocale.raFixMatchNoResults: 'Aucun jeu correspondant trouvé.',
+  AppLocale.raFixMatchUseAutomatic: 'Utiliser l’association automatique',
+  AppLocale.raFixMatchUpdated: 'Association mise à jour.',
+  AppLocale.raFixMatchAchievements: '{count} succès',
   AppLocale.notifications: 'Notifications',
   AppLocale.clearAll: 'Tout effacer',
   AppLocale.noActiveNotifications: 'Aucune notification active',

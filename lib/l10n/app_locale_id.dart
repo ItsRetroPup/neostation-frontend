@@ -239,6 +239,31 @@ const Map<String, dynamic> appLocaleId = {
       '{count} entri yang diimpor dari ES-DE dibiarkan tidak terubah.',
   AppLocale.cleanOrphanedMetadataFailed:
       'Gagal membersihkan metadata yatim: {error}',
+  AppLocale.rematchAchievements: 'Cocokkan Game RetroAchievements',
+  AppLocale.rematchAchievementsSubtitle:
+      'Memeriksa seluruh pustaka untuk set prestasi, bukan satu game per satu',
+  AppLocale.rematchAchievementsWarning:
+      'Ini membaca setiap ROM yang belum cocok untuk mengidentifikasinya, yang bisa memakan waktu pada pustaka besar. Pilih lagi untuk menjeda: semua yang sudah cocok tetap tersimpan, dan menjalankannya lagi akan melanjutkan dari tempat terakhir. Sistem berbasis disc dilewati untuk saat ini. Tidak ada yang dipindahkan atau dihapus.',
+  AppLocale.rematchAchievementsSignedOut:
+      'Pencocokan tetap berjalan saat Anda keluar, tetapi Anda perlu masuk ke RetroAchievements untuk melihat hasilnya.',
+  AppLocale.rematchAchievementsLookingUp:
+      'Memeriksa game yang sudah memiliki hash...',
+  AppLocale.rematchAchievementsHashing: 'Mengidentifikasi {filename}',
+  AppLocale.rematchAchievementsDone:
+      'Selesai: {matched} game cocok, {hashed} baru diidentifikasi.',
+  AppLocale.rematchAchievementsNothingToDo:
+      'Semua game yang didukung sudah diperiksa.',
+  AppLocale.rematchAchievementsPaused:
+      'Dijeda: {matched} gim cocok sejauh ini. Jalankan lagi untuk melanjutkan.',
+  AppLocale.rematchAchievementsFailed:
+      'Gagal mencocokkan game RetroAchievements: {error}',
+  AppLocale.raFixMatch: 'Perbaiki kecocokan',
+  AppLocale.raFixMatchTitle: 'Pilih game yang benar',
+  AppLocale.raFixMatchSearchHint: 'Cari judul RetroAchievements',
+  AppLocale.raFixMatchNoResults: 'Tidak ada game yang cocok.',
+  AppLocale.raFixMatchUseAutomatic: 'Gunakan pencocokan otomatis',
+  AppLocale.raFixMatchUpdated: 'Kecocokan game diperbarui.',
+  AppLocale.raFixMatchAchievements: '{count} prestasi',
   AppLocale.notifications: 'Notifikasi',
   AppLocale.clearAll: 'Hapus semua',
   AppLocale.noActiveNotifications: 'Tidak ada notifikasi aktif',

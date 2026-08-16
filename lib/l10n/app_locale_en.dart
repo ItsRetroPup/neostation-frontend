@@ -239,6 +239,31 @@ const Map<String, dynamic> appLocaleEn = {
       ' {count} ES-DE entr(y/ies) were left untouched.',
   AppLocale.cleanOrphanedMetadataFailed:
       'Failed to clean orphaned metadata: {error}',
+  AppLocale.rematchAchievements: 'Match RetroAchievements Games',
+  AppLocale.rematchAchievementsSubtitle:
+      'Check your whole library for achievement sets, instead of one game at a time',
+  AppLocale.rematchAchievementsWarning:
+      'This reads every unmatched ROM to identify it, which can take a while on a large library. Select it again to pause: everything matched so far is kept, and running it again carries on where it left off. Disc-based systems are skipped for now. Nothing is moved or deleted.',
+  AppLocale.rematchAchievementsSignedOut:
+      'Matching runs while you are signed out, but you need to sign in to RetroAchievements to see the results.',
+  AppLocale.rematchAchievementsLookingUp:
+      'Looking up games that are already hashed...',
+  AppLocale.rematchAchievementsHashing: 'Identifying {filename}',
+  AppLocale.rematchAchievementsDone:
+      'Done: {matched} game(s) matched, {hashed} newly identified.',
+  AppLocale.rematchAchievementsNothingToDo:
+      'Every supported game has already been checked.',
+  AppLocale.rematchAchievementsPaused:
+      'Paused: {matched} game(s) matched so far. Run it again to carry on.',
+  AppLocale.rematchAchievementsFailed:
+      'Failed to match RetroAchievements games: {error}',
+  AppLocale.raFixMatch: 'Fix match',
+  AppLocale.raFixMatchTitle: 'Choose the right game',
+  AppLocale.raFixMatchSearchHint: 'Search RetroAchievements titles',
+  AppLocale.raFixMatchNoResults: 'No matching games found.',
+  AppLocale.raFixMatchUseAutomatic: 'Use automatic matching',
+  AppLocale.raFixMatchUpdated: 'Game match updated.',
+  AppLocale.raFixMatchAchievements: '{count} achievements',
   AppLocale.notifications: 'Notifications',
   AppLocale.clearAll: 'Clear all',
   AppLocale.noActiveNotifications: 'No active notifications',

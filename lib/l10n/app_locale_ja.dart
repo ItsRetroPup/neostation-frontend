@@ -205,6 +205,28 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.cleanOrphanedMetadataEsdeSkippedSuffix:
       '{count} 件の ES-DE からインポートしたエントリはそのまま残されています。',
   AppLocale.cleanOrphanedMetadataFailed: '孤立したメタデータの削除に失敗しました: {error}',
+  AppLocale.rematchAchievements: 'RetroAchievements のゲームを照合',
+  AppLocale.rematchAchievementsSubtitle: 'ゲームを1本ずつ開かずに、ライブラリ全体から実績セットを探します',
+  AppLocale.rematchAchievementsWarning:
+      '一致していない ROM をすべて読み込んで識別します。大きなライブラリでは時間がかかることがあります。もう一度選択すると一時停止します。それまでに一致したものはすべて保持され、再実行すると中断した所から続きます。ディスク系システムは現在スキップされます。ファイルの移動や削除は行いません。',
+  AppLocale.rematchAchievementsSignedOut:
+      'ログアウトしていても照合は実行されますが、結果を見るには RetroAchievements にログインする必要があります。',
+  AppLocale.rematchAchievementsLookingUp: 'ハッシュ済みのゲームを確認中...',
+  AppLocale.rematchAchievementsHashing: '{filename} を識別中',
+  AppLocale.rematchAchievementsDone:
+      '完了: {matched} 本を照合し、{hashed} 本を新たに識別しました。',
+  AppLocale.rematchAchievementsNothingToDo: '対応するゲームはすべて確認済みです。',
+  AppLocale.rematchAchievementsPaused:
+      '一時停止: これまでに {matched} 件一致しました。再実行すると続きから再開します。',
+  AppLocale.rematchAchievementsFailed:
+      'RetroAchievements のゲームを照合できませんでした: {error}',
+  AppLocale.raFixMatch: '照合を修正',
+  AppLocale.raFixMatchTitle: '正しいゲームを選択',
+  AppLocale.raFixMatchSearchHint: 'RetroAchievements のタイトルを検索',
+  AppLocale.raFixMatchNoResults: '一致するゲームが見つかりません。',
+  AppLocale.raFixMatchUseAutomatic: '自動照合を使う',
+  AppLocale.raFixMatchUpdated: 'ゲームの照合を更新しました。',
+  AppLocale.raFixMatchAchievements: '実績 {count} 個',
   AppLocale.notifications: '通知',
   AppLocale.clearAll: 'すべてクリア',
   AppLocale.noActiveNotifications: 'アクティブな通知はありません',

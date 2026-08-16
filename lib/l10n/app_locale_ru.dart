@@ -245,6 +245,31 @@ const Map<String, dynamic> appLocaleRu = {
       ' {count} запис(ь/ей), импортированных из ES-DE, оставлены нетронутыми.',
   AppLocale.cleanOrphanedMetadataFailed:
       'Не удалось очистить потерянные метаданные: {error}',
+  AppLocale.rematchAchievements: 'Сопоставить игры RetroAchievements',
+  AppLocale.rematchAchievementsSubtitle:
+      'Проверяет всю библиотеку на наличие наборов достижений, а не по одной игре',
+  AppLocale.rematchAchievementsWarning:
+      'Читает каждый несопоставленный ROM, чтобы определить его; на большой библиотеке это может занять время. Выберите ещё раз, чтобы приостановить: всё найденное сохраняется, а повторный запуск продолжит с того же места. Дисковые системы пока пропускаются. Ничего не перемещается и не удаляется.',
+  AppLocale.rematchAchievementsSignedOut:
+      'Сопоставление работает и без входа в аккаунт, но чтобы увидеть результаты, нужно войти в RetroAchievements.',
+  AppLocale.rematchAchievementsLookingUp:
+      'Проверка игр, для которых уже есть хеш...',
+  AppLocale.rematchAchievementsHashing: 'Опознаётся {filename}',
+  AppLocale.rematchAchievementsDone:
+      'Готово: сопоставлено игр — {matched}, впервые опознано — {hashed}.',
+  AppLocale.rematchAchievementsNothingToDo:
+      'Все поддерживаемые игры уже проверены.',
+  AppLocale.rematchAchievementsPaused:
+      'Приостановлено: сопоставлено игр — {matched}. Запустите ещё раз, чтобы продолжить.',
+  AppLocale.rematchAchievementsFailed:
+      'Не удалось сопоставить игры RetroAchievements: {error}',
+  AppLocale.raFixMatch: 'Исправить сопоставление',
+  AppLocale.raFixMatchTitle: 'Выберите нужную игру',
+  AppLocale.raFixMatchSearchHint: 'Поиск по названиям RetroAchievements',
+  AppLocale.raFixMatchNoResults: 'Подходящих игр не найдено.',
+  AppLocale.raFixMatchUseAutomatic: 'Использовать автоматическое сопоставление',
+  AppLocale.raFixMatchUpdated: 'Сопоставление обновлено.',
+  AppLocale.raFixMatchAchievements: 'достижений: {count}',
   AppLocale.notifications: 'Уведомления',
   AppLocale.clearAll: 'Очистить все',
   AppLocale.noActiveNotifications: 'Нет активных уведомлений',

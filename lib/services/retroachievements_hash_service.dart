@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:neostation/services/logger_service.dart';
 import '../models/game_model.dart';
+import '../models/ra_match_candidate.dart';
 import '../repositories/retro_achievements_repository.dart';
 import '../repositories/system_repository.dart';
 import '../utils/optimized_md5_utils.dart';
@@ -19,6 +20,27 @@ class RetroAchievementsHashService {
   static const int maxFileSizeBytes = 512 * 1024 * 1024;
 
   static final _log = LoggerService.instance;
+
+  /// Whether a library-wide pass is in flight, and whether one has been asked
+  /// to pause.
+  ///
+  /// Deliberately owned by the service rather than by the Tools screen: the
+  /// pass outlives that widget. Navigating away disposes it while the run keeps
+  /// going, so widget state reports "idle" on the way back and a second
+  /// concurrent pass can be started over the same ROMs — and the first run's
+  /// pause flag, captured in a closure over the dead State, can never be read
+  /// again, leaving it unstoppable.
+  static bool _rematchRunning = false;
+  static bool _rematchPauseRequested = false;
+
+  /// Whether [rematchLibrary] is currently running.
+  static bool get isRematchRunning => _rematchRunning;
+
+  /// Asks an in-flight pass to stop after the ROM it is working on. No-op when
+  /// nothing is running.
+  static void requestRematchPause() {
+    if (_rematchRunning) _rematchPauseRequested = true;
+  }
 
   /// Generates the appropriate RA hash for a specific game if not already present.
   ///
@@ -95,7 +117,12 @@ class RetroAchievementsHashService {
             game.systemFolderName!,
           );
           if (system != null && system.raId != null) {
-            await _lookupAndSaveGameIdByHash(hash, system.raId!, game);
+            await _lookupAndSaveGameId(
+              hash,
+              system.raId!,
+              game.romPath!,
+              game.name,
+            );
           }
         }
       }
@@ -107,80 +134,274 @@ class RetroAchievementsHashService {
     }
   }
 
-  /// Batch processes hashes for a list of games in the background.
+  /// Runs a library-wide RetroAchievements matching pass.
   ///
-  /// Skips games with existing hashes or those exceeding the size limit.
-  static Future<int> processGamesHashesInBackground(
-    List<GameModel> games,
-  ) async {
-    int hashesGenerated = 0;
-
+  /// Hashing is otherwise lazy — a ROM is only hashed when the user opens it —
+  /// so a library that has never been browsed game by game is almost entirely
+  /// unmatched. This walks the whole library instead.
+  ///
+  /// [RaRematchMode.lookupOnly] retries the local game-id lookup for ROMs that
+  /// already carry a hash; it touches no files and is cheap enough to re-run
+  /// whenever the bundled RA database changes.
+  /// [RaRematchMode.hashMissing] hashes ROMs that have never been hashed.
+  ///
+  /// Rows the user matched by hand are never overwritten — the write guard
+  /// lives in [RetroAchievementsRepository].
+  static Future<RaRematchResult> rematchLibrary({
+    RaRematchMode mode = RaRematchMode.hashMissing,
+    bool includeDiscSystems = false,
+    void Function(int processed, int total, String label)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
+    // A second pass over the same candidates would duplicate every hash and
+    // race the first on the same rows; refuse rather than interleave.
+    if (_rematchRunning) {
+      _log.w('RA re-match already running; ignoring duplicate start');
+      return const RaRematchResult(
+        total: 0,
+        processed: 0,
+        hashed: 0,
+        matched: 0,
+        skipped: 0,
+        cancelled: true,
+      );
+    }
+    _rematchRunning = true;
+    _rematchPauseRequested = false;
     try {
-      for (final game in games) {
-        if (game.raHash != null && game.raHash!.isNotEmpty) {
-          continue;
-        }
+      return await _runRematch(
+        mode: mode,
+        includeDiscSystems: includeDiscSystems,
+        onProgress: onProgress,
+        isCancelled: isCancelled,
+      );
+    } finally {
+      _rematchRunning = false;
+      _rematchPauseRequested = false;
+    }
+  }
 
-        if (!await OptimizedMd5Utils.fileExists(game.romPath!)) {
-          _log.w('File not found: ${game.romPath}');
-          continue;
-        }
-
-        final fileSize = await OptimizedMd5Utils.getFileSize(game.romPath!);
-        if (fileSize > maxFileSizeBytes) {
-          continue;
-        }
-
-        String romPathToProcess = game.romPath!;
-        final bool isArchive =
-            (romPathToProcess.toLowerCase().endsWith('.zip') ||
-                romPathToProcess.toLowerCase().endsWith('.7z')) &&
-            !isArcadeSystem(game.systemFolderName);
-
-        if (isArchive) {
-          final extractedPath = await ArchiveService.extractRom(
-            romPathToProcess,
-            game.systemFolderName ?? 'unknown',
+  static Future<RaRematchResult> _runRematch({
+    required RaRematchMode mode,
+    required bool includeDiscSystems,
+    void Function(int processed, int total, String label)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
+    // Either the caller's own flag or a pause requested through the service.
+    bool cancelled() =>
+        _rematchPauseRequested || (isCancelled?.call() ?? false);
+    var candidates = mode == RaRematchMode.lookupOnly
+        ? await RetroAchievementsRepository.getRomsNeedingRaGameId()
+        : await RetroAchievementsRepository.getRomsNeedingRaHash(
+            includeDiscSystems: includeDiscSystems,
           );
-          if (extractedPath != null) {
-            romPathToProcess = extractedPath;
-          } else {
-            continue;
-          }
-        }
 
-        String? hash;
-        try {
-          hash = await _generateHashForSystem(
-            game,
-            overrideRomPath: romPathToProcess,
-          );
-        } catch (e) {
-          _log.e('Error generating hash for ${game.name}: $e');
-        } finally {
-          if (isArchive) {
-            await ArchiveService.cleanupTempFolder(
-              game.systemFolderName ?? 'unknown',
-              game.romPath!,
-            );
-          }
-        }
-
-        if (hash == null) continue;
-
-        if (hash.isNotEmpty) {
-          await RetroAchievementsRepository.updateRomRaHash(
-            game.romPath!,
-            hash,
-          );
-          hashesGenerated++;
-        }
+    // Everything hashable is done, but some ROMs were parked as unhashable on
+    // an earlier run. Give those one more go — the user may have restored a
+    // missing file or replaced a bad dump since — rather than leaving them
+    // permanently invisible.
+    if (mode == RaRematchMode.hashMissing && candidates.isEmpty) {
+      final reopened = await RetroAchievementsRepository.clearRaHashSkips();
+      if (reopened > 0) {
+        _log.i('RA re-match: retrying $reopened previously skipped ROMs');
+        candidates = await RetroAchievementsRepository.getRomsNeedingRaHash(
+          includeDiscSystems: includeDiscSystems,
+        );
       }
-    } catch (e) {
-      _log.e('Error in processGamesHashesInBackground: $e');
     }
 
-    return hashesGenerated;
+    final total = candidates.length;
+    int processed = 0;
+    int hashed = 0;
+    int matched = 0;
+    int skipped = 0;
+
+    _log.i('RA re-match (${mode.name}): $total candidate ROMs');
+
+    for (final candidate in candidates) {
+      if (cancelled()) {
+        _log.i('RA re-match cancelled after $processed of $total');
+        return RaRematchResult(
+          total: total,
+          processed: processed,
+          hashed: hashed,
+          matched: matched,
+          skipped: skipped,
+          cancelled: true,
+        );
+      }
+
+      onProgress?.call(processed, total, candidate.label);
+
+      try {
+        if (mode == RaRematchMode.lookupOnly) {
+          if (await _lookupAndSaveGameId(
+            candidate.raHash!,
+            candidate.systemRaId,
+            candidate.romPath,
+            candidate.label,
+          )) {
+            matched++;
+          }
+        } else {
+          final attempt = await _hashCandidate(candidate);
+          final hash = attempt.hash;
+          if (hash == null) {
+            // Park it with the reason, so the next run does not walk it again
+            // and the gap stays visible instead of looking like a stall.
+            await RetroAchievementsRepository.markRomRaHashSkipped(
+              candidate.romPath,
+              attempt.skipReason ?? RetroAchievementsRepository.raSkipError,
+            );
+            skipped++;
+          } else {
+            hashed++;
+            await RetroAchievementsRepository.updateRomRaHash(
+              candidate.romPath,
+              hash,
+            );
+            if (await _lookupAndSaveGameId(
+              hash,
+              candidate.systemRaId,
+              candidate.romPath,
+              candidate.label,
+            )) {
+              matched++;
+            }
+          }
+        }
+      } catch (e) {
+        _log.e('RA re-match failed for ${candidate.label}: $e');
+        if (mode == RaRematchMode.hashMissing) {
+          await RetroAchievementsRepository.markRomRaHashSkipped(
+            candidate.romPath,
+            RetroAchievementsRepository.raSkipError,
+          );
+        }
+        skipped++;
+      }
+
+      processed++;
+    }
+
+    onProgress?.call(processed, total, '');
+    _log.i(
+      'RA re-match finished: $processed processed, $hashed hashed, '
+      '$matched matched, $skipped skipped',
+    );
+
+    return RaRematchResult(
+      total: total,
+      processed: processed,
+      hashed: hashed,
+      matched: matched,
+      skipped: skipped,
+      cancelled: false,
+    );
+  }
+
+  /// Hashes a single bulk-pass candidate.
+  ///
+  /// Returns the hash, or the reason it could not be produced so the caller can
+  /// park the ROM instead of retrying it on every run.
+  static Future<({String? hash, String? skipReason})> _hashCandidate(
+    RaMatchCandidate candidate,
+  ) async {
+    if (isDiscContainer(candidate.romPath)) {
+      // A disc image needs RA's own disc hashing, not a hash of the container.
+      return (hash: null, skipReason: RetroAchievementsRepository.raSkipDisc);
+    }
+
+    if (!await OptimizedMd5Utils.fileExists(candidate.romPath)) {
+      _log.w('File not found, skipping: ${candidate.romPath}');
+      return (
+        hash: null,
+        skipReason: RetroAchievementsRepository.raSkipMissing,
+      );
+    }
+
+    if (await OptimizedMd5Utils.getFileSize(candidate.romPath) >
+        maxFileSizeBytes) {
+      return (
+        hash: null,
+        skipReason: RetroAchievementsRepository.raSkipOversize,
+      );
+    }
+
+    String romPathToProcess = candidate.romPath;
+    final lowerPath = romPathToProcess.toLowerCase();
+    final bool isArchive =
+        (lowerPath.endsWith('.zip') || lowerPath.endsWith('.7z')) &&
+        !isArcadeSystem(candidate.systemFolderName);
+
+    if (isArchive) {
+      final extractedPath = await ArchiveService.extractRom(
+        romPathToProcess,
+        candidate.systemFolderName,
+      );
+      if (extractedPath == null) {
+        _log.w('Failed to extract, skipping: ${candidate.label}');
+        return (
+          hash: null,
+          skipReason: RetroAchievementsRepository.raSkipExtractFailed,
+        );
+      }
+      romPathToProcess = extractedPath;
+    }
+
+    try {
+      final hash = await compute(_generateHashForSystemIsolate, {
+        'romPath': romPathToProcess,
+        'systemFolderName': candidate.systemFolderName,
+        'gameName': candidate.label,
+        'token': RootIsolateToken.instance!,
+      });
+      if (hash == null || hash.isEmpty) {
+        return (
+          hash: null,
+          skipReason: RetroAchievementsRepository.raSkipError,
+        );
+      }
+      return (hash: hash, skipReason: null);
+    } finally {
+      if (isArchive) {
+        await ArchiveService.cleanupTempFolder(
+          candidate.systemFolderName,
+          candidate.romPath,
+        );
+      }
+    }
+  }
+
+  /// Whether [romPath] points at a disc image whose container hash is
+  /// meaningless to RetroAchievements.
+  ///
+  /// Systems flagged as disc-based are already filtered out in SQL; this
+  /// catches a stray disc image sitting in a cartridge system's folder.
+  /// Extensions shared with cartridge dumps (`.bin`, `.iso` on some systems)
+  /// are deliberately left to the per-system filter.
+  static bool isDiscContainer(String romPath) {
+    final lower = romPath.toLowerCase();
+    for (final ext in const [
+      '.chd',
+      '.cue',
+      '.gdi',
+      '.cdi',
+      '.pbp',
+      '.m3u',
+      '.ccd',
+      '.mds',
+      '.mdf',
+      '.nrg',
+      '.cso',
+      '.rvz',
+      '.wbfs',
+      '.wia',
+      '.gcm',
+    ]) {
+      if (lower.endsWith(ext)) return true;
+    }
+    return false;
   }
 
   /// Determines if a specific system requires a non-standard hashing algorithm
@@ -272,7 +493,10 @@ class RetroAchievementsHashService {
     try {
       String? hash;
 
-      if (systemFolder == 'nes' || systemFolder == 'fc') {
+      if (systemFolder == 'nes' ||
+          systemFolder == 'fc' ||
+          systemFolder == 'famicom' ||
+          systemFolder == 'fds') {
         hash = await OptimizedMd5Utils.calculateNesMd5(romPath);
       } else if (systemFolder == 'ds') {
         hash = await OptimizedMd5Utils.calculateDsMd5(romPath);
@@ -311,66 +535,15 @@ class RetroAchievementsHashService {
     }
   }
 
-  /// Resolves the specific hashing algorithm for a system and executes it.
-  static Future<String?> _generateHashForSystem(
-    GameModel game, {
-    String? overrideRomPath,
-  }) async {
-    final systemFolder = game.systemFolderName?.toLowerCase() ?? '';
-    final romPath = overrideRomPath ?? game.romPath!;
-
-    try {
-      String? hash;
-
-      if (systemFolder == 'nes' ||
-          systemFolder == 'famicom' ||
-          systemFolder == 'fds') {
-        hash = await OptimizedMd5Utils.calculateNesMd5(romPath);
-      } else if (systemFolder == 'ds') {
-        hash = await OptimizedMd5Utils.calculateDsMd5(romPath);
-      } else if (systemFolder == 'arc' ||
-          systemFolder == 'fbneo' ||
-          systemFolder == 'neogeo' ||
-          systemFolder == 'mame') {
-        hash = OptimizedMd5Utils.calculateArcadeMd5(romPath);
-      } else if (systemFolder == 'snes' ||
-          systemFolder == 'sfc' ||
-          systemFolder == 'satellaview') {
-        hash = await OptimizedMd5Utils.calculateSnesMd5(romPath);
-      } else if (systemFolder == '7800') {
-        hash = await OptimizedMd5Utils.calculateAtari7800Md5(romPath);
-      } else if (systemFolder == 'lynx') {
-        hash = await OptimizedMd5Utils.calculateLynxMd5(romPath);
-      } else if (systemFolder == 'ard') {
-        hash = await OptimizedMd5Utils.calculateArduboyMd5(romPath);
-      } else if (systemFolder == 'n64') {
-        hash = await OptimizedMd5Utils.calculateN64Md5(romPath);
-      } else {
-        hash = await OptimizedMd5Utils.calculateFileMd5(romPath);
-      }
-
-      final system = await SystemRepository.getSystemByFolderName(
-        game.systemFolderName!,
-      );
-      if (system == null) return hash;
-      final raId = system.raId;
-      if (raId != null) {
-        await _lookupAndSaveGameIdByHash(hash, raId, game);
-      }
-
-      return hash;
-    } catch (e) {
-      _log.e('Error generating hash for system $systemFolder: $e');
-      return null;
-    }
-  }
-
   /// Searches for the RetroAchievements Game ID in the local database using the
   /// generated hash and updates the game metadata.
-  static Future<void> _lookupAndSaveGameIdByHash(
+  ///
+  /// Returns whether a game id was found and stored.
+  static Future<bool> _lookupAndSaveGameId(
     String raHash,
     String raConsoleId,
-    GameModel game,
+    String romPath,
+    String label,
   ) async {
     try {
       final gameId = await RetroAchievementsRepository.getGameIdByHash(
@@ -378,16 +551,63 @@ class RetroAchievementsHashService {
         raConsoleId,
       );
 
-      if (gameId != null) {
-        await RetroAchievementsRepository.updateRomRaGameId(
-          game.romPath!,
-          gameId,
-        );
-      } else {
-        _log.w('No game ID found in internal DB for RA hash: ${game.name}');
+      if (gameId == null) {
+        _log.w('No game ID found in internal DB for RA hash: $label');
+        return false;
       }
+
+      await RetroAchievementsRepository.updateRomRaGameId(
+        romPath,
+        gameId,
+        matchSource: RetroAchievementsRepository.raMatchHash,
+      );
+      return true;
     } catch (e) {
       _log.e('Error looking up game ID by hash: $e');
+      return false;
     }
   }
+}
+
+/// Which pass [RetroAchievementsHashService.rematchLibrary] should run.
+enum RaRematchMode {
+  /// Retry the local game-id lookup for ROMs that already have a hash.
+  /// Touches no files.
+  lookupOnly,
+
+  /// Hash ROMs that have never been hashed, then look them up.
+  hashMissing,
+}
+
+/// Outcome of a [RetroAchievementsHashService.rematchLibrary] pass.
+class RaRematchResult {
+  /// Candidate ROMs the pass started with.
+  final int total;
+
+  /// Candidates actually visited (less than [total] when cancelled).
+  final int processed;
+
+  /// ROMs that produced a new hash.
+  final int hashed;
+
+  /// ROMs that gained a RetroAchievements game id.
+  final int matched;
+
+  /// ROMs that could not be hashed — missing, oversized, a disc image, or a
+  /// failed archive extraction.
+  final int skipped;
+
+  /// Whether the user stopped the pass before it finished.
+  final bool cancelled;
+
+  const RaRematchResult({
+    required this.total,
+    required this.processed,
+    required this.hashed,
+    required this.matched,
+    required this.skipped,
+    required this.cancelled,
+  });
+
+  bool get hasResults => hashed > 0 || matched > 0;
 }

@@ -247,6 +247,31 @@ const Map<String, dynamic> appLocalePt = {
       ' {count} entrada(s) importada(s) do ES-DE foram deixadas intactas.',
   AppLocale.cleanOrphanedMetadataFailed:
       'Falha ao limpar metadados órfãos: {error}',
+  AppLocale.rematchAchievements: 'Associar jogos do RetroAchievements',
+  AppLocale.rematchAchievementsSubtitle:
+      'Verifica toda a biblioteca à procura de conjuntos de conquistas, em vez de um jogo de cada vez',
+  AppLocale.rematchAchievementsWarning:
+      'Isto lê cada ROM sem correspondência para identificá-la, o que pode demorar numa biblioteca grande. Selecione novamente para pausar: tudo o que já foi encontrado é mantido, e executar de novo continua de onde parou. Sistemas em disco são ignorados por agora. Nada é movido ou eliminado.',
+  AppLocale.rematchAchievementsSignedOut:
+      'A correspondência funciona sem sessão iniciada, mas é preciso iniciar sessão no RetroAchievements para ver os resultados.',
+  AppLocale.rematchAchievementsLookingUp:
+      'A verificar jogos que já têm hash...',
+  AppLocale.rematchAchievementsHashing: 'A identificar {filename}',
+  AppLocale.rematchAchievementsDone:
+      'Concluído: {matched} jogo(s) associado(s), {hashed} identificado(s) pela primeira vez.',
+  AppLocale.rematchAchievementsNothingToDo:
+      'Todos os jogos suportados já foram verificados.',
+  AppLocale.rematchAchievementsPaused:
+      'Em pausa: {matched} jogo(s) correspondidos até agora. Execute de novo para continuar.',
+  AppLocale.rematchAchievementsFailed:
+      'Falha ao associar jogos do RetroAchievements: {error}',
+  AppLocale.raFixMatch: 'Corrigir associação',
+  AppLocale.raFixMatchTitle: 'Escolhe o jogo correto',
+  AppLocale.raFixMatchSearchHint: 'Procurar títulos do RetroAchievements',
+  AppLocale.raFixMatchNoResults: 'Não foram encontrados jogos correspondentes.',
+  AppLocale.raFixMatchUseAutomatic: 'Usar associação automática',
+  AppLocale.raFixMatchUpdated: 'Associação atualizada.',
+  AppLocale.raFixMatchAchievements: '{count} conquistas',
   AppLocale.notifications: 'Notificações',
   AppLocale.clearAll: 'Limpar tudo',
   AppLocale.noActiveNotifications: 'Nenhuma notificação ativa',

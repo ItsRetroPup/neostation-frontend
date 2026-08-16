@@ -251,6 +251,31 @@ const Map<String, dynamic> appLocaleEs = {
       ' {count} entrada(s) de ES-DE se dejaron intactas.',
   AppLocale.cleanOrphanedMetadataFailed:
       'No se pudo limpiar la metadata huérfana: {error}',
+  AppLocale.rematchAchievements: 'Emparejar juegos de RetroAchievements',
+  AppLocale.rematchAchievementsSubtitle:
+      'Revisa toda la biblioteca en busca de sets de logros, en vez de juego por juego',
+  AppLocale.rematchAchievementsWarning:
+      'Esto lee cada ROM sin coincidencia para identificarla, lo que puede tardar en una biblioteca grande. Selecciónalo de nuevo para pausar: se conserva todo lo encontrado hasta ahora y al volver a ejecutarlo continúa donde lo dejó. Los sistemas de disco se omiten por ahora. No se mueve ni se elimina nada.',
+  AppLocale.rematchAchievementsSignedOut:
+      'La coincidencia funciona sin haber iniciado sesión, pero necesitas iniciar sesión en RetroAchievements para ver los resultados.',
+  AppLocale.rematchAchievementsLookingUp:
+      'Comprobando los juegos que ya tienen hash...',
+  AppLocale.rematchAchievementsHashing: 'Identificando {filename}',
+  AppLocale.rematchAchievementsDone:
+      'Listo: {matched} juego(s) emparejado(s), {hashed} identificado(s) por primera vez.',
+  AppLocale.rematchAchievementsNothingToDo:
+      'Todos los juegos compatibles ya se han comprobado.',
+  AppLocale.rematchAchievementsPaused:
+      'En pausa: {matched} juego(s) coincidentes hasta ahora. Ejecútalo de nuevo para continuar.',
+  AppLocale.rematchAchievementsFailed:
+      'No se pudieron emparejar los juegos de RetroAchievements: {error}',
+  AppLocale.raFixMatch: 'Corregir emparejamiento',
+  AppLocale.raFixMatchTitle: 'Elige el juego correcto',
+  AppLocale.raFixMatchSearchHint: 'Buscar títulos de RetroAchievements',
+  AppLocale.raFixMatchNoResults: 'No se encontraron juegos coincidentes.',
+  AppLocale.raFixMatchUseAutomatic: 'Usar emparejamiento automático',
+  AppLocale.raFixMatchUpdated: 'Emparejamiento actualizado.',
+  AppLocale.raFixMatchAchievements: '{count} logros',
   AppLocale.notifications: 'Notificaciones',
   AppLocale.clearAll: 'Borrar todo',
   AppLocale.noActiveNotifications: 'No hay notificaciones activas',

@@ -246,6 +246,31 @@ mixin AppLocale {
   static const String cleanOrphanedMetadataFailed =
       'clean_orphaned_metadata_failed';
 
+  static const String rematchAchievements = 'rematch_achievements';
+  static const String rematchAchievementsSubtitle =
+      'rematch_achievements_subtitle';
+  static const String rematchAchievementsWarning =
+      'rematch_achievements_warning';
+  static const String rematchAchievementsSignedOut =
+      'rematch_achievements_signed_out';
+  static const String rematchAchievementsLookingUp =
+      'rematch_achievements_looking_up';
+  static const String rematchAchievementsHashing =
+      'rematch_achievements_hashing';
+  static const String rematchAchievementsDone = 'rematch_achievements_done';
+  static const String rematchAchievementsNothingToDo =
+      'rematch_achievements_nothing_to_do';
+  static const String rematchAchievementsPaused = 'rematch_achievements_paused';
+  static const String rematchAchievementsFailed = 'rematch_achievements_failed';
+
+  static const String raFixMatch = 'ra_fix_match';
+  static const String raFixMatchTitle = 'ra_fix_match_title';
+  static const String raFixMatchSearchHint = 'ra_fix_match_search_hint';
+  static const String raFixMatchNoResults = 'ra_fix_match_no_results';
+  static const String raFixMatchUseAutomatic = 'ra_fix_match_use_automatic';
+  static const String raFixMatchUpdated = 'ra_fix_match_updated';
+  static const String raFixMatchAchievements = 'ra_fix_match_achievements';
+
   // ---------------------------------------------------------------------------
   // Notification center
   // ---------------------------------------------------------------------------

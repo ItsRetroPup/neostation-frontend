@@ -78,6 +78,8 @@ class DatabaseTestHelper {
         ra_hash TEXT,
         ss_hash TEXT,
         id_ra INTEGER,
+        ra_match_source TEXT,
+        ra_hash_skipped TEXT,
         is_favorite INTEGER DEFAULT 0,
         is_hidden INTEGER DEFAULT 0,
         play_time INTEGER DEFAULT 0,
@@ -234,7 +236,10 @@ class DatabaseTestHelper {
         game_id INTEGER,
         console_id TEXT,
         console_name TEXT,
-        title TEXT
+        title TEXT,
+        num_achievements INTEGER,
+        num_leaderboards INTEGER,
+        points INTEGER
       )
     ''');
 

@@ -1,6 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../data/datasources/sqlite_service.dart';
 import '../models/database_game_model.dart';
+import '../models/ra_game_list_entry.dart';
+import '../models/ra_match_candidate.dart';
 import '../models/retro_achievements_dashboard_models.dart';
 
 /// Repository for RetroAchievements data access.
@@ -83,12 +85,270 @@ class RetroAchievementsRepository {
   static Future<void> updateRomRaHash(String romPath, String hash) =>
       SqliteService.updateRomRaHash(romPath, hash);
 
-  static Future<void> updateRomRaGameId(String romPath, int? gameId) async {
+  /// How a ROM's RetroAchievements match was established. Persisted in
+  /// `user_roms.ra_match_source`; only [raMatchManual] survives an automatic
+  /// re-match.
+  static const String raMatchHash = 'hash';
+  static const String raMatchFilename = 'filename';
+  static const String raMatchTitle = 'title';
+  static const String raMatchManual = 'manual';
+
+  /// SQL fragment guarding automatic writes against overwriting a user's pick.
+  static const String _notManuallyMatched =
+      "(ra_match_source IS NULL OR ra_match_source != '$raMatchManual')";
+
+  static Future<void> updateRomRaGameId(
+    String romPath,
+    int? gameId, {
+    String matchSource = raMatchHash,
+  }) async {
     final db = await SqliteService.getDatabase();
-    await db.rawUpdate('UPDATE user_roms SET id_ra = ? WHERE rom_path = ?', [
-      gameId,
-      romPath,
-    ]);
+    await db.rawUpdate(
+      'UPDATE user_roms SET id_ra = ?, ra_match_source = ? '
+      'WHERE rom_path = ? AND $_notManuallyMatched',
+      [gameId, matchSource, romPath],
+    );
+  }
+
+  /// Records a match the user chose by hand. Unlike the automatic paths this
+  /// always writes, and marks the row so later re-match passes leave it alone.
+  static Future<void> setManualRomRaMatch(String romPath, int gameId) async {
+    final db = await SqliteService.getDatabase();
+    await db.rawUpdate(
+      'UPDATE user_roms SET id_ra = ?, ra_match_source = ? WHERE rom_path = ?',
+      [gameId, raMatchManual, romPath],
+    );
+  }
+
+  /// Clears a manual override so the ROM is eligible for automatic matching again.
+  static Future<void> clearManualRomRaMatch(String romPath) async {
+    final db = await SqliteService.getDatabase();
+    await db.rawUpdate(
+      'UPDATE user_roms SET id_ra = NULL, ra_match_source = NULL '
+      'WHERE rom_path = ?',
+      [romPath],
+    );
+  }
+
+  /// Returns the game id the user chose by hand for [romPath], or null when
+  /// the match was established automatically (or not at all).
+  ///
+  /// Every resolution path must consult this before hashing: the automatic
+  /// strategies re-derive an id from the ROM's hash on every read, so without
+  /// this check a hand-picked match is written to the database and then
+  /// silently ignored by the screen that offered the choice.
+  static Future<int?> getManualRomRaGameId(String romPath) async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery(
+      'SELECT id_ra FROM user_roms '
+      'WHERE rom_path = ? AND ra_match_source = ? LIMIT 1',
+      [romPath, raMatchManual],
+    );
+    if (rows.isEmpty) return null;
+    final value = rows.first['id_ra'];
+    if (value == null) return null;
+    return int.tryParse(value.toString());
+  }
+
+  /// Returns the match source for [romPath], or null if never matched.
+  static Future<String?> getRomRaMatchSource(String romPath) async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery(
+      'SELECT ra_match_source FROM user_roms WHERE rom_path = ? LIMIT 1',
+      [romPath],
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['ra_match_source']?.toString();
+  }
+
+  // ── Bulk match candidates ─────────────────────────────────────────────────
+
+  /// Reasons a ROM could not be hashed, stored in `user_roms.ra_hash_skipped`.
+  static const String raSkipMissing = 'missing';
+  static const String raSkipOversize = 'oversize';
+  static const String raSkipDisc = 'disc';
+  static const String raSkipExtractFailed = 'extract_failed';
+  static const String raSkipError = 'error';
+
+  /// Rows to feed the bulk hashing pass: ROMs on a RetroAchievements-capable
+  /// system that have never been hashed.
+  ///
+  /// Disc-based systems are excluded by default. RA identifies a disc by its
+  /// primary executable rather than the whole image, so hashing a `.chd`/`.iso`
+  /// end to end produces a value that matches nothing while reading far more
+  /// data than the cartridge library put together.
+  ///
+  /// ROMs parked by an earlier run (see [markRomRaHashSkipped]) are excluded
+  /// too, so a file that can never be hashed does not reappear every run.
+  static Future<List<RaMatchCandidate>> getRomsNeedingRaHash({
+    bool includeDiscSystems = false,
+    bool includeSkipped = false,
+  }) async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery('''
+      SELECT ur.rom_path, ur.filename, ur.ra_hash,
+             s.folder_name AS system_folder_name,
+             s.ra_id AS system_ra_id
+      FROM user_roms ur
+      JOIN app_systems s ON ur.app_system_id = s.id
+      WHERE (ur.ra_hash IS NULL OR ur.ra_hash = '')
+        AND ur.rom_path IS NOT NULL AND ur.rom_path != ''
+        AND s.ra_id IS NOT NULL
+        ${includeSkipped ? '' : 'AND ur.ra_hash_skipped IS NULL'}
+        ${includeDiscSystems ? '' : 'AND COALESCE(s.multidisc, 0) = 0'}
+      ORDER BY s.folder_name, ur.filename
+    ''');
+    return rows.map((r) => RaMatchCandidate.fromRow(Map.from(r))).toList();
+  }
+
+  /// Records that [romPath] could not be hashed and why, so the bulk pass stops
+  /// revisiting it on every run.
+  static Future<void> markRomRaHashSkipped(
+    String romPath,
+    String reason,
+  ) async {
+    final db = await SqliteService.getDatabase();
+    await db.rawUpdate(
+      'UPDATE user_roms SET ra_hash_skipped = ? WHERE rom_path = ?',
+      [reason, romPath],
+    );
+  }
+
+  /// Clears every skip marker so a later pass retries them — for when the user
+  /// has fixed the underlying problem (restored a file, replaced a bad dump).
+  /// Returns the number of rows re-opened.
+  static Future<int> clearRaHashSkips() async {
+    final db = await SqliteService.getDatabase();
+    return db.rawUpdate(
+      'UPDATE user_roms SET ra_hash_skipped = NULL '
+      'WHERE ra_hash_skipped IS NOT NULL',
+    );
+  }
+
+  /// Skip reasons and how many ROMs each accounts for, so the gap can be
+  /// reported rather than silently absorbed.
+  static Future<Map<String, int>> getRaHashSkipCounts() async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery('''
+      SELECT ra_hash_skipped AS reason, COUNT(*) AS count
+      FROM user_roms
+      WHERE ra_hash_skipped IS NOT NULL
+      GROUP BY ra_hash_skipped
+    ''');
+    return {
+      for (final row in rows)
+        row['reason'].toString():
+            int.tryParse(row['count']?.toString() ?? '') ?? 0,
+    };
+  }
+
+  /// How much of the hashable library has been hashed, for progress that
+  /// reflects the library rather than the work left in one run.
+  ///
+  /// Without this the progress bar restarts at 0% on every run — the pass
+  /// resumes correctly (hashed ROMs are excluded from the candidate query) but
+  /// a per-run percentage makes it look like it started over.
+  static Future<({int eligible, int hashed})> getRaHashCoverage({
+    bool includeDiscSystems = false,
+  }) async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery('''
+      SELECT COUNT(*) AS eligible,
+             SUM(CASE WHEN ur.ra_hash IS NOT NULL AND ur.ra_hash != ''
+                      THEN 1 ELSE 0 END) AS hashed
+      FROM user_roms ur
+      JOIN app_systems s ON ur.app_system_id = s.id
+      WHERE ur.rom_path IS NOT NULL AND ur.rom_path != ''
+        AND s.ra_id IS NOT NULL
+        AND ur.ra_hash_skipped IS NULL
+        ${includeDiscSystems ? '' : 'AND COALESCE(s.multidisc, 0) = 0'}
+    ''');
+    if (rows.isEmpty) return (eligible: 0, hashed: 0);
+    return (
+      eligible: int.tryParse(rows.first['eligible']?.toString() ?? '') ?? 0,
+      hashed: int.tryParse(rows.first['hashed']?.toString() ?? '') ?? 0,
+    );
+  }
+
+  /// Rows the cheap lookup-only pass can fix: a hash is already stored but no
+  /// game id was ever resolved from it. No file I/O is needed to retry these,
+  /// so this is safe to run after the bundled RA database changes.
+  ///
+  /// Manually matched rows are excluded — they are already correct by
+  /// definition, and re-running the lookup on them would be wasted work.
+  static Future<List<RaMatchCandidate>> getRomsNeedingRaGameId() async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery('''
+      SELECT ur.rom_path, ur.filename, ur.ra_hash,
+             s.folder_name AS system_folder_name,
+             s.ra_id AS system_ra_id
+      FROM user_roms ur
+      JOIN app_systems s ON ur.app_system_id = s.id
+      WHERE ur.ra_hash IS NOT NULL AND ur.ra_hash != ''
+        AND ur.id_ra IS NULL
+        AND s.ra_id IS NOT NULL
+        AND $_notManuallyMatched
+      ORDER BY s.folder_name, ur.filename
+    ''');
+    return rows.map((r) => RaMatchCandidate.fromRow(Map.from(r))).toList();
+  }
+
+  // ── Manual match search ───────────────────────────────────────────────────
+
+  /// Searches the bundled RA snapshot for games on [consoleRaId] whose title
+  /// matches [query], for the "this isn't the right game" picker.
+  ///
+  /// The table holds one row per registered hash, so results are collapsed to
+  /// one entry per game. Main sets sort ahead of subsets and hacks, which is
+  /// what the user almost always wants; the rest are still listed.
+  static Future<List<RaGameListEntry>> searchRaGamesByTitle(
+    String consoleRaId,
+    String query, {
+    int limit = 60,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    final db = await SqliteService.getDatabase();
+    final pattern = '%${trimmed.replaceAll(' ', '%')}%';
+    final rows = await db.rawQuery(
+      '''
+      SELECT game_id, title,
+             MAX(num_achievements) AS num_achievements,
+             MAX(points) AS points
+      FROM app_ra_game_list
+      WHERE console_id = ? AND title LIKE ?
+      GROUP BY game_id, title
+      ORDER BY
+        CASE WHEN title LIKE '%[Subset%' THEN 1 ELSE 0 END,
+        CASE WHEN title LIKE '~%' THEN 1 ELSE 0 END,
+        LENGTH(title) ASC,
+        title ASC
+      LIMIT ?
+      ''',
+      [consoleRaId, pattern, limit],
+    );
+    return rows.map((r) => RaGameListEntry.fromRow(Map.from(r))).toList();
+  }
+
+  /// Returns the snapshot entry for [gameId], or null when the bundled
+  /// database has no row for it.
+  static Future<RaGameListEntry?> getRaGameById(int gameId) async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery(
+      '''
+      SELECT game_id, title,
+             MAX(num_achievements) AS num_achievements,
+             MAX(points) AS points
+      FROM app_ra_game_list
+      WHERE game_id = ?
+      GROUP BY game_id, title
+      LIMIT 1
+      ''',
+      [gameId],
+    );
+    if (rows.isEmpty) return null;
+    return RaGameListEntry.fromRow(Map.from(rows.first));
   }
 
   // ── Game ID lookups (for RA game matching) ────────────────────────────────
@@ -159,16 +419,25 @@ class RetroAchievementsRepository {
   }
 
   /// Updates user_roms ra_hash and id_ra for a ROM identified by [filename] and [systemId].
+  ///
+  /// The hash is always refreshed; the match itself is left alone when the user
+  /// set it by hand, so a re-hash pass never discards a manual choice.
   static Future<void> updateRomRAData(
     String filename,
     String systemId,
     String hash,
-    int? gameId,
-  ) async {
+    int? gameId, {
+    String matchSource = raMatchHash,
+  }) async {
     final db = await SqliteService.getDatabase();
     await db.rawUpdate(
-      'UPDATE user_roms SET ra_hash = ?, id_ra = ? WHERE filename = ? AND app_system_id = ?',
-      [hash, gameId, filename, systemId],
+      'UPDATE user_roms SET ra_hash = ? WHERE filename = ? AND app_system_id = ?',
+      [hash, filename, systemId],
+    );
+    await db.rawUpdate(
+      'UPDATE user_roms SET id_ra = ?, ra_match_source = ? '
+      'WHERE filename = ? AND app_system_id = ? AND $_notManuallyMatched',
+      [gameId, matchSource, filename, systemId],
     );
   }
 
