@@ -167,6 +167,9 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.use12HourClock: 'Reloj de 12 horas',
   AppLocale.use12HourClockSubtitle:
       'Mostrar la hora en formato de 12 horas con AM/PM en lugar de 24 horas',
+  AppLocale.showAchievementsBadge: 'Insignias de logros',
+  AppLocale.showAchievementsBadgeSubtitle:
+      'Mostrar el número de logros en los juegos asociados con RetroAchievements',
   AppLocale.fullscreenMode: 'Modo Pantalla Completa',
   AppLocale.fullscreenModeSubtitle:
       'Mostrar la aplicación en pantalla completa',
@@ -1060,11 +1063,18 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.filterGenre: 'Género',
   AppLocale.filterRating: 'Valoración',
   AppLocale.filterYear: 'Año',
+  AppLocale.filterAchievements: 'Logros',
+  AppLocale.raCoverageMatched: 'Sí',
+  AppLocale.raCoverageNoSet: 'Sin conjunto',
+  AppLocale.raCoverageNotChecked: 'Sin comprobar',
+  AppLocale.raCoverageDiscPending: 'Disco, pendiente',
   AppLocale.filterAny: 'Cualquiera',
   AppLocale.filterSource: 'Origen',
   AppLocale.sourceLocal: 'En este dispositivo',
   AppLocale.searchRatingLocalOnly:
       'El filtro de valoración solo se aplica a los juegos locales',
+  AppLocale.searchAchievementsLocalOnly:
+      'El filtro de logros solo se aplica a los juegos locales',
   AppLocale.searchNoRommEquivalent:
       'RomM no tiene nada clasificado como «{value}»',
   AppLocale.resetPlayTimeConfirm: 'Restablecer tiempo de juego',

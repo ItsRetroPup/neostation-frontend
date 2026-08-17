@@ -140,6 +140,9 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.sfxVolumeHigh: '높음',
   AppLocale.use12HourClock: '12시간제 사용',
   AppLocale.use12HourClockSubtitle: '시계를 24시간제가 아닌 오전/오후 12시간제로 표시합니다',
+  AppLocale.showAchievementsBadge: '업적 배지',
+  AppLocale.showAchievementsBadgeSubtitle:
+      'RetroAchievements와 일치한 게임에 업적 개수를 표시합니다',
   AppLocale.fullscreenMode: '전체 화면 모드',
   AppLocale.fullscreenModeSubtitle: '앱을 전체 화면으로 표시합니다',
   AppLocale.allFilesAccess: '모든 파일 액세스',
@@ -1060,11 +1063,17 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.filterGenre: '장르',
   AppLocale.filterRating: '평점',
   AppLocale.filterYear: '연도',
+  AppLocale.filterAchievements: '업적',
+  AppLocale.raCoverageMatched: '있음',
+  AppLocale.raCoverageNoSet: '세트 없음',
+  AppLocale.raCoverageNotChecked: '확인 안 됨',
+  AppLocale.raCoverageDiscPending: '디스크, 미지원',
   AppLocale.filterAny: '전체',
   AppLocale.filterSource: '출처',
   AppLocale.sourceLocal: '이 기기',
   AppLocale.searchRatingLocalOnly: '평점 필터는 로컬 게임에만 적용됩니다',
   AppLocale.searchNoRommEquivalent: 'RomM에 ‘{value}’로 분류된 항목이 없습니다',
+  AppLocale.searchAchievementsLocalOnly: '업적 필터는 로컬 게임에만 적용됩니다',
 
   // Hide / unhide games
   AppLocale.hideGame: '게임 숨기기',

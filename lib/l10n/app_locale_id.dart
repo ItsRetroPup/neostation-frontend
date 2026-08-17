@@ -164,6 +164,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.use12HourClock: 'Format 12 Jam',
   AppLocale.use12HourClockSubtitle:
       'Tampilkan jam dalam format 12 jam dengan AM/PM, bukan 24 jam',
+  AppLocale.showAchievementsBadge: 'Lencana Prestasi',
+  AppLocale.showAchievementsBadgeSubtitle:
+      'Tampilkan jumlah prestasi pada gim yang cocok dengan RetroAchievements',
   AppLocale.fullscreenMode: 'Mode Layar Penuh',
   AppLocale.fullscreenModeSubtitle: 'Tampilkan aplikasi dalam mode layar penuh',
   AppLocale.allFilesAccess: 'Akses Semua File',
@@ -1035,11 +1038,18 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.filterGenre: 'Genre',
   AppLocale.filterRating: 'Peringkat',
   AppLocale.filterYear: 'Tahun',
+  AppLocale.filterAchievements: 'Prestasi',
+  AppLocale.raCoverageMatched: 'Ya',
+  AppLocale.raCoverageNoSet: 'Tidak ada set',
+  AppLocale.raCoverageNotChecked: 'Belum diperiksa',
+  AppLocale.raCoverageDiscPending: 'Disc, tertunda',
   AppLocale.filterAny: 'Semua',
   AppLocale.filterSource: 'Sumber',
   AppLocale.sourceLocal: 'Di perangkat ini',
   AppLocale.searchRatingLocalOnly:
       'Filter peringkat hanya berlaku untuk gim lokal',
+  AppLocale.searchAchievementsLocalOnly:
+      'Filter prestasi hanya berlaku untuk gim lokal',
   AppLocale.searchNoRommEquivalent:
       'RomM tidak punya apa pun dengan nama “{value}”',
   AppLocale.resetPlayTimeConfirm: 'Atur Ulang Waktu Bermain',

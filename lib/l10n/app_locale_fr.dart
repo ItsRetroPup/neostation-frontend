@@ -172,6 +172,9 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.use12HourClock: 'Horloge 12 heures',
   AppLocale.use12HourClockSubtitle:
       'Afficher l\'heure au format 12 heures avec AM/PM au lieu de 24 heures',
+  AppLocale.showAchievementsBadge: 'Badges de succès',
+  AppLocale.showAchievementsBadgeSubtitle:
+      'Afficher le nombre de succès sur les jeux associés à RetroAchievements',
   AppLocale.fullscreenMode: 'Mode Plein Écran',
   AppLocale.fullscreenModeSubtitle: 'Affiche l’application en plein écran',
   AppLocale.allFilesAccess: 'Accès à Tous les Fichiers',
@@ -1067,11 +1070,18 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.filterGenre: 'Genre',
   AppLocale.filterRating: 'Note',
   AppLocale.filterYear: 'Année',
+  AppLocale.filterAchievements: 'Succès',
+  AppLocale.raCoverageMatched: 'Oui',
+  AppLocale.raCoverageNoSet: 'Aucun set',
+  AppLocale.raCoverageNotChecked: 'Non vérifié',
+  AppLocale.raCoverageDiscPending: 'Disque, à venir',
   AppLocale.filterAny: 'Tous',
   AppLocale.filterSource: 'Source',
   AppLocale.sourceLocal: 'Sur cet appareil',
   AppLocale.searchRatingLocalOnly:
       'Le filtre de note ne s’applique qu’aux jeux locaux',
+  AppLocale.searchAchievementsLocalOnly:
+      'Le filtre de succès ne s’applique qu’aux jeux locaux',
   AppLocale.searchNoRommEquivalent: 'RomM n’a rien classé sous « {value} »',
   AppLocale.resetPlayTimeConfirm: 'Réinitialiser le temps de jeu',
   AppLocale.resetPlayTimeConfirmBody:

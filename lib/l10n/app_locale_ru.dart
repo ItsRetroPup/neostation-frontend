@@ -165,6 +165,9 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.use12HourClock: '12-часовой формат',
   AppLocale.use12HourClockSubtitle:
       'Показывать время в 12-часовом формате с AM/PM вместо 24-часового',
+  AppLocale.showAchievementsBadge: 'Значки достижений',
+  AppLocale.showAchievementsBadgeSubtitle:
+      'Показывать количество достижений на играх, сопоставленных с RetroAchievements',
   AppLocale.fullscreenMode: 'Полноэкранный режим',
   AppLocale.fullscreenModeSubtitle:
       'Отображать приложение в полноэкранном режиме',
@@ -1032,11 +1035,18 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.filterGenre: 'Жанр',
   AppLocale.filterRating: 'Рейтинг',
   AppLocale.filterYear: 'Год',
+  AppLocale.filterAchievements: 'Достижения',
+  AppLocale.raCoverageMatched: 'Есть',
+  AppLocale.raCoverageNoSet: 'Нет набора',
+  AppLocale.raCoverageNotChecked: 'Не проверено',
+  AppLocale.raCoverageDiscPending: 'Диск, ожидается',
   AppLocale.filterAny: 'Любой',
   AppLocale.filterSource: 'Источник',
   AppLocale.sourceLocal: 'На этом устройстве',
   AppLocale.searchRatingLocalOnly:
       'Фильтр рейтинга применяется только к локальным играм',
+  AppLocale.searchAchievementsLocalOnly:
+      'Фильтр достижений применяется только к локальным играм',
   AppLocale.searchNoRommEquivalent: 'В RomM ничего не отнесено к «{value}»',
   AppLocale.resetPlayTimeConfirm: 'Сбросить время игры',
   AppLocale.resetPlayTimeConfirmBody:

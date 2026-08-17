@@ -175,6 +175,9 @@ mixin AppLocale {
   static const String sfxVolumeHigh = 'sfx_volume_high';
   static const String use12HourClock = 'use_12_hour_clock';
   static const String use12HourClockSubtitle = 'use_12_hour_clock_subtitle';
+  static const String showAchievementsBadge = 'show_achievements_badge';
+  static const String showAchievementsBadgeSubtitle =
+      'show_achievements_badge_subtitle';
   static const String fullscreenMode = 'fullscreen_mode';
   static const String fullscreenModeSubtitle = 'fullscreen_mode_subtitle';
   static const String allFilesAccess = 'all_files_access';
@@ -1115,6 +1118,13 @@ mixin AppLocale {
   static const String filterGenre = 'filter_genre';
   static const String filterRating = 'filter_rating';
   static const String filterYear = 'filter_year';
+  static const String filterAchievements = 'filter_achievements';
+  static const String raCoverageMatched = 'ra_coverage_matched';
+  static const String raCoverageNoSet = 'ra_coverage_no_set';
+  static const String raCoverageNotChecked = 'ra_coverage_not_checked';
+  static const String raCoverageDiscPending = 'ra_coverage_disc_pending';
+  static const String searchAchievementsLocalOnly =
+      'search_achievements_local_only';
   static const String filterAny = 'filter_any';
   static const String filterSource = 'filter_source';
   static const String sourceLocal = 'source_local';
