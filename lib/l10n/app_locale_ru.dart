@@ -959,12 +959,11 @@ const Map<String, dynamic> appLocaleRu = {
       'Просматривайте и скачивайте всю свою библиотеку игр',
   AppLocale.rommInfoSaveSync: 'Синхронизируйте сохранения между устройствами',
   AppLocale.rommInfoSelfHosted:
-      'Собственный хостинг — ваша коллекция, ваш сервер',
+      'Собственный хостинг: ваша коллекция, ваш сервер',
   AppLocale.rommLearnMoreAt: 'Подробнее: ',
   AppLocale.rommServerUrl: 'URL сервера',
   AppLocale.rommServerUrlHint: 'https://romm.example.com',
   AppLocale.rommTestConnection: 'Проверить подключение',
-  AppLocale.rommSaveConnect: 'Сохранить и подключиться',
   AppLocale.rommDisconnect: 'Отключиться',
   AppLocale.rommUseForSaveSync:
       'Использовать RomM для синхронизации сохранений',
@@ -980,6 +979,11 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.rommConnectedAs: 'Подключено как {user}',
   AppLocale.rommCredentialsRequired:
       'Введите URL сервера, имя пользователя и пароль',
+  AppLocale.rommAuthPassword: 'Пароль',
+  AppLocale.rommAuthApiKey: 'Ключ API',
+  AppLocale.rommApiKey: 'Ключ API',
+  AppLocale.rommApiKeyHint: 'rmm_...',
+  AppLocale.rommApiKeyRequired: 'Введите URL сервера и ключ API',
   AppLocale.rommPlatforms: 'Платформы',
   AppLocale.rommNoPlatforms: 'Платформы не найдены',
   AppLocale.rommCollections: 'Коллекции',
@@ -1004,7 +1008,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.rommSyncCancel: 'Отменить синхронизацию',
   AppLocale.rommSyncConfirmTitle: 'Синхронизировать {name}?',
   AppLocale.rommSyncConfirmPlan:
-      'Загрузит {count} игр — {size}. Это может занять много времени.',
+      'Загрузит {count} игр ({size}). Это может занять много времени.',
   AppLocale.rommSyncConfirmSkipped: '{count} уже есть на устройстве.',
   AppLocale.rommSyncConfirmFree: 'Свободно {free}.',
   AppLocale.rommSyncConfirmNoSpace:

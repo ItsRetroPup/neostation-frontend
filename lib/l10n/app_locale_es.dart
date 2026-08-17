@@ -993,7 +993,6 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.rommServerUrl: 'URL del servidor',
   AppLocale.rommServerUrlHint: 'https://romm.example.com',
   AppLocale.rommTestConnection: 'Probar conexión',
-  AppLocale.rommSaveConnect: 'Guardar y conectar',
   AppLocale.rommDisconnect: 'Desconectar',
   AppLocale.rommUseForSaveSync: 'Usar RomM para sincronizar partidas',
   AppLocale.rommSaveSyncLabel: 'Sinc. RomM',
@@ -1009,6 +1008,12 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.rommConnectedAs: 'Conectado como {user}',
   AppLocale.rommCredentialsRequired:
       'Introduce la URL del servidor, el usuario y la contraseña',
+  AppLocale.rommAuthPassword: 'Contraseña',
+  AppLocale.rommAuthApiKey: 'Clave de API',
+  AppLocale.rommApiKey: 'Clave de API',
+  AppLocale.rommApiKeyHint: 'rmm_...',
+  AppLocale.rommApiKeyRequired:
+      'Introduce la URL del servidor y la clave de API',
   AppLocale.rommPlatforms: 'Plataformas',
   AppLocale.rommNoPlatforms: 'No se encontraron plataformas',
   AppLocale.rommCollections: 'Colecciones',
@@ -1032,7 +1037,7 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.rommSyncCancel: 'Cancelar sincronización',
   AppLocale.rommSyncConfirmTitle: '¿Sincronizar {name}?',
   AppLocale.rommSyncConfirmPlan:
-      'Descarga {count} juegos — {size}. Puede tardar mucho.',
+      'Descarga {count} juegos ({size}). Puede tardar mucho.',
   AppLocale.rommSyncConfirmSkipped: '{count} ya están en este dispositivo.',
   AppLocale.rommSyncConfirmFree: '{free} libres.',
   AppLocale.rommSyncConfirmNoSpace:

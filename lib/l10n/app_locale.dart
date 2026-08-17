@@ -1049,7 +1049,6 @@ mixin AppLocale {
   static const String rommServerUrl = 'romm_server_url';
   static const String rommServerUrlHint = 'romm_server_url_hint';
   static const String rommTestConnection = 'romm_test_connection';
-  static const String rommSaveConnect = 'romm_save_connect';
   static const String rommDisconnect = 'romm_disconnect';
   static const String rommUseForSaveSync = 'romm_use_for_save_sync';
   static const String rommSaveSyncLabel = 'romm_save_sync_label';
@@ -1063,6 +1062,11 @@ mixin AppLocale {
   static const String rommConnectionFailed = 'romm_connection_failed';
   static const String rommConnectedAs = 'romm_connected_as';
   static const String rommCredentialsRequired = 'romm_credentials_required';
+  static const String rommAuthPassword = 'romm_auth_password';
+  static const String rommAuthApiKey = 'romm_auth_api_key';
+  static const String rommApiKey = 'romm_api_key';
+  static const String rommApiKeyHint = 'romm_api_key_hint';
+  static const String rommApiKeyRequired = 'romm_api_key_required';
   static const String rommPlatforms = 'romm_platforms';
   static const String rommNoPlatforms = 'romm_no_platforms';
   static const String rommCollections = 'romm_collections';

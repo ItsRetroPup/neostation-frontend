@@ -984,13 +984,11 @@ const Map<String, dynamic> appLocaleIt = {
       'RomM è un gestore di ROM self-hosted. Collegati al tuo server per sfogliare la libreria, scaricare giochi direttamente su questo dispositivo e sincronizzare i tuoi salvataggi.',
   AppLocale.rommInfoBrowse: 'Sfoglia e scarica l’intera libreria di giochi',
   AppLocale.rommInfoSaveSync: 'Sincronizza i salvataggi tra i tuoi dispositivi',
-  AppLocale.rommInfoSelfHosted:
-      'Self-hosted — la tua collezione, il tuo server',
+  AppLocale.rommInfoSelfHosted: 'Self-hosted: la tua collezione, il tuo server',
   AppLocale.rommLearnMoreAt: 'Scopri di più su ',
   AppLocale.rommServerUrl: 'URL del server',
   AppLocale.rommServerUrlHint: 'https://romm.example.com',
   AppLocale.rommTestConnection: 'Prova connessione',
-  AppLocale.rommSaveConnect: 'Salva e connetti',
   AppLocale.rommDisconnect: 'Disconnetti',
   AppLocale.rommUseForSaveSync:
       'Usa RomM per la sincronizzazione dei salvataggi',
@@ -1007,6 +1005,11 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.rommConnectedAs: 'Connesso come {user}',
   AppLocale.rommCredentialsRequired:
       'Inserisci URL del server, utente e password',
+  AppLocale.rommAuthPassword: 'Password',
+  AppLocale.rommAuthApiKey: 'Chiave API',
+  AppLocale.rommApiKey: 'Chiave API',
+  AppLocale.rommApiKeyHint: 'rmm_...',
+  AppLocale.rommApiKeyRequired: 'Inserisci URL del server e chiave API',
   AppLocale.rommPlatforms: 'Piattaforme',
   AppLocale.rommNoPlatforms: 'Nessuna piattaforma trovata',
   AppLocale.rommCollections: 'Raccolte',
@@ -1031,7 +1034,7 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.rommSyncCancel: 'Annulla sincronizzazione',
   AppLocale.rommSyncConfirmTitle: 'Sincronizzare {name}?',
   AppLocale.rommSyncConfirmPlan:
-      'Scarica {count} giochi — {size}. Può richiedere molto tempo.',
+      'Scarica {count} giochi ({size}). Può richiedere molto tempo.',
   AppLocale.rommSyncConfirmSkipped:
       '{count} già presenti su questo dispositivo.',
   AppLocale.rommSyncConfirmFree: '{free} liberi.',
