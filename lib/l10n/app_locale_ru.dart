@@ -969,6 +969,11 @@ const Map<String, dynamic> appLocaleRu = {
       'Использовать RomM для синхронизации сохранений',
   AppLocale.rommSaveSyncLabel: 'Синх. RomM',
   AppLocale.rommSaveSyncActive: 'RomM — ваш сервис синхронизации сохранений',
+  AppLocale.saveSyncHandledBy:
+      'Синхронизацией сохранений занимается {provider}',
+  AppLocale.saveSyncSingleProvider:
+      'Сохранения синхронизирует только один провайдер одновременно',
+  AppLocale.saveSyncNoneActive: 'Синхронизация сохранений не активна',
   AppLocale.rommBrowseLibrary: 'Просмотр библиотеки',
   AppLocale.rommStatusConnected: 'Подключено',
   AppLocale.rommStatusDisconnected: 'Не подключено',

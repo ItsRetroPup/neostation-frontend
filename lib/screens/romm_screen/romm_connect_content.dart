@@ -306,12 +306,10 @@ class _RommConnectContentState extends State<RommConnectContent>
     // NeoSync. Leaving "romm" active against a server we just forgot would
     // silently stop ALL save sync — RomM errors out, NeoSync sits idle —
     // until the user thought to re-toggle it.
-    if (SyncManager.instance.activeProviderId == RomMSyncProvider.kProviderId) {
-      await SyncManager.instance.setActive(
-        NeoSyncAdapter.kProviderId,
-        persist: persist,
-      );
-    }
+    await SyncManager.instance.releaseIfActive(
+      RomMSyncProvider.kProviderId,
+      persist: persist,
+    );
     if (!mounted) return;
     _clearSecretFields();
     resetSelection();
@@ -751,6 +749,7 @@ class _RommConnectContentState extends State<RommConnectContent>
         toggleValue: _isSaveSyncActive,
         onTap: _toggleSaveSync,
       ),
+      _buildSaveSyncCaption(theme),
       SizedBox(height: 10.r),
       _buildActionRow(
         theme,
@@ -760,6 +759,43 @@ class _RommConnectContentState extends State<RommConnectContent>
         onTap: _disconnect,
       ),
     ];
+  }
+
+  /// Caption under the save-sync toggle naming who currently owns save sync.
+  ///
+  /// Connecting a RomM server does not take save sync off a NeoSync account
+  /// that is still signed in (see [_connect]), so a connected server plus
+  /// downloads plus playtime can all look healthy while saves go elsewhere.
+  /// Not focusable — it is a label for the row above it.
+  Widget _buildSaveSyncCaption(ThemeData theme) {
+    final scheme = theme.colorScheme;
+    final owner = SyncManager.instance.active;
+    // Same rule as the library header: a provider that owns save sync while
+    // signed out is not handling it, so report that nothing is rather than
+    // name it.
+    final ownerSignedIn = owner != null && owner.isAuthenticated;
+    final String text;
+    if (_isSaveSyncActive) {
+      text = AppLocale.rommSaveSyncActive.getString(context);
+    } else if (!ownerSignedIn) {
+      text = AppLocale.saveSyncNoneActive.getString(context);
+    } else {
+      text =
+          '${AppLocale.saveSyncHandledBy.getString(context).replaceFirst('{provider}', owner.meta.name)} · '
+          '${AppLocale.saveSyncSingleProvider.getString(context)}';
+    }
+    return Padding(
+      padding: EdgeInsets.only(top: 4.r, left: 12.r, right: 12.r),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 9.r,
+          color: scheme.onSurface.withValues(alpha: 0.7),
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 
   Widget _buildFieldRow(

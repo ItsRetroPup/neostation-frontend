@@ -939,8 +939,9 @@ class _RommBrowseScreenState extends State<RommBrowseScreen> {
                       ),
                       Text(
                         AppLocale.rommConnectedAs
-                            .getString(context)
-                            .replaceAll('{user}', provider.username),
+                                .getString(context)
+                                .replaceAll('{user}', provider.username) +
+                            _saveSyncOwnerSuffix(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1088,12 +1089,10 @@ class _RommBrowseScreenState extends State<RommBrowseScreen> {
     // NeoSync. Leaving "romm" active against a server we just forgot would
     // silently stop ALL save sync — RomM errors out, NeoSync sits idle —
     // until the user thought to re-toggle it.
-    if (SyncManager.instance.activeProviderId == RomMSyncProvider.kProviderId) {
-      await SyncManager.instance.setActive(
-        NeoSyncAdapter.kProviderId,
-        persist: persist,
-      );
-    }
+    await SyncManager.instance.releaseIfActive(
+      RomMSyncProvider.kProviderId,
+      persist: persist,
+    );
     if (!mounted) return;
     AppNotification.showNotification(
       context,
@@ -1106,6 +1105,28 @@ class _RommBrowseScreenState extends State<RommBrowseScreen> {
   bool get _isSaveSyncActive =>
       SyncManager.instance.activeProviderId == RomMSyncProvider.kProviderId;
 
+  /// Names the provider that owns save sync, appended to the account line when
+  /// it is not RomM.
+  ///
+  /// A connected server, its downloads and its playtime all keep working while
+  /// another provider holds save sync — connecting to RomM deliberately does
+  /// not take it off a NeoSync account that is still signed in — so without
+  /// this the screen reads as "RomM is syncing everything". Empty when RomM
+  /// owns it: the toggle beside this line already says so.
+  String _saveSyncOwnerSuffix() {
+    if (_isSaveSyncActive) return '';
+    final owner = SyncManager.instance.active;
+    // Signed out, it is not handling save sync either — so say that nothing
+    // is, rather than naming a second provider that also isn't syncing. This
+    // is the state where a connected server, its downloads and its playtime
+    // all look healthy while no save leaves the device.
+    if (owner == null || !owner.isAuthenticated) {
+      return ' · ${AppLocale.saveSyncNoneActive.getString(context)}';
+    }
+    return ' · '
+        '${AppLocale.saveSyncHandledBy.getString(context).replaceFirst('{provider}', owner.meta.name)}';
+  }
+
   /// Toggles whether RomM is the active save-sync provider (vs NeoSync).
   Future<void> _toggleSaveSync() async {
     final persist = context
@@ -1116,9 +1137,20 @@ class _RommBrowseScreenState extends State<RommBrowseScreen> {
         : RomMSyncProvider.kProviderId;
     await SyncManager.instance.setActive(target, persist: persist);
     if (!mounted) return;
+    // Name the provider that just took over rather than echoing the toggle's
+    // own label: only one provider syncs saves, and which one it now is the
+    // only thing the toast can usefully confirm. When that provider is signed
+    // out it took over nothing, and the honest confirmation is that save sync
+    // is now off entirely.
+    final owner = SyncManager.instance.active;
+    final signedIn = owner != null && owner.isAuthenticated;
     AppNotification.showNotification(
       context,
-      AppLocale.rommUseForSaveSync.getString(context),
+      signedIn
+          ? AppLocale.saveSyncHandledBy
+                .getString(context)
+                .replaceFirst('{provider}', owner.meta.name)
+          : AppLocale.saveSyncNoneActive.getString(context),
       type: NotificationType.info,
     );
     setState(() {});

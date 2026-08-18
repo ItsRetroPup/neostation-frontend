@@ -1000,6 +1000,11 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.rommUseForSaveSync: 'RomM für Spielstand-Sync verwenden',
   AppLocale.rommSaveSyncLabel: 'RomM-Sync',
   AppLocale.rommSaveSyncActive: 'RomM ist dein Anbieter für Spielstand-Sync',
+  AppLocale.saveSyncHandledBy:
+      'Die Spielstand-Synchronisierung übernimmt {provider}',
+  AppLocale.saveSyncSingleProvider:
+      'Es synchronisiert immer nur ein Anbieter die Spielstände',
+  AppLocale.saveSyncNoneActive: 'Keine Speicherstand-Synchronisierung aktiv',
   AppLocale.rommBrowseLibrary: 'Bibliothek durchstöbern',
   AppLocale.rommStatusConnected: 'Verbunden',
   AppLocale.rommStatusDisconnected: 'Nicht verbunden',
