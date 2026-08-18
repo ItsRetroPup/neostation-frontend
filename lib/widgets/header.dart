@@ -48,6 +48,12 @@ class HeaderState extends State<Header> {
   Timer? _timeUpdateTimer;
   late final List<FocusNode> _tabFocusNodes;
 
+  /// First slot shown when the tab strip has more visible tabs than it has
+  /// slots. Recomputed during build (not in setState) because
+  /// every input that can move it — tab selection, hide toggles — already
+  /// triggers a rebuild through the widget or the config provider.
+  int _windowStart = 0;
+
   @override
   void initState() {
     super.initState();
@@ -207,10 +213,62 @@ class HeaderState extends State<Header> {
                 letterSpacing: 0.3.r,
               );
 
+              final visibleTabs = visibleNavTabs(configProvider.config);
+
+              // How many slots actually fit beside the status pill. A device
+              // with no battery to report (most desktops) frees enough room for
+              // several more, so the strip only scrolls where it genuinely has
+              // to rather than at a fixed count everywhere.
+              //
+              // Measured against the widest the pill can ever be, so the count
+              // cannot flip as the clock ticks past a digit or the battery
+              // falls to one.
+              final maxSlots = navStripMaxSlots(
+                totalWidth: constraints.maxWidth,
+                statusPillWidth: statusPillWidth(
+                  clockTextWidth: _measureText(
+                    context,
+                    widestClockText(
+                      use12Hour: configProvider.config.use12HourClock,
+                    ),
+                    labelStyle,
+                  ),
+                  batteryTextWidth: showBattery
+                      ? _measureText(context, '100%', labelStyle)
+                      : 0,
+                  // Without the clock glyph: it is already the first thing the
+                  // pill gives up when space runs short, so reserving room for
+                  // it here would spend a whole tab slot saving an icon that
+                  // sits next to a label already reading as a time. Slots first,
+                  // glyph second.
+                  withClockGlyph: false,
+                  horizontalPadding: 10.r,
+                  bell: 14.r,
+                  bellGap: 10.r,
+                  glyph: 14.r,
+                  glyphGap: 4.r,
+                  batteryGap: 12.r,
+                  batteryIcon: 16.r,
+                  batteryIconGap: 4.r,
+                ),
+                slot: 32.r,
+                shoulder: 36.r,
+                pillPadding: 4.r,
+                margin: 8.r,
+                gutter: 4.r,
+                minSlots: minNavTabSlots,
+              );
+
               final pillAllowance = statusPillMaxWidth(
                 totalWidth: constraints.maxWidth,
                 navStripWidth: navStripWidth(
-                  tabCount: visibleNavTabs(configProvider.config).length,
+                  // The strip stops growing once it runs out of slots — past
+                  // that it scrolls — so the collision bound must use the
+                  // rendered width, not the tab count, or the pill gives up
+                  // room the strip never takes.
+                  tabCount: visibleTabs.length < maxSlots
+                      ? visibleTabs.length
+                      : maxSlots,
                   slot: 32.r,
                   shoulder: 36.r,
                   pillPadding: 4.r,
@@ -295,9 +353,6 @@ class HeaderState extends State<Header> {
                           ),
                           child: Builder(
                             builder: (context) {
-                              final visibleTabs = visibleNavTabs(
-                                configProvider.config,
-                              );
                               // The indicator tracks the tab's slot in the *rendered*
                               // strip, not its canonical index — otherwise hiding a tab
                               // parks it past the end of a shortened strip.
@@ -317,7 +372,7 @@ class HeaderState extends State<Header> {
                               // Tinting from the ANIMATED position instead
                               // keeps each icon's colour matched to how much of
                               // the pill is actually under it.
-                              return TweenAnimationBuilder<double>(
+                              final strip = TweenAnimationBuilder<double>(
                                 tween: Tween<double>(
                                   end: (selectedSlot < 0 ? 0 : selectedSlot)
                                       .toDouble(),
@@ -375,6 +430,18 @@ class HeaderState extends State<Header> {
                                     ],
                                   );
                                 },
+                              );
+
+                              if (visibleTabs.length <= maxSlots) {
+                                _windowStart = 0;
+                                return strip;
+                              }
+
+                              return _buildScrollingStrip(
+                                strip,
+                                visibleTabs.length,
+                                selectedSlot,
+                                maxSlots,
                               );
                             },
                           ),
@@ -504,6 +571,70 @@ class HeaderState extends State<Header> {
       textScaler: MediaQuery.textScalerOf(context),
     )..layout();
     return painter.width;
+  }
+
+  // Windows the full-width [strip] to [maxSlots] slots, sliding it
+  // so the selected tab stays in view. The slide shares the indicator's
+  // duration/curve so the two motions read as one. Icons at a scrollable edge
+  // fade out (alpha mask, so it works over the translucent pill) to signal that
+  // the strip continues past the window.
+  Widget _buildScrollingStrip(
+    Widget strip,
+    int tabCount,
+    int selectedSlot,
+    int maxSlots,
+  ) {
+    _windowStart = navTabWindowStart(
+      windowStart: _windowStart,
+      selectedSlot: selectedSlot,
+      tabCount: tabCount,
+      maxSlots: maxSlots,
+    );
+
+    final viewportWidth = maxSlots * 32.r;
+    final canScrollLeft = _windowStart > 0;
+    final canScrollRight = _windowStart < tabCount - maxSlots;
+    final fade = 12.r / viewportWidth;
+
+    return SizedBox(
+      width: viewportWidth,
+      height: 32.r,
+      child: ClipRect(
+        child: ShaderMask(
+          shaderCallback: (rect) => LinearGradient(
+            colors: [
+              canScrollLeft ? Colors.transparent : Colors.white,
+              Colors.white,
+              Colors.white,
+              canScrollRight ? Colors.transparent : Colors.white,
+            ],
+            stops: [0, fade, 1 - fade, 1],
+          ).createShader(rect),
+          blendMode: BlendMode.dstIn,
+          child: Stack(
+            children: [
+              // `top`/`bottom` rather than an explicit `height`: the pill's
+              // 1.r border deflates the space its child gets, so the slots are
+              // 2.r shorter than 32.r. A positioned child with a stated height
+              // ignores that and renders the icons at full size (BoxFit sizes
+              // them off the shorter axis), which made every icon jump ~14%
+              // larger the moment a hidden tab pushed the strip into scrolling.
+              // Filling the box keeps the scrolled strip identical to the
+              // static one.
+              AnimatedPositioned(
+                left: -_windowStart * 32.r,
+                top: 0,
+                bottom: 0,
+                width: tabCount * 32.r,
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeInOut,
+                child: strip,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // Steam-style tab button.

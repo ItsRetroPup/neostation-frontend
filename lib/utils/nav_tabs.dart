@@ -147,3 +147,37 @@ List<NavTab> visibleNavTabs(ConfigModel config) => NavTab.values
 List<NavTab> hidableNavTabs() => NavTab.values
     .where((tab) => navTabSpec(tab).isHidable)
     .toList(growable: false);
+
+/// Fewest tab slots the header strip will show.
+///
+/// The strip normally shows as many slots as fit beside the status pill, which
+/// varies with the screen and with whether the device reports a battery — see
+/// `navStripMaxSlots` in `header_layout.dart`. This is the floor for screens
+/// too narrow even for that, where the pill scales itself down instead. With
+/// more visible tabs than the strip has slots it scrolls; with that many or
+/// fewer it renders as a static strip and never scrolls.
+const int minNavTabSlots = 5;
+
+/// First slot shown by the scrolling strip after selection moves to
+/// [selectedSlot].
+///
+/// Centered windowing: the selection sits in the window's middle slot (the
+/// left-of-middle slot when [maxSlots] is even), clamped at both ends of the
+/// strip — so the selection only reaches an edge slot when it is genuinely
+/// near the first or last tab, and everywhere else the strip scrolls under a
+/// stationary highlight. A [selectedSlot] of -1 (selected tab hidden by a
+/// config change) keeps the current [windowStart] rather than snapping
+/// anywhere. The result is always clamped so the window never shows blank
+/// slots past either end.
+int navTabWindowStart({
+  required int windowStart,
+  required int selectedSlot,
+  required int tabCount,
+  int maxSlots = minNavTabSlots,
+}) {
+  if (tabCount <= maxSlots) return 0;
+  final start = selectedSlot >= 0
+      ? selectedSlot - (maxSlots - 1) ~/ 2
+      : windowStart;
+  return start.clamp(0, tabCount - maxSlots);
+}
