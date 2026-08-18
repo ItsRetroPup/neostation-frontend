@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neostation/data/datasources/sqlite_service.dart';
+import 'package:neostation/models/ra_hash_policy.dart';
 import 'package:neostation/repositories/retro_achievements_repository.dart';
 
 import 'database_test_helper.dart';
@@ -308,19 +309,37 @@ void main() {
         expect(candidates.first.systemFolderName, 'nes');
       });
 
-      test('getRomsNeedingRaHash excludes disc systems by default', () async {
-        await db.execute(
-          "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('disc.chd', '/roms/ps1/disc.chd', 'ps1')",
-        );
+      test(
+        'getRomsNeedingRaHash excludes a disc system with no disc algorithm',
+        () async {
+          // Hashing the container of a disc image produces something
+          // RetroAchievements has never registered, so a disc system is only
+          // worth walking once it declares an algorithm that reads inside it.
+          await db.execute(
+            "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('disc.chd', '/roms/ps1/disc.chd', 'ps1')",
+          );
 
-        expect(await RetroAchievementsRepository.getRomsNeedingRaHash(), []);
+          expect(await RetroAchievementsRepository.getRomsNeedingRaHash(), []);
+        },
+      );
 
-        final withDiscs =
-            await RetroAchievementsRepository.getRomsNeedingRaHash(
-              includeDiscSystems: true,
-            );
-        expect(withDiscs.map((c) => c.filename), ['disc.chd']);
-      });
+      test(
+        'getRomsNeedingRaHash includes a disc system that declares one',
+        () async {
+          await db.execute(
+            "UPDATE app_systems SET ra_hash_algo = 'psx', ra_hash_mode = 'hash_only' WHERE id = 'ps1'",
+          );
+          await db.execute(
+            "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('disc.chd', '/roms/ps1/disc.chd', 'ps1')",
+          );
+
+          final candidates =
+              await RetroAchievementsRepository.getRomsNeedingRaHash();
+
+          expect(candidates.map((c) => c.filename), ['disc.chd']);
+          expect(candidates.single.policy.algo, RaHashAlgo.psx);
+        },
+      );
 
       test('getRomsNeedingRaHash skips systems RA does not support', () async {
         await db.execute(
@@ -446,7 +465,8 @@ void main() {
         await db.execute(
           "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('todo.nes', '/roms/nes/todo.nes', 'nes')",
         );
-        // Disc and non-RA rows are outside the denominator.
+        // Non-RA rows and disc systems with no disc algorithm declared are
+        // outside the denominator — the pass will not walk them.
         await db.execute(
           "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('d.chd', '/roms/ps1/d.chd', 'ps1')",
         );
@@ -458,6 +478,28 @@ void main() {
 
         expect(coverage.eligible, 2);
         expect(coverage.hashed, 1);
+      });
+
+      test('getRaHashCoverage counts the disc ROMs the pass will walk', () async {
+        // The coverage denominator must agree with the candidate query, or the
+        // progress bar pegs at 100% while the disc tail is still hashing.
+        await db.execute(
+          "UPDATE app_systems SET ra_hash_algo = 'psx', ra_hash_mode = 'hash_only' WHERE id = 'ps1'",
+        );
+        await db.execute(
+          "INSERT INTO user_roms (filename, rom_path, app_system_id, ra_hash) VALUES ('done.nes', '/roms/nes/done.nes', 'nes', 'abc')",
+        );
+        await db.execute(
+          "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('d.chd', '/roms/ps1/d.chd', 'ps1')",
+        );
+
+        final coverage = await RetroAchievementsRepository.getRaHashCoverage();
+        final candidates =
+            await RetroAchievementsRepository.getRomsNeedingRaHash();
+
+        expect(coverage.eligible, 2);
+        expect(coverage.hashed, 1);
+        expect(candidates.length, coverage.eligible - coverage.hashed);
       });
 
       test('getRaHashCoverage handles an empty library', () async {

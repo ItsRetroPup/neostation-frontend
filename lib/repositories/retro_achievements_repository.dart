@@ -2,6 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../data/datasources/sqlite_service.dart';
 import '../models/database_game_model.dart';
 import '../models/ra_game_list_entry.dart';
+import '../models/ra_hash_policy.dart';
 import '../models/ra_match_candidate.dart';
 import '../models/retro_achievements_dashboard_models.dart';
 import '../services/logger_service.dart';
@@ -173,18 +174,34 @@ class RetroAchievementsRepository {
   static const String raSkipExtractFailed = 'extract_failed';
   static const String raSkipError = 'error';
 
+  /// Systems the hash pass will walk: everything non-disc, plus disc systems
+  /// whose policy declares an algorithm that reads inside the image. Without
+  /// one, hashing the container produces something RetroAchievements has never
+  /// registered. Which algorithms are disc algorithms is the policy's
+  /// business, so the names come from it rather than being spelled out here.
+  ///
+  /// The candidate and coverage queries must share this clause (with
+  /// [RaHashAlgo.discJsonNames] as its bound arguments), or the progress bar's
+  /// denominator diverges from the work the pass actually does.
+  static String get _hashEligibleSystemSql {
+    final placeholders = List.filled(
+      RaHashAlgo.discJsonNames.length,
+      '?',
+    ).join(', ');
+    return '(COALESCE(s.multidisc, 0) = 0 '
+        'OR s.ra_hash_algo IN ($placeholders))';
+  }
+
   /// Rows to feed the bulk hashing pass: ROMs on a RetroAchievements-capable
   /// system that have never been hashed.
   ///
-  /// Disc-based systems are excluded by default. RA identifies a disc by its
-  /// primary executable rather than the whole image, so hashing a `.chd`/`.iso`
-  /// end to end produces a value that matches nothing while reading far more
-  /// data than the cartridge library put together.
+  /// Disc systems join the pass only once their policy declares a disc
+  /// algorithm (see [_hashEligibleSystemSql]); RA identifies a disc by its
+  /// primary executable rather than the whole image.
   ///
   /// ROMs parked by an earlier run (see [markRomRaHashSkipped]) are excluded
   /// too, so a file that can never be hashed does not reappear every run.
   static Future<List<RaMatchCandidate>> getRomsNeedingRaHash({
-    bool includeDiscSystems = false,
     bool includeSkipped = false,
   }) async {
     final db = await SqliteService.getDatabase();
@@ -199,9 +216,9 @@ class RetroAchievementsRepository {
         AND ur.rom_path IS NOT NULL AND ur.rom_path != ''
         AND s.ra_id IS NOT NULL
         ${includeSkipped ? '' : 'AND ur.ra_hash_skipped IS NULL'}
-        ${includeDiscSystems ? '' : 'AND COALESCE(s.multidisc, 0) = 0'}
+        AND $_hashEligibleSystemSql
       ORDER BY s.folder_name, ur.filename
-    ''');
+    ''', RaHashAlgo.discJsonNames);
     return rows.map((r) => RaMatchCandidate.fromRow(Map.from(r))).toList();
   }
 
@@ -252,9 +269,7 @@ class RetroAchievementsRepository {
   /// Without this the progress bar restarts at 0% on every run — the pass
   /// resumes correctly (hashed ROMs are excluded from the candidate query) but
   /// a per-run percentage makes it look like it started over.
-  static Future<({int eligible, int hashed})> getRaHashCoverage({
-    bool includeDiscSystems = false,
-  }) async {
+  static Future<({int eligible, int hashed})> getRaHashCoverage() async {
     final db = await SqliteService.getDatabase();
     final rows = await db.rawQuery('''
       SELECT COUNT(*) AS eligible,
@@ -265,8 +280,8 @@ class RetroAchievementsRepository {
       WHERE ur.rom_path IS NOT NULL AND ur.rom_path != ''
         AND s.ra_id IS NOT NULL
         AND ur.ra_hash_skipped IS NULL
-        ${includeDiscSystems ? '' : 'AND COALESCE(s.multidisc, 0) = 0'}
-    ''');
+        AND $_hashEligibleSystemSql
+    ''', RaHashAlgo.discJsonNames);
     if (rows.isEmpty) return (eligible: 0, hashed: 0);
     return (
       eligible: int.tryParse(rows.first['eligible']?.toString() ?? '') ?? 0,
