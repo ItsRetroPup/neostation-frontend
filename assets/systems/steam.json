@@ -26,7 +26,16 @@
       "#66c0f4"
     ],
     "extensions": [
-      "steam"
+      "exe",
+      "desktop",
+      "lnk",
+      "pcgame",
+      "gog",
+      "epic",
+      "customgame",
+      "amazon",
+      "steam",
+      "localgameid"
     ]
   },
 "emulators": [
