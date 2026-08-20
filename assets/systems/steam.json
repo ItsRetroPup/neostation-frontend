@@ -305,10 +305,9 @@
     },
     {
       "name": "Standalone GameNative (Steam)",
-      "unique_id": "steam.app.gamenative.steam",
-      "default_standalone": true,
+      "unique_id": "windows.app.gamenative.steam",
       "is_retroachievements_compatible": false,
-      "description": "Supported extensions: steamappid.",
+      "description": "Supported extensions: steam.",
       "platforms": {
         "android": {
           "launch_arguments": "-a app.gamenative.LAUNCH_GAME -n app.gamenative/.MainActivity --ei app_id \"{tags.steamappid}\" --es game_source STEAM"

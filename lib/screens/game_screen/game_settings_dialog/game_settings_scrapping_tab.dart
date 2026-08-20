@@ -325,8 +325,8 @@ class GameSettingsScrappingTabState extends State<GameSettingsScrappingTab> {
       : widget.game.getImagePath(_folder, type, widget.fileProvider);
 
   Future<void> _replaceImage(String type) async {
-    final result = await FilePicker.pickFiles(type: FileType.image);
-    final srcPath = result?.files.single.path;
+    final result = await FilePicker.pickFile(type: FileType.image);
+    final srcPath = result?.path;
     if (srcPath == null || !mounted) return;
 
     try {

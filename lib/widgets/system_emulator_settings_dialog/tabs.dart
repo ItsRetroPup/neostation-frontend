@@ -192,13 +192,14 @@ extension _Tabs on _SystemEmulatorSettingsDialogState {
           extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'],
         );
       } else {
-        final result = await FilePicker.pickFiles(
+        final result = await FilePicker.pickFile(
           type: FileType.custom,
           allowedExtensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'],
           dialogTitle: 'Select Background Image',
-          lockParentWindow: true,
+          windowsOptions: const WindowsOptions(lockParentWindow: true),
+          linuxOptions: const LinuxOptions(lockParentWindow: true),
         );
-        pickedPath = result?.files.single.path;
+        pickedPath = result?.path;
       }
 
       if (pickedPath == null) return;
@@ -323,13 +324,14 @@ extension _Tabs on _SystemEmulatorSettingsDialogState {
           extensions: ['png', 'jpg', 'jpeg', 'webp'],
         );
       } else {
-        final result = await FilePicker.pickFiles(
+        final result = await FilePicker.pickFile(
           type: FileType.custom,
           allowedExtensions: ['png', 'jpg', 'jpeg', 'webp'],
           dialogTitle: 'Select Logo Image',
-          lockParentWindow: true,
+          windowsOptions: const WindowsOptions(lockParentWindow: true),
+          linuxOptions: const LinuxOptions(lockParentWindow: true),
         );
-        pickedPath = result?.files.single.path;
+        pickedPath = result?.path;
       }
 
       if (pickedPath == null) return;

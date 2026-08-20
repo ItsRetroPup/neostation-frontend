@@ -881,14 +881,14 @@ class _SystemEmulatorSettingsDialogState
 
       final selectedPath = Platform.isLinux
           ? await TvDirectoryPicker.showExecutablePicker(context)
-          : (await FilePicker.pickFiles(
+          : (await FilePicker.pickFile(
               dialogTitle: AppLocale.selectEmulatorExecutable
                   .getString(context)
                   .replaceFirst('{name}', standalone.name),
               type: extension != null ? FileType.custom : FileType.any,
               allowedExtensions: extension != null ? [extension] : null,
-              lockParentWindow: true,
-            ))?.files.firstOrNull?.path;
+              windowsOptions: const WindowsOptions(lockParentWindow: true),
+            ))?.path;
 
       if (selectedPath == null) return;
 
@@ -949,11 +949,11 @@ class _SystemEmulatorSettingsDialogState
     try {
       final selectedPath = Platform.isLinux
           ? await TvDirectoryPicker.showExecutablePicker(context)
-          : (await FilePicker.pickFiles(
+          : (await FilePicker.pickFile(
               type: Platform.isWindows ? FileType.custom : FileType.any,
               allowedExtensions: Platform.isWindows ? ['exe'] : null,
               dialogTitle: AppLocale.selectRetroArchExe.getString(context),
-            ))?.files.firstOrNull?.path;
+            ))?.path;
 
       if (selectedPath == null) return;
 
