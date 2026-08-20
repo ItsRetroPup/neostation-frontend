@@ -455,7 +455,7 @@ extension NeoSyncPathResolver on NeoSyncProvider {
       if (row == null) return null;
       final game = _gameModelFromRomRow(row, fileName);
       final system = await _getSystemForGame(game);
-      return _resolveEmulatorSlugForGame(game, system);
+      return await _resolveEmulatorSlugForGame(game, system);
     } catch (e) {
       NeoSyncProvider._log.w('Error resolving emulator slug for $fileName: $e');
       return null;

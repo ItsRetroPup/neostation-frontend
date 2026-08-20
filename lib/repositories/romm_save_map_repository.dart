@@ -105,7 +105,7 @@ class RommSaveMapRepository {
       if (rows.isNotEmpty) {
         return int.tryParse(rows.first['romm_rom_id'].toString());
       }
-      return _romIdByStem(db, romname, systemFolder);
+      return await _romIdByStem(db, romname, systemFolder);
     } catch (e) {
       _log.e('Error reading RomM rom map ($romname/$systemFolder): $e');
       return null;

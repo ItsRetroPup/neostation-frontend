@@ -181,12 +181,12 @@ class ThemesSettingsContentState extends State<ThemesSettingsContent> {
           );
         }
       } else {
-        final result = await FilePicker.pickFiles(
+        final result = await FilePicker.pickFile(
           type: FileType.custom,
           allowedExtensions: ['json'],
           dialogTitle: pickerTitle,
         );
-        filePath = result?.files.single.path;
+        filePath = result?.path;
       }
 
       if (filePath == null) return;
