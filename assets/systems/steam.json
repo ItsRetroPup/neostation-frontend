@@ -41,7 +41,7 @@
 "emulators": [
     {
       "name": "Standalone Winlator CMod",
-      "unique_id": "windows.winlator.cmod",
+      "unique_id": "steam.winlator.cmod",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: desktop.",
       "platforms": {
@@ -52,7 +52,7 @@
     },
     {
       "name": "Standalone Winlator CMod Proot",
-      "unique_id": "windows.winlator.cmodproot",
+      "unique_id": "steam.winlator.cmodproot",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: desktop.",
       "platforms": {
@@ -63,7 +63,7 @@
     },
     {
       "name": "Standalone Winlator Cmod (Old)",
-      "unique_id": "windows.winlator.cmod.old",
+      "unique_id": "steam.winlator.cmod.old",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: desktop.",
       "platforms": {
@@ -74,7 +74,7 @@
     },
     {
       "name": "Standalone Winlator Ludashi",
-      "unique_id": "windows.winlator.ludashi",
+      "unique_id": "steam.winlator.ludashi",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: desktop.",
       "platforms": {
@@ -85,7 +85,7 @@
     },
     {
       "name": "Standalone MiceWine",
-      "unique_id": "windows.micewine.emu",
+      "unique_id": "steam.micewine.emu",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: lnk.",
       "platforms": {
@@ -96,7 +96,7 @@
     },
     {
       "name": "Standalone GameHub Lite (Local Games)",
-      "unique_id": "windows.gamehub.lite.local",
+      "unique_id": "steam.gamehub.lite.local",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid.",
       "platforms": {
@@ -107,7 +107,7 @@
     },
     {
       "name": "Standalone GameHub Lite (Local Games - Antutu)",
-      "unique_id": "windows.gamehub.lite.local.antutu",
+      "unique_id": "steam.gamehub.lite.local.antutu",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid.",
       "platforms": {
@@ -118,7 +118,7 @@
     },
     {
       "name": "Standalone GameHub Lite (Local Games - PUBG)",
-      "unique_id": "windows.gamehub.lite.local.pubg",
+      "unique_id": "steam.gamehub.lite.local.pubg",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid.",
       "platforms": {
@@ -129,7 +129,7 @@
     },
     {
       "name": "Standalone GameHub Lite (Local Games - Ludashi)",
-      "unique_id": "windows.gamehub.lite.ludashi",
+      "unique_id": "steam.gamehub.lite.ludashi",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid.",
       "platforms": {
@@ -140,7 +140,7 @@
     },
     {
       "name": "Standalone BannerHub v5 (Normal - Local Games) [legacy 5.3.5]",
-      "unique_id": "windows.banner.hub.local",
+      "unique_id": "steam.banner.hub.local",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. Legacy BannerHub v5 (GameHub 5.3.5 base). Use v6 entries below for current builds.",
       "platforms": {
@@ -151,7 +151,7 @@
     },
     {
       "name": "Standalone BannerHub v5 Lite (Normal - Local Games) [legacy 5.3.5]",
-      "unique_id": "windows.banner.hub.lite.local",
+      "unique_id": "steam.banner.hub.lite.local",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. Legacy BannerHub v5 Lite (GameHub 5.3.5 base). Use v6 entries below for current builds.",
       "platforms": {
@@ -162,7 +162,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (Normal)",
-      "unique_id": "windows.banner.hub.v6.normal",
+      "unique_id": "steam.banner.hub.v6.normal",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 (GameHub 6.0.4 base). Covers both Full and Lite — Lite uses the same package and replaces Full on install.",
       "platforms": {
@@ -173,7 +173,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (Normal - GameHub Lite pkg)",
-      "unique_id": "windows.banner.hub.v6.normal.ghl",
+      "unique_id": "steam.banner.hub.v6.normal.ghl",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 Normal-GHL variant — installs over the upstream gamehub.lite package.",
       "platforms": {
@@ -184,7 +184,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (PuBG)",
-      "unique_id": "windows.banner.hub.v6.pubg",
+      "unique_id": "steam.banner.hub.v6.pubg",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 PuBG variant — installs over com.tencent.ig.",
       "platforms": {
@@ -195,7 +195,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (AnTuTu)",
-      "unique_id": "windows.banner.hub.v6.antutu",
+      "unique_id": "steam.banner.hub.v6.antutu",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 AnTuTu variant — installs over com.antutu.ABenchMark.",
       "platforms": {
@@ -206,7 +206,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (alt-AnTuTu)",
-      "unique_id": "windows.banner.hub.v6.alt.antutu",
+      "unique_id": "steam.banner.hub.v6.alt.antutu",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 alt-AnTuTu variant — installs over com.antutu.benchmark.full.",
       "platforms": {
@@ -217,7 +217,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (PuBG CrossFire)",
-      "unique_id": "windows.banner.hub.v6.pubg.crossfire",
+      "unique_id": "steam.banner.hub.v6.pubg.crossfire",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 PuBG-CrossFire variant — installs over com.tencent.tmgp.cf.",
       "platforms": {
@@ -228,7 +228,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (Ludashi)",
-      "unique_id": "windows.banner.hub.v6.ludashi",
+      "unique_id": "steam.banner.hub.v6.ludashi",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 Ludashi variant — installs over com.ludashi.aibench.",
       "platforms": {
@@ -239,7 +239,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (Genshin)",
-      "unique_id": "windows.banner.hub.v6.genshin",
+      "unique_id": "steam.banner.hub.v6.genshin",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 Genshin variant — installs over com.miHoYo.GenshinImpact.",
       "platforms": {
@@ -250,7 +250,7 @@
     },
     {
       "name": "Standalone BannerHub v6 (Original)",
-      "unique_id": "windows.banner.hub.v6.original",
+      "unique_id": "steam.banner.hub.v6.original",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: localgameid. BannerHub v6 Original variant — replaces stock XiaoJi GameHub (com.xiaoji.egggame).",
       "platforms": {
@@ -261,7 +261,7 @@
     },
     {
       "name": "Standalone GameNative (GOG)",
-      "unique_id": "windows.app.gamenative.gog",
+      "unique_id": "steam.app.gamenative.gog",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: gog.",
       "platforms": {
@@ -272,7 +272,7 @@
     },
     {
       "name": "Standalone GameNative (Epic Games)",
-      "unique_id": "windows.app.gamenative.epic",
+      "unique_id": "steam.app.gamenative.epic",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: epic.",
       "platforms": {
@@ -283,7 +283,7 @@
     },
     {
       "name": "Standalone GameNative (Custom Game)",
-      "unique_id": "windows.app.gamenative.custom",
+      "unique_id": "steam.app.gamenative.custom",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: pcgame.",
       "platforms": {
@@ -294,7 +294,7 @@
     },
     {
       "name": "Standalone GameNative (Amazon)",
-      "unique_id": "windows.app.gamenative.amazon",
+      "unique_id": "steam.app.gamenative.amazon",
       "is_retroachievements_compatible": false,
       "description": "Supported extensions: amazon.",
       "platforms": {
@@ -305,9 +305,10 @@
     },
     {
       "name": "Standalone GameNative (Steam)",
-      "unique_id": "windows.app.gamenative.steam",
+      "unique_id": "steam.app.gamenative.steam",
+      "default_standalone": true,
       "is_retroachievements_compatible": false,
-      "description": "Supported extensions: steam.",
+      "description": "Supported extensions: steamappid.",
       "platforms": {
         "android": {
           "launch_arguments": "-a app.gamenative.LAUNCH_GAME -n app.gamenative/.MainActivity --ei app_id \"{tags.steamappid}\" --es game_source STEAM"
