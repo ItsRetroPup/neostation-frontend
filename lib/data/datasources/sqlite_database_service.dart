@@ -231,6 +231,10 @@ class SqliteDatabaseService {
     ];
 
     final walkedDirs = <String>{};
+    _log.i(
+      'Scan[${system.realName}]: ${scanTargets.length} target(s) resolved '
+      '(folders=${allPossibleFolderNames.join(', ')}, romFolders=${romFolders.length})',
+    );
     for (final target in orderedTargets) {
       // An alias pointing at a directory already walked for this system.
       if (!walkedDirs.add(target.canonicalPath)) continue;
@@ -250,6 +254,10 @@ class SqliteDatabaseService {
                 ignoreHiddenFiles: ignoreHiddenFiles,
               );
 
+        _log.i(
+          'Scan[${system.realName}]: walked ${target.dirPath} -> '
+          '${entries.length} entries',
+        );
         if (entries.isNotEmpty) {
           romEntries.addAll(entries);
         }
@@ -257,6 +265,11 @@ class SqliteDatabaseService {
         _log.e('Error scanning folder ${target.dirPath}: $e');
       }
     }
+
+    _log.i(
+      'Scan[${system.realName}]: ${romEntries.length} raw entries before '
+      'dedup/filter',
+    );
 
     // Apply M3U and redundancy filters
     if (validExtensionsSet.contains('m3u') && romEntries.isNotEmpty) {
@@ -1160,11 +1173,23 @@ class SqliteDatabaseService {
           ),
         );
       }
+      final fastWalkNote = fastEntries.isEmpty ? ' (empty, non-null)' : '';
+      _log.i(
+        'SafScan[${path.basename(uri)}]: fast walk found ${entries.length} '
+        'entries$fastWalkNote',
+      );
       return entries;
     }
 
     try {
       final content = await SafDirectoryService.listFiles(uri);
+      // _scanSafUri recurses through subdirectories on this slow path, so this
+      // line fires once per directory — keep it at debug level to avoid
+      // flooding (and rotating away) the production log.
+      _log.d(
+        'SafScan[${path.basename(uri)}]: SAF walk returned ${content.length} '
+        'items',
+      );
       for (final item in content) {
         final name = item['name'].toString();
         final itemUri = item['uri'].toString();

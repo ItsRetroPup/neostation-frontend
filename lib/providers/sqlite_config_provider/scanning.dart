@@ -19,6 +19,11 @@ const String _transientRomFolderNotificationId = 'rom-folder-transient';
 /// for the same reason as [_unreachableRomFoldersNotificationId].
 const String _noRomFoldersNotificationId = 'rom-folders-missing';
 
+/// Bell entry for Android ROM folders that are configured but hold no
+/// persistent SAF grant, so their games silently scan as empty. A fixed id so
+/// consecutive scans replace the warning in place.
+const String _safPermissionNotificationId = 'rom-folders-saf-permission';
+
 extension SqliteConfigScanning on SqliteConfigProvider {
   /// Registers a new filesystem directory as a ROM source.
   ///
@@ -104,6 +109,55 @@ extension SqliteConfigScanning on SqliteConfigProvider {
     }
   }
 
+  /// On Android, every configured ROM root must hold its own persistent SAF
+  /// grant for the scan to read it. A folder can end up configured without one
+  /// (a path entered outside the SAF picker, or a grant revoked in system
+  /// settings), and the scan then silently walks it as if it were empty and
+  /// every game inside is lost — exactly the "Switch games on a second disk
+  /// never show up" report.
+  ///
+  /// Rather than opening the system picker from inside a background scan
+  /// (which risks a hung `_isScanning` if the activity is recreated while the
+  /// picker is up, and re-prompts on every scan because a re-picked parent
+  /// rarely matches the stored URI), this just tells the user what is wrong and
+  /// where to fix it via a bell notification. The re-grant happens on the
+  /// Settings > Directories screen, where a picker can never stall the scan.
+  ///
+  /// Note: even with All-Files-Access held, the native fast walk only covers
+  /// the primary volume on API 30+; folders on SD/USB volumes still fall back
+  /// to the SAF walk and need their own grant, so every configured root is
+  /// checked here regardless of the broad-permission flag.
+  Future<void> _ensureAndroidSafPermissions() async {
+    if (!Platform.isAndroid) return;
+
+    final missing = <String>[];
+    for (final folder in _config.romFolders) {
+      if (!folder.startsWith('content://')) continue;
+      final ok = await SafDirectoryService.hasPermission(folder);
+      if (!ok) {
+        missing.add(folder);
+      }
+    }
+
+    if (missing.isEmpty) {
+      GlobalNotificationService().dismiss(_safPermissionNotificationId);
+      return;
+    }
+
+    final plural = missing.length == 1 ? '' : 's';
+    SqliteConfigProvider._log.w(
+      'SAF permission missing for ${missing.length} ROM folder(s): $missing',
+    );
+    GlobalNotificationService().show(
+      id: _safPermissionNotificationId,
+      title: 'ROM folder$plural missing storage access',
+      message:
+          '${missing.length} ROM folder$plural cannot be read. '
+          'Re-grant access in Settings > Directories.',
+      type: GlobalNotificationType.error,
+    );
+  }
+
   /// Scans the registered ROM folders to detect supported emulation systems.
   ///
   /// Orchestrates permission checks, platform identification, and background
@@ -173,6 +227,18 @@ extension SqliteConfigScanning on SqliteConfigProvider {
           _notify();
           return;
         }
+      }
+
+      // Detect configured folders that lost their persistent SAF grant and
+      // tell the user, otherwise the scan walks them as empty and drops the
+      // games inside. Guarded so a surprise failure here can never leave the
+      // scan half-started (`_isScanning` is only cleared in the finally below).
+      try {
+        await _ensureAndroidSafPermissions();
+      } catch (e) {
+        SqliteConfigProvider._log.e(
+          'Error checking SAF permissions before scan: $e',
+        );
       }
 
       // On some handhelds launched as the default launcher, Android starts the
@@ -423,6 +489,11 @@ extension SqliteConfigScanning on SqliteConfigProvider {
 
           return false;
         }).toList();
+
+        SqliteConfigProvider._log.i(
+          'AndroidPreFilter: ${allExistingFolders.length} existing subfolder(s); '
+          '${filteredSystems.length} system(s) matched',
+        );
 
         // Android Fix: Combine filtered systems with legacy systems from DB
         // so that deleted systems get a chance to be pruned.
@@ -718,6 +789,11 @@ extension SqliteConfigScanning on SqliteConfigProvider {
         _config.romFolders,
         ignoreHiddenFiles: _config.ignoreHiddenFiles,
         rootFoldersMap: rootFoldersMap,
+      );
+
+      SqliteConfigProvider._log.i(
+        'ScanResult[${system.realName}]: added=${summary.added} '
+        'removed=${summary.removed} total=${summary.total}',
       );
 
       // Update ROM count in system
