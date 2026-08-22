@@ -168,6 +168,15 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.showAchievementsBadge: 'Значки достижений',
   AppLocale.showAchievementsBadgeSubtitle:
       'Показывать количество достижений на играх, сопоставленных с RetroAchievements',
+  AppLocale.raMatchOnStartup: 'Сопоставлять достижения при запуске',
+  AppLocale.raMatchOnStartupSubtitle:
+      'Сопоставляет новые ROM после стартового сканирования. Для всей библиотеки сначала запустите «Сопоставить игры RetroAchievements» в разделе «Инструменты».',
+  AppLocale.raMatchOnStartupBacklogWarning:
+      '{count} игр ещё ни разу не проверялись. Сопоставление их всех при следующем запуске может занять несколько минут. Вместо этого запустите «Сопоставить игры RetroAchievements» в разделе «Инструменты» — с видимым прогрессом.',
+  AppLocale.raMatchNotificationTitle: 'RetroAchievements',
+  AppLocale.raMatchProgressBusy: 'Сопоставление RetroAchievements...',
+  AppLocale.raMatchProgressCounted:
+      'Сопоставление RetroAchievements... {done}/{total}',
   AppLocale.fullscreenMode: 'Полноэкранный режим',
   AppLocale.fullscreenModeSubtitle:
       'Отображать приложение в полноэкранном режиме',
@@ -257,7 +266,7 @@ const Map<String, dynamic> appLocaleRu = {
       'Сопоставление работает и без входа в аккаунт, но чтобы увидеть результаты, нужно войти в RetroAchievements.',
   AppLocale.rematchAchievementsLookingUp:
       'Проверка игр, для которых уже есть хеш...',
-  AppLocale.rematchAchievementsHashing: 'Опознаётся {filename}',
+  AppLocale.rematchAchievementsHashing: 'Сопоставление {done} из {total}',
   AppLocale.rematchAchievementsDone:
       'Готово: сопоставлено игр — {matched}, впервые опознано — {hashed}.',
   AppLocale.rematchAchievementsNothingToDo:

@@ -171,6 +171,15 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.showAchievementsBadge: 'Emblemas de conquistas',
   AppLocale.showAchievementsBadgeSubtitle:
       'Mostrar o número de conquistas nos jogos associados ao RetroAchievements',
+  AppLocale.raMatchOnStartup: 'Associar conquistas ao iniciar',
+  AppLocale.raMatchOnStartupSubtitle:
+      'Associa novas ROMs após a análise inicial. Para uma biblioteca inteira, execute primeiro Associar jogos do RetroAchievements em Ferramentas.',
+  AppLocale.raMatchOnStartupBacklogWarning:
+      '{count} jogos nunca foram verificados. Associá-los todos no próximo arranque pode demorar vários minutos. Execute Associar jogos do RetroAchievements em Ferramentas para o fazer agora, com progresso visível.',
+  AppLocale.raMatchNotificationTitle: 'RetroAchievements',
+  AppLocale.raMatchProgressBusy: 'A associar RetroAchievements...',
+  AppLocale.raMatchProgressCounted:
+      'A associar RetroAchievements... {done}/{total}',
   AppLocale.fullscreenMode: 'Modo Tela Cheia',
   AppLocale.fullscreenModeSubtitle: 'Exibe o aplicativo em tela cheia',
   AppLocale.allFilesAccess: 'Acesso a Todos os Arquivos',
@@ -259,7 +268,7 @@ const Map<String, dynamic> appLocalePt = {
       'A correspondência funciona sem sessão iniciada, mas é preciso iniciar sessão no RetroAchievements para ver os resultados.',
   AppLocale.rematchAchievementsLookingUp:
       'A verificar jogos que já têm hash...',
-  AppLocale.rematchAchievementsHashing: 'A identificar {filename}',
+  AppLocale.rematchAchievementsHashing: 'A associar {done} de {total}',
   AppLocale.rematchAchievementsDone:
       'Concluído: {matched} jogo(s) associado(s), {hashed} identificado(s) pela primeira vez.',
   AppLocale.rematchAchievementsNothingToDo:

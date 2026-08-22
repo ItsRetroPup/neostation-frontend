@@ -507,6 +507,13 @@ class SqliteMigrations {
       case 138:
         await _migrateToVersion138(db);
         break;
+      // 139 and 140 are claimed by another branch that is not merged yet.
+      // Taking the next free number instead of the next sequential one is
+      // deliberate: a shared slot with different contents is skipped silently
+      // on any device that already migrated past it.
+      case 141:
+        await _migrateToVersion141(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -6354,6 +6361,36 @@ class SqliteMigrations {
       _log.i('Migration v134 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v134: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v141: Adds `user_config.ra_match_on_startup`, the opt-in for
+  /// running the RetroAchievements match pass after the startup folder scan.
+  ///
+  /// Defaults to 0 — off. On a library that has never been matched the first
+  /// pass hashes every ROM, which takes minutes; that is a cost the user opts
+  /// into, not one imposed on an upgrade.
+  ///
+  /// Idempotent — the column is added only when absent.
+  static Future<void> _migrateToVersion141(Database db) async {
+    _log.i('Migration v141: Adding ra_match_on_startup to user_config');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('ra_match_on_startup')) {
+        db.execute(
+          'ALTER TABLE user_config ADD COLUMN ra_match_on_startup '
+          'INTEGER DEFAULT 0',
+        );
+        _log.i('Column ra_match_on_startup added via v141');
+      } else {
+        _log.i('Column ra_match_on_startup already exists');
+      }
+      _log.i('Migration v141 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v141: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

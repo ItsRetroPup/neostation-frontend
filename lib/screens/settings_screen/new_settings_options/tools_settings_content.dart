@@ -9,10 +9,10 @@ import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/providers/retro_achievements_provider.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/repositories/config_repository.dart';
-import 'package:neostation/repositories/retro_achievements_repository.dart';
 import 'package:neostation/repositories/system_repository.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/global_notification_service.dart';
+import 'package:neostation/services/ra_library_match_runner.dart';
 import 'package:neostation/services/metadata_cleanup_service.dart';
 import 'package:neostation/services/retroachievements_hash_service.dart';
 import 'package:neostation/services/rom_folder_organizer_service.dart';
@@ -429,17 +429,15 @@ class ToolsSettingsContentState extends State<ToolsSettingsContent> {
           '$localeWarning\n\n'
           '${AppLocale.rematchAchievementsSignedOut.getString(context)}';
     }
-    final localeLookingUp = AppLocale.rematchAchievementsLookingUp.getString(
-      context,
+    final strings = RaMatchStrings(
+      title: AppLocale.raMatchNotificationTitle.getString(context),
+      lookingUp: AppLocale.rematchAchievementsLookingUp.getString(context),
+      hashing: AppLocale.rematchAchievementsHashing.getString(context),
+      done: AppLocale.rematchAchievementsDone.getString(context),
+      nothingToDo: AppLocale.rematchAchievementsNothingToDo.getString(context),
+      paused: AppLocale.rematchAchievementsPaused.getString(context),
+      failed: AppLocale.rematchAchievementsFailed.getString(context),
     );
-    final localeHashing = AppLocale.rematchAchievementsHashing.getString(
-      context,
-    );
-    final localeDone = AppLocale.rematchAchievementsDone.getString(context);
-    final localeNothingToDo = AppLocale.rematchAchievementsNothingToDo
-        .getString(context);
-    final localePaused = AppLocale.rematchAchievementsPaused.getString(context);
-    final localeFailed = AppLocale.rematchAchievementsFailed.getString(context);
     final localeConfirm = AppLocale.confirm.getString(context);
 
     final confirmed = await ConfirmActionDialog.show(
@@ -452,109 +450,15 @@ class ToolsSettingsContentState extends State<ToolsSettingsContent> {
     );
     if (confirmed != true || !mounted) return;
 
-    String? completionMessage;
-    NotificationType? completionType;
-    const notificationId = 'rematch_achievements';
+    // Redraw so the row renders as "stop" for the duration of the run.
+    setState(() {});
 
-    try {
-      setState(() {});
-
-      GlobalNotificationService().show(
-        id: notificationId,
-        message: localeLookingUp,
-        type: GlobalNotificationType.info,
-        progress: 0,
-      );
-
-      // The pass resumes: hashed ROMs are excluded from the candidate query, so
-      // a stopped run picks up where it left off. Report progress against the
-      // whole hashable library rather than the work left in this run, or the
-      // bar restarts at 0% every time and reads as if nothing was kept.
-      final coverage = await RetroAchievementsRepository.getRaHashCoverage();
-      final alreadyHashed = coverage.hashed;
-      final eligible = coverage.eligible;
-
-      // Cheap pass: no file I/O, just retry the local lookup for ROMs that
-      // already carry a hash.
-      final lookup = await RetroAchievementsHashService.rematchLibrary(
-        mode: RaRematchMode.lookupOnly,
-
-        onProgress: (processed, total, _) {
-          if (total == 0) return;
-          GlobalNotificationService().update(
-            id: notificationId,
-            message: localeLookingUp,
-            type: GlobalNotificationType.info,
-            progress: eligible > 0 ? alreadyHashed / eligible : null,
-          );
-        },
-      );
-
-      // Expensive pass: hash the ROMs that have never been hashed.
-      final hashPass = lookup.cancelled
-          ? null
-          : await RetroAchievementsHashService.rematchLibrary(
-              onProgress: (processed, total, label) {
-                if (total == 0) return;
-                GlobalNotificationService().update(
-                  id: notificationId,
-                  message: localeHashing.replaceFirst('{filename}', label),
-                  type: GlobalNotificationType.info,
-                  progress: eligible > 0
-                      ? ((alreadyHashed + processed) / eligible).clamp(0.0, 1.0)
-                      : processed / total,
-                );
-              },
-            );
-
-      final matched = lookup.matched + (hashPass?.matched ?? 0);
-      final hashed = hashPass?.hashed ?? 0;
-      final cancelled = lookup.cancelled || (hashPass?.cancelled ?? false);
-      final examined = lookup.total + (hashPass?.total ?? 0);
-
-      if (cancelled) {
-        completionMessage = localePaused.replaceFirst(
-          '{matched}',
-          matched.toString(),
-        );
-        completionType = NotificationType.info;
-      } else if (examined == 0) {
-        completionMessage = localeNothingToDo;
-        completionType = NotificationType.info;
-      } else {
-        completionMessage = localeDone
-            .replaceFirst('{matched}', matched.toString())
-            .replaceFirst('{hashed}', hashed.toString());
-        completionType = matched > 0
-            ? NotificationType.success
-            : NotificationType.info;
-      }
-    } catch (e, stackTrace) {
-      _log.e(
-        'Failed to re-match RetroAchievements: $e',
-        stackTrace: stackTrace,
-      );
-      completionMessage = localeFailed.replaceFirst('{error}', e.toString());
-      completionType = NotificationType.error;
-    } finally {
-      if (mounted) {
-        setState(() {});
-        if (completionMessage != null && completionType != null) {
-          GlobalNotificationService().update(
-            id: notificationId,
-            message: completionMessage,
-            type: completionType == NotificationType.success
-                ? GlobalNotificationType.success
-                : completionType == NotificationType.error
-                ? GlobalNotificationType.error
-                : GlobalNotificationType.info,
-            progress: null,
-          );
-        }
-      } else {
-        GlobalNotificationService().dismiss(notificationId);
-      }
-    }
+    await RaLibraryMatchRunner.run(
+      strings: strings,
+      onProgressStateChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   @override

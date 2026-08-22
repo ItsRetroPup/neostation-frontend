@@ -143,6 +143,14 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.showAchievementsBadge: '업적 배지',
   AppLocale.showAchievementsBadgeSubtitle:
       'RetroAchievements와 일치한 게임에 업적 개수를 표시합니다',
+  AppLocale.raMatchOnStartup: '시작할 때 업적 일치',
+  AppLocale.raMatchOnStartupSubtitle:
+      '시작 스캔 후 새 ROM을 매칭합니다. 라이브러리 전체를 매칭하려면 먼저 도구의 "RetroAchievements 게임 매칭"을(를) 실행하세요.',
+  AppLocale.raMatchOnStartupBacklogWarning:
+      '{count}개의 게임이 아직 확인되지 않았습니다. 다음 시작 시 모두 매칭하면 몇 분이 걸릴 수 있습니다. 대신 도구의 "RetroAchievements 게임 매칭"을(를) 실행하면 진행 상황을 보면서 처리할 수 있습니다.',
+  AppLocale.raMatchNotificationTitle: 'RetroAchievements',
+  AppLocale.raMatchProgressBusy: 'RetroAchievements 매칭 중...',
+  AppLocale.raMatchProgressCounted: 'RetroAchievements 매칭 중... {done}/{total}',
   AppLocale.fullscreenMode: '전체 화면 모드',
   AppLocale.fullscreenModeSubtitle: '앱을 전체 화면으로 표시합니다',
   AppLocale.allFilesAccess: '모든 파일 액세스',
@@ -214,7 +222,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.rematchAchievementsSignedOut:
       '로그아웃 상태에서도 매칭은 실행되지만, 결과를 보려면 RetroAchievements에 로그인해야 합니다.',
   AppLocale.rematchAchievementsLookingUp: '이미 해시된 게임을 확인하는 중...',
-  AppLocale.rematchAchievementsHashing: '{filename} 식별 중',
+  AppLocale.rematchAchievementsHashing: '{total}개 중 {done}개 매칭 중',
   AppLocale.rematchAchievementsDone: '완료: {matched}개 매칭, {hashed}개 새로 식별했습니다.',
   AppLocale.rematchAchievementsNothingToDo: '지원되는 게임은 모두 확인했습니다.',
   AppLocale.rematchAchievementsPaused:

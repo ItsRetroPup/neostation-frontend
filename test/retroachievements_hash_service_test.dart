@@ -136,6 +136,85 @@ void main() {
     });
   });
 
+  // The reopen is right for a pass the user asked for and wrong for one that
+  // runs by itself: on a fully matched library it re-reads every unhashable
+  // ROM on every single launch, always failing, forever.
+  group('reopening ROMs parked as unhashable', () {
+    final dbHelper = DatabaseTestHelper();
+    late dynamic db;
+
+    setUp(() async {
+      db = await dbHelper.setUp();
+      await db.execute(
+        "INSERT INTO app_systems (id, real_name, folder_name, ra_id, multidisc)"
+        " VALUES ('nes', 'NES', 'nes', '7', 0)",
+      );
+      // Parked by an earlier run: no hash, and a skip reason recorded.
+      await db.execute(
+        "INSERT INTO user_roms (filename, rom_path, app_system_id, "
+        "ra_hash_skipped) VALUES ('Game.nes', '/roms/nes/Game.nes', 'nes', "
+        "'missing')",
+      );
+    });
+
+    tearDown(() async {
+      await dbHelper.tearDown();
+    });
+
+    test('a pass the user asked for retries them', () async {
+      final result = await RetroAchievementsHashService.rematchLibrary();
+
+      expect(
+        result.total,
+        1,
+        reason: 'the parked ROM should be reopened and walked again',
+      );
+      // Still missing, so it parks again — but it got its retry, which is the
+      // point: the user may have restored the file since.
+      expect(result.skipped, 1);
+    });
+
+    test('an automatic pass leaves them parked', () async {
+      final result = await RetroAchievementsHashService.rematchLibrary(
+        reopenSkipped: false,
+      );
+
+      expect(
+        result.total,
+        0,
+        reason: 'an unattended pass must not re-read unhashable files',
+      );
+      final row = await db.rawQuery(
+        "SELECT ra_hash_skipped FROM user_roms WHERE filename = 'Game.nes'",
+      );
+      expect(
+        row.first['ra_hash_skipped'],
+        'missing',
+        reason: 'the skip marker must survive, or the next run walks it again',
+      );
+    });
+
+    test(
+      'an automatic pass still hashes ROMs that were never parked',
+      () async {
+        await db.execute(
+          "INSERT INTO user_roms (filename, rom_path, app_system_id) "
+          "VALUES ('New.nes', '/roms/nes/New.nes', 'nes')",
+        );
+
+        final result = await RetroAchievementsHashService.rematchLibrary(
+          reopenSkipped: false,
+        );
+
+        expect(
+          result.total,
+          1,
+          reason: 'skipping the reopen must not skip genuinely new ROMs',
+        );
+      },
+    );
+  });
+
   group('the library pass is a singleton', () {
     final dbHelper = DatabaseTestHelper();
 

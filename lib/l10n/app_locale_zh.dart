@@ -141,6 +141,14 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.use12HourClockSubtitle: '以 12 小时制（AM/PM）显示时间，而非 24 小时制',
   AppLocale.showAchievementsBadge: '成就徽章',
   AppLocale.showAchievementsBadgeSubtitle: '在已匹配 RetroAchievements 的游戏上显示成就数量',
+  AppLocale.raMatchOnStartup: '启动时匹配成就',
+  AppLocale.raMatchOnStartupSubtitle:
+      '在启动扫描后匹配新的 ROM。若要匹配整个游戏库，请先在工具中运行“匹配 RetroAchievements 游戏”。',
+  AppLocale.raMatchOnStartupBacklogWarning:
+      '有 {count} 个游戏从未检查过。在下次启动时全部匹配可能需要几分钟。建议改为在工具中运行“匹配 RetroAchievements 游戏”，可以看到进度。',
+  AppLocale.raMatchNotificationTitle: 'RetroAchievements',
+  AppLocale.raMatchProgressBusy: '正在匹配 RetroAchievements...',
+  AppLocale.raMatchProgressCounted: '正在匹配 RetroAchievements... {done}/{total}',
   AppLocale.fullscreenMode: '全屏模式',
   AppLocale.fullscreenModeSubtitle: '以全屏模式显示应用',
   AppLocale.allFilesAccess: '所有文件访问权限',
@@ -210,7 +218,7 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.rematchAchievementsSignedOut:
       '未登录时也会进行匹配，但需要登录 RetroAchievements 才能查看结果。',
   AppLocale.rematchAchievementsLookingUp: '正在检查已有哈希的游戏…',
-  AppLocale.rematchAchievementsHashing: '正在识别 {filename}',
+  AppLocale.rematchAchievementsHashing: '正在匹配 {done}/{total}',
   AppLocale.rematchAchievementsDone: '完成：匹配 {matched} 个游戏，新识别 {hashed} 个。',
   AppLocale.rematchAchievementsNothingToDo: '所有受支持的游戏都已检查过。',
   AppLocale.rematchAchievementsPaused: '已暂停：目前已匹配 {matched} 个游戏。再次运行即可继续。',

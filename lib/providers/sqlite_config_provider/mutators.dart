@@ -148,6 +148,14 @@ extension SqliteConfigMutators on SqliteConfigProvider {
     _notify();
   }
 
+  /// Persists whether the startup scan is followed by a RetroAchievements
+  /// match pass over the ROMs it added.
+  Future<void> updateRaMatchOnStartup(bool value) async {
+    _config = _config.copyWith(raMatchOnStartup: value);
+    await SqliteConfigService.saveConfig(_config);
+    _notify();
+  }
+
   /// Updates whether hidden files/folders are ignored during ROM scans.
   Future<void> updateIgnoreHiddenFiles(bool ignoreHiddenFiles) async {
     _config = _config.copyWith(ignoreHiddenFiles: ignoreHiddenFiles);

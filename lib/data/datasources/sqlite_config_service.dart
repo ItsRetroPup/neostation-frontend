@@ -256,6 +256,12 @@ class SqliteConfigService {
                 ) ??
                 0) ==
             1,
+        raMatchOnStartup:
+            (int.tryParse(
+                  userConfig?['ra_match_on_startup']?.toString() ?? '0',
+                ) ??
+                0) ==
+            1,
       );
     } catch (e) {
       _log.e('Error applying configuration in loadConfig: $e');
@@ -317,6 +323,7 @@ class SqliteConfigService {
         fanartDimLevel: config.fanartDimLevel,
         esdeFolderPath: config.esdeFolderPath,
         showAchievementsBadge: config.showAchievementsBadge ? 1 : 0,
+        raMatchOnStartup: config.raMatchOnStartup ? 1 : 0,
       );
 
       await SqliteService.saveUserRomFolders(config.romFolders);

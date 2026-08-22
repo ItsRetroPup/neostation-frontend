@@ -187,6 +187,14 @@ class ConfigModel {
   /// empty one.
   final bool showAchievementsBadge;
 
+  /// Whether the startup folder scan is followed by a RetroAchievements match
+  /// pass over whatever it just added.
+  ///
+  /// Off by default: on a library that has never been matched the first run is
+  /// a long one, and that is not a cost to impose on a user who has not asked
+  /// for it.
+  final bool raMatchOnStartup;
+
   const ConfigModel({
     this.romFolders = const [],
     this.detectedSystems = const [],
@@ -230,6 +238,7 @@ class ConfigModel {
     this.dockSlotCount = 3,
     this.esdeFolderPath = '',
     this.showAchievementsBadge = false,
+    this.raMatchOnStartup = false,
   });
 
   /// Convenience getter that returns the primary ROM folder, if any are configured.
@@ -424,6 +433,13 @@ class ConfigModel {
               '1' ||
           (json['showAchievementsBadge'] ?? false).toString().toLowerCase() ==
               'true',
+      // Same reasoning: absent => 0 => off, matching the column default.
+      raMatchOnStartup:
+          (json['raMatchOnStartup'] ?? json['ra_match_on_startup'] ?? 0)
+                  .toString() ==
+              '1' ||
+          (json['raMatchOnStartup'] ?? false).toString().toLowerCase() ==
+              'true',
     );
   }
 
@@ -477,6 +493,7 @@ class ConfigModel {
       'dockSlotCount': dockSlotCount,
       'esdeFolderPath': esdeFolderPath,
       'showAchievementsBadge': showAchievementsBadge,
+      'raMatchOnStartup': raMatchOnStartup,
     };
   }
 
@@ -524,6 +541,7 @@ class ConfigModel {
     int? dockSlotCount,
     String? esdeFolderPath,
     bool? showAchievementsBadge,
+    bool? raMatchOnStartup,
   }) {
     return ConfigModel(
       romFolders: romFolders ?? this.romFolders,
@@ -570,6 +588,7 @@ class ConfigModel {
       esdeFolderPath: esdeFolderPath ?? this.esdeFolderPath,
       showAchievementsBadge:
           showAchievementsBadge ?? this.showAchievementsBadge,
+      raMatchOnStartup: raMatchOnStartup ?? this.raMatchOnStartup,
     );
   }
 

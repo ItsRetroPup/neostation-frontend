@@ -50,6 +50,15 @@ class RetroAchievementsRepository {
   }
 
   /// Returns the persisted RA username, or null if not set.
+  /// Whether this launch rebuilt the bundled RetroAchievements game list.
+  ///
+  /// The lookup-only pass exists to recover matches after that list changes.
+  /// When it has not, re-walking every hashed-but-unmatched ROM cannot answer
+  /// differently than it did last launch, because those ROMs are not in the
+  /// list at all.
+  static bool get raSeedChangedThisLaunch =>
+      SqliteService.raSeedChangedThisLaunch;
+
   static Future<String?> getRAUser() async {
     final config = await SqliteService.getUserConfig();
     final value = config?['ra_user']?.toString();

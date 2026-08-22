@@ -167,6 +167,15 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.showAchievementsBadge: 'Lencana Prestasi',
   AppLocale.showAchievementsBadgeSubtitle:
       'Tampilkan jumlah prestasi pada gim yang cocok dengan RetroAchievements',
+  AppLocale.raMatchOnStartup: 'Cocokkan prestasi saat mulai',
+  AppLocale.raMatchOnStartupSubtitle:
+      'Mencocokkan ROM baru setelah pemindaian awal. Untuk seluruh pustaka, jalankan Cocokkan Game RetroAchievements di Alat terlebih dahulu.',
+  AppLocale.raMatchOnStartupBacklogWarning:
+      '{count} gim belum pernah diperiksa. Mencocokkan semuanya saat mulai berikutnya bisa memakan waktu beberapa menit. Jalankan Cocokkan Game RetroAchievements di Alat untuk melakukannya sekarang, dengan kemajuan yang terlihat.',
+  AppLocale.raMatchNotificationTitle: 'RetroAchievements',
+  AppLocale.raMatchProgressBusy: 'Mencocokkan RetroAchievements...',
+  AppLocale.raMatchProgressCounted:
+      'Mencocokkan RetroAchievements... {done}/{total}',
   AppLocale.fullscreenMode: 'Mode Layar Penuh',
   AppLocale.fullscreenModeSubtitle: 'Tampilkan aplikasi dalam mode layar penuh',
   AppLocale.allFilesAccess: 'Akses Semua File',
@@ -251,7 +260,7 @@ const Map<String, dynamic> appLocaleId = {
       'Pencocokan tetap berjalan saat Anda keluar, tetapi Anda perlu masuk ke RetroAchievements untuk melihat hasilnya.',
   AppLocale.rematchAchievementsLookingUp:
       'Memeriksa game yang sudah memiliki hash...',
-  AppLocale.rematchAchievementsHashing: 'Mengidentifikasi {filename}',
+  AppLocale.rematchAchievementsHashing: 'Mencocokkan {done} dari {total}',
   AppLocale.rematchAchievementsDone:
       'Selesai: {matched} game cocok, {hashed} baru diidentifikasi.',
   AppLocale.rematchAchievementsNothingToDo:

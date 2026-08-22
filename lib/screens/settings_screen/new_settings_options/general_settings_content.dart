@@ -14,6 +14,8 @@ import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/utils/adaptive_scroll.dart';
 import 'package:neostation/utils/nav_tabs.dart';
 import '../../../providers/sqlite_config_provider.dart';
+import '../../../repositories/retro_achievements_repository.dart';
+import '../../../widgets/info_dialog.dart';
 import '../../../widgets/custom_toggle_switch.dart';
 import 'settings_title.dart';
 import 'widgets/setting_row.dart';
@@ -73,7 +75,7 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
 
     // Pre-allocate keys for maximum theoretical setting items (the fixed rows
     // plus one per navigation tab that can be toggled).
-    for (int i = 0; i < 14 + NavTab.values.length; i++) {
+    for (int i = 0; i < 15 + NavTab.values.length; i++) {
       _itemKeys.add(GlobalKey());
     }
   }
@@ -203,6 +205,7 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     count++; // SFX volume (dimmed, but still navigable, while SFX are off)
     count++; // 12-Hour Clock
     count++; // Achievement badges on game tiles
+    count++; // Match RetroAchievements on startup
     count += hidableNavTabs().length; // Navigation tab visibility
     count++; // Language
     if (!kIsWeb &&
@@ -221,6 +224,46 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
   }
 
   /// Selection Dispatcher: Executes the action associated with the specified setting index.
+  /// ROMs left to hash before the startup pass is worth warning about.
+  ///
+  /// The pass runs at roughly 20-60 ROMs a second depending on how large the
+  /// files are, so a few hundred is a few seconds and not worth interrupting
+  /// anyone for. Thousands is minutes, and minutes of it is what the Tools
+  /// matcher exists to do properly, with a progress bar and somebody watching.
+  static const int _raBacklogWarnThreshold = 500;
+
+  /// Writes the startup-match toggle, warning first when switching it on would
+  /// leave a large backlog for the next launch.
+  ///
+  /// The toggle is for keeping an already-matched library up to date as ROMs
+  /// are added. Enabling it on a library that has never been matched instead
+  /// hands the next launch the whole job, so this points at the Tools matcher
+  /// rather than letting people discover the cost on their next start. It is
+  /// advice, not a gate: the setting is written either way.
+  Future<void> _setRaMatchOnStartup(bool value) async {
+    final configProvider = context.read<SqliteConfigProvider>();
+    if (!value) {
+      configProvider.updateRaMatchOnStartup(false);
+      return;
+    }
+
+    final coverage = await RetroAchievementsRepository.getRaHashCoverage();
+    final backlog = coverage.eligible - coverage.hashed;
+    if (!mounted) return;
+    configProvider.updateRaMatchOnStartup(true);
+
+    if (backlog < _raBacklogWarnThreshold) return;
+    await InfoDialog.show(
+      context,
+      title: AppLocale.raMatchOnStartup.getString(context),
+      body: AppLocale.raMatchOnStartupBacklogWarning
+          .getString(context)
+          .replaceFirst('{count}', backlog.toString()),
+      okLabel: AppLocale.ok.getString(context),
+      icon: Symbols.trophy_rounded,
+    );
+  }
+
   void selectItem(int index) {
     SfxService().playNavSound();
     int currentItemIndex = 0;
@@ -300,6 +343,13 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
       configProvider.updateShowAchievementsBadge(
         !configProvider.config.showAchievementsBadge,
       );
+      return;
+    }
+    currentItemIndex++;
+
+    // Protocol: Match RetroAchievements after the startup scan.
+    if (index == currentItemIndex) {
+      _setRaMatchOnStartup(!configProvider.config.raMatchOnStartup);
       return;
     }
     currentItemIndex++;
@@ -651,6 +701,28 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                             .read<SqliteConfigProvider>()
                             .updateShowAchievementsBadge(value);
                       },
+                      activeColor: theme.colorScheme.primary,
+                    ),
+                  );
+                }(),
+
+                // Setting: Match RetroAchievements after the startup scan.
+                SizedBox(height: 12.r),
+                () {
+                  final index = currentItemIdx++;
+                  return SettingRow(
+                    key: _itemKeys[index],
+                    onTap: () => selectItem(index),
+                    focused:
+                        widget.isContentFocused &&
+                        widget.selectedContentIndex == index,
+                    title: AppLocale.raMatchOnStartup.getString(context),
+                    subtitle: AppLocale.raMatchOnStartupSubtitle.getString(
+                      context,
+                    ),
+                    trailing: CustomToggleSwitch(
+                      value: config.raMatchOnStartup,
+                      onChanged: _setRaMatchOnStartup,
                       activeColor: theme.colorScheme.primary,
                     ),
                   );

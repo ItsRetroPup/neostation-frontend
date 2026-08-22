@@ -8,6 +8,7 @@ import '../../repositories/game_repository.dart';
 import '../../repositories/system_repository.dart';
 import '../../sync/sync_manager.dart';
 import '../game_session_persistence.dart';
+import '../retroachievements_hash_service.dart';
 import '../romm_playtime_service.dart';
 
 /// Owns the game-session lifecycle and its mutable tracking state.
@@ -42,7 +43,22 @@ class GameSessionManager {
   /// Opens the launch-pending window. Call when a launch is initiated, before
   /// the emulator handoff. Cleared by [registerGameLaunch] on success or
   /// [clearLaunchPending] on failure.
-  static void beginLaunchPending() => _launchPending = true;
+  static void beginLaunchPending() {
+    _launchPending = true;
+    _pauseBackgroundHashing();
+  }
+
+  /// Stops a library-wide RetroAchievements pass for the duration of a game.
+  ///
+  /// Hashing reads whole ROMs off storage; on a handheld, doing that while an
+  /// emulator is running is a worse trade than finishing the pass later. The
+  /// pass is resumable by construction, so nothing is lost: whoever started it
+  /// picks it up from where it stopped. A no-op when no pass is running.
+  static void _pauseBackgroundHashing() {
+    if (!RetroAchievementsHashService.isRematchRunning) return;
+    _log.i('Pausing RA match pass for the duration of the game session');
+    RetroAchievementsHashService.requestRematchPause();
+  }
 
   /// Closes the launch-pending window (e.g. on launch failure).
   static void clearLaunchPending() => _launchPending = false;
@@ -179,6 +195,9 @@ class GameSessionManager {
   ]) {
     _isGameLaunched = true;
     _launchPending = false;
+    // Also here, not only in beginLaunchPending: a launch path that never
+    // opened the pending window would otherwise leave the pass running.
+    _pauseBackgroundHashing();
     _gameLaunchTime = DateTime.now();
     _lastPlaytimeSave = _gameLaunchTime;
     _launchedEmulatorExe = emulatorExeName;

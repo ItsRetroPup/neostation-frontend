@@ -169,6 +169,15 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.showAchievementsBadge: 'Erfolgs-Abzeichen',
   AppLocale.showAchievementsBadgeSubtitle:
       'Die Anzahl der Erfolge auf Spielen anzeigen, die RetroAchievements zugeordnet sind',
+  AppLocale.raMatchOnStartup: 'Erfolge beim Start zuordnen',
+  AppLocale.raMatchOnStartupSubtitle:
+      'Ordnet neue ROMs nach dem Start-Scan zu. Für eine ganze Bibliothek zuerst RetroAchievements-Spiele zuordnen unter Werkzeuge ausführen.',
+  AppLocale.raMatchOnStartupBacklogWarning:
+      '{count} Spiele wurden noch nie geprüft. Sie alle beim nächsten Start zuzuordnen, kann mehrere Minuten dauern. Führen Sie stattdessen RetroAchievements-Spiele zuordnen unter Werkzeuge aus, mit sichtbarem Fortschritt.',
+  AppLocale.raMatchNotificationTitle: 'RetroAchievements',
+  AppLocale.raMatchProgressBusy: 'RetroAchievements werden abgeglichen...',
+  AppLocale.raMatchProgressCounted:
+      'RetroAchievements werden abgeglichen... {done}/{total}',
   AppLocale.fullscreenMode: 'Vollbildmodus',
   AppLocale.fullscreenModeSubtitle: 'Zeigt die App im Vollbildmodus an',
   AppLocale.allFilesAccess: 'Zugriff auf alle Dateien',
@@ -262,7 +271,7 @@ const Map<String, dynamic> appLocaleDe = {
       'Der Abgleich läuft auch im abgemeldeten Zustand, aber du musst dich bei RetroAchievements anmelden, um die Ergebnisse zu sehen.',
   AppLocale.rematchAchievementsLookingUp:
       'Bereits gehashte Spiele werden geprüft ...',
-  AppLocale.rematchAchievementsHashing: '{filename} wird identifiziert',
+  AppLocale.rematchAchievementsHashing: 'Abgleich {done} von {total}',
   AppLocale.rematchAchievementsDone:
       'Fertig: {matched} Spiel(e) zugeordnet, {hashed} neu identifiziert.',
   AppLocale.rematchAchievementsNothingToDo:
