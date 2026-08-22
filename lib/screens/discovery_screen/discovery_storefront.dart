@@ -13,6 +13,15 @@ import 'widgets/discovery_tile.dart';
 /// Gap between tiles, and between the mosaic and the edge of the screen.
 const double _kGap = 10;
 
+/// Clearance for the floating global header, which is 46.r tall.
+///
+/// Tighter than the 64.r the scrolling tabs reserve, and deliberately so: this
+/// board never scrolls, so anything it does not use at the top is dead space
+/// for the whole session rather than a strip you can push content through. The
+/// header's own left slot holds the Re-roll pill, so nothing of the board's
+/// belongs in that band and it only has to clear it, not share it.
+const double _kHeaderClearance = 52;
+
 /// The board: a single screen, laid out as the concept has it — the headline
 /// panel down the left, a grid of picks filling the right of the top block, and
 /// a strip of wide tiles across the foot.
@@ -60,7 +69,7 @@ class DiscoveryStorefront extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(height: 64.r),
+        SizedBox(height: _kHeaderClearance.r),
         Expanded(
           child: Padding(
             padding: EdgeInsets.fromLTRB(_kGap.r, 0, _kGap.r, _kGap.r),

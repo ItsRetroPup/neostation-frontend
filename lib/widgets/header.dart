@@ -12,6 +12,7 @@ import 'package:neostation/themes/app_themes.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/services/permission_service.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
+import 'package:neostation/widgets/header_discovery_reroll.dart';
 import 'package:neostation/widgets/bumper_glyph.dart';
 import 'package:neostation/widgets/notification_bell.dart';
 import 'package:neostation/widgets/neo_glass.dart';
@@ -283,6 +284,18 @@ class HeaderState extends State<Header> {
               return Stack(
                 alignment: Alignment.center,
                 children: [
+                  // Left slot: Discovery's Re-roll, which lives here because
+                  // that board has no footer to put it in.
+                  if (NavTab.values[widget.selectedTabIndex] ==
+                      NavTab.discovery)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [HeaderDiscoveryReroll()],
+                      ),
+                    ),
+
                   // Grouped Tab Navigation with Background (Glass Style)
                   Align(
                     key: const ValueKey('tabs-container'),

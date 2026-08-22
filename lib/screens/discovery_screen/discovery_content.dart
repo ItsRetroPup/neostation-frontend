@@ -18,7 +18,6 @@ import 'package:neostation/services/game_service.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
 
-import 'discovery_footer.dart';
 import 'discovery_mosaic.dart';
 import 'discovery_storefront.dart';
 
@@ -29,13 +28,23 @@ import 'discovery_storefront.dart';
 /// itself belongs to [DiscoveryProvider]; this widget only decides what is
 /// focused and what each button does to it.
 class DiscoveryContent extends StatefulWidget {
-  const DiscoveryContent({super.key});
+  /// Lets the global header's Re-roll pill reach this screen's action.
+  ///
+  /// The board has no footer, so Y is advertised by a pill in the header's
+  /// left slot — the same place Systems puts View Mode. That pill is built by
+  /// the header, which is a sibling of the tab content rather than an ancestor,
+  /// so it needs a handle on the live state. Mirrors the existing
+  /// `HeaderSortDropdown.globalKey` idiom, pointing the other way.
+  static final GlobalKey<DiscoveryContentState> globalKey =
+      GlobalKey<DiscoveryContentState>();
+
+  DiscoveryContent() : super(key: globalKey);
 
   @override
-  State<DiscoveryContent> createState() => _DiscoveryContentState();
+  State<DiscoveryContent> createState() => DiscoveryContentState();
 }
 
-class _DiscoveryContentState extends State<DiscoveryContent> {
+class DiscoveryContentState extends State<DiscoveryContent> {
   late final GamepadNavigation _gamepadNav;
 
   int _selectedRow = 0;
@@ -212,6 +221,12 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
     if (mounted) await context.read<DiscoveryProvider>().load(force: true);
   }
 
+  /// Re-rolls the focused section, for the header's Re-roll pill.
+  ///
+  /// The pill is built outside this subtree, so this is the way in — see
+  /// [DiscoveryContent.globalKey].
+  Future<void> rerollSelected() => _rerollSelected();
+
   /// Y: swap the focused section's pick for a different game.
   ///
   /// The tile shuffles through the library on the way there — the same slot
@@ -294,49 +309,21 @@ class _DiscoveryContentState extends State<DiscoveryContent> {
         }
         _clampCursor();
 
-        // The footer takes real space in a Column rather than floating over the
-        // board in a Stack: an overlaid legend leaves the bottom strip half
-        // hidden behind it, and the tiles there are the ones the cursor reaches
-        // last.
-        final selected = _selectedTile;
-        return Column(
-          children: [
-            Expanded(
-              child: DiscoveryStorefront(
-                board: board,
-                mosaic: _mosaic,
-                fileProvider: context.watch<FileProvider>(),
-                selectedTile: selected,
-                onTileTapped: _onTileTapped,
-                shuffleSlotId: _shuffleSlotId,
-                shuffleGame: _shuffleGame,
-              ),
-            ),
-            DiscoveryFooter(
-              onOpen: _openSelected,
-              onReroll: _rerollSelected,
-              onBack: _handleBack,
-              selectionIcon: selected?.icon,
-              selectionText: _selectionText(context, selected),
-            ),
-          ],
+        // No footer: the board is a single screen that never scrolls, so every
+        // row of pixels a control legend took was a row the tiles could not
+        // have. Y is advertised by the header's Re-roll pill instead, and A/B
+        // carry their app-wide meaning here as everywhere else.
+        return DiscoveryStorefront(
+          board: board,
+          mosaic: _mosaic,
+          fileProvider: context.watch<FileProvider>(),
+          selectedTile: _selectedTile,
+          onTileTapped: _onTileTapped,
+          shuffleSlotId: _shuffleSlotId,
+          shuffleGame: _shuffleGame,
         );
       },
     );
-  }
-
-  /// Names the selected pick for the footer, e.g. `Hidden Gem: ActRaiser`.
-  ///
-  /// A shuffling slot is named by whatever is flashing past, so the footer and
-  /// the tile always agree.
-  String? _selectionText(BuildContext context, DiscoveryTile? tile) {
-    var game = tile?.entry?.game;
-    if (tile == null || game == null) return null;
-    if (_shuffleGame != null && tile.entry?.pick.slotId == _shuffleSlotId) {
-      game = _shuffleGame!;
-    }
-    final label = tile.labelKey.getString(context);
-    return '$label: ${game.realName ?? game.filename}';
   }
 
   /// Keeps the cursor inside the board after it changes shape.

@@ -770,7 +770,7 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
         // Like RAContent, Discovery pushes its own gamepad layer from initState
         // and needs no deactivate callback here. Adding one would double-
         // dispatch every press (#255).
-        return const DiscoveryContent();
+        return DiscoveryContent();
       default:
         return SystemContent(
           selectedIndex: _selectedSystemIndex,
