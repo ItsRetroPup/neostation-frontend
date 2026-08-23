@@ -64,6 +64,11 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.hideRecentCard: 'Carte Récents',
   AppLocale.hideRecentCardSubtitle:
       'Afficher la carte des jeux récents dans la grille',
+  AppLocale.recentCardSize: 'Taille de la carte',
+  AppLocale.recentCardSizeSubtitle:
+      'Taille de la carte des jeux récents dans la grille',
+  AppLocale.recentCardSizeDefault: 'Par défaut',
+  AppLocale.recentCardSize2x1: 'Compact',
   AppLocale.themesSubtitle: 'Personnalisez le look de NeoStation',
   AppLocale.systemTheme: 'Thème du Système',
   AppLocale.importTheme: 'Importer un thème',
