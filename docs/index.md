@@ -20,7 +20,7 @@ NeoStation is a landscape, gamepad-driven emulation frontend for Windows, Linux,
 - [Steam Deck & SteamOS](platforms/steam-deck-and-steamos.md) — run the AppImage through Steam for proper controller input.
 
 ## Help and contributions
-
+- [FAQS](faqs.md)
 - [Troubleshooting](troubleshooting.md)
 - [Contributing](https://github.com/misobadev/neostation-frontend/blob/main/CONTRIBUTING.md)
 - [Report an issue](https://github.com/misobadev/neostation-frontend/issues)
