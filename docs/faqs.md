@@ -21,7 +21,7 @@ We are open to other scraping sources, but ScreenScraper is currently hard to be
 
 You can create application themes with the [NeoStation Theme Designer](https://neostation.dev/theme-designer/).
 
-For system art themes, we welcome submissions through the Discord server or through the [Neostation Assets Github Repo](https://github.com/misobadev/neostation-assets). Assets must adhere to the rules set out in the aforementioned repo.
+For system art themes, we will be launching a way for users to submit themes shortly. Stay tuned...
 
 ## Another frontend has a feature. Why doesn’t NeoStation?
 
