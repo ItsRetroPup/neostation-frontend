@@ -1,3 +1,9 @@
+---
+title: Getting Started
+layout: default
+nav_order: 2
+---
+
 # Getting Started
 
 Set up a local game library by adding one or more ROM folders, scanning them, and selecting an emulator for each system you want to play.
@@ -21,10 +27,10 @@ You can configure up to five ROM folders. Use **Rescan All ROM Folders** in the 
 
 ## Choose an Emulator
 
-Open a system, then use its emulator settings to choose from the emulators available for that system. If a standalone emulator needs its executable selected, see [Configuring Emulators](../configuration/configuring-emulators.md).
+Open a system, then use its emulator settings to choose from the emulators available for that system. If a standalone emulator needs its executable selected, see [Configuring Emulators](/configuration/configuring-emulators/).
 
 ## Next Steps
 
-- [Adding Your Games](../library/adding-your-games.md)
-- [Scraping & Metadata](../features/scraping-and-metadata.md)
-- [RetroAchievements](../features/retroachievements.md)
+- [Adding Your Games](/library/adding-your-games/)
+- [Scraping & Metadata](/features/scraping-and-metadata/)
+- [RetroAchievements](/features/retroachievements/)

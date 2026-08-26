@@ -1,3 +1,9 @@
+---
+title: Steam Deck & SteamOS
+layout: default
+nav_order: 4
+---
+
 # Steam Deck & SteamOS
 
 NeoStation's Linux build supports Steam Deck. Run its AppImage through Steam so Steam Input presents the Deck controls as a gamepad.
@@ -18,6 +24,6 @@ Outside Steam, the Deck may use lizard mode: it presents controls as keyboard an
 
 ## Related Pages
 
-- [Getting Started](../getting-started/getting-started.md)
-- [Configuring Emulators](../configuration/configuring-emulators.md)
-- [Troubleshooting](../troubleshooting.md)
+- [Getting Started](/getting-started/getting-started/)
+- [Configuring Emulators](/configuration/configuring-emulators/)
+- [Troubleshooting](/troubleshooting/)

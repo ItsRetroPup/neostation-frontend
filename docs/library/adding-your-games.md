@@ -1,3 +1,10 @@
+---
+title: Adding Your Games
+layout: default
+parent: Library
+nav_order: 1
+---
+
 # Adding Your Games
 
 NeoStation builds your local library from the folders listed in **Settings → Directories**.
@@ -28,6 +35,6 @@ Open **Settings → Directories**, select a configured ROM folder, and confirm *
 
 ## Related Pages
 
-- [Getting Started](../getting-started/getting-started.md)
-- [Multi-Disc Games](multi-disc-games.md)
-- [Troubleshooting](../troubleshooting.md)
+- [Getting Started](/getting-started/getting-started/)
+- [Multi-Disc Games](/library/multi-disc-games/)
+- [Troubleshooting](/troubleshooting/)

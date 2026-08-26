@@ -1,3 +1,10 @@
+---
+title: Multi-Disc Games
+layout: default
+parent: Library
+nav_order: 2
+---
+
 # Multi-Disc Games
 
 **Organize Multi-Disc Games** finds recognised disc sets, puts each set in a game folder, and creates an `.m3u` playlist for emulators that use one.
@@ -36,5 +43,5 @@ Existing `.m3u` files are moved into the game folder when appropriate. A directo
 
 ## Related Pages
 
-- [Adding Your Games](adding-your-games.md)
-- [Troubleshooting](../troubleshooting.md)
+- [Adding Your Games](/library/adding-your-games/)
+- [Troubleshooting](/troubleshooting/)

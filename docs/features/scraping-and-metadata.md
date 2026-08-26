@@ -1,3 +1,10 @@
+---
+title: Scraping & Metadata
+layout: default
+parent: Features
+nav_order: 2
+---
+
 # Scraping & Metadata
 
 NeoStation can use ScreenScraper to obtain game metadata and media for your local library.
@@ -31,5 +38,5 @@ NeoStation may report that you are not signed in, the system is not mapped to Sc
 
 ## Related Pages
 
-- [Adding Your Games](../library/adding-your-games.md)
-- [Troubleshooting](../troubleshooting.md)
+- [Adding Your Games](/library/adding-your-games/)
+- [Troubleshooting](/troubleshooting/)

@@ -1,3 +1,9 @@
+---
+title: Troubleshooting
+layout: default
+nav_order: 7
+---
+
 # Troubleshooting
 
 ## My games do not appear
@@ -21,7 +27,7 @@ Run **Settings → Tools → Match RetroAchievements Games**. Matching a large l
 
 ## Steam Deck controls feel wrong
 
-Launch NeoStation from Steam. See [Steam Deck & SteamOS](platforms/steam-deck-and-steamos.md) for the lizard-mode symptoms and setup.
+Launch NeoStation from Steam. See [Steam Deck & SteamOS](/platforms/steam-deck-and-steamos/) for the lizard-mode symptoms and setup.
 
 ## Collecting Useful Information
 
@@ -29,6 +35,6 @@ When opening an issue, include your platform, NeoStation version, the system and
 
 ## Related Pages
 
-- [Getting Started](getting-started/getting-started.md)
-- [Configuring Emulators](configuration/configuring-emulators.md)
-- [Scraping & Metadata](features/scraping-and-metadata.md)
+- [Getting Started](/getting-started/getting-started/)
+- [Configuring Emulators](/configuration/configuring-emulators/)
+- [Scraping & Metadata](/features/scraping-and-metadata/)

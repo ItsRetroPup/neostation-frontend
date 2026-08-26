@@ -1,0 +1,15 @@
+remote_theme: just-the-docs/just-the-docs
+
+title: NeoStation Wiki
+description: NeoStation is a landscape, gamepad-driven emulation frontend for Windows, Linux, macOS, Android, and Android TV.
+
+url: "https://wiki.neostation.dev"
+baseurl: ""
+
+permalink: pretty
+heading_anchors: true
+search_enabled: true
+
+just_the_docs:
+  aux_links:
+    "NeoStation on GitHub": https://github.com/misobadev/neostation-frontend

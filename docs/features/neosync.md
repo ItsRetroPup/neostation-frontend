@@ -1,3 +1,10 @@
+---
+title: NeoSync
+layout: default
+parent: Features
+nav_order: 3
+---
+
 # NeoSync
 
 NeoSync synchronises game saves and states through your NeoSync account. It includes account registration, email verification, password recovery, cloud-save browsing, quota information, and custom save folders for standalone emulators.
@@ -33,4 +40,4 @@ NeoSync asks for confirmation before deleting a cloud save.
 
 ## Related Pages
 
-- [Troubleshooting](../troubleshooting.md)
+- [Troubleshooting](/troubleshooting/)

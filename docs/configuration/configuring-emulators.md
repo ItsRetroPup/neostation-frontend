@@ -1,3 +1,9 @@
+---
+title: Configuring Emulators
+layout: default
+nav_order: 3
+---
+
 # Configuring Emulators
 
 NeoStation uses the bundled system definitions to decide which emulators are available for each system. Available choices depend on your platform and installed software.
@@ -26,5 +32,5 @@ Android launches supported standalone emulators using their configured applicati
 
 ## Related Pages
 
-- [Getting Started](../getting-started/getting-started.md)
-- [Troubleshooting](../troubleshooting.md)
+- [Getting Started](/getting-started/getting-started/)
+- [Troubleshooting](/troubleshooting/)

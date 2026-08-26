@@ -1,3 +1,10 @@
+---
+title: RetroAchievements
+layout: default
+parent: Features
+nav_order: 1
+---
+
 # RetroAchievements
 
 Connect your RetroAchievements account to view supported-game information, achievement progress, recent unlocks, completions, masteries, and leaderboards in NeoStation.
@@ -32,5 +39,5 @@ Disconnecting signs you out and removes the saved RetroAchievements credentials 
 
 ## Related Pages
 
-- [Adding Your Games](../library/adding-your-games.md)
-- [Troubleshooting](../troubleshooting.md)
+- [Adding Your Games](/library/adding-your-games/)
+- [Troubleshooting](/troubleshooting/)
