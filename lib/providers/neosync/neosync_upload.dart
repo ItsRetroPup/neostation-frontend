@@ -249,7 +249,7 @@ extension NeoSyncUpload on NeoSyncProvider {
   /// Fase 1: Subir archivos locales
   Future<void> _performUploadPhase(String basePath) async {
     _syncStatus = 'Phase 1: Uploading local files...';
-    _processedItems.add('📤 Phase 1: Scanning and uploading local files...');
+    _processedItems.add('Phase 1: Scanning and uploading local files...');
     notify();
 
     // Determine if it is a states folder for RetroArch
@@ -263,7 +263,7 @@ extension NeoSyncUpload on NeoSyncProvider {
     }
 
     _totalFiles = saveFiles.length * 2;
-    _processedItems.add('📤 Found ${saveFiles.length} local files to process');
+    _processedItems.add('Found ${saveFiles.length} local files to process');
 
     for (final file in saveFiles) {
       await _processUploadFileWithConflictDetection(
@@ -334,7 +334,7 @@ extension NeoSyncUpload on NeoSyncProvider {
         if (gameRow == null && !isSharedCard) {
           _skippedFiles++;
           _processedItems.add(
-            '⏭️ Skipped save for a game not in your library: '
+            'Skipped save for a game not in your library: '
             '${path.basename(file.path)}',
           );
           return;
@@ -342,15 +342,25 @@ extension NeoSyncUpload on NeoSyncProvider {
 
         // RetroArch stores saves as <savesPath>/<core>/<game>.srm when per-core
         // subfolders are enabled, or flat as <savesPath>/<game>.srm otherwise.
-        // Derive the emulator slug from the core folder when present so a save
-        // lands under retroarch.<core> regardless of which standalone the game
-        // metadata points at; flat saves fall back to the game's own emulator
-        // metadata. The system is resolved from the game (a core like mgba
-        // serves several systems) and falls back to the core mapping.
+        // Derive the emulator slug from the RetroArch core folder when present;
+        // for flat saves only the game's own RetroArch core is trusted (never a
+        // standalone emulator). When no core can be resolved the save is
+        // skipped instead of being uploaded under `retroarch.unknown`.
         final emulatorSlug = await _resolveRetroArchEmulatorSlug(
           file,
           retroArchBasePath,
         );
+        if (emulatorSlug == null) {
+          NeoSyncProvider._log.w(
+            'RA upload skipped for ${file.path}: no resolvable core',
+          );
+          _skippedFiles++;
+          _processedItems.add(
+            'Skipped RetroArch save (no core resolved): '
+            '${path.basename(file.path)}',
+          );
+          return;
+        }
         var system = await _systemFolderForRetroArchFile(
           file,
           retroArchBasePath,
@@ -359,13 +369,28 @@ extension NeoSyncUpload on NeoSyncProvider {
         // otherwise trust the emulator's own system (a save from a NES core can
         // never belong to cps1, no matter what the game metadata says).
         system = await _reconcileEmulatorSystem(system, emulatorSlug);
+        if (system == null) {
+          NeoSyncProvider._log.w(
+            'RA upload skipped for ${file.path}: no system resolved '
+            '(emulator $emulatorSlug)',
+          );
+          _skippedFiles++;
+          _processedItems.add(
+            'Skipped RetroArch save (no system resolved): '
+            '${path.basename(file.path)}',
+          );
+          return;
+        }
+        NeoSyncProvider._log.i(
+          'RA upload: ${file.path} -> system=$system emulator=$emulatorSlug',
+        );
         // Memory-card style files are shared between games, matching the
         // `_buildV2CloudPath` behaviour: they go under the `shared` scope with
         // no game segment so the download routes them to the configured custom
         // folder.
         relativePath = CloudPathBuilder.build(
-          system: system ?? 'unknown',
-          emulatorSlug: emulatorSlug ?? 'unknown',
+          system: system,
+          emulatorSlug: emulatorSlug,
           scope: isSharedCard ? 'shared' : 'game',
           filePath: path.basename(file.path),
           gameName: isSharedCard
@@ -411,10 +436,10 @@ extension NeoSyncUpload on NeoSyncProvider {
       if (result['success']) {
         if (result['skipped'] == true) {
           _skippedFiles++;
-          _processedItems.add('⏭️ Already synced: $relativePath');
+          _processedItems.add('Already synced: $relativePath');
         } else {
           _uploadedFiles++;
-          _processedItems.add('📤 Auto-uploaded: $relativePath');
+          _processedItems.add('Auto-uploaded: $relativePath');
           _resetQuotaAttempts();
         }
       } else {
@@ -449,7 +474,7 @@ extension NeoSyncUpload on NeoSyncProvider {
             'Switch upload skipped: titleId "$titleId" not found in DB (${file.path})',
           );
           _processedItems.add(
-            '⚠️ No game matched titleId $titleId — skipping upload',
+            'No game matched titleId $titleId - skipping upload',
           );
           return;
         }
@@ -481,10 +506,10 @@ extension NeoSyncUpload on NeoSyncProvider {
           if (result['success']) {
             if (result['skipped'] == true) {
               _skippedFiles++;
-              _processedItems.add('⏭️ Already synced: $relativePath');
+              _processedItems.add('Already synced: $relativePath');
             } else {
               _uploadedFiles++;
-              _processedItems.add('📤 Auto-uploaded: $relativePath');
+              _processedItems.add('Auto-uploaded: $relativePath');
               _resetQuotaAttempts();
             }
           } else {
@@ -545,10 +570,10 @@ extension NeoSyncUpload on NeoSyncProvider {
       if (result['success']) {
         if (result['skipped'] == true) {
           _skippedFiles++;
-          _processedItems.add('⏭️ Already synced: $relativePath');
+          _processedItems.add('Already synced: $relativePath');
         } else {
           _uploadedFiles++;
-          _processedItems.add('📤 Uploaded: $relativePath');
+          _processedItems.add('Uploaded: $relativePath');
           _resetQuotaAttempts();
         }
       } else {

@@ -66,7 +66,7 @@ extension NeoSyncDownload on NeoSyncProvider {
   /// Fase 2: Descargar archivos de la nube
   Future<void> _performDownloadPhase(String savesPath) async {
     _syncStatus = 'Phase 2: Downloading cloud files...';
-    _processedItems.add('⬇️ Phase 2: Downloading files from cloud...');
+    _processedItems.add('Phase 2: Downloading files from cloud...');
     notify();
 
     final result = await _neoSyncService.getAllFiles();
@@ -80,7 +80,7 @@ extension NeoSyncDownload on NeoSyncProvider {
       return;
     }
 
-    _processedItems.add('⬇️ Found ${cloudFiles.length} cloud files to process');
+    _processedItems.add('Found ${cloudFiles.length} cloud files to process');
 
     for (final cloudFile in cloudFiles) {
       await _processDownloadFileWithConflictDetection(cloudFile, savesPath);
@@ -113,12 +113,21 @@ extension NeoSyncDownload on NeoSyncProvider {
               cloudFile.uploadedAt.isAfter(await localFile.lastModified())) {
             await _downloadCloudFileImpl(cloudFile, localFile);
             _downloadedFiles++;
-            _processedItems.add('⬇️ Custom save: ${cloudFile.fileName}');
+            _processedItems.add('Custom save: ${cloudFile.fileName}');
           } else {
+            NeoSyncProvider._log.i(
+              'Download: skipped (already current) ${cloudFile.fileName} '
+              '-> ${localFile.path}',
+            );
             _skippedFiles++;
           }
           return;
         }
+        NeoSyncProvider._log.w(
+          'Download: shared file ${cloudFile.fileName} has no configured '
+          'custom folder for system "${v2Path.system}" emulator '
+          '"${v2Path.emulatorSlug}"; falling through to game lookup',
+        );
       }
 
       // 1. Resolve the game associated with the file
@@ -126,7 +135,11 @@ extension NeoSyncDownload on NeoSyncProvider {
 
       if (game == null) {
         NeoSyncProvider._log.w(
-          'Could not identify game for cloud file: ${cloudFile.fileName}',
+          'Download: could not identify game for ${cloudFile.fileName} '
+          '(system "${v2Path?.system ?? '?'}" / "${cloudFile.gameName}")',
+        );
+        _processedItems.add(
+          'No game matched cloud file: ${cloudFile.fileName}',
         );
         return;
       }
@@ -134,7 +147,16 @@ extension NeoSyncDownload on NeoSyncProvider {
       // 2. Resolve local path using the universal system
       final localPaths = await resolveCloudFileToLocalPath(game, cloudFile);
 
-      if (localPaths.isEmpty) return;
+      if (localPaths.isEmpty) {
+        NeoSyncProvider._log.w(
+          'Download: no local path resolved for ${cloudFile.fileName} '
+          '(game "${game.name}")',
+        );
+        _processedItems.add(
+          'No destination for ${cloudFile.fileName} (${game.name})',
+        );
+        return;
+      }
 
       for (final localPath in localPaths) {
         final localFile = File(localPath);
@@ -143,18 +165,26 @@ extension NeoSyncDownload on NeoSyncProvider {
           if (cloudFile.uploadedAt.isAfter(localStat.modified)) {
             await _downloadCloudFileImpl(cloudFile, localFile);
             _downloadedFiles++;
-            _processedItems.add('⬇️ Auto-updated: ${cloudFile.fileName}');
+            _processedItems.add('Auto-updated: ${cloudFile.fileName}');
           } else {
+            NeoSyncProvider._log.i(
+              'Download: local ${localFile.path} is newer ('
+              '${localStat.modified}) than cloud '
+              '${cloudFile.fileName} (${cloudFile.uploadedAt}); skipping',
+            );
             _skippedFiles++;
           }
         } else {
           await localFile.parent.create(recursive: true);
           await _downloadCloudFileImpl(cloudFile, localFile);
           _downloadedFiles++;
-          _processedItems.add('✨ Auto-downloaded new: ${cloudFile.fileName}');
+          _processedItems.add('Auto-downloaded new: ${cloudFile.fileName}');
         }
       }
     } catch (e) {
+      NeoSyncProvider._log.e(
+        'Download: error processing ${cloudFile.fileName}: $e',
+      );
       _processedItems.add('Error downloading ${cloudFile.fileName}: $e');
     }
   }
@@ -238,10 +268,34 @@ extension NeoSyncDownload on NeoSyncProvider {
     NeoSyncFile cloudFile,
     File localFile,
   ) async {
+    NeoSyncProvider._log.i(
+      'Download: starting ${cloudFile.fileName} -> ${localFile.path}',
+    );
     final result = await _neoSyncService.downloadFile(cloudFile.id);
     if (result['success'] == true && result['data'] != null) {
       final bytes = result['data'] as List<int>;
-      await localFile.writeAsBytes(bytes);
+      try {
+        await localFile.parent.create(recursive: true);
+        await localFile.writeAsBytes(bytes, flush: true);
+        NeoSyncProvider._log.i(
+          'Download: OK ${bytes.length} bytes -> ${localFile.path}',
+        );
+      } on FileSystemException catch (e) {
+        NeoSyncProvider._log.e(
+          'Download: WRITE FAILED for ${localFile.path}: '
+          '${e.osError?.message ?? e.message} (errno ${e.osError?.errorCode})',
+        );
+        _processedItems.add(
+          'Write failed on ${localFile.path}: '
+          '${e.osError?.message ?? e.message}',
+        );
+        rethrow;
+      } catch (e) {
+        NeoSyncProvider._log.e(
+          'Download: write to ${localFile.path} errored: $e',
+        );
+        rethrow;
+      }
 
       // Save the actual local sync state in the database.
       // This avoids the "Operation not permitted" error on Android 11+ when trying
@@ -258,11 +312,18 @@ extension NeoSyncDownload on NeoSyncProvider {
         );
       } catch (e) {
         NeoSyncProvider._log.w(
-          'Could not save sync state for ${localFile.path}: $e',
+          'Download: could not save sync state for ${localFile.path}: $e',
         );
       }
     } else {
-      throw Exception(result['message'] ?? 'Failed to download file');
+      final reason = result['message'] ?? 'Unknown download failure';
+      final statusCode = result['status_code'];
+      NeoSyncProvider._log.e(
+        'Download: FAILED for ${cloudFile.fileName} -> ${localFile.path}: '
+        '$reason (status ${statusCode ?? 'n/a'})',
+      );
+      _processedItems.add('Download failed: ${cloudFile.fileName} - $reason');
+      throw Exception(reason);
     }
   }
 
@@ -272,11 +333,22 @@ extension NeoSyncDownload on NeoSyncProvider {
     String savesPath,
   ) async {
     GameModel? game = await _findGameForCloudFile(cloudFile);
-    if (game == null) return;
+    if (game == null) {
+      NeoSyncProvider._log.w(
+        'Download: conflict phase, no game for ${cloudFile.fileName}; skipping',
+      );
+      return;
+    }
 
     final localPaths = await resolveCloudFileToLocalPath(game, cloudFile);
 
-    if (localPaths.isEmpty) return;
+    if (localPaths.isEmpty) {
+      NeoSyncProvider._log.w(
+        'Download: conflict phase, no path for ${cloudFile.fileName} '
+        '(${game.name}); skipping',
+      );
+      return;
+    }
 
     for (final localPath in localPaths) {
       final localFile = File(localPath);
@@ -285,15 +357,19 @@ extension NeoSyncDownload on NeoSyncProvider {
         if (cloudFile.uploadedAt.isAfter(localStat.modified)) {
           await _downloadCloudFileImpl(cloudFile, localFile);
           _downloadedFiles++;
-          _processedItems.add('⬇️ Updated: ${cloudFile.fileName}');
+          _processedItems.add('Updated: ${cloudFile.fileName}');
         } else {
+          NeoSyncProvider._log.i(
+            'Download: conflict phase, local ${localFile.path} newer; '
+            'skipping ${cloudFile.fileName}',
+          );
           _skippedFiles++;
         }
       } else {
         await localFile.parent.create(recursive: true);
         await _downloadCloudFileImpl(cloudFile, localFile);
         _downloadedFiles++;
-        _processedItems.add('✨ Downloaded: ${cloudFile.fileName}');
+        _processedItems.add('Downloaded: ${cloudFile.fileName}');
       }
     }
   }

@@ -192,7 +192,7 @@ extension NeoSyncPathResolver on NeoSyncProvider {
   }
 
   /// Helper to calculate relative path for sync, with special handling for various systems
-  Future<String> _calculateSyncRelativePath(
+  Future<String?> _calculateSyncRelativePath(
     GameModel game,
     File file,
     String basePath, {
@@ -216,6 +216,14 @@ extension NeoSyncPathResolver on NeoSyncProvider {
       isState: isState,
       explicitSystemFolder: explicitSystemFolder,
     );
+    if (v2Path == null) {
+      // Only RetroArch files whose core is unresolvable return null; skip the
+      // upload rather than invent a legacy `saves/...` path or `retroarch.unknown`.
+      NeoSyncProvider._log.i(
+        'RA sync path: skipped ${file.path} (no resolvable core)',
+      );
+      return null;
+    }
     if (v2Path.startsWith('v2/saves/') || v2Path.startsWith('v2/states/')) {
       return v2Path;
     }
@@ -288,9 +296,11 @@ extension NeoSyncPathResolver on NeoSyncProvider {
   ///
   /// Uses the standard `saves|states/<system>/<emulator-slug>/<scope>/...`
   /// layout so the emulator that produced the save is always identifiable.
-  /// When the emulator slug cannot be determined it falls back to the legacy
-  /// relative path so existing flows keep working.
-  Future<String> _buildV2CloudPath(
+  /// When the emulator slug cannot be determined for a non-RetroArch file it
+  /// falls back to the legacy relative path so existing flows keep working;
+  /// for a RetroArch file it returns null so the caller skips the upload
+  /// instead of inventing `retroarch.unknown`.
+  Future<String?> _buildV2CloudPath(
     GameModel game,
     File file,
     String basePath, {
@@ -314,26 +324,30 @@ extension NeoSyncPathResolver on NeoSyncProvider {
       retroBase = statesPath;
     }
     if (retroBase != null) {
-      final relativeToBase = path.relative(file.path, from: retroBase);
-      final segments = relativeToBase.split(RegExp(r'[/\\]'));
-      // Only a per-core subfolder layout (<base>/<core>/<game>.srm) encodes
-      // the core in the path. Flat saves (<base>/<game>.srm, the default)
-      // have a single segment that is the file itself, so the core must come
-      // from the game's emulator metadata below.
-      if (segments.length > 1) {
-        final coreName = segments.first;
-        if (coreName.isNotEmpty) {
-          emulatorSlug = CloudPathBuilder.retroArchCoreSlug(coreName);
-          // A core like mgba serves several systems, so it is only a fallback.
-          // The game's own system is authoritative.
-          systemFolderFromCore = await _systemFolderForRetroArchFile(
-            file,
-            retroBase,
+      final coreName = _retroArchCoreFolderForFile(file, retroBase);
+      if (coreName != null) {
+        emulatorSlug = CloudPathBuilder.retroArchCoreSlug(coreName);
+        // A core like mgba serves several systems, so it is only a fallback.
+        // The game's own system is authoritative.
+        systemFolderFromCore = await _systemFolderForRetroArchFile(
+          file,
+          retroBase,
+        );
+      } else {
+        // Flat RetroArch save (<base>/<game>.srm, the default). Only trust a
+        // RetroArch-core emulator; never a standalone (GBA Free) and never
+        // invent `retroarch.unknown`.
+        emulatorSlug = _retroArchCoreSlugFromGame(game);
+        if (emulatorSlug == null) {
+          NeoSyncProvider._log.w(
+            'RA v2 path: skipping ${file.path} (no resolvable core)',
           );
+          return null;
         }
       }
+    } else {
+      emulatorSlug ??= await _resolveEmulatorSlugForGame(game, system);
     }
-    emulatorSlug ??= await _resolveEmulatorSlugForGame(game, system);
     // Priority: the caller's explicit system (from the games list context),
     // then the game's own system, then the core-derived fallback. Finally the
     // emulator is cross-checked so the save never lands under a system the
@@ -346,7 +360,19 @@ extension NeoSyncPathResolver on NeoSyncProvider {
     systemFolder = await _reconcileEmulatorSystem(systemFolder, emulatorSlug);
 
     if (systemFolder == null || emulatorSlug == null) {
+      if (retroBase != null) {
+        NeoSyncProvider._log.w(
+          'RA v2 path: skipping ${file.path} (no system/emulator)',
+        );
+        return null;
+      }
       return _calculateRelativePath(file, basePath, isState: isState);
+    }
+    if (retroBase != null) {
+      NeoSyncProvider._log.i(
+        'RA v2 path: ${file.path} -> '
+        'system=$systemFolder emulator=$emulatorSlug',
+      );
     }
 
     final fileName = path.basename(file.path);
@@ -433,33 +459,78 @@ extension NeoSyncPathResolver on NeoSyncProvider {
   ///
   /// Only a per-core subfolder layout (`<base>/<core>/<game>.srm`) encodes the
   /// core in the path; flat saves (`<base>/<game>.srm`) have a single segment
-  /// that is the file itself. For flat saves the emulator is resolved from the
-  /// game's own emulator metadata (e.g. a SNES save -> `retroarch.snes9x`)
-  /// instead of misreading the game file name as a core.
+  /// that is the file itself. For flat saves the slug is only derived from the
+  /// game's own emulator *iff* that emulator is itself a RetroArch core (e.g.
+  /// `gba.ra.mgba` -> `retroarch.mgba`); a standalone emulator such as GBA Free
+  /// must never be reported as the producer of a RetroArch save. Returns null
+  /// when no core can be determined so callers skip the upload instead of
+  /// inventing `retroarch.unknown`.
   Future<String?> _resolveRetroArchEmulatorSlug(
     File file,
     String retroArchBase,
   ) async {
-    final relativeToBase = path.relative(file.path, from: retroArchBase);
-    final segments = relativeToBase.split(RegExp(r'[/\\]'));
-    if (segments.length > 1) {
-      final coreName = segments.first;
-      if (coreName.isNotEmpty) {
-        return CloudPathBuilder.retroArchCoreSlug(coreName);
-      }
+    final coreName = _retroArchCoreFolderForFile(file, retroArchBase);
+    if (coreName != null) {
+      NeoSyncProvider._log.i('RA slug: core "$coreName" for ${file.path}');
+      return CloudPathBuilder.retroArchCoreSlug(coreName);
     }
 
     final fileName = path.basenameWithoutExtension(file.path);
     try {
       final row = await GameRepository.findRomByFilenamePrefix('$fileName%');
-      if (row == null) return null;
+      if (row == null) {
+        NeoSyncProvider._log.w(
+          'RA slug: no game matched flat save "$fileName"; skipping',
+        );
+        return null;
+      }
       final game = _gameModelFromRomRow(row, fileName);
-      final system = await _getSystemForGame(game);
-      return await _resolveEmulatorSlugForGame(game, system);
+      final slug = _retroArchCoreSlugFromGame(game);
+      NeoSyncProvider._log.i(
+        slug == null
+            ? 'RA slug: flat save "$fileName" has no RetroArch core '
+                  '(emulator "${game.emulatorName ?? 'unknown'}"); skipping'
+            : 'RA slug: flat save "$fileName" -> $slug',
+      );
+      return slug;
     } catch (e) {
       NeoSyncProvider._log.w('Error resolving emulator slug for $fileName: $e');
       return null;
     }
+  }
+
+  /// Returns the RetroArch core folder name when [file] lives in a per-core
+  /// subfolder under [basePath] (`<base>/<core>/<game>.srm`), else null.
+  String? _retroArchCoreFolderForFile(File file, String basePath) {
+    final relativeToBase = path.relative(file.path, from: basePath);
+    final segments = relativeToBase.split(RegExp(r'[/\\]'));
+    if (segments.length > 1) {
+      final coreName = segments.first;
+      if (coreName.isNotEmpty) return coreName;
+    }
+    return null;
+  }
+
+  /// Derives a `retroarch.<core>` slug from [game]'s emulator, but ONLY when
+  /// that emulator is itself a RetroArch core (`gba.ra.mgba`,
+  /// `gba.ra64.mgba`, `gba.ra32.mgba` or a core name). A standalone emulator
+  /// (GBA Free, DuckStation, AetherSX2...) may be selected for a game whose
+  /// save was actually written by a RetroArch core, so it is never trusted for
+  /// a RetroArch save. Returns null when no RetroArch core can be determined.
+  String? _retroArchCoreSlugFromGame(GameModel game) {
+    final uniqueId = game.emulatorName?.trim() ?? '';
+    if (uniqueId.isNotEmpty) {
+      final lower = uniqueId.toLowerCase();
+      if (lower.contains('.ra.') ||
+          lower.contains('.ra64.') ||
+          lower.contains('.ra32.')) {
+        return CloudPathBuilder.slugFromEmulatorUniqueId(uniqueId);
+      }
+    }
+    if (game.coreName != null && game.coreName!.isNotEmpty) {
+      return CloudPathBuilder.retroArchCoreSlug(game.coreName!);
+    }
+    return null;
   }
 
   /// Builds a lightweight [GameModel] from a `findRomByFilenamePrefix` row so

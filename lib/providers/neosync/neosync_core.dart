@@ -157,7 +157,7 @@ extension NeoSyncCore on NeoSyncProvider {
       if (e is QuotaExceededException) {
         _error = 'Storage quota exceeded after ${e.attemptCount} attempts';
         _syncStatus = 'Quota exceeded - sync stopped';
-        _processedItems.add('🚫 Storage quota exceeded - sync stopped');
+        _processedItems.add('Storage quota exceeded - sync stopped');
         NeoSyncProvider._log.e(
           'Sync stopped due to quota exceeded: ${e.message}',
         );
@@ -219,7 +219,7 @@ extension NeoSyncCore on NeoSyncProvider {
     }
     if (!_autoSyncEnabled) return;
 
-    _processedItems.add('🎮 Syncing saves before game start...');
+    _processedItems.add('Syncing saves before game start...');
     await autoSync();
   }
 
@@ -230,7 +230,7 @@ extension NeoSyncCore on NeoSyncProvider {
     }
     if (!_autoSyncEnabled) return;
 
-    _processedItems.add('🎮 Syncing saves after game end...');
+    _processedItems.add('Syncing saves after game end...');
     await autoSyncUploads(); // Only upload local changes after the game
   }
 
@@ -241,7 +241,7 @@ extension NeoSyncCore on NeoSyncProvider {
     }
     if (!_autoSyncEnabled) return;
 
-    _processedItems.add('🚀 Checking for cloud updates on app start...');
+    _processedItems.add('Checking for cloud updates on app start...');
     await autoSyncDownloads(); // Only download on initialization
   }
 
@@ -710,6 +710,12 @@ extension NeoSyncCore on NeoSyncProvider {
         isState: isState,
         explicitSystemFolder: game.systemFolderName,
       );
+      if (relativePath == null) {
+        NeoSyncProvider._log.w(
+          'Auto-upload skipped for ${game.name}: no resolvable sync path',
+        );
+        return false;
+      }
 
       final parsed = CloudPathBuilder.parse(relativePath);
       final result = await _neoSyncService.syncFile(
@@ -750,14 +756,27 @@ extension NeoSyncCore on NeoSyncProvider {
     try {
       // 1. Resolver la ruta local de manera universal
       final localPaths = await resolveCloudFileToLocalPath(game, cloudSave);
-      if (localPaths.isEmpty) return false;
+      if (localPaths.isEmpty) {
+        NeoSyncProvider._log.w(
+          'Auto-download: no path for ${cloudSave.fileName} '
+          '(${game.name}); skipping',
+        );
+        return false;
+      }
 
       // Verificar si el sistema tiene sync deshabilitado
       final system = await _getSystemForGame(game);
       if (system != null && !system.neosync.sync) {
+        NeoSyncProvider._log.w(
+          'Auto-download: sync disabled for ${system.realName}; '
+          'skipping ${cloudSave.fileName}',
+        );
         return false;
       }
 
+      NeoSyncProvider._log.i(
+        'Auto-download: ${cloudSave.fileName} -> ${localPaths.join(', ')}',
+      );
       bool anySuccess = false;
       for (final localPath in localPaths) {
         final localFile = File(localPath);
@@ -1250,6 +1269,12 @@ extension NeoSyncCore on NeoSyncProvider {
               savesPath,
               explicitSystemFolder: game.systemFolderName,
             );
+            if (relativePath == null) {
+              NeoSyncProvider._log.w(
+                'Pre-launch upload skipped for ${game.name}: no sync path',
+              );
+              return;
+            }
 
             final parsed = CloudPathBuilder.parse(relativePath);
             final result = await _neoSyncService.syncFile(
@@ -1320,6 +1345,12 @@ extension NeoSyncCore on NeoSyncProvider {
             savesPath,
             explicitSystemFolder: game.systemFolderName,
           );
+          if (relativePath == null) {
+            NeoSyncProvider._log.w(
+              'Post-game upload skipped for ${game.name}: no sync path',
+            );
+            return;
+          }
 
           final parsed = CloudPathBuilder.parse(relativePath);
           final result = await _neoSyncService.syncFile(
@@ -1384,13 +1415,14 @@ extension NeoSyncCore on NeoSyncProvider {
       }
 
       final file = File(targetPath);
+      NeoSyncProvider._log.i('Restore: ${cloudFile.fileName} -> ${file.path}');
       // Asegurar directorio existe
       await file.parent.create(recursive: true);
 
       // Usar el método común de descarga
       await _downloadCloudFile(cloudFile, file);
     } catch (e) {
-      NeoSyncProvider._log.e('Error restoring cloud backup: $e');
+      NeoSyncProvider._log.e('Restore: FAILED for ${cloudFile.fileName}: $e');
       rethrow;
     }
   }

@@ -266,6 +266,7 @@ class NeoSyncProvider extends ChangeNotifier {
   /// Upon successful download, it synchronizes the local database sync state
   /// to match the cloud version.
   Future<void> _downloadCloudFile(NeoSyncFile cloudFile, File localFile) async {
+    _log.i('Download: starting ${cloudFile.fileName} -> ${localFile.path}');
     final result = await _neoSyncService.downloadFile(cloudFile.id);
     if (result['success'] == true && result['data'] != null) {
       // Pre-launch deadline guard: the network fetch is done, but if the
@@ -280,7 +281,20 @@ class NeoSyncProvider extends ChangeNotifier {
       }
 
       final bytes = result['data'] as List<int>;
-      await localFile.writeAsBytes(bytes);
+      try {
+        await localFile.parent.create(recursive: true);
+        await localFile.writeAsBytes(bytes, flush: true);
+        _log.i('Download: OK ${bytes.length} bytes -> ${localFile.path}');
+      } on FileSystemException catch (e) {
+        _log.e(
+          'Download: WRITE FAILED for ${localFile.path}: '
+          '${e.osError?.message ?? e.message} (errno ${e.osError?.errorCode})',
+        );
+        rethrow;
+      } catch (e) {
+        _log.e('Download: write to ${localFile.path} errored: $e');
+        rethrow;
+      }
 
       try {
         final stat = await localFile.stat();
@@ -296,7 +310,13 @@ class NeoSyncProvider extends ChangeNotifier {
         _log.w('Could not save sync state for ${localFile.path}: $e');
       }
     } else {
-      throw Exception(result['message'] ?? 'Failed to download file');
+      final reason = result['message'] ?? 'Unknown download failure';
+      final statusCode = result['status_code'];
+      _log.e(
+        'Download: FAILED for ${cloudFile.fileName} -> ${localFile.path}: '
+        '$reason (status ${statusCode ?? 'n/a'})',
+      );
+      throw Exception(reason);
     }
   }
 
