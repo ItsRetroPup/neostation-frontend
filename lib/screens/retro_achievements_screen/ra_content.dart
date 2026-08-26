@@ -38,9 +38,8 @@ class _RAContentState extends State<RAContent>
   final ScrollController _dashboardScrollController = ScrollController();
 
   /// Connected dashboard: whether the cursor is parked on the header's logout
-  /// button. Nothing is selected at rest — Right parks on it, Left steps back
-  /// along the axis onto the week card, and Up/Down stay dedicated to scrolling
-  /// the dashboard.
+  /// button. Nothing is selected at rest — Right parks on it, and Left steps
+  /// back along the axis onto the week card.
   bool _logoutSelected = false;
 
   /// The dashboard's one actionable content card. It is only selectable when
@@ -251,12 +250,33 @@ class _RAContentState extends State<RAContent>
     return _scrollDashboard(-160.r) || released;
   }
 
+  /// Down steps onto the dashboard's one actionable card before it starts
+  /// scrolling, so the card is reachable without knowing to press Left.
+  ///
+  /// Only from the top, and only at rest: selecting a card that has already
+  /// scrolled out of view would leave the highlight invisible, which is the
+  /// same trap [_scrollHeaderIntoView] exists to keep the logout button out of.
+  /// Once the card is selected — or the cursor is parked on logout — Down goes
+  /// back to being a plain scroll.
   bool _handleNavigateDown() {
-    if (!context.read<RetroAchievementsProvider>().isConnected) {
-      return moveSelection(1);
+    final raProvider = context.read<RetroAchievementsProvider>();
+    if (!raProvider.isConnected) return moveSelection(1);
+    if (!_logoutSelected &&
+        !_weekCardSelected &&
+        raProvider.ownedWeekGame != null &&
+        _dashboardAtTop) {
+      return _setWeekCardSelected(true);
     }
     final released = _setWeekCardSelected(false);
     return _scrollDashboard(160.r) || released;
+  }
+
+  /// Whether the dashboard is scrolled to the top, within the same one-pixel
+  /// tolerance [_releaseSelectionOnScroll] and [_scrollHeaderIntoView] use.
+  bool get _dashboardAtTop {
+    if (!_dashboardScrollController.hasClients) return true;
+    final position = _dashboardScrollController.position;
+    return position.pixels <= position.minScrollExtent + 1;
   }
 
   /// Right parks the cursor on the header's logout button.
