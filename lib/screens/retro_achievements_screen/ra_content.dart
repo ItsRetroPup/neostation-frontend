@@ -3,6 +3,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
 import 'package:provider/provider.dart';
 import '../../providers/retro_achievements_provider.dart';
+import '../../providers/file_provider.dart';
+import '../../providers/sqlite_config_provider.dart';
 import '../../repositories/retro_achievements_repository.dart';
 import '../../widgets/confirm_action_dialog.dart';
 import '../../widgets/custom_notification.dart';
@@ -15,6 +17,9 @@ import '../app_screen.dart' show AppNavigation;
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import '../../utils/login_form_selection.dart';
+import '../../models/retro_achievements_dashboard_models.dart';
+import '../../models/system_model.dart';
+import '../game_screen/my_games_list.dart';
 import 'ra_dashboard.dart';
 
 class RAContent extends StatefulWidget {
@@ -36,6 +41,10 @@ class _RAContentState extends State<RAContent>
   /// button. Nothing is selected at rest — Right parks on it, Left releases it,
   /// and Up/Down stay dedicated to scrolling the dashboard.
   bool _logoutSelected = false;
+
+  /// The dashboard's one actionable content card. It is only selectable when
+  /// the weekly game has a matching ROM in the user's library.
+  bool _weekCardSelected = false;
 
   /// Set while Right is scrolling the header back into view, so the scroll
   /// listener doesn't read that movement as the user leaving the button.
@@ -100,7 +109,14 @@ class _RAContentState extends State<RAContent>
   void _selectCurrent() {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (raProvider.isConnected) {
-      if (_logoutSelected) _requestDisconnect();
+      if (_logoutSelected) {
+        _requestDisconnect();
+        return;
+      }
+      if (_weekCardSelected) {
+        final owned = raProvider.ownedWeekGame;
+        if (owned != null) _openOwnedWeekGame(owned);
+      }
       return;
     }
     if (focusSelectedField()) return;
@@ -114,6 +130,12 @@ class _RAContentState extends State<RAContent>
   bool _setLogoutSelected(bool selected) {
     if (!mounted || _logoutSelected == selected) return false;
     setState(() => _logoutSelected = selected);
+    return true;
+  }
+
+  bool _setWeekCardSelected(bool selected) {
+    if (!mounted || _weekCardSelected == selected) return false;
+    setState(() => _weekCardSelected = selected);
     return true;
   }
 
@@ -141,6 +163,7 @@ class _RAContentState extends State<RAContent>
     if (!mounted) return;
     resetSelection();
     _setLogoutSelected(false);
+    _setWeekCardSelected(false);
     AppNotification.showNotification(
       context,
       AppLocale.disconnectedRA.getString(context),
@@ -218,6 +241,7 @@ class _RAContentState extends State<RAContent>
     if (!context.read<RetroAchievementsProvider>().isConnected) {
       return moveSelection(-1);
     }
+    _setWeekCardSelected(false);
     return _scrollDashboard(-160.r);
   }
 
@@ -225,6 +249,7 @@ class _RAContentState extends State<RAContent>
     if (!context.read<RetroAchievementsProvider>().isConnected) {
       return moveSelection(1);
     }
+    _setWeekCardSelected(false);
     return _scrollDashboard(160.r);
   }
 
@@ -236,13 +261,58 @@ class _RAContentState extends State<RAContent>
   bool _handleNavigateRight() {
     if (!context.read<RetroAchievementsProvider>().isConnected) return false;
     if (_logoutSelected) return false;
+    _setWeekCardSelected(false);
     _scrollHeaderIntoView();
     return _setLogoutSelected(true);
   }
 
   bool _handleNavigateLeft() {
     if (!context.read<RetroAchievementsProvider>().isConnected) return false;
-    return _setLogoutSelected(false);
+    if (_logoutSelected) return _setLogoutSelected(false);
+    if (context.read<RetroAchievementsProvider>().ownedWeekGame == null) {
+      return false;
+    }
+    _scrollHeaderIntoView();
+    return _setWeekCardSelected(true);
+  }
+
+  Future<void> _openOwnedWeekGame(OwnedWeekGameResolution owned) async {
+    final configProvider = context.read<SqliteConfigProvider>();
+    final fileProvider = context.read<FileProvider>();
+    final system = _resolveSystem(configProvider.detectedSystems, owned);
+    if (system == null) {
+      AppNotification.showNotification(
+        context,
+        AppLocale.raCouldNotResolveLocalSystem.getString(context),
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SystemGamesList(
+          system: system,
+          fileProvider: fileProvider,
+          initialRomPath: owned.game.romPath,
+        ),
+      ),
+    );
+  }
+
+  SystemModel? _resolveSystem(
+    List<SystemModel> systems,
+    OwnedWeekGameResolution owned,
+  ) {
+    final folder = owned.game.systemFolderName;
+    if (folder == null || folder.isEmpty) return null;
+    for (final system in systems) {
+      if (system.folderName == folder || system.primaryFolderName == folder) {
+        return system;
+      }
+    }
+    return null;
   }
 
   void _scrollHeaderIntoView() {
@@ -333,7 +403,10 @@ class _RAContentState extends State<RAContent>
                 child: RADashboardHub(
                   scrollController: _dashboardScrollController,
                   logoutSelected: _logoutSelected,
+                  weekCardSelected:
+                      _weekCardSelected && raProvider.ownedWeekGame != null,
                   onDisconnectRequested: _requestDisconnect,
+                  onOwnedWeekGameSelected: _openOwnedWeekGame,
                 ),
               ),
             ),
