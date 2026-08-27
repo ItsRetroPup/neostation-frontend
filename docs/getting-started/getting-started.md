@@ -34,3 +34,4 @@ Open a system, then use its emulator settings to choose from the emulators avail
 - [Adding Your Games](/library/adding-your-games/)
 - [Scraping & Metadata](/features/scraping-and-metadata/)
 - [RetroAchievements](/features/retroachievements/)
+- [NeoSync Cloud Saves](/features/neosync/)

@@ -116,18 +116,23 @@ extension NeoSyncDownload on NeoSyncProvider {
             _processedItems.add('Custom save: ${cloudFile.fileName}');
           } else {
             NeoSyncProvider._log.i(
-              'Download: skipped (already current) ${cloudFile.fileName} '
-              '-> ${localFile.path}',
+              'Download: shared already current ${cloudFile.fileName}',
             );
             _skippedFiles++;
           }
           return;
         }
+        // A shared memory card has no game to associate; without a configured
+        // custom folder there is nowhere to place it. Record a clear reason.
         NeoSyncProvider._log.w(
-          'Download: shared file ${cloudFile.fileName} has no configured '
-          'custom folder for system "${v2Path.system}" emulator '
-          '"${v2Path.emulatorSlug}"; falling through to game lookup',
+          'Download: shared ${cloudFile.fileName} skipped: no custom save '
+          'folder for system=${v2Path.system} emulator=${v2Path.emulatorSlug}',
         );
+        _skippedFiles++;
+        _processedItems.add(
+          'Skipped shared cloud file (no custom folder): ${cloudFile.fileName}',
+        );
+        return;
       }
 
       // 1. Resolve the game associated with the file
@@ -135,7 +140,7 @@ extension NeoSyncDownload on NeoSyncProvider {
 
       if (game == null) {
         NeoSyncProvider._log.w(
-          'Download: could not identify game for ${cloudFile.fileName} '
+          'Download: no game matched ${cloudFile.fileName} '
           '(system "${v2Path?.system ?? '?'}" / "${cloudFile.gameName}")',
         );
         _processedItems.add(
@@ -168,9 +173,7 @@ extension NeoSyncDownload on NeoSyncProvider {
             _processedItems.add('Auto-updated: ${cloudFile.fileName}');
           } else {
             NeoSyncProvider._log.i(
-              'Download: local ${localFile.path} is newer ('
-              '${localStat.modified}) than cloud '
-              '${cloudFile.fileName} (${cloudFile.uploadedAt}); skipping',
+              'Download: skipping ${cloudFile.fileName} (local is newer)',
             );
             _skippedFiles++;
           }
@@ -332,6 +335,39 @@ extension NeoSyncDownload on NeoSyncProvider {
     NeoSyncFile cloudFile,
     String savesPath,
   ) async {
+    final v2Path = CloudPathBuilder.parse(cloudFile.fileName);
+    if (v2Path != null && v2Path.isShared) {
+      final customFolder = await NeoSyncSaveFolderRepository.getFolder(
+        v2Path.system,
+        v2Path.emulatorSlug,
+      );
+      if (customFolder != null && customFolder.isNotEmpty) {
+        final localFile = File(path.join(customFolder, v2Path.filePath));
+        await localFile.parent.create(recursive: true);
+        if (!localFile.existsSync() ||
+            cloudFile.uploadedAt.isAfter(await localFile.lastModified())) {
+          await _downloadCloudFileImpl(cloudFile, localFile);
+          _downloadedFiles++;
+          _processedItems.add('Updated: ${cloudFile.fileName}');
+        } else {
+          NeoSyncProvider._log.i(
+            'Download: shared already current ${cloudFile.fileName}',
+          );
+          _skippedFiles++;
+        }
+        return;
+      }
+      NeoSyncProvider._log.w(
+        'Download: shared ${cloudFile.fileName} skipped: no custom save '
+        'folder for system=${v2Path.system} emulator=${v2Path.emulatorSlug}',
+      );
+      _skippedFiles++;
+      _processedItems.add(
+        'Skipped shared cloud file (no custom folder): ${cloudFile.fileName}',
+      );
+      return;
+    }
+
     GameModel? game = await _findGameForCloudFile(cloudFile);
     if (game == null) {
       NeoSyncProvider._log.w(
@@ -360,8 +396,7 @@ extension NeoSyncDownload on NeoSyncProvider {
           _processedItems.add('Updated: ${cloudFile.fileName}');
         } else {
           NeoSyncProvider._log.i(
-            'Download: conflict phase, local ${localFile.path} newer; '
-            'skipping ${cloudFile.fileName}',
+            'Download: skipping ${cloudFile.fileName} (local is newer)',
           );
           _skippedFiles++;
         }

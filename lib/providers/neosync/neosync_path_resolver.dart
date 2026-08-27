@@ -694,16 +694,23 @@ extension NeoSyncPathResolver on NeoSyncProvider {
     // Buscar la carpeta más apropiada.
     String targetFolder = resolvedFolders.first;
 
-    // NeoSync v2 paths carry system/emulator/scope. For per-game saves, prefer
-    // the configured custom folder when the emulator has one, otherwise fall
-    // back to the standard resolution below.
-    if (v2Path != null && !v2Path.isShared) {
+    // NeoSync v2 paths carry system/emulator/scope. Always prefer the
+    // configured custom folder when the emulator has one — for per-game saves
+    // AND shared memory cards (ARMSX2 .ps2, DuckStation memcards). Custom
+    // folders are only offered for standalone emulators, so RetroArch saves
+    // (no matching custom folder) still fall through to the standard
+    // resolution below.
+    if (v2Path != null) {
       final customFolder = await NeoSyncSaveFolderRepository.getFolder(
         v2Path.system,
         v2Path.emulatorSlug,
       );
       if (customFolder != null && customFolder.isNotEmpty) {
-        return [path.join(customFolder, v2Path.filePath)];
+        final target = path.join(customFolder, v2Path.filePath);
+        NeoSyncProvider._log.i(
+          'Download: ${cloudFile.fileName} -> custom folder $target',
+        );
+        return [target];
       }
     }
 
