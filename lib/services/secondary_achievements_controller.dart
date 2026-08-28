@@ -5,6 +5,7 @@ import '../models/game_model.dart';
 import '../models/secondary_display_state.dart';
 import '../providers/file_provider.dart';
 import '../providers/retro_achievements_provider.dart';
+import 'game_service.dart';
 import 'retro_achievements_resolver.dart';
 import 'screenshot_service.dart';
 
@@ -166,13 +167,41 @@ class SecondaryAchievementsController {
       clearNewlyEarnedIds: true,
     );
 
+    GameService.deviceScreenOn.removeListener(_onScreenPowerChanged);
+    GameService.deviceScreenOn.addListener(_onScreenPowerChanged);
     _startPoll();
   }
 
   void _startPoll() {
     if (!Platform.isAndroid) return;
+    // Never poll behind a dark screen; see [_onScreenPowerChanged].
+    if (!GameService.deviceScreenOn.value) return;
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(pollInterval, (_) => _onTick());
+  }
+
+  /// Suspends the live poll while the device screen is off, and rearms it on
+  /// wake if the session is still open.
+  ///
+  /// NeoStation runs as a HOME launcher, so the activity is never paused when
+  /// the device locks and nothing else stands this timer down: the poll would
+  /// otherwise keep waking the radio for a RetroAchievements fetch every 30s
+  /// for as long as a game session stays open. Measured on an AYN Thor over a
+  /// 15-minute locked session: 30 fetches, ~222 KB of traffic, and ~90% of all
+  /// the CPU the app burned in that state, for data no one can see. The
+  /// emulator is suspended behind the lock, so no unlocks can arrive meanwhile
+  /// and nothing is missed by pausing.
+  ///
+  /// This controller is created from the main-engine screens, so the main
+  /// engine's notifier is the live one here. It defaults to true and is only
+  /// ever written by the Android channel handler, making this a desktop no-op.
+  void _onScreenPowerChanged() {
+    if (!GameService.deviceScreenOn.value) {
+      _stopPoll();
+      return;
+    }
+    // stop() clears _gameId when the game exits; only rearm a live session.
+    if (_gameId != null) _startPoll();
   }
 
   Future<void> _onTick() async {
@@ -228,6 +257,7 @@ class SecondaryAchievementsController {
   /// (it fades back to whatever art is underneath); leave it false when the host
   /// re-pushes full display state itself.
   void stop({bool hidePanel = false}) {
+    GameService.deviceScreenOn.removeListener(_onScreenPowerChanged);
     _stopPoll();
     _gameId = null;
     // ignore: unawaited_futures
