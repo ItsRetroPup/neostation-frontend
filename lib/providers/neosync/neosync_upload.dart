@@ -403,7 +403,17 @@ extension NeoSyncUpload on NeoSyncProvider {
       } else {
         relativePath = _calculateRelativePath(file, basePath, isState: isState);
       }
-      final gameName = _extractGameNameFromPath(file.path);
+      final rawGameName = _extractGameNameFromPath(file.path);
+      // The NeoSync backend hard-rejects an upload whose game_name is empty.
+      // Guard against a basename that resolves to '' (e.g. a path ending in a
+      // separator) so a custom-folder save is never silently dropped.
+      final gameName = rawGameName.isEmpty ? 'Shared Save' : rawGameName;
+      if (rawGameName.isEmpty) {
+        NeoSyncProvider._log.w(
+          'Upload: empty game_name for ${file.path}; using fallback '
+          '"$gameName"',
+        );
+      }
 
       // Resolve the game hash (ra_hash) so the v2 upload carries the ROM hash.
       // The save base name usually matches the ROM name, so find the game by
@@ -544,7 +554,14 @@ extension NeoSyncUpload on NeoSyncProvider {
         basePath,
         isState: isState,
       );
-      final gameName = _extractGameNameFromPath(file.path);
+      final rawGameName = _extractGameNameFromPath(file.path);
+      final gameName = rawGameName.isEmpty ? 'Shared Save' : rawGameName;
+      if (rawGameName.isEmpty) {
+        NeoSyncProvider._log.w(
+          'Upload: empty game_name for ${file.path}; using fallback '
+          '"$gameName"',
+        );
+      }
 
       String? gameHash;
       try {
