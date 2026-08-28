@@ -16,6 +16,7 @@ import 'package:neostation/sync/providers/neo_sync_adapter.dart';
 import 'package:neostation/sync/providers/romm_provider.dart';
 import 'package:neostation/services/notification_service.dart';
 import 'package:neostation/services/game_service.dart';
+import 'package:neostation/services/secondary_apps_service.dart';
 import 'package:neostation/services/game_legend_visibility.dart';
 import 'package:neostation/repositories/config_repository.dart';
 import 'package:neostation/repositories/scraper_repository.dart';
@@ -459,6 +460,11 @@ void main() async {
 
   // Background music initialization removed
 
+  // SFX must never reopen the SoLoud engine while the screen is off: an open
+  // AAudio stream holds AudioFlinger's 'AudioMix' wakelock and blocks SoC
+  // suspend. This engine's screen-power truth is GameService.deviceScreenOn.
+  SfxService.isScreenOn = () => GameService.deviceScreenOn.value;
+
   // Initialize SFX service for navigation sounds (fire-and-forget).
   SfxService().init().then((_) {
     // Apply persisted SFX preferences immediately.
@@ -806,6 +812,14 @@ Future<void> subDisplay() async {
   // without this the display would open on the brightness fallback (black)
   // even for a user on a light theme. Read it from the same config row.
   String? initThemeName;
+
+  // Same screen-power guard as the main engine, keyed off this engine's own
+  // notifier: the two engines share no memory, so GameService's is not live
+  // here. Set before the config read below, which can throw — falling back to
+  // the always-on default would leave this engine free to reopen the audio
+  // device behind a dark screen, which is the whole bug being fixed.
+  SfxService.isScreenOn = () => SecondaryAppsService.deviceScreenOn.value;
+
   try {
     final rawConfig = await ConfigRepository.getUserConfig();
     if (rawConfig != null && rawConfig['app_language'] != null) {

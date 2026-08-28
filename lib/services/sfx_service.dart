@@ -66,12 +66,32 @@ class SfxService {
 
   Completer<void>? _initCompleter;
 
+  /// Whether the display this engine drives is currently powered on.
+  ///
+  /// NeoStation runs as a HOME launcher, so the activity is never paused when
+  /// the device locks; the native screen receiver is the only reliable "device
+  /// is asleep" signal. Each engine wires its own notifier here — the main
+  /// engine [GameService.deviceScreenOn], the sub-display engine
+  /// [SecondaryAppsService.deviceScreenOn] — because the two engines share no
+  /// memory. Defaults to always-on, so this is a no-op on desktop.
+  static bool Function() isScreenOn = () => true;
+
   /// Initializes the SoLoud engine and pre-loads all UI sound assets into memory.
   ///
   /// Subsequent calls will wait for the ongoing initialization or return
   /// immediately if already initialized.
   Future<void> init() async {
     if (_isInitialized) return;
+
+    // Never reopen the audio device behind a dark screen. An initialized SoLoud
+    // engine holds an AAudio output stream, and AudioFlinger keeps an
+    // 'AudioMix' partial wakelock for as long as one is open, which stops the
+    // SoC suspending at all. [MusicPlayerService.appPaused] tears the engine
+    // down on screen-off for exactly that reason; without this guard the next
+    // nav/enter/back sound reopened it milliseconds later through
+    // [_ensureInitialized] and silently undid the teardown, leaving the device
+    // awake for the whole locked session. The sound would be inaudible anyway.
+    if (!isScreenOn()) return;
 
     if (_isInitializing) {
       return _initCompleter?.future;
