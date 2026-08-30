@@ -12,6 +12,7 @@ import '../models/game_model.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/game_service.dart';
 import '../services/game_launch_manager.dart';
+import '../services/logger_service.dart';
 import '../utils/gamepad_nav.dart';
 import '../constants/system_folder_names.dart';
 
@@ -64,10 +65,15 @@ class _GameLaunchDialogState extends State<GameLaunchDialog> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _dialogGamepadNav.initialize();
+      // Modal: launching frees memory and clears caches, so background screens
+      // remount while this dialog is up. Without the flag they push their own
+      // layer on top of it and take the controller off the dialog — including
+      // its own dismiss buttons — for the rest of the session.
       GamepadNavigationManager.pushLayer(
         'game_launch_dialog',
         onActivate: () => _dialogGamepadNav.activate(),
         onDeactivate: () => _dialogGamepadNav.deactivate(),
+        modal: true,
       );
     });
   }
@@ -137,9 +143,22 @@ class _GameLaunchDialogState extends State<GameLaunchDialog> {
 
   Future<void> _performPostSync() async {
     // End game session (saves playtime, unblocks Android native gamepad, clears state).
-    await GameService.endGameSession();
-    // Signal manager that everything is done → triggers closed phase → _closeDialog.
-    GameLaunchManager().completeClose();
+    //
+    // The teardown runs in a try/finally because this dialog is the only thing
+    // that can close itself: if [GameService.endGameSession] throws, the
+    // `completeClose()` below never runs, the dialog never reaches its closed
+    // phase, and the user is left staring at "Closing game" with no way out
+    // but dismissing it by hand. Nothing surfaces either — an unhandled async
+    // error here does not reach `FlutterError.onError`. Whatever happens to
+    // the session, the dialog must still be able to go away.
+    try {
+      await GameService.endGameSession();
+    } catch (e, stack) {
+      LoggerService.instance.e('Error ending game session: $e\n$stack');
+    } finally {
+      // Signal manager that everything is done → triggers closed phase → _closeDialog.
+      GameLaunchManager().completeClose();
+    }
   }
 
   // ---------------------------------------------------------------------------
