@@ -257,6 +257,8 @@ const Map<String, dynamic> appLocaleDe = {
       'Keine Multi-Disc-Sets zum Organisieren gefunden{skipped}.',
   AppLocale.organizeMultiDiscFailed:
       'Multi-Disc-Spiele konnten nicht organisiert werden: {error}',
+  AppLocale.organizeMultiDiscPartialFailure:
+      '{failed} Set(s) konnten nicht organisiert werden. {result}',
   AppLocale.organizeMultiDiscWarning:
       'Dadurch werden passende ROM-Dateien in neue Spielordner verschoben und .m3u-Wiedergabelisten auf dem Speicher erstellt. Dies kann nicht automatisch rückgängig gemacht werden.',
   AppLocale.cleanOrphanedMetadata: 'Verwaiste Metadaten bereinigen',

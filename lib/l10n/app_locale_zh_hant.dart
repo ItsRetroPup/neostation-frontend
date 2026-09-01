@@ -208,6 +208,7 @@ const Map<String, dynamic> appLocaleZhHant = {
       '完成：已整理 {groups} 組、移動 {files} 個檔案、建立 {playlists} 個播放清單{skipped}。',
   AppLocale.organizeMultiDiscNoSetsFound: '找不到可整理的多片組合{skipped}。',
   AppLocale.organizeMultiDiscFailed: '整理多片遊戲失敗：{error}',
+  AppLocale.organizeMultiDiscPartialFailure: '有 {failed} 組無法整理。{result}',
   AppLocale.organizeMultiDiscWarning:
       '這將把相符的 ROM 檔案移至新的遊戲資料夾，並在儲存空間中建立 .m3u 播放清單。此操作無法自動復原。',
   AppLocale.cleanOrphanedMetadata: '清理孤立中介資料',

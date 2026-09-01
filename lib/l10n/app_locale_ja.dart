@@ -213,6 +213,7 @@ const Map<String, dynamic> appLocaleJa = {
       '完了: {groups} セットを整理、{files} ファイルを移動、{playlists} プレイリストを作成{skipped}。',
   AppLocale.organizeMultiDiscNoSetsFound: '整理するマルチディスクセットは見つかりませんでした{skipped}。',
   AppLocale.organizeMultiDiscFailed: 'マルチディスクゲームの整理に失敗しました: {error}',
+  AppLocale.organizeMultiDiscPartialFailure: '{failed} セットを整理できませんでした。{result}',
   AppLocale.organizeMultiDiscWarning:
       '一致するROMファイルを新しいゲームフォルダへ移動し、ストレージに.m3uプレイリストを作成します。この操作を自動的に元に戻すことはできません。',
   AppLocale.cleanOrphanedMetadata: '孤立したメタデータを削除',
