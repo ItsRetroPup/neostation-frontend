@@ -11,6 +11,7 @@ import 'package:neostation/models/retro_achievements_dashboard_models.dart';
 import 'package:neostation/models/retro_achievements_gotw.dart';
 import 'package:neostation/models/retro_achievements_user.dart';
 import 'package:neostation/providers/retro_achievements_provider.dart';
+import 'package:neostation/providers/romm_provider.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_dashboard.dart';
 
 class _DashboardProvider extends RetroAchievementsProvider {
@@ -102,8 +103,13 @@ void main() {
     OwnedWeekGameResolution? opened;
 
     await tester.pumpWidget(
-      ChangeNotifierProvider<RetroAchievementsProvider>.value(
-        value: _DashboardProvider(owned),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<RetroAchievementsProvider>.value(
+            value: _DashboardProvider(owned),
+          ),
+          ChangeNotifierProvider(create: (_) => RommProvider()),
+        ],
         child: ScreenUtilInit(
           designSize: const Size(1280, 720),
           builder: (context, _) => MaterialApp(
@@ -139,14 +145,19 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      ChangeNotifierProvider<RetroAchievementsProvider>.value(
-        value: _DashboardProvider(
-          null,
-          personalProgress: AotwPersonalProgress(
-            state: AotwUserState.earnedHardcoreThisWeek,
-            earnedAt: DateTime.utc(2026, 9, 2),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<RetroAchievementsProvider>.value(
+            value: _DashboardProvider(
+              null,
+              personalProgress: AotwPersonalProgress(
+                state: AotwUserState.earnedHardcoreThisWeek,
+                earnedAt: DateTime.utc(2026, 9, 2),
+              ),
+            ),
           ),
-        ),
+          ChangeNotifierProvider(create: (_) => RommProvider()),
+        ],
         child: ScreenUtilInit(
           designSize: const Size(1280, 720),
           builder: (context, _) => MaterialApp(
@@ -176,8 +187,13 @@ void main() {
 
   testWidgets('renders an empty event as a neutral state', (tester) async {
     await tester.pumpWidget(
-      ChangeNotifierProvider<RetroAchievementsProvider>.value(
-        value: _DashboardProvider(null, showAotw: false),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<RetroAchievementsProvider>.value(
+            value: _DashboardProvider(null, showAotw: false),
+          ),
+          ChangeNotifierProvider(create: (_) => RommProvider()),
+        ],
         child: ScreenUtilInit(
           designSize: const Size(1280, 720),
           builder: (context, _) => MaterialApp(
