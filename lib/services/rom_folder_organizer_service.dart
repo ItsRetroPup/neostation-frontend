@@ -13,7 +13,6 @@ class RomFolderOrganizerResult {
   final int filesMoved;
   final int playlistsCreated;
   final int rootsSkipped;
-  final int groupsFailed;
 
   const RomFolderOrganizerResult({
     required this.groupsOrganized,
@@ -21,13 +20,10 @@ class RomFolderOrganizerResult {
     required this.filesMoved,
     required this.playlistsCreated,
     required this.rootsSkipped,
-    required this.groupsFailed,
   });
 
   bool get hasChanges =>
       groupsOrganized > 0 || foldersCreated > 0 || filesMoved > 0;
-
-  bool get hasFailures => groupsFailed > 0;
 }
 
 class _MutableResult {
@@ -36,7 +32,6 @@ class _MutableResult {
   int filesMoved = 0;
   int playlistsCreated = 0;
   int rootsSkipped = 0;
-  int groupsFailed = 0;
 
   RomFolderOrganizerResult freeze() {
     return RomFolderOrganizerResult(
@@ -45,7 +40,6 @@ class _MutableResult {
       filesMoved: filesMoved,
       playlistsCreated: playlistsCreated,
       rootsSkipped: rootsSkipped,
-      groupsFailed: groupsFailed,
     );
   }
 }
@@ -470,11 +464,7 @@ class RomFolderOrganizerService {
           directoryUri,
           folderBaseName,
         );
-        if (targetUri == null) {
-          _log.e('[M3U] Could not create SAF folder for $folderBaseName.');
-          result.groupsFailed++;
-          continue;
-        }
+        if (targetUri == null) continue;
         result.foldersCreated++;
       }
 
@@ -483,55 +473,40 @@ class RomFolderOrganizerService {
       final playlistLines = <String>[];
       final sourceDiscPaths = <String>[];
       final sourceDiscFilenames = <String>[];
-      var groupFailed = false;
       for (final disc in sortedDiscFiles) {
         final filename = entries
             .firstWhere(
               (entry) => entry['uri'].toString() == disc.file.path,
             )['name']
             .toString();
-        final moved = await SafDirectoryService.moveFile(
+        if (await SafDirectoryService.moveFile(
           disc.file.path,
           targetUri,
           filename,
-        );
-        if (!moved) {
-          _log.e(
-            '[M3U] Stopped organizing $folderBaseName because $filename could not be moved.',
-          );
-          result.groupsFailed++;
-          groupFailed = true;
-          break;
+        )) {
+          result.filesMoved++;
         }
-        result.filesMoved++;
         sourceDiscPaths.add(disc.file.path);
         sourceDiscFilenames.add(filename);
         playlistLines.add(filename);
       }
-      if (groupFailed) continue;
 
       final playlistName = '$folderBaseName.m3u';
-      if (playlist != null) {
-        final moved = await SafDirectoryService.moveFile(
-          playlist['uri'].toString(),
-          targetUri,
-          playlistName,
-        );
-        if (!moved) {
-          _log.e(
-            '[M3U] Stopped organizing $folderBaseName because its existing playlist could not be moved.',
-          );
-          result.groupsFailed++;
-          continue;
-        }
+      if (playlist != null &&
+          await SafDirectoryService.moveFile(
+            playlist['uri'].toString(),
+            targetUri,
+            playlistName,
+          )) {
         result.filesMoved++;
+      } else if (playlist == null) {
+        result.playlistsCreated++;
       }
       if (await SafDirectoryService.writeTextFile(
         targetUri,
         playlistName,
         '${playlistLines.join('\n')}\n',
       )) {
-        if (playlist == null) result.playlistsCreated++;
         final metadataTransfer =
             await ScraperRepository.transferMetadataToPlaylist(
               sourceRomPaths: sourceDiscPaths,
@@ -551,9 +526,6 @@ class RomFolderOrganizerService {
           }
         }
         result.groupsOrganized++;
-      } else {
-        _log.e('[M3U] Could not write playlist $playlistName.');
-        result.groupsFailed++;
       }
     }
   }

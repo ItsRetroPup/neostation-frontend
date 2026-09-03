@@ -34,6 +34,14 @@ class AotwPersonalProgress {
   }) {
     final unlockAt = _parseRaDate(weeklyUnlockDate);
     if (weeklyUnlockFound) {
+      if (weekStartedAt != null &&
+          unlockAt != null &&
+          unlockAt.isBefore(weekStartedAt)) {
+        return AotwPersonalProgress(
+          state: AotwUserState.earnedBeforeWeek,
+          earnedAt: unlockAt,
+        );
+      }
       return AotwPersonalProgress(
         state: weeklyUnlockWasHardcore
             ? AotwUserState.earnedHardcoreThisWeek

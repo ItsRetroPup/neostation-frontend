@@ -263,8 +263,6 @@ const Map<String, dynamic> appLocaleFr = {
       'Aucun lot multi-disques à organiser{skipped}.',
   AppLocale.organizeMultiDiscFailed:
       'Échec de l’organisation des jeux multi-disques : {error}',
-  AppLocale.organizeMultiDiscPartialFailure:
-      '{failed} ensemble(s) n’ont pas pu être organisés. {result}',
   AppLocale.organizeMultiDiscWarning:
       'Cette opération déplacera les ROM correspondantes dans de nouveaux dossiers de jeux et créera des listes .m3u sur votre stockage. Elle ne peut pas être annulée automatiquement.',
   AppLocale.cleanOrphanedMetadata: 'Nettoyer les métadonnées orphelines',
@@ -1059,6 +1057,7 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.rommNoCollections: 'Aucune collection trouvée',
   AppLocale.rommNoRoms: 'Aucune ROM trouvée',
   AppLocale.rommSearch: 'Rechercher',
+  AppLocale.rommSearching: 'Recherche dans RomM...',
   AppLocale.rommDownloading: 'Téléchargement...',
   AppLocale.rommDownloaded: 'Téléchargé',
   AppLocale.rommDownloadComplete: 'Téléchargement terminé',

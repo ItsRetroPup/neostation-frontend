@@ -246,8 +246,6 @@ mixin AppLocale {
   static const String organizeMultiDiscNoSetsFound =
       'organize_multi_disc_no_sets_found';
   static const String organizeMultiDiscFailed = 'organize_multi_disc_failed';
-  static const String organizeMultiDiscPartialFailure =
-      'organize_multi_disc_partial_failure';
   static const String organizeMultiDiscWarning = 'organize_multi_disc_warning';
 
   static const String cleanOrphanedMetadata = 'clean_orphaned_metadata';
@@ -1101,6 +1099,7 @@ mixin AppLocale {
   static const String rommNoCollections = 'romm_no_collections';
   static const String rommNoRoms = 'romm_no_roms';
   static const String rommSearch = 'romm_search';
+  static const String rommSearching = 'romm_searching';
   static const String rommDownloading = 'romm_downloading';
   static const String rommDownloaded = 'romm_downloaded';
   static const String rommDownloadComplete = 'romm_download_complete';

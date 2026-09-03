@@ -19,6 +19,19 @@ void main() {
       expect(progress.earnedAt, DateTime.utc(2026, 9, 2, 12));
     });
 
+    test('does not treat an old Unlocks record as earned this week', () {
+      final progress = AotwPersonalProgress.resolve(
+        weekStartedAt: weekStartedAt,
+        achievementFound: true,
+        weeklyUnlockFound: true,
+        weeklyUnlockWasHardcore: true,
+        weeklyUnlockDate: '2026-08-20T12:00:00+00:00',
+      );
+
+      expect(progress.state, AotwUserState.earnedBeforeWeek);
+      expect(progress.earnedAt, DateTime.utc(2026, 8, 20, 12));
+    });
+
     test('recognizes a hardcore unlock earned during the week', () {
       final progress = AotwPersonalProgress.resolve(
         weekStartedAt: weekStartedAt,

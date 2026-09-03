@@ -246,8 +246,6 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.organizeMultiDiscNoSetsFound:
       'Tidak ada set multi-disk yang ditemukan untuk diatur{skipped}.',
   AppLocale.organizeMultiDiscFailed: 'Gagal mengatur game multi-disk: {error}',
-  AppLocale.organizeMultiDiscPartialFailure:
-      '{failed} set tidak dapat diatur. {result}',
   AppLocale.organizeMultiDiscWarning:
       'Ini akan memindahkan file ROM yang cocok ke folder game baru dan membuat playlist .m3u di penyimpanan Anda. Tindakan ini tidak dapat dibatalkan secara otomatis.',
   AppLocale.cleanOrphanedMetadata: 'Bersihkan Metadata Yatim',
@@ -1024,6 +1022,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.rommNoCollections: 'Tidak ada koleksi ditemukan',
   AppLocale.rommNoRoms: 'Tidak ada ROM ditemukan',
   AppLocale.rommSearch: 'Cari',
+  AppLocale.rommSearching: 'Mencari di RomM...',
   AppLocale.rommDownloading: 'Mengunduh...',
   AppLocale.rommDownloaded: 'Terunduh',
   AppLocale.rommDownloadComplete: 'Unduhan selesai',

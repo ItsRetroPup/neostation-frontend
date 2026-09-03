@@ -253,8 +253,6 @@ const Map<String, dynamic> appLocaleRu = {
       'Многодисковые наборы для организации не найдены{skipped}.',
   AppLocale.organizeMultiDiscFailed:
       'Не удалось организовать многодисковые игры: {error}',
-  AppLocale.organizeMultiDiscPartialFailure:
-      'Не удалось организовать наборов: {failed}. {result}',
   AppLocale.organizeMultiDiscWarning:
       'Подходящие ROM-файлы будут перемещены в новые папки игр, а на накопителе будут созданы плейлисты .m3u. Это нельзя отменить автоматически.',
   AppLocale.cleanOrphanedMetadata: 'Очистить потерянные метаданные',
@@ -1023,6 +1021,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.rommNoCollections: 'Коллекции не найдены',
   AppLocale.rommNoRoms: 'ROM не найдены',
   AppLocale.rommSearch: 'Поиск',
+  AppLocale.rommSearching: 'Поиск в RomM...',
   AppLocale.rommDownloading: 'Загрузка...',
   AppLocale.rommDownloaded: 'Загружено',
   AppLocale.rommDownloadComplete: 'Загрузка завершена',

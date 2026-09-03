@@ -181,11 +181,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
   RetroAchievementsGOTW? get gotw => _gotw;
   bool get gotwLoaded => _gotwLoaded;
 
-  /// Whether the current user has already earned the Achievement of the Week.
-  bool get gotwEarned {
-    return _aotwPersonalProgress.earnedThisWeek;
-  }
-
   /// Recent mastery awards (hardcore) visible to the user.
   List<UserAward> get recentMasteries => _cachedRecentMasteries;
 

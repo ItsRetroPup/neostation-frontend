@@ -212,8 +212,6 @@ const Map<String, dynamic> appLocaleKo = {
       '완료: {groups}개 세트 정리, {files}개 파일 이동, {playlists}개 재생목록 생성{skipped}.',
   AppLocale.organizeMultiDiscNoSetsFound: '정리할 멀티 디스크 세트를 찾지 못했습니다{skipped}.',
   AppLocale.organizeMultiDiscFailed: '멀티 디스크 게임 정리 실패: {error}',
-  AppLocale.organizeMultiDiscPartialFailure:
-      '{failed}개 세트를 정리하지 못했습니다. {result}',
   AppLocale.organizeMultiDiscWarning:
       '일치하는 ROM 파일을 새 게임 폴더로 옮기고 저장소에 .m3u 재생목록을 만듭니다. 이 작업은 자동으로 되돌릴 수 없습니다.',
   AppLocale.cleanOrphanedMetadata: '고아 메타데이터 정리',
@@ -938,6 +936,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.rommNoCollections: '컬렉션을 찾을 수 없습니다',
   AppLocale.rommNoRoms: 'ROM을 찾을 수 없습니다',
   AppLocale.rommSearch: '검색',
+  AppLocale.rommSearching: 'RomM 검색 중...',
   AppLocale.rommDownloading: '다운로드 중...',
   AppLocale.rommDownloaded: '다운로드됨',
   AppLocale.rommDownloadComplete: '다운로드 완료',

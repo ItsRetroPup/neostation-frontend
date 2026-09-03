@@ -15,6 +15,7 @@ import '../../providers/file_provider.dart';
 import '../../providers/retro_achievements_provider.dart';
 import '../../providers/romm_provider.dart';
 import '../../providers/sqlite_config_provider.dart';
+import '../../widgets/custom_notification.dart';
 
 class RADashboardHub extends StatefulWidget {
   final ScrollController? scrollController;
@@ -33,10 +34,10 @@ class RADashboardHub extends StatefulWidget {
   });
 
   @override
-  State<RADashboardHub> createState() => _RADashboardHubState();
+  State<RADashboardHub> createState() => RADashboardHubState();
 }
 
-class _RADashboardHubState extends State<RADashboardHub> {
+class RADashboardHubState extends State<RADashboardHub> {
   bool _requestedInitialLoad = false;
 
   /// Timer used to avoid starting heavy dashboard network loads when the user
@@ -56,6 +57,23 @@ class _RADashboardHubState extends State<RADashboardHub> {
   RommDownload? _weekDownload;
   int _seenRommLibraryRevision = 0;
 
+  /// Invoked by the parent gamepad navigator when the AOTW card has focus.
+  /// A local game opens its library entry; a matched RomM game downloads.
+  void selectWeekCard() {
+    final raProvider = context.read<RetroAchievementsProvider>();
+    final owned = raProvider.ownedWeekGame;
+    if (owned != null) {
+      widget.onOwnedWeekGameSelected(owned);
+      return;
+    }
+    final remote = _rommWeekGame;
+    if (remote != null) _downloadWeekGame(remote, raProvider);
+  }
+
+  bool get weekCardSelectable =>
+      context.read<RetroAchievementsProvider>().ownedWeekGame != null ||
+      _rommWeekGame != null;
+
   void _resolveRommWeekGame(RetroAchievementsProvider raProvider) {
     final gotw = raProvider.gotw;
     final gameId = gotw?.game.id;
@@ -66,9 +84,9 @@ class _RADashboardHubState extends State<RADashboardHub> {
         _rommLookupKey == key) {
       return;
     }
-    _rommLookupKey = key;
     final rommProvider = context.read<RommProvider>();
     if (!rommProvider.isConnected) return;
+    _rommLookupKey = key;
     setState(() => _rommWeekGameLoading = true);
     rommProvider.findRomByRaGameId(gameId, gotw!.game.title).then((rom) {
       if (!mounted || _rommLookupKey != key) return;
@@ -92,7 +110,31 @@ class _RADashboardHubState extends State<RADashboardHub> {
     );
     if (!mounted) return;
     setState(() => _weekDownload = result);
-    if (result.status != RommDownloadStatus.completed) return;
+    switch (result.status) {
+      case RommDownloadStatus.completed:
+        AppNotification.showNotification(
+          context,
+          AppLocale.rommDownloadComplete.getString(context),
+          type: NotificationType.success,
+        );
+        break;
+      case RommDownloadStatus.cancelled:
+        AppNotification.showNotification(
+          context,
+          AppLocale.rommDownloadCancelled.getString(context),
+          type: NotificationType.info,
+        );
+        return;
+      case RommDownloadStatus.failed:
+        AppNotification.showNotification(
+          context,
+          _rommDownloadErrorMessage(result.error),
+          type: NotificationType.error,
+        );
+        return;
+      case RommDownloadStatus.downloading:
+        return;
+    }
 
     // The transfer is complete before the normal debounced scan has inserted
     // its user_roms row. Waiting here gives the card a real local target rather
@@ -100,6 +142,18 @@ class _RADashboardHubState extends State<RADashboardHub> {
     await result.indexed.timeout(const Duration(seconds: 30), onTimeout: () {});
     if (!mounted) return;
     await raProvider.refreshAotwLocalGame();
+  }
+
+  String _rommDownloadErrorMessage(RommDownloadError error) {
+    switch (error) {
+      case RommDownloadError.noSystemMatch:
+        return AppLocale.rommNoSystemMatch.getString(context);
+      case RommDownloadError.noWritableFolder:
+        return AppLocale.rommNoWritableFolder.getString(context);
+      case RommDownloadError.network:
+      case RommDownloadError.none:
+        return AppLocale.rommDownloadFailed.getString(context);
+    }
   }
 
   Future<void> _loadDashboard(RetroAchievementsProvider provider) async {
@@ -205,7 +259,6 @@ class _RADashboardHubState extends State<RADashboardHub> {
 
                   if (!twoColumn) {
                     return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         weekCard,
                         SizedBox(height: 12.r),
@@ -217,28 +270,30 @@ class _RADashboardHubState extends State<RADashboardHub> {
                       ],
                     );
                   }
-                  // The weekly challenge is the dashboard's primary task, so
-                  // it spans both columns. Activity retains its balanced split.
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  // Split the two long lists (Recent Unlocks / Recently Played)
+                  // across columns and pair each with a shorter card, so neither
+                  // column runs far longer than the other and leaves a tall gap.
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      weekCard,
-                      SizedBox(height: 12.r),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: playedCard),
-                          SizedBox(width: 12.r),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                unlocksCard,
-                                SizedBox(height: 12.r),
-                                masteriesCard,
-                              ],
-                            ),
-                          ),
-                        ],
+                      Expanded(
+                        child: Column(
+                          children: [
+                            weekCard,
+                            SizedBox(height: 12.r),
+                            playedCard,
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 12.r),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            unlocksCard,
+                            SizedBox(height: 12.r),
+                            masteriesCard,
+                          ],
+                        ),
                       ),
                     ],
                   );
@@ -404,7 +459,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
         ? theme.colorScheme.secondary
         : theme.colorScheme.primary;
 
-    final selectable = owned != null;
+    final selectable = owned != null || _rommWeekGame != null;
     final selected = selectable && widget.weekCardSelected;
     final semanticsLabel = gotw == null
         ? AppLocale.aotw.getString(context)
@@ -421,9 +476,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
       label: semanticsLabel,
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
-        onTap: owned == null
-            ? null
-            : () => widget.onOwnedWeekGameSelected(owned),
+        onTap: selectable ? selectWeekCard : null,
         child: Container(
           padding: EdgeInsets.all(14.r),
           decoration: _cardDecoration(
@@ -567,7 +620,7 @@ class _RADashboardHubState extends State<RADashboardHub> {
       return _aotwLibraryLabel(
         context,
         Symbols.progress_activity_rounded,
-        AppLocale.rommDownloading.getString(context),
+        AppLocale.rommSearching.getString(context),
         accent,
       );
     }
@@ -591,7 +644,10 @@ class _RADashboardHubState extends State<RADashboardHub> {
           ? SizedBox(
               width: 14.r,
               height: 14.r,
-              child: CircularProgressIndicator(strokeWidth: 2.r),
+              child: CircularProgressIndicator(
+                strokeWidth: 2.r,
+                value: download?.fraction,
+              ),
             )
           : Icon(Symbols.download_rounded, size: 15.r),
       label: Text(
@@ -643,10 +699,10 @@ class _RADashboardHubState extends State<RADashboardHub> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(10.r),
           child: SizedBox(
-            width: 88.r,
-            height: 88.r,
+            width: 72.r,
+            height: 72.r,
             child: Image.network(
               _raMediaUrl(gotw.achievement.badgeUrl),
               fit: BoxFit.cover,
@@ -655,24 +711,24 @@ class _RADashboardHubState extends State<RADashboardHub> {
                 child: Icon(
                   Symbols.emoji_events_rounded,
                   color: accent,
-                  size: 34.r,
+                  size: 30.r,
                 ),
               ),
             ),
           ),
         ),
-        SizedBox(width: 14.r),
+        SizedBox(width: 12.r),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 gotw.game.title,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 15.r,
+                  fontSize: 13.r,
                 ),
               ),
               SizedBox(height: 2.r),
@@ -686,12 +742,12 @@ class _RADashboardHubState extends State<RADashboardHub> {
               SizedBox(height: 8.r),
               Text(
                 gotw.achievement.title,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: accent,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.r,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11.r,
                 ),
               ),
               SizedBox(height: 4.r),
@@ -701,7 +757,6 @@ class _RADashboardHubState extends State<RADashboardHub> {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontSize: 9.r,
-                  height: 1.35,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.78),
                 ),
               ),

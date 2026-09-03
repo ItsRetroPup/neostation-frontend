@@ -421,6 +421,11 @@ void main() async {
     );
     if (hasNewSystem) {
       await sqliteConfigProvider.scanSystems();
+      // scanSystems dispatches Android storage work in the background. Run the
+      // targeted, awaited rescan so the ROM row exists before its RA id is set.
+      for (final system in systems) {
+        await sqliteConfigProvider.rescanSystemSilent(system);
+      }
     } else {
       for (final system in systems) {
         await sqliteConfigProvider.rescanSystemSilent(system);

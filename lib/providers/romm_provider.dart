@@ -115,6 +115,7 @@ class RommProvider extends ChangeNotifier {
   static const int _pageSize = 50;
 
   final Map<int, RommDownload> _downloads = {};
+  final Map<String, RommRom?> _raGameLookupCache = {};
 
   /// Backs [activeDownloadIds] / [downloadsRevision]; maintained by
   /// [_notifyDownloadState].
@@ -319,6 +320,20 @@ class RommProvider extends ChangeNotifier {
         _notifyDownloadState();
       }
     } finally {
+      // A failed or incomplete system scan must not retain completed transfer
+      // trackers for the rest of the session. The UI has already bounded its
+      // wait; leave any later manual rescan to reconcile the library instead.
+      for (final download
+          in _completedPendingIndex.values
+              .where(
+                (download) => systems.any(
+                  (system) => system.folderName == download.system.folderName,
+                ),
+              )
+              .toList()) {
+        _completedPendingIndex.remove(download.rom.id);
+        download.tracker.markIndexed();
+      }
       _settling = false;
     }
   }
@@ -522,6 +537,7 @@ class RommProvider extends ChangeNotifier {
     _romsHasMore = false;
     _searchTerm = '';
     _downloads.clear();
+    _raGameLookupCache.clear();
     _raEarnedByGameId = {};
     _downloadedSystems.clear();
     _systemByPlatformId.clear();
@@ -643,12 +659,20 @@ class RommProvider extends ChangeNotifier {
   /// sweep.
   Future<RommRom?> findRomByRaGameId(int gameId, String gameTitle) async {
     if (!isConnected || gameId <= 0 || gameTitle.trim().isEmpty) return null;
+    final cacheKey = '$gameId|${gameTitle.trim().toLowerCase()}';
+    if (_raGameLookupCache.containsKey(cacheKey)) {
+      return _raGameLookupCache[cacheKey];
+    }
     try {
       final matches = await _service.getRoms(search: gameTitle, limit: 100);
       await _persistRefreshedTokens();
       for (final rom in matches) {
-        if (rom.raId == gameId) return rom;
+        if (rom.raId == gameId) {
+          _raGameLookupCache[cacheKey] = rom;
+          return rom;
+        }
       }
+      _raGameLookupCache[cacheKey] = null;
     } on RommException catch (e) {
       _log.w('RomM RA lookup failed: ${e.message}');
     } catch (e) {

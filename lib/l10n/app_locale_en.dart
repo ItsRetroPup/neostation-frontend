@@ -248,8 +248,6 @@ const Map<String, dynamic> appLocaleEn = {
       'No multi-disc sets found to organize{skipped}.',
   AppLocale.organizeMultiDiscFailed:
       'Failed to organize multi-disc games: {error}',
-  AppLocale.organizeMultiDiscPartialFailure:
-      '{failed} set(s) could not be organized. {result}',
   AppLocale.organizeMultiDiscWarning:
       'This moves matching ROM files into new game folders and creates .m3u playlists on your storage. This cannot be undone automatically.',
   AppLocale.cleanOrphanedMetadata: 'Clean Orphaned Metadata',
@@ -1018,6 +1016,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.rommNoCollections: 'No collections found',
   AppLocale.rommNoRoms: 'No ROMs found',
   AppLocale.rommSearch: 'Search',
+  AppLocale.rommSearching: 'Searching RomM...',
   AppLocale.rommDownloading: 'Downloading...',
   AppLocale.rommDownloaded: 'Downloaded',
   AppLocale.rommDownloadComplete: 'Download complete',
