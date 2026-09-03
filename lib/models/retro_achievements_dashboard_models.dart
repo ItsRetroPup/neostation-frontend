@@ -1,6 +1,90 @@
 import '../utils/ra_utils.dart';
 import 'database_game_model.dart';
 
+enum AotwUserState {
+  unknown,
+  notEarned,
+  earnedBeforeWeek,
+  earnedCasualThisWeek,
+  earnedHardcoreThisWeek,
+}
+
+class AotwPersonalProgress {
+  final AotwUserState state;
+  final DateTime? earnedAt;
+
+  const AotwPersonalProgress({required this.state, this.earnedAt});
+
+  const AotwPersonalProgress.unknown()
+    : state = AotwUserState.unknown,
+      earnedAt = null;
+
+  bool get earnedThisWeek =>
+      state == AotwUserState.earnedCasualThisWeek ||
+      state == AotwUserState.earnedHardcoreThisWeek;
+
+  factory AotwPersonalProgress.resolve({
+    required DateTime? weekStartedAt,
+    required bool achievementFound,
+    String? dateEarned,
+    String? dateEarnedHardcore,
+    bool weeklyUnlockFound = false,
+    bool weeklyUnlockWasHardcore = false,
+    String? weeklyUnlockDate,
+  }) {
+    final unlockAt = _parseRaDate(weeklyUnlockDate);
+    if (weeklyUnlockFound) {
+      return AotwPersonalProgress(
+        state: weeklyUnlockWasHardcore
+            ? AotwUserState.earnedHardcoreThisWeek
+            : AotwUserState.earnedCasualThisWeek,
+        earnedAt: unlockAt,
+      );
+    }
+
+    if (!achievementFound || weekStartedAt == null) {
+      return const AotwPersonalProgress.unknown();
+    }
+
+    final hardcoreAt = _parseRaDate(dateEarnedHardcore);
+    final casualAt = _parseRaDate(dateEarned);
+    if (hardcoreAt != null && !hardcoreAt.isBefore(weekStartedAt)) {
+      return AotwPersonalProgress(
+        state: AotwUserState.earnedHardcoreThisWeek,
+        earnedAt: hardcoreAt,
+      );
+    }
+    if (casualAt != null && !casualAt.isBefore(weekStartedAt)) {
+      return AotwPersonalProgress(
+        state: AotwUserState.earnedCasualThisWeek,
+        earnedAt: casualAt,
+      );
+    }
+    if (hardcoreAt != null || casualAt != null) {
+      return AotwPersonalProgress(
+        state: AotwUserState.earnedBeforeWeek,
+        earnedAt: hardcoreAt ?? casualAt,
+      );
+    }
+    if ((dateEarnedHardcore?.isNotEmpty ?? false) ||
+        (dateEarned?.isNotEmpty ?? false)) {
+      return const AotwPersonalProgress.unknown();
+    }
+    return const AotwPersonalProgress(state: AotwUserState.notEarned);
+  }
+}
+
+DateTime? _parseRaDate(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return null;
+  final normalized = raw.trim().replaceFirst(' ', 'T');
+  final hasExplicitZone =
+      normalized.endsWith('Z') ||
+      RegExp(r'[+-]\d\d:\d\d$').hasMatch(normalized);
+  return DateTime.tryParse(
+    hasExplicitZone ? normalized : '${normalized}Z',
+  )?.toUtc();
+}
+
 class RetroAchievementRecentUnlockItem {
   final String date;
   final bool hardcoreMode;

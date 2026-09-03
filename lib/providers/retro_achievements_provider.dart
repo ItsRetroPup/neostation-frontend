@@ -139,6 +139,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool _gotwLoading = false;
   String? _gotwError;
   OwnedWeekGameResolution? _ownedWeekGame;
+  AotwPersonalProgress _aotwPersonalProgress =
+      const AotwPersonalProgress.unknown();
+  bool _aotwPersonalProgressLoading = false;
+  String? _aotwPersonalProgressError;
 
   // Getters
   RetroAchievementsUser? get user => _user;
@@ -179,8 +183,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
 
   /// Whether the current user has already earned the Achievement of the Week.
   bool get gotwEarned {
-    if (_gotw == null || _user == null) return false;
-    return _gotw!.unlocks.any((u) => u.user == _user!.user);
+    return _aotwPersonalProgress.earnedThisWeek;
   }
 
   /// Recent mastery awards (hardcore) visible to the user.
@@ -210,6 +213,9 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool get gotwLoading => _gotwLoading;
   String? get gotwError => _gotwError;
   OwnedWeekGameResolution? get ownedWeekGame => _ownedWeekGame;
+  AotwPersonalProgress get aotwPersonalProgress => _aotwPersonalProgress;
+  bool get aotwPersonalProgressLoading => _aotwPersonalProgressLoading;
+  String? get aotwPersonalProgressError => _aotwPersonalProgressError;
   bool get hasResolvedApiKey =>
       RetroAchievementsService.resolveApiKey(_apiKey).trim().isNotEmpty;
 
@@ -346,6 +352,9 @@ class RetroAchievementsProvider extends ChangeNotifier {
       _gotw = null;
       _gotwLoaded = false;
       _gotwError = _dashboardApiKeyError;
+      _ownedWeekGame = null;
+      _aotwPersonalProgress = const AotwPersonalProgress.unknown();
+      _aotwPersonalProgressError = null;
       notifyListeners();
       return false;
     }
@@ -362,16 +371,19 @@ class RetroAchievementsProvider extends ChangeNotifier {
       if (gotw != null) {
         _gotw = gotw;
         _gotwLoaded = true;
+        notifyListeners();
         await _resolveOwnedWeekGame();
+        await _resolveAotwPersonalProgress();
         notifyListeners();
         return true;
       } else {
-        _log.w('fetchAOTW returned null');
+        _log.i('RetroAchievements has no active Achievement of the Week');
         _gotw = null;
-        _gotwLoaded = false;
-        _gotwError = 'Could not load Achievement of the Week';
+        _gotwLoaded = true;
+        _ownedWeekGame = null;
+        _aotwPersonalProgress = const AotwPersonalProgress.unknown();
         notifyListeners();
-        return false;
+        return true;
       }
     } catch (e) {
       _gotwError = _describeApiError(
@@ -381,6 +393,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
       _gotwLoaded = false;
       _gotw = null;
       _ownedWeekGame = null;
+      _aotwPersonalProgress = const AotwPersonalProgress.unknown();
       _log.e(_gotwError ?? 'Unknown GOTW error');
       notifyListeners();
       return false;
@@ -462,10 +475,11 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _error = null;
 
     try {
+      final userIdentifier = _user?.ulid.trim() ?? '';
       final gameInfo =
           await RetroAchievementsService.getGameInfoAndUserProgress(
             gameId,
-            _username,
+            userIdentifier.isNotEmpty ? userIdentifier : _username,
             md5Hash: md5Hash,
             apiKey: _apiKey,
           );
@@ -544,6 +558,9 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _gameInfoCache.clear();
     _summaryLoaded = false;
     _gotwLoaded = false;
+    _aotwPersonalProgress = const AotwPersonalProgress.unknown();
+    _aotwPersonalProgressLoading = false;
+    _aotwPersonalProgressError = null;
     _userAwardsLoaded = false;
     _recentUnlocksLoaded = false;
     _recentlyPlayedLoaded = false;
@@ -650,6 +667,9 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _gotwLoading = false;
     _gotwError = null;
     _ownedWeekGame = null;
+    _aotwPersonalProgress = const AotwPersonalProgress.unknown();
+    _aotwPersonalProgressLoading = false;
+    _aotwPersonalProgressError = null;
     _userAwards = null;
     _userAwardsLoaded = false;
     _userAwardsLoading = false;
@@ -908,6 +928,74 @@ class RetroAchievementsProvider extends ChangeNotifier {
     } catch (e) {
       _ownedWeekGame = null;
       _log.e('Error resolving local GOTW ownership: $e');
+    }
+  }
+
+  /// Re-resolves only the AOTW local-game link after the library changes.
+  ///
+  /// A RomM download is indexed asynchronously, so caching this value until a
+  /// dashboard reload made the newly downloaded game appear only after restart.
+  Future<void> refreshAotwLocalGame() async {
+    if (_gotw == null) return;
+    await _resolveOwnedWeekGame();
+    notifyListeners();
+  }
+
+  Future<void> _resolveAotwPersonalProgress() async {
+    final gotw = _gotw;
+    final user = _user;
+    if (gotw == null || user == null || gotw.achievement.id <= 0) {
+      _aotwPersonalProgress = const AotwPersonalProgress.unknown();
+      return;
+    }
+
+    _aotwPersonalProgressLoading = true;
+    _aotwPersonalProgressError = null;
+    notifyListeners();
+
+    try {
+      Unlock? matchingUnlock;
+      for (final unlock in gotw.unlocks) {
+        final sameUlid = user.ulid.isNotEmpty && unlock.ulid == user.ulid;
+        final sameUsername =
+            unlock.user.toLowerCase() == user.user.toLowerCase();
+        if (sameUlid || sameUsername) {
+          matchingUnlock = unlock;
+          break;
+        }
+      }
+
+      if (matchingUnlock != null) {
+        _aotwPersonalProgress = AotwPersonalProgress.resolve(
+          weekStartedAt: gotw.startDateUtc,
+          achievementFound: true,
+          weeklyUnlockFound: true,
+          weeklyUnlockWasHardcore: matchingUnlock.hardcoreMode == 1,
+          weeklyUnlockDate: matchingUnlock.dateAwarded,
+        );
+        return;
+      }
+
+      final info = await getGameInfoAndUserProgress(gotw.game.id);
+      final achievement = info?.achievements[gotw.achievement.id.toString()];
+      _aotwPersonalProgress = AotwPersonalProgress.resolve(
+        weekStartedAt: gotw.startDateUtc,
+        achievementFound: achievement != null,
+        dateEarned: achievement?.dateEarned,
+        dateEarnedHardcore: achievement?.dateEarnedHardcore,
+      );
+      if (info == null || achievement == null) {
+        _aotwPersonalProgressError =
+            'Could not determine Achievement of the Week progress';
+      }
+    } catch (e) {
+      _aotwPersonalProgress = const AotwPersonalProgress.unknown();
+      _aotwPersonalProgressError =
+          'Could not determine Achievement of the Week progress';
+      _log.e('Error resolving AOTW personal progress: $e');
+    } finally {
+      _aotwPersonalProgressLoading = false;
+      notifyListeners();
     }
   }
 

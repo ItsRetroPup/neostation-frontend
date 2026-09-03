@@ -1202,6 +1202,21 @@ mixin AppLocale {
   static const String raNoRecentUnlocks = 'ra_no_recent_unlocks';
   static const String raRecentlyPlayedTitle = 'ra_recently_played_title';
   static const String raNoRecentlyPlayed = 'ra_no_recently_played';
+  static const String raAotwNoActive = 'ra_aotw_no_active';
+  static const String raAotwEarnedHardcore = 'ra_aotw_earned_hardcore';
+  static const String raAotwEarnedCasual = 'ra_aotw_earned_casual';
+  static const String raAotwEarnedPreviously = 'ra_aotw_earned_previously';
+  static const String raAotwNotEarned = 'ra_aotw_not_earned';
+  static const String raAotwStatusUnavailable = 'ra_aotw_status_unavailable';
+  static const String raAotwNotInLibrary = 'ra_aotw_not_in_library';
+  static const String raAotwWeekStarted = 'ra_aotw_week_started';
+  static const String raAotwTrueRatio = 'ra_aotw_true_ratio';
+  static const String raAotwParticipation = 'ra_aotw_participation';
+  static const String raAotwOpenLocalGame = 'ra_aotw_open_local_game';
+  static const String raAotwDownloadFromRomm = 'ra_aotw_download_from_romm';
+  static const String raGamesPlayed = 'ra_games_played';
+  static const String raAchievementProgress = 'ra_achievement_progress';
+  static const String raRecent30Days = 'ra_recent_30_days';
 
   // Custom save folders (NeoSync v2)
   static const String customSaveFoldersTitle = 'custom_save_folders_title';

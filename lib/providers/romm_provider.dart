@@ -12,6 +12,7 @@ import '../models/romm_rom.dart';
 import '../models/system_model.dart';
 import '../repositories/romm_repository.dart';
 import '../repositories/romm_save_map_repository.dart';
+import '../repositories/retro_achievements_repository.dart';
 import '../repositories/scraper_repository.dart';
 import '../repositories/system_repository.dart';
 import '../services/logger_service.dart';
@@ -40,6 +41,7 @@ class RommDownload {
   RommDownloadError error;
   String? errorDetail;
   bool cancelRequested;
+  final Completer<void> _indexedCompleter = Completer<void>();
 
   RommDownload({
     required this.romId,
@@ -53,6 +55,29 @@ class RommDownload {
 
   double? get fraction =>
       (total != null && total! > 0) ? received / total! : null;
+
+  /// Completes after the normal library scan has indexed this transfer.
+  /// Consumers that need a [DatabaseGameModel] (rather than just a file on
+  /// disk) can wait for this before querying the local library.
+  Future<void> get indexed => _indexedCompleter.future;
+
+  void markIndexed() {
+    if (!_indexedCompleter.isCompleted) _indexedCompleter.complete();
+  }
+}
+
+class _CompletedRommDownload {
+  const _CompletedRommDownload({
+    required this.rom,
+    required this.system,
+    required this.indexedName,
+    required this.tracker,
+  });
+
+  final RommRom rom;
+  final SystemModel system;
+  final String indexedName;
+  final RommDownload tracker;
 }
 
 /// State for browsing a remote RomM library and downloading ROMs locally.
@@ -113,6 +138,14 @@ class RommProvider extends ChangeNotifier {
   /// to the config/database providers; receives the systems whose downloads
   /// completed since the last settle.
   Future<void> Function(List<SystemModel> systems)? onDownloadsSettled;
+
+  final Map<int, _CompletedRommDownload> _completedPendingIndex = {};
+  int _libraryRevision = 0;
+
+  /// Advances after completed downloads have been indexed into user_roms.
+  /// Consumers can use this to refresh derived local-library state without
+  /// polling or waiting for the next app launch.
+  int get libraryRevision => _libraryRevision;
 
   Timer? _settleTimer;
   bool _settling = false;
@@ -262,6 +295,29 @@ class RommProvider extends ChangeNotifier {
     _settling = true;
     try {
       await handler(systems);
+      final completed = <_CompletedRommDownload>[
+        for (final system in systems)
+          ..._completedPendingIndex.values.where(
+            (download) => download.system.folderName == system.folderName,
+          ),
+      ];
+      for (final download in completed) {
+        final systemId = download.system.id;
+        final raId = download.rom.raId;
+        if (systemId != null && raId != null) {
+          await RetroAchievementsRepository.updateRommRomRaGameId(
+            download.indexedName,
+            systemId,
+            raId,
+          );
+        }
+        _completedPendingIndex.remove(download.rom.id);
+        download.tracker.markIndexed();
+      }
+      if (completed.isNotEmpty) {
+        _libraryRevision++;
+        _notifyDownloadState();
+      }
     } finally {
       _settling = false;
     }
@@ -577,6 +633,28 @@ class RommProvider extends ChangeNotifier {
     } else if (_librarySearch) {
       await searchLibrary(term);
     }
+  }
+
+  /// Finds a RomM title with the exact RetroAchievements game id.
+  ///
+  /// RomM's public list API filters by title rather than `ra_id`, so the known
+  /// RA game title deliberately narrows the request before the stable numeric
+  /// id makes the final decision. This is an AOTW-sized lookup, not a library
+  /// sweep.
+  Future<RommRom?> findRomByRaGameId(int gameId, String gameTitle) async {
+    if (!isConnected || gameId <= 0 || gameTitle.trim().isEmpty) return null;
+    try {
+      final matches = await _service.getRoms(search: gameTitle, limit: 100);
+      await _persistRefreshedTokens();
+      for (final rom in matches) {
+        if (rom.raId == gameId) return rom;
+      }
+    } on RommException catch (e) {
+      _log.w('RomM RA lookup failed: ${e.message}');
+    } catch (e) {
+      _log.w('RomM RA lookup failed: $e');
+    }
+    return null;
   }
 
   /// Enters a library-wide search: queries ROMs by [term] alone across the
@@ -1301,6 +1379,12 @@ class RommProvider extends ChangeNotifier {
       systemFolder: system.folderName,
       rommRomId: rom.id,
       fsName: indexedName,
+    );
+    _completedPendingIndex[rom.id] = _CompletedRommDownload(
+      rom: rom,
+      system: system,
+      indexedName: indexedName,
+      tracker: tracker,
     );
     _notifyDownloadState();
     // Arm the debounced rescan so this ROM (and any others finishing around the

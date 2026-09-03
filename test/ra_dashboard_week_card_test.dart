@@ -14,9 +14,15 @@ import 'package:neostation/providers/retro_achievements_provider.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_dashboard.dart';
 
 class _DashboardProvider extends RetroAchievementsProvider {
-  _DashboardProvider(this._owned);
+  _DashboardProvider(
+    this._owned, {
+    this.personalProgress = const AotwPersonalProgress.unknown(),
+    this.showAotw = true,
+  });
 
-  final OwnedWeekGameResolution _owned;
+  final OwnedWeekGameResolution? _owned;
+  final AotwPersonalProgress personalProgress;
+  final bool showAotw;
 
   @override
   RetroAchievementsUser? get user => RetroAchievementsUser(
@@ -39,31 +45,36 @@ class _DashboardProvider extends RetroAchievementsProvider {
   );
 
   @override
-  RetroAchievementsGOTW? get gotw => RetroAchievementsGOTW(
-    achievement: Achievement(
-      id: 1,
-      title: 'Finish the level',
-      description: 'Reach the goal.',
-      points: 5,
-      trueRatio: 0,
-      type: '',
-      author: '',
-      badgeName: '',
-      badgeUrl: '',
-      dateCreated: '',
-      dateModified: '',
-    ),
-    console: Console(id: 1, title: 'NES'),
-    game: Game(id: 42, title: 'Local game'),
-    startAt: '',
-    totalPlayers: 0,
-    unlocks: const [],
-    unlocksCount: 0,
-    unlocksHardcoreCount: 0,
-  );
+  RetroAchievementsGOTW? get gotw => showAotw
+      ? RetroAchievementsGOTW(
+          achievement: Achievement(
+            id: 1,
+            title: 'Finish the level',
+            description: 'Reach the goal.',
+            points: 5,
+            trueRatio: 12,
+            type: '',
+            author: '',
+            badgeName: '',
+            badgeUrl: '',
+            dateCreated: '',
+            dateModified: '',
+          ),
+          console: Console(id: 1, title: 'NES'),
+          game: Game(id: 42, title: 'Local game'),
+          startAt: '2026-09-01T00:00:00Z',
+          totalPlayers: 10,
+          unlocks: const [],
+          unlocksCount: 4,
+          unlocksHardcoreCount: 3,
+        )
+      : null;
 
   @override
   OwnedWeekGameResolution? get ownedWeekGame => _owned;
+
+  @override
+  AotwPersonalProgress get aotwPersonalProgress => personalProgress;
 }
 
 void main() {
@@ -122,5 +133,71 @@ void main() {
       find.descendant(of: selectedCard, matching: find.byType(InkWell)),
     );
     expect(opened, same(owned));
+  });
+
+  testWidgets('shows documented AOTW metrics and personal status', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider<RetroAchievementsProvider>.value(
+        value: _DashboardProvider(
+          null,
+          personalProgress: AotwPersonalProgress(
+            state: AotwUserState.earnedHardcoreThisWeek,
+            earnedAt: DateTime.utc(2026, 9, 2),
+          ),
+        ),
+        child: ScreenUtilInit(
+          designSize: const Size(1280, 720),
+          builder: (context, _) => MaterialApp(
+            localizationsDelegates:
+                FlutterLocalization.instance.localizationsDelegates,
+            supportedLocales: FlutterLocalization.instance.supportedLocales,
+            home: Scaffold(
+              body: RADashboardHub(
+                logoutSelected: false,
+                weekCardSelected: false,
+                onDisconnectRequested: () {},
+                onOwnedWeekGameSelected: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Earned this week · Hardcore'), findsOneWidget);
+    expect(find.text('12 True Ratio'), findsOneWidget);
+    expect(find.text('4 of 10 players · 40%'), findsOneWidget);
+    expect(find.text('Week started 2026-09-01'), findsOneWidget);
+    expect(find.text('Not in your library'), findsOneWidget);
+  });
+
+  testWidgets('renders an empty event as a neutral state', (tester) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider<RetroAchievementsProvider>.value(
+        value: _DashboardProvider(null, showAotw: false),
+        child: ScreenUtilInit(
+          designSize: const Size(1280, 720),
+          builder: (context, _) => MaterialApp(
+            localizationsDelegates:
+                FlutterLocalization.instance.localizationsDelegates,
+            supportedLocales: FlutterLocalization.instance.supportedLocales,
+            home: Scaffold(
+              body: RADashboardHub(
+                logoutSelected: false,
+                weekCardSelected: false,
+                onDisconnectRequested: () {},
+                onOwnedWeekGameSelected: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('No current Achievement of the Week'), findsOneWidget);
   });
 }

@@ -1174,6 +1174,22 @@ const Map<String, dynamic> appLocaleFr = {
       'Aucun déblocage récent au cours des 30 derniers jours',
   AppLocale.raRecentlyPlayedTitle: 'Joués Récemment',
   AppLocale.raNoRecentlyPlayed: 'Aucun jeu joué récemment',
+  AppLocale.raAotwNoActive: 'Aucun succès de la semaine en cours',
+  AppLocale.raAotwEarnedHardcore: 'Obtenu cette semaine · Hardcore',
+  AppLocale.raAotwEarnedCasual: 'Obtenu cette semaine · Casual',
+  AppLocale.raAotwEarnedPreviously: 'Obtenu avant cette semaine',
+  AppLocale.raAotwNotEarned: 'Non obtenu cette semaine',
+  AppLocale.raAotwStatusUnavailable: 'Statut personnel indisponible',
+  AppLocale.raAotwNotInLibrary: 'Absent de votre bibliothèque',
+  AppLocale.raAotwWeekStarted: 'Semaine commencée le {date}',
+  AppLocale.raAotwTrueRatio: 'True Ratio',
+  AppLocale.raAotwParticipation:
+      '{unlocks} joueurs sur {players} · {percent} %',
+  AppLocale.raAotwOpenLocalGame: 'Ouvrir le jeu local',
+  AppLocale.raAotwDownloadFromRomm: 'Télécharger depuis RomM',
+  AppLocale.raGamesPlayed: '{count} jeux joués',
+  AppLocale.raAchievementProgress: '{earned}/{total} succès',
+  AppLocale.raRecent30Days: '30 jours',
 
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Dossiers de sauvegarde personnalisés',
