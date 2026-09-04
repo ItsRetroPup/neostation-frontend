@@ -33,8 +33,10 @@ const Map<String, RetroArchCoreFolder> retroArchCoreFolders = {
   'desmume-2015': RetroArchCoreFolder('DeSmuME 2015'),
   'doublecherrygb': RetroArchCoreFolder('DoubleCherryGB'),
   'fb-alpha-2012': RetroArchCoreFolder('FB Alpha 2012', 'fbalpha2012'),
-  'fb-alpha-2012-cps-1':
-      RetroArchCoreFolder('FB Alpha 2012 CPS-1', 'fbalpha2012_cps1'),
+  'fb-alpha-2012-cps-1': RetroArchCoreFolder(
+    'FB Alpha 2012 CPS-1',
+    'fbalpha2012_cps1',
+  ),
   'fbneo': RetroArchCoreFolder('FinalBurn Neo', 'fbneo'),
   'fceumm': RetroArchCoreFolder('FCEUmm'),
   'finalburn-neo': RetroArchCoreFolder('FinalBurn Neo', 'fbneo'),

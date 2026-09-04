@@ -140,9 +140,7 @@ class NeoSyncService extends ChangeNotifier {
       final filePath = _stripCloudEnvelope(rawPath);
       final fileType =
           type ??
-          (isState == true
-              ? 'state'
-              : (scope == 'shared' ? 'shared' : 'save'));
+          (isState == true ? 'state' : (scope == 'shared' ? 'shared' : 'save'));
 
       final fileStat = await file.stat();
       final localModifiedAt = fileStat.modified;
