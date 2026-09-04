@@ -299,6 +299,7 @@ extension NeoSyncUpload on NeoSyncProvider {
       final String relativePath;
       String? syncSystemId;
       String? syncEmulatorId;
+      String syncType = 'save';
       if (customFolderSystem != null && customFolderEmulatorSlug != null) {
         // The configured folder root is the basePath for custom folders, so a
         // nested layout (e.g. `memcards/slot1/Mcd001.ps2`) is preserved on the
@@ -314,6 +315,7 @@ extension NeoSyncUpload on NeoSyncProvider {
         );
         syncSystemId = customFolderSystem;
         syncEmulatorId = customFolderEmulatorSlug;
+        syncType = 'custom';
       } else if (retroArchBasePath != null) {
         final fileName = path.basenameWithoutExtension(file.path);
         final lowerPath = file.path.toLowerCase();
@@ -330,6 +332,7 @@ extension NeoSyncUpload on NeoSyncProvider {
             lowerPath.endsWith('.vmu') ||
             lowerPath.endsWith('.vmp') ||
             lowerPath.contains('vmu_save');
+        syncType = isState ? 'state' : (isSharedCard ? 'shared' : 'save');
         final gameRow = await GameRepository.findRomForSaveName(fileName);
         if (gameRow == null && !isSharedCard) {
           _skippedFiles++;
@@ -384,24 +387,22 @@ extension NeoSyncUpload on NeoSyncProvider {
         NeoSyncProvider._log.i(
           'RA upload: ${file.path} -> system=$system emulator=$emulatorSlug',
         );
-        // Memory-card style files are shared between games, matching the
-        // `_buildV2CloudPath` behaviour: they go under the `shared` scope with
-        // no game segment so the download routes them to the configured custom
-        // folder.
-        relativePath = CloudPathBuilder.build(
-          system: system,
-          emulatorSlug: emulatorSlug,
-          scope: isSharedCard ? 'shared' : 'game',
-          filePath: path.basename(file.path),
-          gameName: isSharedCard
-              ? null
-              : path.basenameWithoutExtension(file.path),
+        // Store the save under the original RetroArch on-disk path relative to
+        // the RetroArch save/state directory (e.g. `saves/FinalBurn Neo/fbneo/<file>`
+        // or `states/Snes9x/<file>`), exactly like the v1 flow did. This keeps
+        // the file name faithful to the real RetroArch layout (including the
+        // MAME/FBNeo internal subfolder) so a download places it back where it
+        // was written, instead of re-deriving the folder from the emulator slug.
+        relativePath = _calculateRelativePath(
+          file,
+          retroArchBasePath,
           isState: isState,
         );
         syncSystemId = system;
         syncEmulatorId = emulatorSlug;
       } else {
         relativePath = _calculateRelativePath(file, basePath, isState: isState);
+        syncType = isState ? 'state' : 'save';
       }
       final rawGameName = _extractGameNameFromPath(file.path);
       // The NeoSync backend hard-rejects an upload whose game_name is empty.
@@ -441,6 +442,7 @@ extension NeoSyncUpload on NeoSyncProvider {
         gameHash: gameHash,
         isState: isState,
         scope: customFolderSystem != null ? 'shared' : null,
+        type: syncType,
       );
 
       if (result['success']) {
@@ -511,6 +513,7 @@ extension NeoSyncUpload on NeoSyncProvider {
             file,
             game.name,
             customFilename: relativePath,
+            type: 'save',
           );
 
           if (result['success']) {
@@ -582,6 +585,7 @@ extension NeoSyncUpload on NeoSyncProvider {
         gameName,
         customFilename: relativePath,
         gameHash: gameHash,
+        isState: isState,
       );
 
       if (result['success']) {
