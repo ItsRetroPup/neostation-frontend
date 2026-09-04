@@ -17,13 +17,14 @@ import 'package:neostation/sync/providers/romm_provider.dart';
 import 'package:neostation/services/notification_service.dart';
 import 'package:neostation/services/game_service.dart';
 import 'package:neostation/services/secondary_apps_service.dart';
-import 'package:neostation/services/game_legend_visibility.dart';
 import 'package:neostation/repositories/config_repository.dart';
 import 'package:neostation/repositories/scraper_repository.dart';
 import 'package:neostation/services/steam_scraper_service.dart';
+import 'package:neostation/providers/collections_provider.dart';
 import 'package:neostation/providers/system_background_provider.dart';
 import 'package:neostation/providers/neo_assets_provider.dart';
 import 'package:neostation/widgets/app_lifecycle_handler.dart';
+import 'package:neostation/widgets/back_swipe_zone.dart';
 import 'package:neostation/services/startup_theme_cache.dart';
 import 'package:neostation/widgets/splash_status_layout.dart';
 import 'package:neostation/widgets/permission_check_wrapper.dart';
@@ -337,13 +338,6 @@ void main() async {
   try {
     // 1. Inicializar ConfigProvider primero (sincroniza sistemas)
     await sqliteConfigProvider.initialize();
-
-    // Seed the game legend visibility from persisted config and wire its
-    // persistence sink so the Select + B toggle survives restarts/upgrades.
-    GameLegendVisibility.bind(
-      initialHidden: sqliteConfigProvider.config.legendHidden,
-      persist: sqliteConfigProvider.updateLegendHidden,
-    );
 
     // 2. Inicializar DatabaseProvider (carga juegos basandose en sistemas sincronizados)
     await sqliteDatabaseProvider.initialize(
@@ -1002,6 +996,14 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider.value(value: widget.rommProvider),
         ChangeNotifierProvider(create: (context) => SystemBackgroundProvider()),
         ChangeNotifierProvider(
+          // Eager: the systems carousel/grid paints the Collections card's game
+          // count on the first frame it builds, and that card is on the very
+          // first screen. A lazy create would leave the count at zero until
+          // something else read the provider.
+          lazy: false,
+          create: (context) => CollectionsProvider()..load(),
+        ),
+        ChangeNotifierProvider(
           // Eager: the theme manifest is a network fetch, and during first-run
           // setup the wizard's art-pack step is the ONLY consumer of this
           // provider. A lazy create would not start loadThemes() until that
@@ -1056,7 +1058,14 @@ class _MyAppState extends State<MyApp> {
                               maxScaleFactor: 1.4,
                             ),
                           ),
-                          child: child!,
+                          // The back swipe lives above every route and dialog
+                          // so touch users have a way back on any screen whose
+                          // navigation layer binds B. Nothing else on screen
+                          // offers one: B is a gamepad button and the system
+                          // back gesture belongs to the platform.
+                          child: Stack(
+                            children: [child!, const BackSwipeZone()],
+                          ),
                         );
                       },
                       theme: themeProvider.currentTheme.copyWith(

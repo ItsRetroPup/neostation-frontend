@@ -181,6 +181,9 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.showAchievementsBadge: 'Значки достижений',
   AppLocale.showAchievementsBadgeSubtitle:
       'Показывать количество достижений на играх, сопоставленных с RetroAchievements',
+  AppLocale.showCloudSyncIcon: 'Значок облачных сохранений',
+  AppLocale.showCloudSyncIconSubtitle:
+      'Показывать состояние облачной синхронизации рядом с выбранной игрой',
   AppLocale.raMatchOnStartup: 'Сопоставлять достижения при запуске',
   AppLocale.raMatchOnStartupSubtitle:
       'Сопоставляет новые ROM после стартового сканирования. Для всей библиотеки сначала запустите «Сопоставить игры RetroAchievements» в разделе «Инструменты».',
@@ -334,7 +337,6 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.scrapingUnavailableAndroid:
       'Получение данных недоступно для приложений Android.',
   AppLocale.achievements: 'Достижения',
-  AppLocale.loadingAchievements: 'Загрузка достижений...',
 
   AppLocale.neoSync: 'NeoSync',
   AppLocale.neoSyncLogin: 'Вход в NeoSync',
@@ -594,6 +596,33 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.hintViewMode: 'Режим',
   AppLocale.hintScrape: 'Скрейп',
   AppLocale.hintMoreActions: 'Ещё',
+  AppLocale.hintOptions: 'Опции',
+  AppLocale.addTo: 'Добавить в…',
+  AppLocale.addedToCollection: 'Добавлено в {name}',
+  AppLocale.newCollection: 'Новая коллекция…',
+  AppLocale.newCollectionDefaultName: 'Коллекция {number}',
+  AppLocale.collections: 'Коллекции',
+  AppLocale.collectionsCount: 'Коллекций: {count}',
+  AppLocale.collectionCount: 'Коллекция: {count}',
+
+  // Collections browser screen
+  AppLocale.createCollection: 'Новая коллекция',
+  AppLocale.collectionName: 'Название коллекции',
+  AppLocale.renameCollection: 'Переименовать коллекцию',
+  AppLocale.changeImage: 'Изменить изображение',
+  AppLocale.removeImage: 'Удалить изображение',
+  AppLocale.deleteCollection: 'Удалить коллекцию',
+  AppLocale.deleteCollectionConfirm:
+      'Удалить «{name}»? Игры из неё не удаляются.',
+  AppLocale.collectionCreated: 'Коллекция {name} создана',
+  AppLocale.collectionDeleted: 'Коллекция {name} удалена',
+  AppLocale.emptyCollection: 'В этой коллекции пока нет игр',
+  AppLocale.noCollections: 'Коллекций пока нет',
+  AppLocale.noCollectionsSubtitle:
+      'Создайте коллекцию, чтобы объединить игры с любых систем.',
+  AppLocale.errorSavingCollection: 'Не удалось сохранить коллекцию',
+  AppLocale.errorUpdatingCollection: 'Не удалось обновить коллекцию',
+  AppLocale.inACollection: 'В коллекции',
 
   AppLocale.error: 'Ошибка',
   AppLocale.loading: 'Загрузка...',
@@ -615,6 +644,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.listView: 'Список',
   AppLocale.carouselView: 'Карусель',
   AppLocale.alphabetical: 'По алфавиту',
+  AppLocale.dateAdded: 'Дата добавления',
+  AppLocale.sortByGameCount: 'Количество игр',
   AppLocale.releaseYear: 'Год выпуска',
   AppLocale.manufacturer: 'Производитель',
   AppLocale.manufacturerType: 'Производитель / Тип',
@@ -760,7 +791,9 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.unknownGame: 'НЕИЗВЕСТНАЯ ИГРА',
   AppLocale.unknownSystem: 'НЕИЗВЕСТНАЯ СИСТЕМА',
   AppLocale.gamesCount: 'Игр: {count}',
+  AppLocale.gameCount: 'Игра: {count}',
   AppLocale.appsCount: 'Приложений: {count}',
+  AppLocale.appCount: 'Приложение: {count}',
   AppLocale.errorSystemNotFound: 'Ошибка: Система для этой игры не найдена.',
   AppLocale.errorLaunchingGame: 'Ошибка запуска игры: {error}',
   AppLocale.settingsNotAvailableRecent:
@@ -792,6 +825,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.second: 'Секунда',
   AppLocale.unknown: 'Неизвестно',
   AppLocale.tracksCount: 'Треков: {count}',
+  AppLocale.trackCount: 'Трек: {count}',
   AppLocale.hours: 'Часов',
   AppLocale.minutes: 'Минут',
   AppLocale.seconds: 'Секунд',

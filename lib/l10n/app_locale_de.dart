@@ -182,6 +182,9 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.showAchievementsBadge: 'Erfolgs-Abzeichen',
   AppLocale.showAchievementsBadgeSubtitle:
       'Die Anzahl der Erfolge auf Spielen anzeigen, die RetroAchievements zugeordnet sind',
+  AppLocale.showCloudSyncIcon: 'Cloud-Speicher-Symbol',
+  AppLocale.showCloudSyncIconSubtitle:
+      'Den Cloud-Sync-Status neben dem ausgewählten Spiel anzeigen',
   AppLocale.raMatchOnStartup: 'Erfolge beim Start zuordnen',
   AppLocale.raMatchOnStartupSubtitle:
       'Ordnet neue ROMs nach dem Start-Scan zu. Für eine ganze Bibliothek zuerst RetroAchievements-Spiele zuordnen unter Werkzeuge ausführen.',
@@ -339,7 +342,6 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.cloudSaveSubtitle: 'Von NeoSync',
   AppLocale.scrapingUnavailableAndroid: 'Scraping auf Android nicht verfügbar.',
   AppLocale.achievements: 'Erfolge',
-  AppLocale.loadingAchievements: 'Erfolge werden geladen...',
 
   AppLocale.neoSync: 'NeoSync',
   AppLocale.neoSyncLogin: 'NeoSync-Anmeldung',
@@ -606,6 +608,35 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.hintViewMode: 'Ansicht',
   AppLocale.hintScrape: 'Scrapen',
   AppLocale.hintMoreActions: 'Mehr',
+  AppLocale.hintOptions: 'Optionen',
+  AppLocale.addTo: 'Hinzufügen zu…',
+  AppLocale.addedToCollection: 'Zu {name} hinzugefügt',
+  AppLocale.newCollection: 'Neue Sammlung…',
+  AppLocale.newCollectionDefaultName: 'Sammlung {number}',
+  AppLocale.collections: 'Sammlungen',
+  AppLocale.collectionsCount: '{count} Sammlungen',
+  AppLocale.collectionCount: '{count} Sammlung',
+
+  // Collections browser screen
+  AppLocale.createCollection: 'Neue Sammlung',
+  AppLocale.collectionName: 'Name der Sammlung',
+  AppLocale.renameCollection: 'Sammlung umbenennen',
+  AppLocale.changeImage: 'Bild ändern',
+  AppLocale.removeImage: 'Bild entfernen',
+  AppLocale.deleteCollection: 'Sammlung löschen',
+  AppLocale.deleteCollectionConfirm:
+      '„{name}“ löschen? Die enthaltenen Spiele werden nicht gelöscht.',
+  AppLocale.collectionCreated: '{name} erstellt',
+  AppLocale.collectionDeleted: '{name} gelöscht',
+  AppLocale.emptyCollection: 'Diese Sammlung enthält noch keine Spiele',
+  AppLocale.noCollections: 'Noch keine Sammlungen',
+  AppLocale.noCollectionsSubtitle:
+      'Erstelle eine, um Spiele aus allen Systemen zu gruppieren.',
+  AppLocale.errorSavingCollection:
+      'Die Sammlung konnte nicht gespeichert werden',
+  AppLocale.errorUpdatingCollection:
+      'Die Sammlung konnte nicht aktualisiert werden',
+  AppLocale.inACollection: 'In einer Sammlung',
 
   AppLocale.error: 'Fehler',
   AppLocale.loading: 'Wird geladen...',
@@ -627,6 +658,8 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.listView: 'Listenansicht',
   AppLocale.carouselView: 'Karussellansicht',
   AppLocale.alphabetical: 'Alphabetisch',
+  AppLocale.dateAdded: 'Hinzugefügt am',
+  AppLocale.sortByGameCount: 'Anzahl der Spiele',
   AppLocale.releaseYear: 'Erscheinungsjahr',
   AppLocale.manufacturer: 'Hersteller',
   AppLocale.manufacturerType: 'Hersteller / Typ',
@@ -774,7 +807,9 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.unknownGame: 'Unbekanntes Spiel',
   AppLocale.unknownSystem: 'Unbekanntes System',
   AppLocale.gamesCount: '{count} Spiele',
+  AppLocale.gameCount: '{count} Spiel',
   AppLocale.appsCount: '{count} Apps',
+  AppLocale.appCount: '{count} App',
   AppLocale.errorSystemNotFound:
       'Fehler: System für dieses Spiel nicht gefunden.',
   AppLocale.errorLaunchingGame: 'Fehler beim Starten des Spiels: {error}',
@@ -810,6 +845,7 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.second: 'Sekunde',
   AppLocale.unknown: 'unbekannt',
   AppLocale.tracksCount: '{count} Titel',
+  AppLocale.trackCount: '{count} Titel',
   AppLocale.hours: 'Stunden',
   AppLocale.minutes: 'Minuten',
   AppLocale.seconds: 'Sekunden',

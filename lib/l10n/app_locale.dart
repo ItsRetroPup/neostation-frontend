@@ -188,6 +188,9 @@ mixin AppLocale {
   static const String showAchievementsBadge = 'show_achievements_badge';
   static const String showAchievementsBadgeSubtitle =
       'show_achievements_badge_subtitle';
+  static const String showCloudSyncIcon = 'show_cloud_sync_icon';
+  static const String showCloudSyncIconSubtitle =
+      'show_cloud_sync_icon_subtitle';
   static const String raMatchOnStartup = 'ra_match_on_startup';
   static const String raMatchOnStartupSubtitle = 'ra_match_on_startup_subtitle';
   static const String raMatchOnStartupBacklogWarning =
@@ -352,7 +355,6 @@ mixin AppLocale {
   static const String scrapingUnavailableAndroid =
       'scraping_unavailable_android';
   static const String achievements = 'achievements';
-  static const String loadingAchievements = 'loading_achievements';
 
   // ---------------------------------------------------------------------------
   // NeoSync
@@ -606,6 +608,8 @@ mixin AppLocale {
   static const String carouselView = 'carousel_view';
   static const String listView = 'list_view';
   static const String alphabetical = 'alphabetical';
+  static const String dateAdded = 'dateAdded';
+  static const String sortByGameCount = 'sortByGameCount';
   static const String releaseYear = 'release_year';
   static const String manufacturer = 'manufacturer';
   static const String manufacturerType = 'manufacturer_type';
@@ -742,8 +746,21 @@ mixin AppLocale {
   static const String recentBadge = 'recent_badge';
   static const String unknownGame = 'unknown_game';
   static const String unknownSystem = 'unknown_system';
+  // Count labels for a card or header ("12 Games", "1 Game"). Each noun has a
+  // singular and a plural template rather than a shared noun concatenated onto
+  // a number: the word order is not the same in every language (ru puts the
+  // number last, ko puts it mid-phrase), so the number has to be interpolated
+  // into a translated template, not glued to a translated word.
+  //
+  // The split is binary, so it is exact only for languages whose plural rule
+  // is one-vs-many. ru has a third form for 5+ ('Игр:') that these two keys
+  // cannot carry; the plural key holds it, so ru is right at 1 and for 5+ and
+  // reads slightly off at 2-4. That is still better than the always-plural it
+  // replaces. Use lib/utils/count_label.dart rather than these keys directly.
   static const String gamesCount = 'games_count';
+  static const String gameCount = 'game_count';
   static const String appsCount = 'apps_count';
+  static const String appCount = 'app_count';
   static const String errorSystemNotFound = 'error_system_not_found';
   static const String errorLaunchingGame = 'error_launching_game';
   static const String settingsNotAvailableRecent =
@@ -773,6 +790,7 @@ mixin AppLocale {
   static const String second = 'second';
   static const String unknown = 'unknown';
   static const String tracksCount = 'tracks_count';
+  static const String trackCount = 'track_count';
   static const String hours = 'hours';
   static const String minutes = 'minutes';
   static const String seconds = 'seconds';
@@ -820,6 +838,37 @@ mixin AppLocale {
   static const String hintViewMode = 'hint_view_mode';
   static const String hintScrape = 'hint_scrape';
   static const String hintMoreActions = 'hint_more_actions';
+  static const String hintOptions = 'hint_options';
+
+  // ---------------------------------------------------------------------------
+  // Game context menu (Y)
+  // ---------------------------------------------------------------------------
+  static const String addTo = 'add_to';
+  static const String addedToCollection = 'added_to_collection';
+  static const String newCollection = 'new_collection';
+  static const String newCollectionDefaultName = 'new_collection_default_name';
+  static const String collections = 'collections';
+  static const String collectionsCount = 'collections_count';
+  static const String collectionCount = 'collection_count';
+
+  // ---------------------------------------------------------------------------
+  // Collections browser screen
+  // ---------------------------------------------------------------------------
+  static const String createCollection = 'create_collection';
+  static const String collectionName = 'collection_name';
+  static const String renameCollection = 'rename_collection';
+  static const String changeImage = 'change_image';
+  static const String removeImage = 'remove_image';
+  static const String deleteCollection = 'delete_collection';
+  static const String deleteCollectionConfirm = 'delete_collection_confirm';
+  static const String collectionCreated = 'collection_created';
+  static const String collectionDeleted = 'collection_deleted';
+  static const String emptyCollection = 'empty_collection';
+  static const String noCollections = 'no_collections';
+  static const String noCollectionsSubtitle = 'no_collections_subtitle';
+  static const String errorSavingCollection = 'error_saving_collection';
+  static const String errorUpdatingCollection = 'error_updating_collection';
+  static const String inACollection = 'in_a_collection';
 
   // ---------------------------------------------------------------------------
   // Misc

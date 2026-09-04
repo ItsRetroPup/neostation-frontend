@@ -179,6 +179,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.showAchievementsBadge: 'Lencana Prestasi',
   AppLocale.showAchievementsBadgeSubtitle:
       'Tampilkan jumlah prestasi pada gim yang cocok dengan RetroAchievements',
+  AppLocale.showCloudSyncIcon: 'Ikon simpanan awan',
+  AppLocale.showCloudSyncIconSubtitle:
+      'Tampilkan status sinkronisasi awan di samping gim yang dipilih',
   AppLocale.raMatchOnStartup: 'Cocokkan prestasi saat mulai',
   AppLocale.raMatchOnStartupSubtitle:
       'Mencocokkan ROM baru setelah pemindaian awal. Untuk seluruh pustaka, jalankan Cocokkan Game RetroAchievements di Alat terlebih dahulu.',
@@ -326,7 +329,6 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.cloudSaveSubtitle: 'Dari NeoSync',
   AppLocale.scrapingUnavailableAndroid: 'Scraping tidak tersedia di Android.',
   AppLocale.achievements: 'Pencapaian',
-  AppLocale.loadingAchievements: 'Memuat pencapaian...',
 
   AppLocale.neoSync: 'NeoSync',
   AppLocale.neoSyncLogin: 'Masuk NeoSync',
@@ -584,6 +586,33 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.hintViewMode: 'Tampilan',
   AppLocale.hintScrape: 'Ambil',
   AppLocale.hintMoreActions: 'Lainnya',
+  AppLocale.hintOptions: 'Opsi',
+  AppLocale.addTo: 'Tambahkan ke…',
+  AppLocale.addedToCollection: 'Ditambahkan ke {name}',
+  AppLocale.newCollection: 'Koleksi baru…',
+  AppLocale.newCollectionDefaultName: 'Koleksi {number}',
+  AppLocale.collections: 'Koleksi',
+  AppLocale.collectionsCount: '{count} Koleksi',
+  AppLocale.collectionCount: '{count} Koleksi',
+
+  // Collections browser screen
+  AppLocale.createCollection: 'Koleksi baru',
+  AppLocale.collectionName: 'Nama koleksi',
+  AppLocale.renameCollection: 'Ganti nama koleksi',
+  AppLocale.changeImage: 'Ubah gambar',
+  AppLocale.removeImage: 'Hapus gambar',
+  AppLocale.deleteCollection: 'Hapus koleksi',
+  AppLocale.deleteCollectionConfirm:
+      'Hapus "{name}"? Game di dalamnya tidak ikut terhapus.',
+  AppLocale.collectionCreated: '{name} dibuat',
+  AppLocale.collectionDeleted: '{name} dihapus',
+  AppLocale.emptyCollection: 'Koleksi ini belum berisi game',
+  AppLocale.noCollections: 'Belum ada koleksi',
+  AppLocale.noCollectionsSubtitle:
+      'Buat satu untuk mengelompokkan game dari sistem mana pun.',
+  AppLocale.errorSavingCollection: 'Koleksi tidak dapat disimpan',
+  AppLocale.errorUpdatingCollection: 'Koleksi tidak dapat diperbarui',
+  AppLocale.inACollection: 'Dalam koleksi',
 
   AppLocale.error: 'Kesalahan',
   AppLocale.loading: 'Memuat...',
@@ -605,6 +634,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.listView: 'Tampilan Daftar',
   AppLocale.carouselView: 'Tampilan Karusel',
   AppLocale.alphabetical: 'Alfabetis',
+  AppLocale.dateAdded: 'Tanggal ditambahkan',
+  AppLocale.sortByGameCount: 'Jumlah gim',
   AppLocale.releaseYear: 'Tahun Rilis',
   AppLocale.manufacturer: 'Pabrikan',
   AppLocale.manufacturerType: 'Pabrikan / Tipe',
@@ -752,7 +783,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.unknownGame: 'Game Tidak Dikenal',
   AppLocale.unknownSystem: 'Sistem Tidak Dikenal',
   AppLocale.gamesCount: '{count} game',
+  AppLocale.gameCount: '{count} game',
   AppLocale.appsCount: '{count} aplikasi',
+  AppLocale.appCount: '{count} aplikasi',
   AppLocale.errorSystemNotFound:
       'Kesalahan: Sistem tidak ditemukan untuk game ini.',
   AppLocale.errorLaunchingGame: 'Kesalahan saat menjalankan game: {error}',
@@ -788,6 +821,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.second: 'detik',
   AppLocale.unknown: 'tidak diketahui',
   AppLocale.tracksCount: '{count} lagu',
+  AppLocale.trackCount: '{count} lagu',
   AppLocale.hours: 'jam',
   AppLocale.minutes: 'menit',
   AppLocale.seconds: 'detik',
