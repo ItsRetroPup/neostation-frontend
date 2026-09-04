@@ -196,17 +196,25 @@ extension NeoSyncDownload on NeoSyncProvider {
   Future<GameModel?> _findGameForCloudFile(NeoSyncFile cloudFile) async {
     final parts = cloudFile.fileName.split('/');
 
-    // Identify if it is a Switch file based on known prefixes
-    final isSwitchPath =
-        cloudFile.fileName.startsWith('saves/switch/') ||
-        cloudFile.fileName.startsWith('saves/eden/') ||
-        cloudFile.fileName.startsWith('saves/citron/') ||
-        cloudFile.fileName.startsWith('saves/yuzu/') ||
-        cloudFile.fileName.startsWith('saves/suyu/') ||
-        cloudFile.fileName.startsWith('saves/sudachi/');
+    // Switch saves are stored under `eden/<game>/<file>` (or the legacy
+    // `saves/eden/<game>/<file>`). Detect the emulator prefix and take the game
+    // name that follows it.
+    const switchEmulators = {
+      'switch',
+      'eden',
+      'citron',
+      'yuzu',
+      'suyu',
+      'sudachi',
+    };
+    final hasLegacyRoot =
+        parts.isNotEmpty && (parts.first == 'saves' || parts.first == 'states');
+    final emulatorIndex = hasLegacyRoot ? 1 : 0;
+    final gameIndex = emulatorIndex + 1;
 
-    if (isSwitchPath && parts.length >= 3) {
-      final gameNameInPath = parts[2];
+    if (parts.length > gameIndex &&
+        switchEmulators.contains(parts[emulatorIndex])) {
+      final gameNameInPath = parts[gameIndex];
       try {
         final row = await GameRepository.findSwitchGameByName(gameNameInPath);
         if (row != null) {
