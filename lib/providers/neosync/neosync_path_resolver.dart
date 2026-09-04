@@ -439,6 +439,19 @@ extension NeoSyncPathResolver on NeoSyncProvider {
     return null;
   }
 
+  /// Derives the RetroArch per-core folder name when it is not yet present on
+  /// disk, so a download creates `<saves>/<core>/` instead of falling back to
+  /// the root. The slug carries the core (`retroarch.snes9x`), so stripping the
+  /// `retroarch.` prefix recovers the folder name. When the folder already
+  /// exists the on-disk scan ([_retroArchCoreFolderForSlug]) is preferred so the
+  /// real case/naming RetroArch uses wins.
+  String? _coreFolderNameFromSlug(String emulatorSlug) {
+    const prefix = 'retroarch.';
+    if (!emulatorSlug.startsWith(prefix)) return null;
+    final core = emulatorSlug.substring(prefix.length);
+    return core.isEmpty ? null : core;
+  }
+
   /// Resolves the NeoSync v2 game hash (`ra_hash`) for an upload.
   ///
   /// The cloud `game_hash` identifies the actual ROM behind a save. It uses the
@@ -757,10 +770,12 @@ extension NeoSyncPathResolver on NeoSyncProvider {
       // per-game saves and shared memcards, since RetroArch stores those under
       // the core subfolder as well.
       if (v2Path.emulatorSlug.startsWith('retroarch.')) {
-        final coreFolder = await _retroArchCoreFolderForSlug(
-          v2Path.emulatorSlug,
-          targetFolder,
-        );
+        final coreFolder =
+            await _retroArchCoreFolderForSlug(
+              v2Path.emulatorSlug,
+              targetFolder,
+            ) ??
+            _coreFolderNameFromSlug(v2Path.emulatorSlug);
         if (coreFolder != null && coreFolder.isNotEmpty) {
           relativeName = path.join(coreFolder, relativeName);
         }
