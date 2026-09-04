@@ -210,6 +210,7 @@ const Map<String, dynamic> appLocaleZh = {
       '完成：已整理 {groups} 组，移动 {files} 个文件，创建 {playlists} 个播放列表{skipped}。',
   AppLocale.organizeMultiDiscNoSetsFound: '未找到可整理的多碟组合{skipped}。',
   AppLocale.organizeMultiDiscFailed: '整理多碟游戏失败：{error}',
+  AppLocale.organizeMultiDiscPartialFailure: '有 {failed} 组无法整理。{result}',
   AppLocale.organizeMultiDiscWarning:
       '这将把匹配的 ROM 文件移动到新的游戏文件夹，并在存储设备上创建 .m3u 播放列表。此操作无法自动撤销。',
   AppLocale.cleanOrphanedMetadata: '清理孤立元数据',

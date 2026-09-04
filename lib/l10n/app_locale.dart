@@ -249,6 +249,8 @@ mixin AppLocale {
   static const String organizeMultiDiscNoSetsFound =
       'organize_multi_disc_no_sets_found';
   static const String organizeMultiDiscFailed = 'organize_multi_disc_failed';
+  static const String organizeMultiDiscPartialFailure =
+      'organize_multi_disc_partial_failure';
   static const String organizeMultiDiscWarning = 'organize_multi_disc_warning';
 
   static const String cleanOrphanedMetadata = 'clean_orphaned_metadata';
