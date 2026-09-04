@@ -690,10 +690,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.noMottoSet: 'Девиз не установлен',
   AppLocale.contributions: 'Вклад',
   AppLocale.aotw: 'ДОСТИЖЕНИЕ НЕДЕЛИ',
-  AppLocale.players: 'Игроки',
   AppLocale.achievementLabel: 'Достижение: {title}',
   AppLocale.unlocks: 'Разблокировано',
-  AppLocale.couldNotLoadAOTW: 'Не удалось загрузить достижение недели',
   AppLocale.recentlyPlayed: 'НЕДАВНО ИГРАЛИ',
   AppLocale.achivs: 'Дост.',
   AppLocale.noRecentGames: 'Нет недавних игр',
@@ -1102,12 +1100,7 @@ const Map<String, dynamic> appLocaleRu = {
 
   AppLocale.raCompletionsLabel: 'Прохождения',
   AppLocale.raMasteriesLabel: 'Мастерства',
-  AppLocale.raEarned: 'Получено',
-  AppLocale.raOwned: 'Всего',
   AppLocale.raPointsAbbrev: 'очк.',
-  AppLocale.raAlreadyEarned: 'Вы уже получили это достижение',
-  AppLocale.raTapToOpenLocalGame:
-      'Нажмите, чтобы открыть данные локальной игры',
   AppLocale.raRecentUnlocks: 'Недавние разблокировки',
   AppLocale.raRecentCompletions: 'Недавние прохождения',
   AppLocale.raRecentMasteries: 'Недавние мастерства',

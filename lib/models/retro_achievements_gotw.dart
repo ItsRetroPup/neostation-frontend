@@ -1,3 +1,5 @@
+import 'retro_achievements_date.dart';
+
 /// Represents the "Game of the Week" data from RetroAchievements.org.
 class RetroAchievementsGOTW {
   /// The specific achievement featured for the week.
@@ -62,14 +64,7 @@ class RetroAchievementsGOTW {
   }
 
   DateTime? get startDateUtc {
-    if (startAt.trim().isEmpty) return null;
-    final normalized = startAt.trim().replaceFirst(' ', 'T');
-    final hasExplicitZone =
-        normalized.endsWith('Z') ||
-        RegExp(r'[+-]\d\d:\d\d$').hasMatch(normalized);
-    return DateTime.tryParse(
-      hasExplicitZone ? normalized : '${normalized}Z',
-    )?.toUtc();
+    return parseRetroAchievementsDateUtc(startAt);
   }
 }
 

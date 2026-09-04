@@ -676,10 +676,8 @@ mixin AppLocale {
   static const String noMottoSet = 'no_motto_set';
   static const String contributions = 'contributions';
   static const String aotw = 'aotw';
-  static const String players = 'players';
   static const String achievementLabel = 'achievement_label';
   static const String unlocks = 'unlocks';
-  static const String couldNotLoadAOTW = 'could_not_load_aotw';
   static const String recentlyPlayed = 'recently_played';
   static const String achivs = 'achivs';
   static const String noRecentGames = 'no_recent_games';
@@ -1172,11 +1170,7 @@ mixin AppLocale {
   // RetroAchievements dashboard & achievement comments
   static const String raCompletionsLabel = 'ra_completions_label';
   static const String raMasteriesLabel = 'ra_masteries_label';
-  static const String raEarned = 'ra_earned';
-  static const String raOwned = 'ra_owned';
   static const String raPointsAbbrev = 'ra_points_abbrev';
-  static const String raAlreadyEarned = 'ra_already_earned';
-  static const String raTapToOpenLocalGame = 'ra_tap_to_open_local_game';
   static const String raRecentUnlocks = 'ra_recent_unlocks';
   static const String raRecentCompletions = 'ra_recent_completions';
   static const String raRecentMasteries = 'ra_recent_masteries';

@@ -1,5 +1,6 @@
 import '../utils/ra_utils.dart';
 import 'database_game_model.dart';
+import 'retro_achievements_date.dart';
 
 enum AotwUserState {
   unknown,
@@ -32,7 +33,7 @@ class AotwPersonalProgress {
     bool weeklyUnlockWasHardcore = false,
     String? weeklyUnlockDate,
   }) {
-    final unlockAt = _parseRaDate(weeklyUnlockDate);
+    final unlockAt = parseRetroAchievementsDateUtc(weeklyUnlockDate);
     if (weeklyUnlockFound) {
       if (weekStartedAt != null &&
           unlockAt != null &&
@@ -54,8 +55,8 @@ class AotwPersonalProgress {
       return const AotwPersonalProgress.unknown();
     }
 
-    final hardcoreAt = _parseRaDate(dateEarnedHardcore);
-    final casualAt = _parseRaDate(dateEarned);
+    final hardcoreAt = parseRetroAchievementsDateUtc(dateEarnedHardcore);
+    final casualAt = parseRetroAchievementsDateUtc(dateEarned);
     if (hardcoreAt != null && !hardcoreAt.isBefore(weekStartedAt)) {
       return AotwPersonalProgress(
         state: AotwUserState.earnedHardcoreThisWeek,
@@ -80,17 +81,6 @@ class AotwPersonalProgress {
     }
     return const AotwPersonalProgress(state: AotwUserState.notEarned);
   }
-}
-
-DateTime? _parseRaDate(String? raw) {
-  if (raw == null || raw.trim().isEmpty) return null;
-  final normalized = raw.trim().replaceFirst(' ', 'T');
-  final hasExplicitZone =
-      normalized.endsWith('Z') ||
-      RegExp(r'[+-]\d\d:\d\d$').hasMatch(normalized);
-  return DateTime.tryParse(
-    hasExplicitZone ? normalized : '${normalized}Z',
-  )?.toUtc();
 }
 
 class RetroAchievementRecentUnlockItem {

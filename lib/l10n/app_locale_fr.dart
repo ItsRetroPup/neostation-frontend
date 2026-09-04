@@ -709,10 +709,8 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.noMottoSet: 'Aucune devise définie',
   AppLocale.contributions: 'Contributions',
   AppLocale.aotw: 'Succès de la Semaine',
-  AppLocale.players: 'joueurs',
   AppLocale.achievementLabel: 'Succès : {title}',
   AppLocale.unlocks: 'déblocages',
-  AppLocale.couldNotLoadAOTW: 'Échec du chargement du Succès de la Semaine',
   AppLocale.recentlyPlayed: 'Joués Récemment',
   AppLocale.achivs: 'Succès',
   AppLocale.noRecentGames: 'Aucun jeu joué récemment',
@@ -1139,12 +1137,7 @@ const Map<String, dynamic> appLocaleFr = {
 
   AppLocale.raCompletionsLabel: 'Complétions',
   AppLocale.raMasteriesLabel: 'Maîtrises',
-  AppLocale.raEarned: 'Obtenus',
-  AppLocale.raOwned: 'Possédés',
   AppLocale.raPointsAbbrev: 'pts',
-  AppLocale.raAlreadyEarned: 'Vous avez déjà obtenu ce succès',
-  AppLocale.raTapToOpenLocalGame:
-      'Appuyez pour ouvrir les détails du jeu local',
   AppLocale.raRecentUnlocks: 'Déblocages Récents',
   AppLocale.raRecentCompletions: 'Complétions Récentes',
   AppLocale.raRecentMasteries: 'Maîtrises Récentes',

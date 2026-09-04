@@ -87,7 +87,10 @@ class RADashboardHubState extends State<RADashboardHub> {
     final rommProvider = context.read<RommProvider>();
     if (!rommProvider.isConnected) return;
     _rommLookupKey = key;
-    setState(() => _rommWeekGameLoading = true);
+    setState(() {
+      _rommWeekGame = null;
+      _rommWeekGameLoading = true;
+    });
     rommProvider.findRomByRaGameId(gameId, gotw!.game.title).then((rom) {
       if (!mounted || _rommLookupKey != key) return;
       setState(() {
@@ -101,8 +104,12 @@ class RADashboardHubState extends State<RADashboardHub> {
     RommRom rom,
     RetroAchievementsProvider raProvider,
   ) async {
-    if (_weekDownload?.status == RommDownloadStatus.downloading) return;
     final rommProvider = context.read<RommProvider>();
+    final activeDownload = rommProvider.downloadFor(rom.id);
+    if (activeDownload?.status == RommDownloadStatus.downloading) {
+      rommProvider.cancelDownload(rom.id);
+      return;
+    }
     final result = await rommProvider.downloadRom(
       rom,
       romFolders: context.read<SqliteConfigProvider>().config.romFolders,
@@ -181,6 +188,7 @@ class RADashboardHubState extends State<RADashboardHub> {
       _seenCacheGeneration = provider.cacheGeneration;
       provider.addListener(_onProviderChanged);
     }
+    _resolveRommWeekGame(provider);
     // Entering the tab re-reads anything past its staleness window, which is
     // what stands in for a refresh control: leaving and coming back is the
     // gesture. Without it the dashboard was a once-per-app-session snapshot —
@@ -205,6 +213,7 @@ class RADashboardHubState extends State<RADashboardHub> {
   void _onProviderChanged() {
     final provider = _provider;
     if (provider == null || !mounted) return;
+    _resolveRommWeekGame(provider);
     if (provider.cacheGeneration == _seenCacheGeneration) return;
     _seenCacheGeneration = provider.cacheGeneration;
     if (!provider.isConnected) return;
@@ -465,10 +474,6 @@ class RADashboardHubState extends State<RADashboardHub> {
         ? AppLocale.aotw.getString(context)
         : '${AppLocale.aotw.getString(context)}, ${gotw.game.title}, '
               '${status.label}';
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _resolveRommWeekGame(raProvider);
-    });
 
     return Semantics(
       button: selectable,

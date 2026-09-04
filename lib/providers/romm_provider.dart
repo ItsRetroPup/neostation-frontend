@@ -290,6 +290,16 @@ class RommProvider extends ChangeNotifier {
       return;
     }
     clearDownloadedSystems();
+    // Only process the downloads present when this scan began. A completion
+    // that lands during [handler] must wait for the next settle: its row does
+    // not exist yet, so assigning its RA id now would silently update nothing.
+    final pendingAtStart = <int, _CompletedRommDownload>{
+      for (final entry in _completedPendingIndex.entries)
+        if (systems.any(
+          (system) => system.folderName == entry.value.system.folderName,
+        ))
+          entry.key: entry.value,
+    };
     // These systems are being indexed now; the clock restarts for whatever
     // lands while the scan runs.
     _oldestPendingCompletion = null;
@@ -298,7 +308,7 @@ class RommProvider extends ChangeNotifier {
       await handler(systems);
       final completed = <_CompletedRommDownload>[
         for (final system in systems)
-          ..._completedPendingIndex.values.where(
+          ...pendingAtStart.values.where(
             (download) => download.system.folderName == system.folderName,
           ),
       ];
@@ -320,17 +330,9 @@ class RommProvider extends ChangeNotifier {
         _notifyDownloadState();
       }
     } finally {
-      // A failed or incomplete system scan must not retain completed transfer
-      // trackers for the rest of the session. The UI has already bounded its
-      // wait; leave any later manual rescan to reconcile the library instead.
-      for (final download
-          in _completedPendingIndex.values
-              .where(
-                (download) => systems.any(
-                  (system) => system.folderName == download.system.folderName,
-                ),
-              )
-              .toList()) {
+      // A failed or incomplete scan only clears entries it actually attempted;
+      // later completions remain queued for the next settle.
+      for (final download in pendingAtStart.values.toList()) {
         _completedPendingIndex.remove(download.rom.id);
         download.tracker.markIndexed();
       }

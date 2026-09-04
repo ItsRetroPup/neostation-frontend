@@ -142,7 +142,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
   AotwPersonalProgress _aotwPersonalProgress =
       const AotwPersonalProgress.unknown();
   bool _aotwPersonalProgressLoading = false;
-  String? _aotwPersonalProgressError;
 
   // Getters
   RetroAchievementsUser? get user => _user;
@@ -210,7 +209,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
   OwnedWeekGameResolution? get ownedWeekGame => _ownedWeekGame;
   AotwPersonalProgress get aotwPersonalProgress => _aotwPersonalProgress;
   bool get aotwPersonalProgressLoading => _aotwPersonalProgressLoading;
-  String? get aotwPersonalProgressError => _aotwPersonalProgressError;
   bool get hasResolvedApiKey =>
       RetroAchievementsService.resolveApiKey(_apiKey).trim().isNotEmpty;
 
@@ -349,7 +347,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
       _gotwError = _dashboardApiKeyError;
       _ownedWeekGame = null;
       _aotwPersonalProgress = const AotwPersonalProgress.unknown();
-      _aotwPersonalProgressError = null;
       notifyListeners();
       return false;
     }
@@ -555,7 +552,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _gotwLoaded = false;
     _aotwPersonalProgress = const AotwPersonalProgress.unknown();
     _aotwPersonalProgressLoading = false;
-    _aotwPersonalProgressError = null;
     _userAwardsLoaded = false;
     _recentUnlocksLoaded = false;
     _recentlyPlayedLoaded = false;
@@ -664,7 +660,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _ownedWeekGame = null;
     _aotwPersonalProgress = const AotwPersonalProgress.unknown();
     _aotwPersonalProgressLoading = false;
-    _aotwPersonalProgressError = null;
     _userAwards = null;
     _userAwardsLoaded = false;
     _userAwardsLoading = false;
@@ -945,7 +940,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
     }
 
     _aotwPersonalProgressLoading = true;
-    _aotwPersonalProgressError = null;
     notifyListeners();
 
     try {
@@ -971,6 +965,9 @@ class RetroAchievementsProvider extends ChangeNotifier {
         return;
       }
 
+      // This extra sequential request distinguishes an older achievement from
+      // one earned this week when the player is absent from the event Unlocks.
+      // It stays sequential because parallel dashboard calls trigger RA 429s.
       final info = await getGameInfoAndUserProgress(gotw.game.id);
       final achievement = info?.achievements[gotw.achievement.id.toString()];
       _aotwPersonalProgress = AotwPersonalProgress.resolve(
@@ -979,14 +976,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
         dateEarned: achievement?.dateEarned,
         dateEarnedHardcore: achievement?.dateEarnedHardcore,
       );
-      if (info == null || achievement == null) {
-        _aotwPersonalProgressError =
-            'Could not determine Achievement of the Week progress';
-      }
     } catch (e) {
       _aotwPersonalProgress = const AotwPersonalProgress.unknown();
-      _aotwPersonalProgressError =
-          'Could not determine Achievement of the Week progress';
       _log.e('Error resolving AOTW personal progress: $e');
     } finally {
       _aotwPersonalProgressLoading = false;
