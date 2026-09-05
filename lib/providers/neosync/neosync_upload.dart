@@ -301,18 +301,17 @@ extension NeoSyncUpload on NeoSyncProvider {
       String? syncEmulatorId;
       String syncType = 'save';
       if (customFolderSystem != null && customFolderEmulatorSlug != null) {
-        // The configured folder root is the basePath for custom folders, so a
-        // nested layout (e.g. `memcards/slot1/Mcd001.ps2`) is preserved on the
-        // cloud path instead of collapsing every file to its basename.
+        // The configured folder root is the basePath for the standalone folder,
+        // so a nested layout (e.g. `memcards/slot1/Mcd001.ps2`) is preserved on
+        // the cloud path instead of collapsing every file to its basename.
+        // Standalone saves live under the `v2/custom/<emulator>/` namespace in
+        // R2, where `<emulator>` is the emulator's unique id (e.g.
+        // `ps2.com.armsx2`), so the object key is
+        // `user_id/v2/custom/<emulator>/<relative>`.
         final relativeToFolder = path
             .relative(file.path, from: basePath)
             .replaceAll('\\', '/');
-        relativePath = CloudPathBuilder.build(
-          system: customFolderSystem,
-          emulatorSlug: customFolderEmulatorSlug,
-          scope: 'shared',
-          filePath: relativeToFolder,
-        );
+        relativePath = 'v2/custom/$customFolderEmulatorSlug/$relativeToFolder';
         syncSystemId = customFolderSystem;
         syncEmulatorId = customFolderEmulatorSlug;
         syncType = 'custom';

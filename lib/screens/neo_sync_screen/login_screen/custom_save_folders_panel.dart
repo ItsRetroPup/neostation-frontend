@@ -90,24 +90,17 @@ class _CustomSaveFoldersDialogState extends State<CustomSaveFoldersDialog> {
     }
   }
 
-  String? get _selectedEmulatorSlug {
-    if (_selectedEmulatorUniqueId == null) return null;
-    return CloudPathBuilder.slugFromEmulatorUniqueId(
-      _selectedEmulatorUniqueId!,
-    );
-  }
-
   Future<void> _selectFolder() async {
     final system = _selectedSystem;
-    final emulatorSlug = _selectedEmulatorSlug;
-    if (system == null || emulatorSlug == null || _pickingFolder) return;
+    final emulatorUniqueId = _selectedEmulatorUniqueId;
+    if (system == null || emulatorUniqueId == null || _pickingFolder) return;
 
     setState(() => _pickingFolder = true);
     // Closing the dialog before opening the SAF picker avoids the dialog being
     // disposed mid-flight on Android resume; the parent view completes the
     // operation and refreshes the list.
     if (mounted) Navigator.of(context).pop();
-    await widget.onSelectFolder(system, emulatorSlug);
+    await widget.onSelectFolder(system, emulatorUniqueId);
   }
 
   @override
@@ -198,7 +191,7 @@ class _CustomSaveFoldersDialogState extends State<CustomSaveFoldersDialog> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: isBusy || _selectedEmulatorSlug == null
+                  onPressed: isBusy || _selectedEmulatorUniqueId == null
                       ? null
                       : _selectFolder,
                   icon: _pickingFolder
