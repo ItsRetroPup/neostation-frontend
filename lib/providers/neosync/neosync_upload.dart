@@ -573,7 +573,11 @@ extension NeoSyncUpload on NeoSyncProvider {
           final game = _gameModelFromRomRow(row, fileName);
           gameHash = await _resolveGameHashForUpload(game);
           systemId = game.systemFolderName;
-          emulatorId = _retroArchCoreSlugFromGame(game);
+          // Derive the RetroArch slug from the save's core folder (ground
+          // truth); fall back to the game metadata.
+          emulatorId =
+              await _resolveRetroArchEmulatorSlug(file, basePath) ??
+              _retroArchCoreSlugFromGame(game);
         }
       } catch (e) {
         NeoSyncProvider._log.w(
