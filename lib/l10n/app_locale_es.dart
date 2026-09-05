@@ -466,12 +466,12 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.storageLabel: 'Almacenamiento',
   AppLocale.lastSyncedSave: 'Último guardado sincronizado',
   AppLocale.saveListMenu: 'Lista de Guardados',
-  AppLocale.customSaveFoldersMenu: 'Carpetas de Guardado Personalizadas',
+  AppLocale.customSaveFoldersMenu: 'Carpetas de Guardado Standalone',
   AppLocale.updateYourPlanMenu: 'Actualizar Tu Plan',
   AppLocale.customFoldersSubtitle:
-      'Añade una carpeta personalizada de un emulador independiente para que sus guardados también se sincronicen.',
+      'Añade una carpeta de un emulador standalone para que sus guardados también se sincronicen.',
   AppLocale.noCustomFoldersConfigured:
-      'No hay carpetas personalizadas configuradas',
+      'No hay carpetas standalone configuradas',
   AppLocale.foldersConfigured: '{count} configuradas',
   AppLocale.searchSavesHint: 'Buscar guardados...',
   AppLocale.filterAll: 'Todos',
@@ -1201,7 +1201,7 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raNoRecentlyPlayed: 'No hay juegos jugados recientemente',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: 'Carpetas de guardado personalizadas',
+  AppLocale.customSaveFoldersTitle: 'Carpetas de guardado standalone',
   AppLocale.customSaveFolderPickSystem: 'Elige un sistema',
   AppLocale.customSaveFolderPickEmulator: 'Elige un emulador',
   AppLocale.customSaveFolderSelect: 'Seleccionar carpeta',
@@ -1211,12 +1211,12 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.customSaveFolderInvalid: 'La carpeta seleccionada no existe',
   AppLocale.removeCustomFolder: 'Eliminar Carpeta',
   AppLocale.removeCustomFolderConfirm:
-      '¿Eliminar esta carpeta de guardado personalizada? Sus archivos locales no se borrarán, solo se desvinculará de la sincronización.',
+      '¿Eliminar esta carpeta de guardado standalone? Sus archivos locales no se borrarán, solo se desvinculará de la sincronización.',
   AppLocale.uploadingCustomFolder: 'Subiendo guardados de {folder}...',
   AppLocale.customFolderUploadComplete:
-      'Carpeta personalizada sincronizada: {uploaded} subidos, {skipped} ya actualizados',
+      'Carpeta standalone sincronizada: {uploaded} subidos, {skipped} ya actualizados',
   AppLocale.customFolderUploadFailed:
-      'Error al sincronizar la carpeta personalizada',
+      'Error al sincronizar la carpeta standalone',
   AppLocale.customSaveFoldersMigrate:
       'Migrar guardados de la nube a NeoSync v2',
 

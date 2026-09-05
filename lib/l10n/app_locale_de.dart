@@ -470,7 +470,7 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.storageLabel: 'Speicher',
   AppLocale.lastSyncedSave: 'Zuletzt synchronisierter Spielstand',
   AppLocale.saveListMenu: 'Speicherliste',
-  AppLocale.customSaveFoldersMenu: 'Benutzerdefinierte Speicherordner',
+  AppLocale.customSaveFoldersMenu: 'Standalone-Speicherordner',
   AppLocale.updateYourPlanMenu: 'Plan aktualisieren',
   AppLocale.customFoldersSubtitle:
       'Füge einen benutzerdefinierten Ordner von einem eigenständigen Emulator hinzu, damit auch seine Spielstände synchronisiert werden.',
@@ -1206,7 +1206,7 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.raNoRecentlyPlayed: 'Keine kürzlich gespielten Spiele',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: 'Benutzerdefinierte Spielstandordner',
+  AppLocale.customSaveFoldersTitle: 'Standalone-Spielstandordner',
   AppLocale.customSaveFolderPickSystem: 'System auswählen',
   AppLocale.customSaveFolderPickEmulator: 'Emulator auswählen',
   AppLocale.customSaveFolderSelect: 'Ordner auswählen',
@@ -1216,11 +1216,11 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.customSaveFolderInvalid: 'Der ausgewählte Ordner existiert nicht',
   AppLocale.removeCustomFolder: 'Ordner Entfernen',
   AppLocale.removeCustomFolderConfirm:
-      'Diesen benutzerdefinierten Speicherordner entfernen? Lokale Dateien werden nicht gelöscht, nur von der Synchronisierung entkoppelt.',
+      'Diesen Standalone Speicherordner entfernen? Lokale Dateien werden nicht gelöscht, nur von der Synchronisierung entkoppelt.',
   AppLocale.uploadingCustomFolder:
       'Spielstände aus {folder} werden hochgeladen...',
   AppLocale.customFolderUploadComplete:
-      'Benutzerdefinierter Ordner synchronisiert: {uploaded} hochgeladen, {skipped} bereits aktuell',
+      'Standaloner Ordner synchronisiert: {uploaded} hochgeladen, {skipped} bereits aktuell',
   AppLocale.customFolderUploadFailed:
       'Synchronisierung des benutzerdefinierten Ordners fehlgeschlagen',
   AppLocale.customSaveFoldersMigrate:

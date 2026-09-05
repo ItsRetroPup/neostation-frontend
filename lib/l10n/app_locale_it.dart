@@ -465,7 +465,7 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.storageLabel: 'Archiviazione',
   AppLocale.lastSyncedSave: 'Ultimo salvataggio sincronizzato',
   AppLocale.saveListMenu: 'Elenco Salvataggi',
-  AppLocale.customSaveFoldersMenu: 'Cartelle di Salvataggio Personalizzate',
+  AppLocale.customSaveFoldersMenu: 'Cartelle di Salvataggio Standalone',
   AppLocale.updateYourPlanMenu: 'Aggiorna il Tuo Piano',
   AppLocale.customFoldersSubtitle:
       'Aggiungi una cartella personalizzata da un emulatore standalone per sincronizzare anche i suoi salvataggi.',
@@ -1200,7 +1200,7 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.raNoRecentlyPlayed: 'Nessun gioco giocato di recente',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: 'Cartelle di salvataggio personalizzate',
+  AppLocale.customSaveFoldersTitle: 'Cartelle di salvataggio standalone',
   AppLocale.customSaveFolderPickSystem: 'Scegli un sistema',
   AppLocale.customSaveFolderPickEmulator: 'Scegli un emulatore',
   AppLocale.customSaveFolderSelect: 'Seleziona cartella',
@@ -1210,10 +1210,10 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.customSaveFolderInvalid: 'La cartella selezionata non esiste',
   AppLocale.removeCustomFolder: 'Rimuovi Cartella',
   AppLocale.removeCustomFolderConfirm:
-      'Rimuovere questa cartella di salvataggio personalizzata? I file locali non verranno eliminati, solo scollegati dalla sincronizzazione.',
+      'Rimuovere questa cartella di salvataggio standalone? I file locali non verranno eliminati, solo scollegati dalla sincronizzazione.',
   AppLocale.uploadingCustomFolder: 'Caricamento dei salvataggi da {folder}...',
   AppLocale.customFolderUploadComplete:
-      'Cartella personalizzata sincronizzata: {uploaded} caricati, {skipped} già aggiornati',
+      'Cartella standalone sincronizzata: {uploaded} caricati, {skipped} già aggiornati',
   AppLocale.customFolderUploadFailed:
       'Sincronizzazione della cartella personalizzata fallita',
   AppLocale.customSaveFoldersMigrate: 'Migra i salvataggi cloud a NeoSync v2',

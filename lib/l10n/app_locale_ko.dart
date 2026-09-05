@@ -399,10 +399,10 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.storageLabel: '저장 공간',
   AppLocale.lastSyncedSave: '마지막으로 동기화된 세이브',
   AppLocale.saveListMenu: '세이브 목록',
-  AppLocale.customSaveFoldersMenu: '사용자 지정 세이브 폴더',
+  AppLocale.customSaveFoldersMenu: '독립형 세이브 폴더',
   AppLocale.updateYourPlanMenu: '요금제 업데이트',
-  AppLocale.customFoldersSubtitle: '독립형 에뮬레이터의 사용자 지정 폴더를 추가하면 해당 세이브도 동기화됩니다.',
-  AppLocale.noCustomFoldersConfigured: '설정된 사용자 지정 폴더가 없습니다',
+  AppLocale.customFoldersSubtitle: '독립형 에뮬레이터의 독립형 폴더를 추가하면 해당 세이브도 동기화됩니다.',
+  AppLocale.noCustomFoldersConfigured: '설정된 독립형 폴더가 없습니다',
   AppLocale.foldersConfigured: '{count}개 설정됨',
   AppLocale.searchSavesHint: '세이브 검색...',
   AppLocale.filterAll: '모두',
@@ -1048,7 +1048,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.raNoRecentlyPlayed: '최근에 플레이한 게임이 없습니다',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: '사용자 지정 저장 폴더',
+  AppLocale.customSaveFoldersTitle: '독립형 저장 폴더',
   AppLocale.customSaveFolderPickSystem: '시스템 선택',
   AppLocale.customSaveFolderPickEmulator: '에뮬레이터 선택',
   AppLocale.customSaveFolderSelect: '폴더 선택',
@@ -1058,11 +1058,11 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.customSaveFolderInvalid: '선택한 폴더가 존재하지 않습니다',
   AppLocale.removeCustomFolder: '폴더 제거',
   AppLocale.removeCustomFolderConfirm:
-      '이 사용자 지정 세이브 폴더를 제거하시겠습니까? 로컬 파일은 삭제되지 않고 동기화에서만 분리됩니다.',
+      '이 독립형 세이브 폴더를 제거하시겠습니까? 로컬 파일은 삭제되지 않고 동기화에서만 분리됩니다.',
   AppLocale.uploadingCustomFolder: '{folder}에서 세이브 업로드 중...',
   AppLocale.customFolderUploadComplete:
-      '사용자 지정 폴더 동기화 완료: {uploaded}개 업로드, {skipped}개는 이미 최신',
-  AppLocale.customFolderUploadFailed: '사용자 지정 폴더 동기화 실패',
+      '독립형 폴더 동기화 완료: {uploaded}개 업로드, {skipped}개는 이미 최신',
+  AppLocale.customFolderUploadFailed: '독립형 폴더 동기화 실패',
   AppLocale.customSaveFoldersMigrate: '클라우드 저장을 NeoSync v2로 마이그레이션',
 
   // ES-DE import

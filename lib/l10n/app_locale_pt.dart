@@ -460,7 +460,7 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.storageLabel: 'Armazenamento',
   AppLocale.lastSyncedSave: 'Último save sincronizado',
   AppLocale.saveListMenu: 'Lista de Saves',
-  AppLocale.customSaveFoldersMenu: 'Pastas de Save Personalizadas',
+  AppLocale.customSaveFoldersMenu: 'Pastas de Save Standalone',
   AppLocale.updateYourPlanMenu: 'Atualizar Seu Plano',
   AppLocale.customFoldersSubtitle:
       'Adicione uma pasta personalizada de um emulador standalone para que seus saves também sejam sincronizados.',
@@ -1183,7 +1183,7 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.raNoRecentlyPlayed: 'Nenhum jogo jogado recentemente',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: 'Pastas de save personalizadas',
+  AppLocale.customSaveFoldersTitle: 'Pastas de save standalone',
   AppLocale.customSaveFolderPickSystem: 'Escolha um sistema',
   AppLocale.customSaveFolderPickEmulator: 'Escolha um emulador',
   AppLocale.customSaveFolderSelect: 'Selecionar pasta',
@@ -1193,10 +1193,10 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.customSaveFolderInvalid: 'A pasta selecionada não existe',
   AppLocale.removeCustomFolder: 'Remover Pasta',
   AppLocale.removeCustomFolderConfirm:
-      'Remover esta pasta de save personalizada? Os arquivos locais não serão excluídos, apenas desvinculados da sincronização.',
+      'Remover esta pasta de save standalone? Os arquivos locais não serão excluídos, apenas desvinculados da sincronização.',
   AppLocale.uploadingCustomFolder: 'Enviando saves de {folder}...',
   AppLocale.customFolderUploadComplete:
-      'Pasta personalizada sincronizada: {uploaded} enviados, {skipped} já atualizados',
+      'Pasta standalone sincronizada: {uploaded} enviados, {skipped} já atualizados',
   AppLocale.customFolderUploadFailed:
       'Falha ao sincronizar a pasta personalizada',
   AppLocale.customSaveFoldersMigrate: 'Migrar saves da nuvem para o NeoSync v2',

@@ -475,11 +475,11 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.storageLabel: 'Stockage',
   AppLocale.lastSyncedSave: 'Dernière sauvegarde synchronisée',
   AppLocale.saveListMenu: 'Liste des Sauvegardes',
-  AppLocale.customSaveFoldersMenu: 'Dossiers de Sauvegarde Personnalisés',
+  AppLocale.customSaveFoldersMenu: 'Dossiers de Sauvegarde Standalone',
   AppLocale.updateYourPlanMenu: 'Mettre à Jour Votre Plan',
   AppLocale.customFoldersSubtitle:
       'Ajoutez un dossier personnalisé depuis un émulateur autonome pour synchroniser aussi ses sauvegardes.',
-  AppLocale.noCustomFoldersConfigured: 'Aucun dossier personnalisé configuré',
+  AppLocale.noCustomFoldersConfigured: 'Aucun dossier standalone configuré',
   AppLocale.foldersConfigured: '{count} configurés',
   AppLocale.searchSavesHint: 'Rechercher des sauvegardes...',
   AppLocale.filterAll: 'Tous',
@@ -1211,7 +1211,7 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.raNoRecentlyPlayed: 'Aucun jeu joué récemment',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: 'Dossiers de sauvegarde personnalisés',
+  AppLocale.customSaveFoldersTitle: 'Dossiers de sauvegarde standalone',
   AppLocale.customSaveFolderPickSystem: 'Choisir un système',
   AppLocale.customSaveFolderPickEmulator: 'Choisir un émulateur',
   AppLocale.customSaveFolderSelect: 'Sélectionner un dossier',
@@ -1221,11 +1221,11 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.customSaveFolderInvalid: 'Le dossier sélectionné n\'existe pas',
   AppLocale.removeCustomFolder: 'Supprimer le Dossier',
   AppLocale.removeCustomFolderConfirm:
-      'Supprimer ce dossier de sauvegarde personnalisé ? Ses fichiers locaux ne seront pas supprimés, seulement déliés de la synchronisation.',
+      'Supprimer ce dossier de sauvegarde standalone ? Ses fichiers locaux ne seront pas supprimés, seulement déliés de la synchronisation.',
   AppLocale.uploadingCustomFolder:
       'Téléversement des sauvegardes de {folder}...',
   AppLocale.customFolderUploadComplete:
-      'Dossier personnalisé synchronisé : {uploaded} téléversés, {skipped} déjà à jour',
+      'Dossier standalone synchronisé : {uploaded} téléversés, {skipped} déjà à jour',
   AppLocale.customFolderUploadFailed:
       'Échec de la synchronisation du dossier personnalisé',
   AppLocale.customSaveFoldersMigrate:

@@ -449,7 +449,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.storageLabel: 'Penyimpanan',
   AppLocale.lastSyncedSave: 'Simpanan terakhir disinkronkan',
   AppLocale.saveListMenu: 'Daftar Simpanan',
-  AppLocale.customSaveFoldersMenu: 'Folder Simpanan Kustom',
+  AppLocale.customSaveFoldersMenu: 'Folder Simpanan Standalone',
   AppLocale.updateYourPlanMenu: 'Perbarui Paket Anda',
   AppLocale.customFoldersSubtitle:
       'Tambahkan folder kustom dari emulator mandiri agar simpanannya juga disinkronkan.',
@@ -1173,7 +1173,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.raNoRecentlyPlayed: 'Tidak ada game yang baru dimainkan',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: 'Folder penyimpanan khusus',
+  AppLocale.customSaveFoldersTitle: 'Folder penyimpanan standalone',
   AppLocale.customSaveFolderPickSystem: 'Pilih sistem',
   AppLocale.customSaveFolderPickEmulator: 'Pilih emulator',
   AppLocale.customSaveFolderSelect: 'Pilih folder',
@@ -1183,11 +1183,11 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.customSaveFolderInvalid: 'Folder yang dipilih tidak ada',
   AppLocale.removeCustomFolder: 'Hapus Folder',
   AppLocale.removeCustomFolderConfirm:
-      'Hapus folder simpanan kustom ini? File lokal tidak akan dihapus, hanya dilepas dari sinkronisasi.',
+      'Hapus folder simpanan standalone ini? File lokal tidak akan dihapus, hanya dilepas dari sinkronisasi.',
   AppLocale.uploadingCustomFolder: 'Mengunggah simpanan dari {folder}...',
   AppLocale.customFolderUploadComplete:
-      'Folder kustom disinkronkan: {uploaded} diunggah, {skipped} sudah terbaru',
-  AppLocale.customFolderUploadFailed: 'Gagal menyinkronkan folder kustom',
+      'Folder standalone disinkronkan: {uploaded} diunggah, {skipped} sudah terbaru',
+  AppLocale.customFolderUploadFailed: 'Gagal menyinkronkan folder standalone',
   AppLocale.customSaveFoldersMigrate:
       'Migrasikan penyimpanan cloud ke NeoSync v2',
 

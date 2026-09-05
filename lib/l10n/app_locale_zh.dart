@@ -384,10 +384,10 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.storageLabel: '存储空间',
   AppLocale.lastSyncedSave: '最后同步的存档',
   AppLocale.saveListMenu: '存档列表',
-  AppLocale.customSaveFoldersMenu: '自定义存档文件夹',
+  AppLocale.customSaveFoldersMenu: '独立存档文件夹',
   AppLocale.updateYourPlanMenu: '更新您的套餐',
-  AppLocale.customFoldersSubtitle: '添加独立模拟器的自定义文件夹，以便其存档也能同步。',
-  AppLocale.noCustomFoldersConfigured: '未配置自定义文件夹',
+  AppLocale.customFoldersSubtitle: '添加独立模拟器的独立文件夹，以便其存档也能同步。',
+  AppLocale.noCustomFoldersConfigured: '未配置独立文件夹',
   AppLocale.foldersConfigured: '已配置 {count} 个',
   AppLocale.searchSavesHint: '搜索存档...',
   AppLocale.filterAll: '全部',
@@ -1037,7 +1037,7 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.raNoRecentlyPlayed: '没有最近游玩的游戏',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: '自定义存档文件夹',
+  AppLocale.customSaveFoldersTitle: '独立存档文件夹',
   AppLocale.customSaveFolderPickSystem: '选择系统',
   AppLocale.customSaveFolderPickEmulator: '选择模拟器',
   AppLocale.customSaveFolderSelect: '选择文件夹',
@@ -1046,11 +1046,11 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.customSaveFolderSync: '立即同步',
   AppLocale.customSaveFolderInvalid: '所选文件夹不存在',
   AppLocale.removeCustomFolder: '移除文件夹',
-  AppLocale.removeCustomFolderConfirm: '移除这个自定义存档文件夹？本地文件不会被删除，只会从同步中移除。',
+  AppLocale.removeCustomFolderConfirm: '移除这个独立存档文件夹？本地文件不会被删除，只会从同步中移除。',
   AppLocale.uploadingCustomFolder: '正在上传 {folder} 中的存档...',
   AppLocale.customFolderUploadComplete:
-      '自定义文件夹已同步：已上传 {uploaded} 个，{skipped} 个已是最新',
-  AppLocale.customFolderUploadFailed: '自定义文件夹同步失败',
+      '独立文件夹已同步：已上传 {uploaded} 个，{skipped} 个已是最新',
+  AppLocale.customFolderUploadFailed: '独立文件夹同步失败',
   AppLocale.customSaveFoldersMigrate: '将云存档迁移到 NeoSync v2',
 
   // ES-DE import

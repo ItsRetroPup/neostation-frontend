@@ -450,11 +450,11 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.storageLabel: 'Storage',
   AppLocale.lastSyncedSave: 'Last synced save',
   AppLocale.saveListMenu: 'Save List',
-  AppLocale.customSaveFoldersMenu: 'Custom Save Folders',
+  AppLocale.customSaveFoldersMenu: 'Standalone Save Folders',
   AppLocale.updateYourPlanMenu: 'Update Your Plan',
   AppLocale.customFoldersSubtitle:
-      'Add a custom folder from a standalone emulator so its saves are synced too.',
-  AppLocale.noCustomFoldersConfigured: 'No custom folders configured',
+      'Add a folder from a standalone emulator so its saves are synced too.',
+  AppLocale.noCustomFoldersConfigured: 'No standalone folders configured',
   AppLocale.foldersConfigured: '{count} configured',
   AppLocale.searchSavesHint: 'Search saves...',
   AppLocale.filterAll: 'All',
@@ -1160,7 +1160,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.raNoRecentlyPlayed: 'No recently played games',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: 'Custom save folders',
+  AppLocale.customSaveFoldersTitle: 'Standalone save folders',
   AppLocale.customSaveFolderPickSystem: 'Pick a system',
   AppLocale.customSaveFolderPickEmulator: 'Pick an emulator',
   AppLocale.customSaveFolderSelect: 'Select folder',
@@ -1170,11 +1170,11 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.customSaveFolderInvalid: 'The selected folder does not exist',
   AppLocale.removeCustomFolder: 'Remove Folder',
   AppLocale.removeCustomFolderConfirm:
-      'Remove this custom save folder? Its local files will not be deleted, only unlinked from sync.',
+      'Remove this standalone save folder? Its local files will not be deleted, only unlinked from sync.',
   AppLocale.uploadingCustomFolder: 'Uploading saves from {folder}...',
   AppLocale.customFolderUploadComplete:
-      'Custom folder synced: {uploaded} uploaded, {skipped} already up to date',
-  AppLocale.customFolderUploadFailed: 'Failed to sync custom folder',
+      'Standalone folder synced: {uploaded} uploaded, {skipped} already up to date',
+  AppLocale.customFolderUploadFailed: 'Failed to sync standalone folder',
   AppLocale.customSaveFoldersMigrate: 'Migrate cloud saves to NeoSync v2',
 
   // ES-DE import

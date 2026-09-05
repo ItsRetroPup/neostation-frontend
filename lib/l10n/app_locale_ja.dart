@@ -393,10 +393,11 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.storageLabel: 'ストレージ',
   AppLocale.lastSyncedSave: '最後に同期されたセーブ',
   AppLocale.saveListMenu: 'セーブリスト',
-  AppLocale.customSaveFoldersMenu: 'カスタムセーブフォルダ',
+  AppLocale.customSaveFoldersMenu: 'スタンドアロンセーブフォルダ',
   AppLocale.updateYourPlanMenu: 'プランを更新',
-  AppLocale.customFoldersSubtitle: 'スタンドアロンエミュレータのカスタムフォルダを追加すると、そのセーブも同期されます。',
-  AppLocale.noCustomFoldersConfigured: 'カスタムフォルダが設定されていません',
+  AppLocale.customFoldersSubtitle:
+      'スタンドアロンエミュレータのスタンドアロンフォルダを追加すると、そのセーブも同期されます。',
+  AppLocale.noCustomFoldersConfigured: 'スタンドアロンフォルダが設定されていません',
   AppLocale.foldersConfigured: '{count}件設定済み',
   AppLocale.searchSavesHint: 'セーブを検索...',
   AppLocale.filterAll: 'すべて',
@@ -1060,7 +1061,7 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.raNoRecentlyPlayed: '最近プレイしたゲームはありません',
 
   // Custom save folders (NeoSync v2)
-  AppLocale.customSaveFoldersTitle: 'カスタムセーブフォルダー',
+  AppLocale.customSaveFoldersTitle: 'スタンドアロンセーブフォルダー',
   AppLocale.customSaveFolderPickSystem: 'システムを選択',
   AppLocale.customSaveFolderPickEmulator: 'エミュレーターを選択',
   AppLocale.customSaveFolderSelect: 'フォルダーを選択',
@@ -1070,11 +1071,11 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.customSaveFolderInvalid: '選択したフォルダーが存在しません',
   AppLocale.removeCustomFolder: 'フォルダーを削除',
   AppLocale.removeCustomFolderConfirm:
-      'このカスタムセーブフォルダーを削除しますか？ローカルファイルは削除されず、同期から外れるだけです。',
+      'このスタンドアロンセーブフォルダーを削除しますか？ローカルファイルは削除されず、同期から外れるだけです。',
   AppLocale.uploadingCustomFolder: '{folder} からセーブをアップロード中...',
   AppLocale.customFolderUploadComplete:
-      'カスタムフォルダーを同期しました：{uploaded}件アップロード、{skipped}件は既に最新',
-  AppLocale.customFolderUploadFailed: 'カスタムフォルダーの同期に失敗しました',
+      'スタンドアロンフォルダーを同期しました：{uploaded}件アップロード、{skipped}件は既に最新',
+  AppLocale.customFolderUploadFailed: 'スタンドアロンフォルダーの同期に失敗しました',
   AppLocale.customSaveFoldersMigrate: 'クラウドセーブをNeoSync v2に移行',
 
   // ES-DE import

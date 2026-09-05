@@ -441,7 +441,7 @@ extension NeoSyncUpload on NeoSyncProvider {
         emulatorId: syncEmulatorId,
         gameHash: gameHash,
         isState: isState,
-        scope: customFolderSystem != null ? 'shared' : null,
+        scope: null,
         type: syncType,
       );
 
@@ -635,7 +635,7 @@ extension NeoSyncUpload on NeoSyncProvider {
     _setSyncing(true);
     _error = null;
     _syncProgress = 0.0;
-    _syncStatus = 'Uploading custom save folder...';
+    _syncStatus = 'Uploading standalone save folder...';
     _totalFiles = 0;
     _processedFiles = 0;
     _uploadedFiles = 0;
@@ -674,7 +674,7 @@ extension NeoSyncUpload on NeoSyncProvider {
           'Upload complete: $_uploadedFiles uploaded, $_skippedFiles already synced';
       _processedItems.add(_syncStatus);
     } catch (e) {
-      _error = 'Error uploading custom save folder: $e';
+      _error = 'Error uploading standalone save folder: $e';
       _syncStatus = 'Error: $_error';
       _processedItems.add(_syncStatus);
       NeoSyncProvider._log.e(_error!);
