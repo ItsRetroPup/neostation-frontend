@@ -723,7 +723,10 @@ extension NeoSyncCore on NeoSyncProvider {
         game.name,
         customFilename: relativePath,
         systemId: parsed?.system ?? game.systemFolderName,
-        emulatorId: parsed?.emulatorSlug,
+        // RetroArch saves use the v1-style relative path, which the cloud path
+        // parser cannot see an emulator in, so derive the RetroArch slug from
+        // the game's own emulator metadata.
+        emulatorId: parsed?.emulatorSlug ?? _retroArchCoreSlugFromGame(game),
         gameHash: await _resolveGameHashForUpload(game),
         isState: isState,
         scope: parsed?.scope,

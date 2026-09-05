@@ -302,16 +302,14 @@ extension NeoSyncUpload on NeoSyncProvider {
       String syncType = 'save';
       if (customFolderSystem != null && customFolderEmulatorSlug != null) {
         // The configured folder root is the basePath for the standalone folder,
-        // so a nested layout (e.g. `memcards/slot1/Mcd001.ps2`) is preserved on
-        // the cloud path instead of collapsing every file to its basename.
-        // Standalone saves live under the `v2/custom/<emulator>/` namespace in
-        // R2, where `<emulator>` is the emulator's unique id (e.g.
-        // `ps2.com.armsx2`), so the object key is
-        // `user_id/v2/custom/<emulator>/<relative>`.
+        // so a nested layout (e.g. `memcards/slot1/Mcd001.ps2`) is preserved.
+        // file_path keeps the real on-disk path; the backend builds the R2
+        // object key as `user_id/v2/custom/<emulator>/<relative>` where
+        // `<emulator>` is the emulator's unique id (e.g. `ps2.com.armsx2`).
         final relativeToFolder = path
             .relative(file.path, from: basePath)
             .replaceAll('\\', '/');
-        relativePath = 'v2/custom/$customFolderEmulatorSlug/$relativeToFolder';
+        relativePath = relativeToFolder;
         syncSystemId = customFolderSystem;
         syncEmulatorId = customFolderEmulatorSlug;
         syncType = 'custom';
@@ -566,12 +564,16 @@ extension NeoSyncUpload on NeoSyncProvider {
       }
 
       String? gameHash;
+      String? systemId;
+      String? emulatorId;
       try {
         final fileName = path.basenameWithoutExtension(file.path);
         final row = await GameRepository.findRomForSaveName(fileName);
         if (row != null) {
           final game = _gameModelFromRomRow(row, fileName);
           gameHash = await _resolveGameHashForUpload(game);
+          systemId = game.systemFolderName;
+          emulatorId = _retroArchCoreSlugFromGame(game);
         }
       } catch (e) {
         NeoSyncProvider._log.w(
@@ -585,6 +587,8 @@ extension NeoSyncUpload on NeoSyncProvider {
         customFilename: relativePath,
         gameHash: gameHash,
         isState: isState,
+        systemId: systemId,
+        emulatorId: emulatorId,
       );
 
       if (result['success']) {
