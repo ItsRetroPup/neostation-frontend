@@ -405,6 +405,9 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
     if (mounted) {
       setState(() {
         _celebrate = true;
+        // A newly earned achievement is excluded by Locked and Missables, so
+        // switch back to All before showing the celebration page.
+        _achievementFilter = AchievementFilter.all;
         if (raAvailable) _inGamePanelPage = 1;
       });
     }
@@ -435,8 +438,13 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
       _cancelDim();
     }
 
-    if (freshLaunch && _inGamePanelPage != 0 && mounted) {
-      setState(() => _inGamePanelPage = 0);
+    if (freshLaunch && mounted) {
+      setState(() {
+        _inGamePanelPage = 0;
+        // Unlike the list/grid preference, a filter can make the next game's
+        // panel look empty. Each game launch therefore starts from All.
+        _achievementFilter = AchievementFilter.all;
+      });
     }
   }
 
