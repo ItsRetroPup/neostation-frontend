@@ -106,6 +106,11 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
   /// Toggled by touch on the secondary screen; local to this engine.
   bool _achievementListView = false;
 
+  /// The achievement subset shown by the secondary display. This is local to
+  /// its engine, like the list/grid preference, because it is display-only UI
+  /// state rather than shared game data.
+  AchievementFilter _achievementFilter = AchievementFilter.all;
+
   /// Which page of the in-game container is showing: 0 = Now Playing,
   /// 1 = RetroAchievements. Local to this engine, flipped by the edge chevrons;
   /// resets to 0 on each new launch.
@@ -1409,6 +1414,7 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
                   ? AchievementPanel(
                       value: value,
                       listView: _achievementListView,
+                      filter: _achievementFilter,
                       celebrate: _celebrate,
                       l10nContext: _l10nContext,
                       onToggleListView: () {
@@ -1416,6 +1422,18 @@ class _SecondaryScreenState extends State<SecondaryScreen> {
                         setState(
                           () => _achievementListView = !_achievementListView,
                         );
+                      },
+                      onCycleFilter: () {
+                        SfxService().playNavSound();
+                        setState(() {
+                          _achievementFilter = switch (_achievementFilter) {
+                            AchievementFilter.all => AchievementFilter.locked,
+                            AchievementFilter.locked =>
+                              AchievementFilter.missables,
+                            AchievementFilter.missables =>
+                              AchievementFilter.all,
+                          };
+                        });
                       },
                       onSelectAchievement: _selectAchievement,
                     )
