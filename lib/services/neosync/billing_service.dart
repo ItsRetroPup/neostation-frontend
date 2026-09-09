@@ -98,7 +98,9 @@ class BillingService extends ChangeNotifier {
           return {'success': true, 'session': session};
         }
       } else {
-        final error = redactSecrets(data['error'] ?? 'Failed to create checkout session');
+        final error = redactSecrets(
+          data['error'] ?? 'Failed to create checkout session',
+        );
         return {'success': false, 'message': error};
       }
     } catch (e) {
@@ -135,7 +137,9 @@ class BillingService extends ChangeNotifier {
         return {'success': true};
       } else {
         final data = jsonDecode(response.body);
-        final error = redactSecrets(data['error'] ?? 'Failed to cancel subscription');
+        final error = redactSecrets(
+          data['error'] ?? 'Failed to cancel subscription',
+        );
         _log.e('Cancellation failed: $error');
         return {'success': false, 'message': error};
       }

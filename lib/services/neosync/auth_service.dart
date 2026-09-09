@@ -253,8 +253,9 @@ class AuthService extends ChangeNotifier {
       } else {
         return {
           'success': false,
-          'message':
-              redactSecrets(data['error'] ?? 'Failed to send verification email'),
+          'message': redactSecrets(
+            data['error'] ?? 'Failed to send verification email',
+          ),
         };
       }
     } catch (e) {
@@ -321,12 +322,11 @@ class AuthService extends ChangeNotifier {
       } else {
         return {
           'success': false,
-          'message':
-              redactSecrets(
-                data['error'] ??
-                    data['message'] ??
-                    'Failed to send password reset email',
-              ),
+          'message': redactSecrets(
+            data['error'] ??
+                data['message'] ??
+                'Failed to send password reset email',
+          ),
         };
       }
     } catch (e) {
@@ -356,10 +356,9 @@ class AuthService extends ChangeNotifier {
       } else {
         return {
           'success': false,
-          'message':
-              redactSecrets(
-                data['error'] ?? data['message'] ?? 'Failed to reset password',
-              ),
+          'message': redactSecrets(
+            data['error'] ?? data['message'] ?? 'Failed to reset password',
+          ),
         };
       }
     } catch (e) {
