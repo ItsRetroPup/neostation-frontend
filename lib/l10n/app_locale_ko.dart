@@ -1057,6 +1057,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.raAotwOpenLocalGame: '로컬 게임 열기',
   AppLocale.raAotwDownloadFromRomm: 'RomM에서 다운로드',
   AppLocale.raGamesPlayed: '{count}개 게임 플레이',
+  AppLocale.raGamesBeaten: '{count}개 게임 클리어',
   AppLocale.raAchievementProgress: '업적 {earned}/{total}',
   AppLocale.raRecent30Days: '30일',
 
