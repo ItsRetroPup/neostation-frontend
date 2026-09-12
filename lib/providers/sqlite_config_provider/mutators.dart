@@ -375,4 +375,34 @@ extension SqliteConfigMutators on SqliteConfigProvider {
     await SqliteConfigService.saveConfig(_config);
     _notify();
   }
+
+  /// Sets the frosted-glass blur sigma (0–2), clamped so the value can never
+  /// escape the cheap range. `0` disables the blur entirely.
+  Future<void> updateNeoglassBlur(int value) async {
+    final clamped = value.clamp(0, 2);
+    if (_config.neoglassBlur == clamped) return;
+    _config = _config.copyWith(neoglassBlur: clamped);
+    await SqliteConfigService.saveConfig(_config);
+    _notify();
+  }
+
+  /// Sets the frosted-glass transparency on a 0–20 scale (stepped by 5), clamped.
+  /// `0` means no transparency (opaque tint), `20` means the maximum
+  /// transparency.
+  Future<void> updateNeoglassTransparency(int value) async {
+    final clamped = value.clamp(0, 20);
+    if (_config.neoglassTransparency == clamped) return;
+    _config = _config.copyWith(neoglassTransparency: clamped);
+    await SqliteConfigService.saveConfig(_config);
+    _notify();
+  }
+
+  /// Sets the frosted-glass rim stroke width, clamped to a sane range.
+  Future<void> updateNeoglassBorderWidth(double value) async {
+    final clamped = value.clamp(0.0, 8.0).toDouble();
+    if (_config.neoglassBorderWidth == clamped) return;
+    _config = _config.copyWith(neoglassBorderWidth: clamped);
+    await SqliteConfigService.saveConfig(_config);
+    _notify();
+  }
 }
