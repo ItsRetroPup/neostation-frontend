@@ -285,13 +285,13 @@ class SqliteConfigService {
         neoglassBlur:
             (int.tryParse(userConfig?['neoglass_blur']?.toString() ?? '0') ?? 0)
                 .clamp(0, 2),
-        // Missing column/row => 5 => the default transparency (0–20 scale).
+        // Missing column/row => 10 => the default transparency (0–30 scale).
         neoglassTransparency:
             (int.tryParse(
-                      userConfig?['neoglass_transparency']?.toString() ?? '5',
+                      userConfig?['neoglass_transparency']?.toString() ?? '10',
                     ) ??
-                    5)
-                .clamp(0, 20),
+                    10)
+                .clamp(0, 30),
         // Missing column/row => 2 => the feature's default rim stroke width.
         neoglassBorderWidth:
             (double.tryParse(

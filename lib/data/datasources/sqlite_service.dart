@@ -1959,7 +1959,7 @@ class SqliteService {
         ra_match_on_startup INTEGER DEFAULT 0,
         subfolder_view_all INTEGER DEFAULT 0,
         neoglass_blur INTEGER DEFAULT 0,
-        neoglass_transparency INTEGER DEFAULT 5,
+        neoglass_transparency INTEGER DEFAULT 10,
         neoglass_border_width REAL DEFAULT 2
       );
       ''',

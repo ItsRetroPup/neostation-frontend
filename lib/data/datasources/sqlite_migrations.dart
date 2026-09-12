@@ -6962,10 +6962,10 @@ class SqliteMigrations {
   }
 
   /// Migration v157: Adds the NeoGlass frosted-glass appearance columns to
-  /// `user_config`: `neoglass_blur` (0–2), `neoglass_transparency` (0–20) and
+  /// `user_config`: `neoglass_blur` (0–2), `neoglass_transparency` (0–30) and
   /// `neoglass_border_width` (0.0–8.0).
   ///
-  /// Defaults match the [ConfigModel] defaults (blur 0, transparency 5, border
+  /// Defaults match the [ConfigModel] defaults (blur 0, transparency 10, border
   /// 2) so a config written before these columns existed keeps the feature's
   /// out-of-the-box look instead of being reset to a different value.
   ///
@@ -6986,7 +6986,7 @@ class SqliteMigrations {
       if (!columns.contains('neoglass_transparency')) {
         db.execute(
           'ALTER TABLE user_config ADD COLUMN neoglass_transparency '
-          'INTEGER DEFAULT 5',
+          'INTEGER DEFAULT 10',
         );
         _log.i('Column neoglass_transparency added via v157');
       } else {

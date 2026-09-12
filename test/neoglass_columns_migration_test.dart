@@ -7,7 +7,7 @@ import 'package:neostation/data/datasources/sqlite_migrations.dart';
 /// `neoglass_border_width`.
 ///
 /// The defaults are the point of the test: they must match [ConfigModel]'s
-/// defaults (blur 0, transparency 5, border 2) so a config written before the
+/// defaults (blur 0, transparency 10, border 2) so a config written before the
 /// columns existed keeps the feature's out-of-the-box look instead of being
 /// reset to a different value on upgrade.
 void main() {
@@ -61,7 +61,7 @@ void main() {
           'FROM user_config WHERE id = 1',
         );
         expect(rows.first['neoglass_blur'], 0);
-        expect(rows.first['neoglass_transparency'], 5);
+        expect(rows.first['neoglass_transparency'], 10);
         expect(rows.first['neoglass_border_width'], 2);
       },
     );
@@ -75,7 +75,7 @@ void main() {
         'FROM user_config WHERE id = 1',
       );
       expect(rows.first['neoglass_blur'], 0);
-      expect(rows.first['neoglass_transparency'], 5);
+      expect(rows.first['neoglass_transparency'], 10);
       expect(rows.first['neoglass_border_width'], 2);
     });
 
@@ -85,7 +85,7 @@ void main() {
       );
       db.execute(
         'ALTER TABLE user_config ADD COLUMN neoglass_transparency '
-        'INTEGER DEFAULT 5',
+        'INTEGER DEFAULT 10',
       );
       db.execute(
         'ALTER TABLE user_config ADD COLUMN neoglass_border_width '

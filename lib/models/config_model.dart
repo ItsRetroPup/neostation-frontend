@@ -226,10 +226,11 @@ class ConfigModel {
   /// panel, cheapest). Higher values are only smooth on a powerful GPU.
   final int neoglassBlur;
 
-  /// Transparency of the frosted-glass chrome on a 0–20 scale: `0` means no
-  /// transparency (the tint is fully opaque), `20` means the maximum
-  /// transparency (the backdrop shows through the most). Usable values step by
-  /// 5 (0, 5, 10, 15, 20).
+  /// Transparency of the frosted-glass chrome on a 0–30 scale, stepped by 10
+  /// (0, 10, 20, 30): `0` means no transparency (the tint is fully opaque),
+  /// `30` means the maximum transparency — a 50% see-through tint. The scale
+  /// deliberately never reaches full transparency, so the glass always stays
+  /// readable against the backdrop.
   final int neoglassTransparency;
 
   /// Width of the frosted-glass specular rim stroke. Controls the size of the
@@ -285,7 +286,7 @@ class ConfigModel {
     this.raMatchOnStartup = false,
     this.subfolderViewAll = false,
     this.neoglassBlur = 0,
-    this.neoglassTransparency = 5,
+    this.neoglassTransparency = 10,
     this.neoglassBorderWidth = 2,
   });
 
@@ -521,8 +522,8 @@ class ConfigModel {
                   ) ??
                   0)
               .clamp(0, 2),
-      // Absent => 5 => the default transparency. Accepts the pre-release
-      // `neoglassOpacity` (0.0–1.0) as a fallback, converting it to the 0–20
+      // Absent => 10 => the default transparency. Accepts the pre-release
+      // `neoglassOpacity` (0.0–1.0) as a fallback, converting it to the 0–30
       // scale so a config written by an earlier build is not reset.
       neoglassTransparency: _parseNeoglassTransparency(json),
       // Absent => 2 => the feature's default rim stroke width.
@@ -538,21 +539,24 @@ class ConfigModel {
     );
   }
 
-  /// Parses the NeoGlass transparency (0–20) from a config map, falling back to
+  /// Parses the NeoGlass transparency (0–30) from a config map, falling back to
   /// the pre-release `neoglassOpacity` (0.0–1.0) when only that key is present.
+  ///
+  /// The 0–30 scale caps the tint at 50% transparency (30 = 50% see-through),
+  /// so the legacy opacity maps onto it with `(1 - opacity) * 60`.
   static int _parseNeoglassTransparency(Map<String, dynamic> json) {
     final raw = json['neoglassTransparency'] ?? json['neoglass_transparency'];
     if (raw != null) {
-      return (int.tryParse(raw.toString()) ?? 5).clamp(0, 20);
+      return (int.tryParse(raw.toString()) ?? 10).clamp(0, 30);
     }
     final legacy = json['neoglassOpacity'] ?? json['neoglass_opacity'];
     if (legacy != null) {
       final opacity = double.tryParse(legacy.toString());
       if (opacity != null) {
-        return ((1.0 - opacity) * 20).round().clamp(0, 20);
+        return ((1.0 - opacity) * 60).round().clamp(0, 30);
       }
     }
-    return 5;
+    return 10;
   }
 
   /// Converts the configuration model into a JSON-compatible map.
