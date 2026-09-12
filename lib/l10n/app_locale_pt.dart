@@ -1193,6 +1193,7 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.raAotwOpenLocalGame: 'Abrir jogo local',
   AppLocale.raAotwDownloadFromRomm: 'Baixar do RomM',
   AppLocale.raGamesPlayed: '{count} jogos jogados',
+  AppLocale.raGamesBeaten: '{count} jogos concluídos',
   AppLocale.raAchievementProgress: '{earned}/{total} conquistas',
   AppLocale.raRecent30Days: '30 dias',
 

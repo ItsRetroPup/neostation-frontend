@@ -1047,6 +1047,7 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.raAotwOpenLocalGame: '開啟本機遊戲',
   AppLocale.raAotwDownloadFromRomm: '從 RomM 下載',
   AppLocale.raGamesPlayed: '已玩 {count} 款遊戲',
+  AppLocale.raGamesBeaten: '已破關 {count} 款遊戲',
   AppLocale.raAchievementProgress: '成就 {earned}/{total}',
   AppLocale.raRecent30Days: '30 天',
 

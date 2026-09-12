@@ -1264,6 +1264,7 @@ mixin AppLocale {
   static const String raAotwOpenLocalGame = 'ra_aotw_open_local_game';
   static const String raAotwDownloadFromRomm = 'ra_aotw_download_from_romm';
   static const String raGamesPlayed = 'ra_games_played';
+  static const String raGamesBeaten = 'ra_games_beaten';
   static const String raAchievementProgress = 'ra_achievement_progress';
   static const String raRecent30Days = 'ra_recent_30_days';
 
