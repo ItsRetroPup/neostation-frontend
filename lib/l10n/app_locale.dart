@@ -1245,6 +1245,7 @@ mixin AppLocale {
   static const String neoSyncLogoutConfirmBody = 'neo_sync_logout_confirm_body';
 
   // RetroAchievements dashboard & achievement comments
+  static const String raSubtabDashboard = 'ra_subtab_dashboard';
   static const String raCompletionsLabel = 'ra_completions_label';
   static const String raMasteriesLabel = 'ra_masteries_label';
   static const String raPointsAbbrev = 'ra_points_abbrev';

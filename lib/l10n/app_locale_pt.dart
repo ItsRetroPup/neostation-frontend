@@ -1167,6 +1167,7 @@ const Map<String, dynamic> appLocalePt = {
       'Isso excluirá permanentemente o ROM do jogo, seus dados de scraping e arquivos de mídia. Esta ação não pode ser desfeita.',
   AppLocale.deleteGameSubtitle: 'Remove permanentemente o arquivo ROM do disco',
 
+  AppLocale.raSubtabDashboard: 'Painel',
   AppLocale.raCompletionsLabel: 'Conclusões',
   AppLocale.raMasteriesLabel: 'Masterizações',
   AppLocale.raPointsAbbrev: 'pts',

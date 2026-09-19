@@ -1184,6 +1184,7 @@ const Map<String, dynamic> appLocaleIt = {
       'Il file ROM, i dati e i media scaricati verranno eliminati definitivamente. Questa azione non può essere annullata.',
   AppLocale.deleteGameSubtitle: 'Rimuove permanentemente il file ROM dal disco',
 
+  AppLocale.raSubtabDashboard: 'Pannello',
   AppLocale.raCompletionsLabel: 'Completamenti',
   AppLocale.raMasteriesLabel: 'Padronanze',
   AppLocale.raPointsAbbrev: 'pt',

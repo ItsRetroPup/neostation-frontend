@@ -1049,6 +1049,7 @@ const Map<String, dynamic> appLocaleJa = {
       'ゲームのROMファイル、スクレイピングデータ、メディアファイルを完全に削除します。この操作は元に戻せません。',
   AppLocale.deleteGameSubtitle: 'ROMファイルをディスクから完全に削除します',
 
+  AppLocale.raSubtabDashboard: 'ダッシュボード',
   AppLocale.raCompletionsLabel: 'コンプリート',
   AppLocale.raMasteriesLabel: 'マスター',
   AppLocale.raPointsAbbrev: 'pt',

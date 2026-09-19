@@ -1036,6 +1036,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.deleteGameConfirmBody:
       '게임 ROM, 스크랩된 데이터, 미디어 파일이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.',
   AppLocale.deleteGameSubtitle: '디스크에서 ROM 파일을 영구적으로 제거합니다',
+  AppLocale.raSubtabDashboard: '대시보드',
   AppLocale.raCompletionsLabel: '완료',
   AppLocale.raMasteriesLabel: '마스터리',
   AppLocale.raPointsAbbrev: '점',

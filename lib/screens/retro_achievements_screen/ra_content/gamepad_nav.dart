@@ -3,11 +3,17 @@ part of '../ra_content.dart';
 /// Gamepad / keyboard input handling for the RetroAchievements tab root.
 ///
 /// Registers the [GamepadNavigation] input mappings and the `ra_content`
-/// gamepad layer, and implements the D-pad handlers: login-form field
-/// selection while signed out, week-card/logout parking and dashboard
-/// scrolling while signed in. All state lives on the host [State]; this
-/// extension only moves the methods out of the monolith — behaviour is
-/// unchanged. `setState` calls route through the host [rebuild] bridge
+/// gamepad layer, and implements its two focus zones: the login form's field
+/// selection while signed out, and — while signed in — the sub-tab shell,
+/// where Up from the top of the content parks the cursor on the strip
+/// [RaTabStrip], Left/Right there switch sub-tabs, and Down (or A, or B in
+/// the content) drops back into the active sub-tab at its parked cursor.
+///
+/// The strip is a zone of this one layer, never a layer of its own:
+/// switching sub-tabs or zones never touches the
+/// [GamepadNavigationManager] stack, so the double-dispatch class of bug
+/// cannot come back through the tab. All state lives on the host [State];
+/// `setState` calls route through the host [rebuild] bridge
 /// (`State.setState` is `@protected` and can't be invoked from an
 /// extension).
 extension _GamepadNav on _RAContentState {
@@ -24,7 +30,7 @@ extension _GamepadNav on _RAContentState {
       onRightBumper: AppNavigation.nextTab,
       allowRepeat: false,
       isTextFieldFocused: isAnyFieldFocused,
-      onBack: exitTextEntry,
+      onBack: _handleBack,
     );
     _gamepadNav!.initialize();
     GamepadNavigationManager.pushLayer(
@@ -37,6 +43,11 @@ extension _GamepadNav on _RAContentState {
   void _selectCurrent() {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (raProvider.isConnected) {
+      if (_stripFocused) {
+        // A on the strip enters the sub-tab under its cursor.
+        _setStripFocused(false);
+        return;
+      }
       if (_logoutSelected) {
         _requestDisconnect();
         return;
@@ -54,6 +65,18 @@ extension _GamepadNav on _RAContentState {
     _connectToRA();
   }
 
+  /// B: in the content, it parks the cursor on the strip; on the strip (or
+  /// signed out), it is the app-wide back — today's behaviour, which on a
+  /// root tab means leaving a focused text field, and otherwise nothing.
+  void _handleBack() {
+    if (!context.read<RetroAchievementsProvider>().isConnected ||
+        _stripFocused) {
+      exitTextEntry();
+      return;
+    }
+    _setStripFocused(true);
+  }
+
   bool _setLogoutSelected(bool selected) {
     if (!mounted || _logoutSelected == selected) return false;
     rebuild(() => _logoutSelected = selected);
@@ -64,6 +87,32 @@ extension _GamepadNav on _RAContentState {
     if (!mounted || _weekCardSelected == selected) return false;
     rebuild(() => _weekCardSelected = selected);
     return true;
+  }
+
+  bool _setStripFocused(bool focused) {
+    if (!mounted || _stripFocused == focused) return false;
+    rebuild(() => _stripFocused = focused);
+    return true;
+  }
+
+  /// Steps the sub-tab cursor by [delta] with wrap-around. Only the sound
+  /// contract cares about the return: with a single sub-tab there is nothing
+  /// to switch, so the press is a silent no-op rather than a wrap onto
+  /// itself.
+  bool _switchSubTab(int delta) {
+    final tabs = RaSubTab.values;
+    if (tabs.length < 2) return false;
+    final current = tabs.indexOf(_activeSubTab);
+    final next = tabs[(current + delta + tabs.length) % tabs.length];
+    rebuild(() => _activeSubTab = next);
+    return true;
+  }
+
+  /// The strip's tap callback: the same switch the D-pad makes, minus the
+  /// sound (the pill plays it, as the details-card tabs do).
+  void _onSubTabTapped(RaSubTab tab) {
+    if (tab == _activeSubTab) return;
+    rebuild(() => _activeSubTab = tab);
   }
 
   /// Releases the header selection when the dashboard scrolls off the top by
@@ -83,12 +132,23 @@ extension _GamepadNav on _RAContentState {
 
   /// Returns whether the selection/scroll actually moved, so the gamepad
   /// handler can suppress the nav sound at a boundary.
+  ///
+  /// From the top of the dashboard, Up parks the cursor on the sub-tab strip
+  /// instead of scrolling nowhere — but only once the press has nothing
+  /// finer to do inside the content: releasing the week card still counts as
+  /// the move, so a selected card costs one Up to clear and a second to
+  /// reach the strip.
   bool _handleNavigateUp() {
-    if (!context.read<RetroAchievementsProvider>().isConnected) {
+    final raProvider = context.read<RetroAchievementsProvider>();
+    if (!raProvider.isConnected) {
       return moveSelection(-1);
     }
+    if (_stripFocused) return false;
     final released = _setWeekCardSelected(false);
-    return _scrollDashboard(-160.r) || released;
+    final scrolled = _scrollDashboard(-160.r);
+    if (scrolled || released) return true;
+    if (_dashboardAtTop) return _setStripFocused(true);
+    return false;
   }
 
   /// Down steps onto the dashboard's one actionable card before it starts
@@ -102,6 +162,10 @@ extension _GamepadNav on _RAContentState {
   bool _handleNavigateDown() {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) return moveSelection(1);
+    // Down is how the strip hands the cursor back: the sub-tab's own cursor
+    // (scroll position, parked selection) is where it always was, because
+    // switching zones tears nothing down.
+    if (_stripFocused) return _setStripFocused(false);
     if (!_logoutSelected &&
         !_weekCardSelected &&
         _dashboardKey.currentState?.weekCardSelectable == true &&
@@ -127,6 +191,7 @@ extension _GamepadNav on _RAContentState {
   /// the highlight invisible and A destructive-looking out of nowhere.
   bool _handleNavigateRight() {
     if (!context.read<RetroAchievementsProvider>().isConnected) return false;
+    if (_stripFocused) return _switchSubTab(1);
     if (_logoutSelected) return false;
     _setWeekCardSelected(false);
     _scrollHeaderIntoView();
@@ -140,6 +205,7 @@ extension _GamepadNav on _RAContentState {
   bool _handleNavigateLeft() {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) return false;
+    if (_stripFocused) return _switchSubTab(-1);
     final released = _logoutSelected ? _setLogoutSelected(false) : false;
     if (_dashboardKey.currentState?.weekCardSelectable != true) {
       return released;

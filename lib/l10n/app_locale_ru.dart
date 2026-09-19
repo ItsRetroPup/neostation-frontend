@@ -1155,6 +1155,7 @@ const Map<String, dynamic> appLocaleRu = {
       'ROM-файл игры, данные скрапинга и медиафайлы будут безвозвратно удалены. Это действие нельзя отменить.',
   AppLocale.deleteGameSubtitle: 'Навсегда удаляет ROM-файл с диска',
 
+  AppLocale.raSubtabDashboard: 'Панель',
   AppLocale.raCompletionsLabel: 'Прохождения',
   AppLocale.raMasteriesLabel: 'Мастерства',
   AppLocale.raPointsAbbrev: 'очк.',

@@ -465,11 +465,12 @@ class RetroAchievementsProvider extends ChangeNotifier {
   /// How long a dashboard read stays good enough to show without re-fetching.
   ///
   /// Entering the RetroAchievements tab re-reads anything older than this, so
-  /// leaving the tab and coming back is the way to refresh — there is no
-  /// refresh control, and a gamepad launcher is a poor place to hunt for one.
-  /// Long enough that walking between tabs costs nothing, short enough that
-  /// achievements earned on another device, or a section that failed the first
-  /// time, are not stuck until the app restarts.
+  /// leaving the tab and coming back is one way to refresh — the other is the
+  /// REFRESH action the app header shows while this tab is on screen, which
+  /// beats the clock the same way a finished game session does. Long enough
+  /// that walking between tabs costs nothing, short enough that achievements
+  /// earned on another device, or a section that failed the first time, are
+  /// not stuck until the app restarts.
   static const Duration dashboardStaleAfter = Duration(minutes: 2);
 
   /// When the dashboard last finished a load *attempt*. Set whether or not the
@@ -506,10 +507,11 @@ class RetroAchievementsProvider extends ChangeNotifier {
   void invalidateCachedReads() {
     _cacheGeneration++;
     _dashboardAttemptedAt = null;
-    // Infrequent (a finished session, or a sign-out) and the only trace this
-    // leaves, so it is worth a line: without it there is no way to tell a
-    // dashboard that reloaded because the player just finished a game from one
-    // that reloaded because it aged out.
+    // Infrequent (a finished session, a sign-out, or a press of the header's
+    // REFRESH action) and the only trace this leaves, so it is worth a line:
+    // without it there is no way to tell a dashboard that reloaded because
+    // the player just finished a game from one that reloaded because it aged
+    // out or was asked to.
     _log.i('RA: cached reads invalidated (generation $_cacheGeneration)');
     _gameInfoCache.clear();
     _summaryLoaded = false;

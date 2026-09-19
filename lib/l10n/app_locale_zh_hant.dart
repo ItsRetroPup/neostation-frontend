@@ -1024,6 +1024,7 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.deleteGameConfirmBody: '這將永久刪除遊戲ROM檔案、已抓取的資料和媒體檔案。此操作無法復原。',
   AppLocale.deleteGameSubtitle: '從磁碟上永久刪除 ROM 檔案',
 
+  AppLocale.raSubtabDashboard: '主頁',
   AppLocale.raCompletionsLabel: '完成',
   AppLocale.raMasteriesLabel: '精通',
   AppLocale.raPointsAbbrev: '分',

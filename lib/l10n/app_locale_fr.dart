@@ -1193,6 +1193,7 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.deleteGameSubtitle:
       'Supprime définitivement le fichier ROM du disque',
 
+  AppLocale.raSubtabDashboard: 'Tableau de bord',
   AppLocale.raCompletionsLabel: 'Complétions',
   AppLocale.raMasteriesLabel: 'Maîtrises',
   AppLocale.raPointsAbbrev: 'pts',

@@ -1157,6 +1157,7 @@ const Map<String, dynamic> appLocaleId = {
       'Ini akan menghapus permanen ROM game, data scraping, dan file media. Tindakan ini tidak dapat dibatalkan.',
   AppLocale.deleteGameSubtitle: 'Menghapus permanen file ROM dari disk',
 
+  AppLocale.raSubtabDashboard: 'Dasbor',
   AppLocale.raCompletionsLabel: 'Penyelesaian',
   AppLocale.raMasteriesLabel: 'Penguasaan',
   AppLocale.raPointsAbbrev: 'poin',

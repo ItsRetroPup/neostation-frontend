@@ -21,6 +21,7 @@ import '../../models/retro_achievements_dashboard_models.dart';
 import '../../models/system_model.dart';
 import '../game_screen/my_games_list.dart';
 import 'ra_dashboard.dart';
+import 'ra_tab_strip.dart';
 
 part 'ra_content/dashboard_host.dart';
 part 'ra_content/gamepad_nav.dart';
@@ -62,6 +63,16 @@ class _RAContentState extends State<RAContent>
   /// mistype without being able to check it.
   bool _obscureApiKey = true;
   GamepadNavigation? _gamepadNav;
+
+  /// Which sub-tab mini-app is open. Only the Dashboard exists yet; Unlocks,
+  /// Games and Leaderboards join [RaSubTab] as their tickets land.
+  RaSubTab _activeSubTab = RaSubTab.dashboard;
+
+  /// Whether the D-pad cursor is parked on the sub-tab strip rather than in
+  /// the active sub-tab's content. The strip is a *zone* of this tab's one
+  /// `ra_content` gamepad layer — switching between zones (or sub-tabs) never
+  /// pushes or pops a layer.
+  bool _stripFocused = false;
 
   /// Bridges [State.setState] for the part-file extensions: `setState` is
   /// `@protected` and can't be invoked from an extension, but this public
@@ -151,16 +162,34 @@ class _RAContentState extends State<RAContent>
             ),
           ] else ...[
             if (raProvider.isOffline) _buildOfflineBanner(context),
+            // The sub-tab strip: always on screen above the content, so
+            // parking the D-pad on it can never highlight something the user
+            // has scrolled out of view (the trap the dashboard's header
+            // selection needed [_releaseSelectionOnScroll] for).
+            RaTabStrip(
+              currentTab: _activeSubTab,
+              focused: _stripFocused,
+              onTabChanged: _onSubTabTapped,
+            ),
+            SizedBox(height: 8.r),
+            // IndexedStack so a sub-tab keeps its state — cursor, scroll
+            // position — while another one is open. Trivial with a single
+            // child today; it is what makes it true when the set grows.
             Expanded(
-              child: RepaintBoundary(
-                child: RADashboardHub(
-                  key: _dashboardKey,
-                  scrollController: _dashboardScrollController,
-                  logoutSelected: _logoutSelected,
-                  weekCardSelected: _weekCardSelected,
-                  onDisconnectRequested: _requestDisconnect,
-                  onOwnedWeekGameSelected: _openOwnedWeekGame,
-                ),
+              child: IndexedStack(
+                index: RaSubTab.values.indexOf(_activeSubTab),
+                children: [
+                  RepaintBoundary(
+                    child: RADashboardHub(
+                      key: _dashboardKey,
+                      scrollController: _dashboardScrollController,
+                      logoutSelected: _logoutSelected,
+                      weekCardSelected: _weekCardSelected,
+                      onDisconnectRequested: _requestDisconnect,
+                      onOwnedWeekGameSelected: _openOwnedWeekGame,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

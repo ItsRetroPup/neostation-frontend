@@ -1190,6 +1190,7 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.deleteGameSubtitle:
       'Entfernt die ROM-Datei dauerhaft von der Festplatte',
 
+  AppLocale.raSubtabDashboard: 'Übersicht',
   AppLocale.raCompletionsLabel: 'Abschlüsse',
   AppLocale.raMasteriesLabel: 'Meisterungen',
   AppLocale.raPointsAbbrev: 'Pkt.',

@@ -1145,6 +1145,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.deleteGameConfirmBody:
       'This will permanently delete the game ROM, its scraped data, and media files. This action cannot be undone.',
   AppLocale.deleteGameSubtitle: 'Permanently removes the ROM file from disk',
+  AppLocale.raSubtabDashboard: 'Dashboard',
   AppLocale.raCompletionsLabel: 'Completions',
   AppLocale.raMasteriesLabel: 'Masteries',
   AppLocale.raPointsAbbrev: 'pts',

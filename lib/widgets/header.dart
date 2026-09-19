@@ -13,6 +13,7 @@ import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/services/permission_service.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/widgets/header_sort_dropdown.dart';
+import 'package:neostation/widgets/ra_refresh_action.dart';
 import 'package:neostation/widgets/bumper_glyph.dart';
 import 'package:neostation/widgets/notification_bell.dart';
 import 'package:neostation/widgets/neo_glass.dart';
@@ -313,6 +314,17 @@ class HeaderState extends State<Header> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [HeaderSortDropdown()],
+                      ),
+                    ),
+
+                  // The RetroAchievements tab's REFRESH: the same left-slot
+                  // per-tab action pattern as the sort dropdown above.
+                  if (widget.selectedTabIndex == AppTabs.achievements)
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [RaRefreshAction()],
                       ),
                     ),
 
