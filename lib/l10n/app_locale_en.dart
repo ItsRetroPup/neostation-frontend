@@ -1193,6 +1193,26 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.raGamesBeaten: '{count} games beaten',
   AppLocale.raAchievementProgress: '{earned}/{total} achievements',
   AppLocale.raRecent30Days: '30 days',
+  AppLocale.raErrorApiKeyRequired:
+      'A RetroAchievements web API key is required for this dashboard data.',
+  AppLocale.raErrorEnterUsername: 'Please enter a username',
+  AppLocale.raErrorEnterApiKey:
+      'Please enter your RetroAchievements web API key',
+  AppLocale.raErrorUserNotFound: 'User not found on RetroAchievements',
+  AppLocale.raErrorConnect: 'Error connecting to RetroAchievements: {error}',
+  AppLocale.raErrorUserNotConnected: 'User not connected',
+  AppLocale.raErrorSummaryUnavailable: 'User summary could not be loaded',
+  AppLocale.raErrorAwardsUnavailable: 'User awards could not be loaded',
+  AppLocale.raErrorGameInfoUnavailable: 'Game information could not be loaded',
+  AppLocale.raErrorLoadGameInfo: 'Error loading game information: {error}',
+  AppLocale.raErrorLoadSummary: 'Error loading user summary: {error}',
+  AppLocale.raErrorLoadAotw: 'Error loading Achievement of the Week: {error}',
+  AppLocale.raErrorLoadAwards: 'Error loading user awards: {error}',
+  AppLocale.raErrorLoadCompletionProgress:
+      'Error loading completion progress: {error}',
+  AppLocale.raErrorLoadRecentlyPlayed:
+      'Error loading recently played games: {error}',
+  AppLocale.raErrorLoadRecentUnlocks: 'Error loading recent unlocks: {error}',
 
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Standalone save folders',

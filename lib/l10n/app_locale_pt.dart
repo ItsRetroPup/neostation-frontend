@@ -1218,6 +1218,31 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.raGamesBeaten: '{count} jogos concluídos',
   AppLocale.raAchievementProgress: '{earned}/{total} conquistas',
   AppLocale.raRecent30Days: '30 dias',
+  AppLocale.raErrorApiKeyRequired:
+      'É necessária uma chave API Web do RetroAchievements para estes dados do painel.',
+  AppLocale.raErrorEnterUsername: 'Digite um nome de usuário',
+  AppLocale.raErrorEnterApiKey: 'Digite sua chave API Web do RetroAchievements',
+  AppLocale.raErrorUserNotFound: 'Usuário não encontrado no RetroAchievements',
+  AppLocale.raErrorConnect: 'Erro ao conectar ao RetroAchievements: {error}',
+  AppLocale.raErrorUserNotConnected: 'Usuário não conectado',
+  AppLocale.raErrorSummaryUnavailable:
+      'Não foi possível carregar o resumo do usuário',
+  AppLocale.raErrorAwardsUnavailable:
+      'Não foi possível carregar os prêmios do usuário',
+  AppLocale.raErrorGameInfoUnavailable:
+      'Não foi possível carregar as informações do jogo',
+  AppLocale.raErrorLoadGameInfo:
+      'Erro ao carregar as informações do jogo: {error}',
+  AppLocale.raErrorLoadSummary: 'Erro ao carregar o resumo do usuário: {error}',
+  AppLocale.raErrorLoadAotw: 'Erro ao carregar a conquista da semana: {error}',
+  AppLocale.raErrorLoadAwards:
+      'Erro ao carregar os prêmios do usuário: {error}',
+  AppLocale.raErrorLoadCompletionProgress:
+      'Erro ao carregar o progresso de conclusão: {error}',
+  AppLocale.raErrorLoadRecentlyPlayed:
+      'Erro ao carregar os jogos jogados recentemente: {error}',
+  AppLocale.raErrorLoadRecentUnlocks:
+      'Erro ao carregar desbloqueios recentes: {error}',
 
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Pastas de save standalone',

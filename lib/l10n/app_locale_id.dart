@@ -1207,6 +1207,30 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.raGamesBeaten: '{count} game ditamatkan',
   AppLocale.raAchievementProgress: '{earned}/{total} pencapaian',
   AppLocale.raRecent30Days: '30 hari',
+  AppLocale.raErrorApiKeyRequired:
+      'Kunci API Web RetroAchievements diperlukan untuk data dasbor ini.',
+  AppLocale.raErrorEnterUsername: 'Masukkan nama pengguna',
+  AppLocale.raErrorEnterApiKey: 'Masukkan kunci API Web RetroAchievements Anda',
+  AppLocale.raErrorUserNotFound:
+      'Pengguna tidak ditemukan di RetroAchievements',
+  AppLocale.raErrorConnect: 'Gagal terhubung ke RetroAchievements: {error}',
+  AppLocale.raErrorUserNotConnected: 'Pengguna tidak terhubung',
+  AppLocale.raErrorSummaryUnavailable: 'Ringkasan pengguna tidak dapat dimuat',
+  AppLocale.raErrorAwardsUnavailable: 'Hadiah pengguna tidak dapat dimuat',
+  AppLocale.raErrorGameInfoUnavailable: 'Informasi game tidak dapat dimuat',
+  AppLocale.raErrorLoadGameInfo:
+      'Kesalahan saat memuat informasi game: {error}',
+  AppLocale.raErrorLoadSummary:
+      'Kesalahan saat memuat ringkasan pengguna: {error}',
+  AppLocale.raErrorLoadAotw:
+      'Kesalahan saat memuat Pencapaian Minggu Ini: {error}',
+  AppLocale.raErrorLoadAwards: 'Kesalahan saat memuat hadiah pengguna: {error}',
+  AppLocale.raErrorLoadCompletionProgress:
+      'Kesalahan saat memuat progres penyelesaian: {error}',
+  AppLocale.raErrorLoadRecentlyPlayed:
+      'Kesalahan saat memuat game yang baru dimainkan: {error}',
+  AppLocale.raErrorLoadRecentUnlocks:
+      'Kesalahan saat memuat pencapaian yang baru dibuka: {error}',
 
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Folder penyimpanan standalone',

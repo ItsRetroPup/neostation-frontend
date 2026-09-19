@@ -1204,6 +1204,29 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raGamesBeaten: 'Пройдено игр: {count}',
   AppLocale.raAchievementProgress: 'Достижения: {earned}/{total}',
   AppLocale.raRecent30Days: '30 дней',
+  AppLocale.raErrorApiKeyRequired:
+      'Для этих данных панели требуется ключ Web API RetroAchievements.',
+  AppLocale.raErrorEnterUsername: 'Введите имя пользователя',
+  AppLocale.raErrorEnterApiKey: 'Введите ваш ключ Web API RetroAchievements',
+  AppLocale.raErrorUserNotFound: 'Пользователь не найден на RetroAchievements',
+  AppLocale.raErrorConnect: 'Ошибка подключения к RetroAchievements: {error}',
+  AppLocale.raErrorUserNotConnected: 'Пользователь не подключён',
+  AppLocale.raErrorSummaryUnavailable:
+      'Не удалось загрузить сводку пользователя',
+  AppLocale.raErrorAwardsUnavailable:
+      'Не удалось загрузить награды пользователя',
+  AppLocale.raErrorGameInfoUnavailable:
+      'Не удалось загрузить информацию об игре',
+  AppLocale.raErrorLoadGameInfo: 'Ошибка загрузки информации об игре: {error}',
+  AppLocale.raErrorLoadSummary: 'Ошибка загрузки сводки пользователя: {error}',
+  AppLocale.raErrorLoadAotw: 'Ошибка загрузки достижения недели: {error}',
+  AppLocale.raErrorLoadAwards: 'Ошибка загрузки наград пользователя: {error}',
+  AppLocale.raErrorLoadCompletionProgress:
+      'Ошибка загрузки прогресса прохождения: {error}',
+  AppLocale.raErrorLoadRecentlyPlayed:
+      'Ошибка загрузки недавно сыгранных игр: {error}',
+  AppLocale.raErrorLoadRecentUnlocks:
+      'Ошибка загрузки недавних достижений: {error}',
 
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Папки сохранений standalone',

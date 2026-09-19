@@ -1081,6 +1081,23 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.raGamesBeaten: '{count}개 게임 클리어',
   AppLocale.raAchievementProgress: '업적 {earned}/{total}',
   AppLocale.raRecent30Days: '30일',
+  AppLocale.raErrorApiKeyRequired:
+      '이 대시보드 데이터에는 RetroAchievements 웹 API 키가 필요합니다.',
+  AppLocale.raErrorEnterUsername: '사용자 이름을 입력하세요',
+  AppLocale.raErrorEnterApiKey: 'RetroAchievements 웹 API 키를 입력하세요',
+  AppLocale.raErrorUserNotFound: 'RetroAchievements에서 사용자를 찾을 수 없습니다',
+  AppLocale.raErrorConnect: 'RetroAchievements에 연결하는 중 오류가 발생했습니다: {error}',
+  AppLocale.raErrorUserNotConnected: '사용자가 연결되어 있지 않습니다',
+  AppLocale.raErrorSummaryUnavailable: '사용자 요약을 불러올 수 없습니다',
+  AppLocale.raErrorAwardsUnavailable: '사용자 어워드를 불러올 수 없습니다',
+  AppLocale.raErrorGameInfoUnavailable: '게임 정보를 불러올 수 없습니다',
+  AppLocale.raErrorLoadGameInfo: '게임 정보를 불러오는 중 오류가 발생했습니다: {error}',
+  AppLocale.raErrorLoadSummary: '사용자 요약을 불러오는 중 오류가 발생했습니다: {error}',
+  AppLocale.raErrorLoadAotw: '금주의 업적을 불러오는 중 오류가 발생했습니다: {error}',
+  AppLocale.raErrorLoadAwards: '사용자 어워드를 불러오는 중 오류가 발생했습니다: {error}',
+  AppLocale.raErrorLoadCompletionProgress: '완료 진행률을 불러오는 중 오류가 발생했습니다: {error}',
+  AppLocale.raErrorLoadRecentlyPlayed: '최근 플레이한 게임을 불러오는 중 오류가 발생했습니다: {error}',
+  AppLocale.raErrorLoadRecentUnlocks: '최근 달성한 업적을 불러오는 중 오류가 발생했습니다: {error}',
 
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: '독립형 저장 폴더',

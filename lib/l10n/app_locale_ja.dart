@@ -1094,6 +1094,23 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.raGamesBeaten: '{count}本クリア',
   AppLocale.raAchievementProgress: '実績 {earned}/{total}',
   AppLocale.raRecent30Days: '30日間',
+  AppLocale.raErrorApiKeyRequired:
+      'このダッシュボードのデータには RetroAchievements の Web API キーが必要です。',
+  AppLocale.raErrorEnterUsername: 'ユーザー名を入力してください',
+  AppLocale.raErrorEnterApiKey: 'RetroAchievements の Web API キーを入力してください',
+  AppLocale.raErrorUserNotFound: 'RetroAchievements でユーザーが見つかりません',
+  AppLocale.raErrorConnect: 'RetroAchievements への接続中にエラーが発生しました：{error}',
+  AppLocale.raErrorUserNotConnected: 'ユーザーが接続されていません',
+  AppLocale.raErrorSummaryUnavailable: 'ユーザーの概要を読み込めませんでした',
+  AppLocale.raErrorAwardsUnavailable: 'ユーザーのアワードを読み込めませんでした',
+  AppLocale.raErrorGameInfoUnavailable: 'ゲーム情報を読み込めませんでした',
+  AppLocale.raErrorLoadGameInfo: 'ゲーム情報の読み込み中にエラーが発生しました：{error}',
+  AppLocale.raErrorLoadSummary: 'ユーザーの概要の読み込み中にエラーが発生しました：{error}',
+  AppLocale.raErrorLoadAotw: '今週の実績の読み込み中にエラーが発生しました：{error}',
+  AppLocale.raErrorLoadAwards: 'ユーザーのアワードの読み込み中にエラーが発生しました：{error}',
+  AppLocale.raErrorLoadCompletionProgress: '完了進捗の読み込み中にエラーが発生しました：{error}',
+  AppLocale.raErrorLoadRecentlyPlayed: '最近プレイしたゲームの読み込み中にエラーが発生しました：{error}',
+  AppLocale.raErrorLoadRecentUnlocks: '最近解除した実績の読み込み中にエラーが発生しました：{error}',
 
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'スタンドアロンセーブフォルダー',

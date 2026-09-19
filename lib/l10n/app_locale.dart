@@ -2,6 +2,8 @@
 /// Usage: AppLocale.play.getString(context)
 library;
 
+import 'package:flutter_localization/flutter_localization.dart';
+
 part 'app_locale_en.dart';
 part 'app_locale_es.dart';
 part 'app_locale_ru.dart';
@@ -1291,6 +1293,30 @@ mixin AppLocale {
   static const String raAchievementProgress = 'ra_achievement_progress';
   static const String raRecent30Days = 'ra_recent_30_days';
 
+  // RetroAchievements error messages (resolved context-free by the provider
+  // via AppLocaleContextFreeLookup; keys carry an {error} placeholder where
+  // the raw exception is appended for diagnostics).
+  static const String raErrorApiKeyRequired = 'ra_error_api_key_required';
+  static const String raErrorEnterUsername = 'ra_error_enter_username';
+  static const String raErrorEnterApiKey = 'ra_error_enter_api_key';
+  static const String raErrorUserNotFound = 'ra_error_user_not_found';
+  static const String raErrorConnect = 'ra_error_connect';
+  static const String raErrorUserNotConnected = 'ra_error_user_not_connected';
+  static const String raErrorSummaryUnavailable =
+      'ra_error_summary_unavailable';
+  static const String raErrorAwardsUnavailable = 'ra_error_awards_unavailable';
+  static const String raErrorGameInfoUnavailable =
+      'ra_error_game_info_unavailable';
+  static const String raErrorLoadGameInfo = 'ra_error_load_game_info';
+  static const String raErrorLoadSummary = 'ra_error_load_summary';
+  static const String raErrorLoadAotw = 'ra_error_load_aotw';
+  static const String raErrorLoadAwards = 'ra_error_load_awards';
+  static const String raErrorLoadCompletionProgress =
+      'ra_error_load_completion_progress';
+  static const String raErrorLoadRecentlyPlayed =
+      'ra_error_load_recently_played';
+  static const String raErrorLoadRecentUnlocks = 'ra_error_load_recent_unlocks';
+
   // Custom save folders (NeoSync v2)
   static const String customSaveFoldersTitle = 'custom_save_folders_title';
   static const String customSaveFolderPickSystem =
@@ -1329,6 +1355,29 @@ mixin AppLocale {
   static const Map<String, dynamic> ja = appLocaleJa;
   static const Map<String, dynamic> ko = appLocaleKo;
 
+  /// All locale maps keyed by the language codes the app registers with
+  /// `FlutterLocalization` in `main.dart` (and that settings passes to
+  /// `translate`). Note `zh_Hant` is a raw code in this app, not a Flutter
+  /// script subtag, so a plain string match is enough.
+  ///
+  /// `main.dart` currently duplicates this registry for its two `init`
+  /// calls; deriving those `MapLocale` lists from this map is a known
+  /// follow-up.
+  static const Map<String, Map<String, dynamic>> _mapsByLanguageCode = {
+    'de': de,
+    'en': en,
+    'es': es,
+    'fr': fr,
+    'id': id,
+    'it': it,
+    'ja': ja,
+    'ko': ko,
+    'pt': pt,
+    'ru': ru,
+    'zh': zh,
+    'zh_Hant': zhHant,
+  };
+
   /// Map of supported languages: code -> display name
   static const Map<String, String> supportedLanguages = {
     'en': 'English',
@@ -1344,4 +1393,22 @@ mixin AppLocale {
     'ja': '日本語',
     'ko': '한국어',
   };
+}
+
+/// Context-free [AppLocale] lookup for code that runs outside the widget
+/// tree (providers, services) and so has no [BuildContext] to call
+/// `getString` with. Resolves against whatever language `FlutterLocalization`
+/// currently holds — the platform language during startup, the app's saved
+/// language once `init` runs, and none at all in pure unit tests; widget code
+/// should keep using `AppLocale.<key>.getString(context)`.
+///
+/// Falls back to English when no language is active or the language has no
+/// registered map, and to the key itself when neither map defines it — a
+/// visible, greppy failure rather than a silent blank.
+extension AppLocaleContextFreeLookup on String {
+  String getStringForCurrentLocale() {
+    final language = FlutterLocalization.instance.currentLocale?.languageCode;
+    final map = AppLocale._mapsByLanguageCode[language] ?? AppLocale.en;
+    return (map[this] ?? AppLocale.en[this] ?? this).toString();
+  }
 }

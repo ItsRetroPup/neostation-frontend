@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:neostation/services/credential_store.dart';
 import 'package:neostation/services/logger_service.dart';
+import '../l10n/app_locale.dart';
 import '../models/retro_achievements_user.dart';
 import '../models/retro_achievements_summary.dart';
 import '../services/retro_achievements_service.dart';
@@ -17,8 +18,9 @@ import 'retro_achievements_credentials.dart';
 
 /// Provider responsible for managing the integration with RetroAchievements.org.
 ///
-/// Handles user authentication, profile synchronization, achievement progress
-/// tracking, and ROM identification via console-specific hashing algorithms.
+/// Handles user authentication, dashboard data (weekly event, unlocks,
+/// awards, recently played, completion progress), and per-game achievement
+/// progress caching.
 class RetroAchievementsProvider extends ChangeNotifier {
   RetroAchievementsProvider() {
     GameSessionManager.addSessionEndListener(invalidateCachedReads);
@@ -29,12 +31,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
     GameSessionManager.removeSessionEndListener(invalidateCachedReads);
     super.dispose();
   }
-
-  static const String _dashboardApiKeyError =
-      'A RetroAchievements web API key is required for this dashboard data.';
-
-  static const String _rateLimitError =
-      'RetroAchievements is rate-limiting requests. Please wait a moment and try again.';
 
   /// Basic profile information for the authenticated user.
   RetroAchievementsUser? _user;
@@ -60,27 +56,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
 
   static final _log = LoggerService.instance;
 
-  /// Whether a ROM scanning process for RA compatibility is active.
-  bool _isScanning = false;
-
-  /// Normalized progress of the ROM scan (0.0 to 1.0).
-  final double _scanProgress = 0.0;
-
-  /// Human-readable status message for the scan operation.
-  String _scanStatus = '';
-
-  /// Total number of ROMs identified for the scan.
-  final int _totalRoms = 0;
-
-  /// Count of ROMs processed in the current scan.
-  final int _processedRoms = 0;
-
-  /// Count of ROMs that were successfully identified as RA-compatible.
-  final int _retroAchievementsCompatibleRoms = 0;
-
-  /// History of identifiers processed in the current scanning session.
-  final List<String> _processedItems = [];
-
   /// Total count of ROMs in the user's local database.
   int _totalLocalRoms = 0;
 
@@ -98,9 +73,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
 
   /// Memory cache for detailed game metadata and user progress, keyed by Game ID.
   final Map<int, GameInfoAndUserProgress> _gameInfoCache = {};
-
-  /// Mapping of game titles to their corresponding RetroAchievements Game IDs.
-  final Map<String, int> _gameIdMapping = {};
 
   /// Current "Game of the Week" metadata.
   RetroAchievementsGOTW? _gotw;
@@ -158,14 +130,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
   String get username => _username;
   String get apiKey => _apiKey;
 
-  bool get isScanning => _isScanning;
-  double get scanProgress => _scanProgress;
-  String get scanStatus => _scanStatus;
-  int get totalRoms => _totalRoms;
-  int get processedRoms => _processedRoms;
-  int get retroAchievementsCompatibleRoms => _retroAchievementsCompatibleRoms;
-  List<String> get processedItems => _processedItems;
-
   int get totalLocalRoms => _totalLocalRoms;
   int get retroAchievementsCompatibleLocalRoms =>
       _retroAchievementsCompatibleLocalRoms;
@@ -175,7 +139,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool get summaryLoaded => _summaryLoaded;
 
   Map<int, GameInfoAndUserProgress> get gameInfoCache => _gameInfoCache;
-  Map<String, int> get gameIdMapping => _gameIdMapping;
 
   RetroAchievementsGOTW? get gotw => _gotw;
   bool get gotwLoaded => _gotwLoaded;
@@ -236,14 +199,14 @@ class RetroAchievementsProvider extends ChangeNotifier {
   /// and triggers a background fetch of user statistics, summaries, and awards.
   Future<bool> connect(String username, {String? apiKey}) async {
     if (username.trim().isEmpty) {
-      _error = 'Please enter a username';
+      _error = AppLocale.raErrorEnterUsername.getStringForCurrentLocale();
       notifyListeners();
       return false;
     }
 
     final resolvedApiKey = RetroAchievementsService.resolveApiKey(apiKey);
     if (resolvedApiKey.trim().isEmpty) {
-      _error = 'Please enter your RetroAchievements web API key';
+      _error = AppLocale.raErrorEnterApiKey.getStringForCurrentLocale();
       _isConnected = false;
       notifyListeners();
       return false;
@@ -272,13 +235,13 @@ class RetroAchievementsProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        _error = 'User not found on RetroAchievements';
+        _error = AppLocale.raErrorUserNotFound.getStringForCurrentLocale();
         _isConnected = false;
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _error = 'Error connecting to RetroAchievements: $e';
+      _error = _errorWith(AppLocale.raErrorConnect, e);
       _isConnected = false;
       _log.e('$_error');
       notifyListeners();
@@ -291,14 +254,14 @@ class RetroAchievementsProvider extends ChangeNotifier {
   /// Refreshes the full user summary, including recent achievements and active game list.
   Future<bool> loadUserSummary() async {
     if (!_isConnected || _username.isEmpty) {
-      _error = 'User not connected';
+      _error = AppLocale.raErrorUserNotConnected.getStringForCurrentLocale();
       notifyListeners();
       return false;
     }
 
     if (!hasResolvedApiKey) {
       _summaryLoaded = false;
-      _error = _dashboardApiKeyError;
+      _error = AppLocale.raErrorApiKeyRequired.getStringForCurrentLocale();
       notifyListeners();
       return false;
     }
@@ -318,13 +281,14 @@ class RetroAchievementsProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        _error = 'User summary could not be loaded';
+        _error = AppLocale.raErrorSummaryUnavailable
+            .getStringForCurrentLocale();
         _summaryLoaded = false;
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _error = _describeApiError(e, 'Error loading user summary');
+      _error = _describeApiError(e, AppLocale.raErrorLoadSummary);
       _summaryLoaded = false;
       _log.e('$_error');
       notifyListeners();
@@ -344,7 +308,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
     if (!hasResolvedApiKey) {
       _gotw = null;
       _gotwLoaded = false;
-      _gotwError = _dashboardApiKeyError;
+      _gotwError = AppLocale.raErrorApiKeyRequired.getStringForCurrentLocale();
       _ownedWeekGame = null;
       _aotwPersonalProgress = const AotwPersonalProgress.unknown();
       notifyListeners();
@@ -378,10 +342,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
         return true;
       }
     } catch (e) {
-      _gotwError = _describeApiError(
-        e,
-        'Error loading Achievement of the Week',
-      );
+      _gotwError = _describeApiError(e, AppLocale.raErrorLoadAotw);
       _gotwLoaded = false;
       _gotw = null;
       _ownedWeekGame = null;
@@ -402,7 +363,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
     if (!hasResolvedApiKey) {
       _userAwards = null;
       _userAwardsLoaded = false;
-      _userAwardsError = _dashboardApiKeyError;
+      _userAwardsError = AppLocale.raErrorApiKeyRequired
+          .getStringForCurrentLocale();
       notifyListeners();
       return false;
     }
@@ -428,10 +390,11 @@ class RetroAchievementsProvider extends ChangeNotifier {
         return true;
       }
       _userAwardsLoaded = false;
-      _userAwardsError = 'User awards could not be loaded';
+      _userAwardsError = AppLocale.raErrorAwardsUnavailable
+          .getStringForCurrentLocale();
       return false;
     } catch (e) {
-      _userAwardsError = _describeApiError(e, 'Error loading user awards');
+      _userAwardsError = _describeApiError(e, AppLocale.raErrorLoadAwards);
       _userAwardsLoaded = false;
       _userAwards = null;
       _log.e(_userAwardsError ?? 'Unknown user awards error');
@@ -452,7 +415,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
     String? md5Hash,
   }) async {
     if (!_isConnected || _username.isEmpty) {
-      _error = 'User not connected';
+      _error = AppLocale.raErrorUserNotConnected.getStringForCurrentLocale();
       return null;
     }
 
@@ -480,11 +443,12 @@ class RetroAchievementsProvider extends ChangeNotifier {
         _gameInfoCache[gameId] = gameInfo;
         return gameInfo;
       } else {
-        _error = 'Game information could not be loaded';
+        _error = AppLocale.raErrorGameInfoUnavailable
+            .getStringForCurrentLocale();
         return null;
       }
     } catch (e) {
-      _error = 'Error loading game information: $e';
+      _error = _errorWith(AppLocale.raErrorLoadGameInfo, e);
       _log.e('$_error');
       return null;
     }
@@ -694,13 +658,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Interrupts an active ROM scanning operation.
-  void stopScanning() {
-    _isScanning = false;
-    _scanStatus = 'Scan stopped by user';
-    notifyListeners();
-  }
-
   /// Loads ROM statistics (total count and RA-compatible count) from the local database.
   Future<void> loadLocalStats() async {
     try {
@@ -792,7 +749,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
     if (!hasResolvedApiKey) {
       _completionProgress = null;
       _completionProgressLoaded = false;
-      _completionProgressError = _dashboardApiKeyError;
+      _completionProgressError = AppLocale.raErrorApiKeyRequired
+          .getStringForCurrentLocale();
       notifyListeners();
       return false;
     }
@@ -813,7 +771,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
     } catch (e) {
       _completionProgressError = _describeApiError(
         e,
-        'Error loading completion progress',
+        AppLocale.raErrorLoadCompletionProgress,
       );
       _completionProgressLoaded = false;
       _completionProgress = null;
@@ -831,7 +789,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
     if (!hasResolvedApiKey) {
       _recentlyPlayedGames = [];
       _recentlyPlayedLoaded = false;
-      _recentlyPlayedError = _dashboardApiKeyError;
+      _recentlyPlayedError = AppLocale.raErrorApiKeyRequired
+          .getStringForCurrentLocale();
       notifyListeners();
       return false;
     }
@@ -852,7 +811,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
     } catch (e) {
       _recentlyPlayedError = _describeApiError(
         e,
-        'Error loading recently played games',
+        AppLocale.raErrorLoadRecentlyPlayed,
       );
       _recentlyPlayedLoaded = false;
       _recentlyPlayedGames = [];
@@ -870,7 +829,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
     if (!hasResolvedApiKey) {
       _recentUnlocks = [];
       _recentUnlocksLoaded = false;
-      _recentUnlocksError = _dashboardApiKeyError;
+      _recentUnlocksError = AppLocale.raErrorApiKeyRequired
+          .getStringForCurrentLocale();
       notifyListeners();
       return false;
     }
@@ -891,7 +851,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
     } catch (e) {
       _recentUnlocksError = _describeApiError(
         e,
-        'Error loading recent unlocks',
+        AppLocale.raErrorLoadRecentUnlocks,
       );
       _recentUnlocksLoaded = false;
       _recentUnlocks = [];
@@ -992,13 +952,23 @@ class RetroAchievementsProvider extends ChangeNotifier {
   /// the thrown message, so match on that.
   bool _isRateLimitedError(Object error) => error.toString().contains('(429)');
 
+  /// Resolves [key] in the app's current language and fills its `{error}`
+  /// placeholder with the raw error text, keeping the exception's diagnostic
+  /// value in the message the user sees.
+  String _errorWith(String key, Object error) =>
+      key.getStringForCurrentLocale().replaceFirst('{error}', error.toString());
+
   /// Maps a caught API error to a user-facing message: a missing/invalid key
   /// and rate-limiting each get a dedicated, actionable string; everything
-  /// else falls back to [fallback] with the raw error appended.
-  String _describeApiError(Object error, String fallback) {
-    if (_isUnauthorizedError(error)) return _dashboardApiKeyError;
-    if (_isRateLimitedError(error)) return _rateLimitError;
-    return '$fallback: $error';
+  /// else falls back to [fallbackKey] with the raw error appended.
+  String _describeApiError(Object error, String fallbackKey) {
+    if (_isUnauthorizedError(error)) {
+      return AppLocale.raErrorApiKeyRequired.getStringForCurrentLocale();
+    }
+    if (_isRateLimitedError(error)) {
+      return AppLocale.raRateLimited.getStringForCurrentLocale();
+    }
+    return _errorWith(fallbackKey, error);
   }
 
   /// Recomputes the filtered/sorted recent masteries/completions caches.

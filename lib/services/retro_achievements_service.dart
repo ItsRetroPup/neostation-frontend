@@ -147,39 +147,6 @@ class RetroAchievementsService {
     );
   }
 
-  /// Mapping of NeoStation system identifiers to RetroAchievements console IDs.
-  static const Map<String, int> _systemMapping = {
-    'nes': 7,
-    'snes': 3,
-    'gb': 4,
-    'gbc': 6,
-    'gba': 5,
-    'n64': 2,
-    'gcn': 16,
-    'wii': 82,
-    'nds': 18,
-    '3ds': 78,
-    'genesis': 1,
-    'sms': 11,
-    'gg': 15,
-    'saturn': 39,
-    'dreamcast': 40,
-    'psx': 12,
-    'ps2': 21,
-    'psp': 41,
-    'atari2600': 25,
-    'atari7800': 51,
-    'lynx': 13,
-    'neogeo': 56,
-    'arcade': 27,
-    'msx': 29,
-  };
-
-  /// Returns the RetroAchievements console ID for a given NeoStation system name.
-  static int? getConsoleIdForSystem(String systemFolderName) {
-    return _systemMapping[systemFolderName.toLowerCase()];
-  }
-
   /// Retrieves basic profile information for a RetroAchievements user.
   static Future<RetroAchievementsUser?> getUserProfile(
     String username, {
@@ -362,23 +329,6 @@ class RetroAchievementsService {
     return RetroAchievementCommentsPage.fromJson(
       Map<String, dynamic>.from(decoded),
     );
-  }
-
-  /// Resolves a game's information and user progress using a file hash.
-  @Deprecated(
-    'The Web API does not support hash lookup on the user-progress endpoint. '
-    'Resolve the hash to a game ID locally, then call getGameInfoAndUserProgress.',
-  )
-  static Future<GameInfoAndUserProgress?> searchGameByHash(
-    String md5Hash,
-    String username, {
-    String? apiKey,
-  }) async {
-    _log.w(
-      'Ignoring unsupported RA hash-only lookup for $md5Hash. '
-      'Resolve a game ID from the local hash database first.',
-    );
-    return null;
   }
 
   static const String apiGetUserAwards = 'API_GetUserAwards.php';
