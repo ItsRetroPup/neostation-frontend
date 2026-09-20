@@ -28,6 +28,19 @@ extension _ProfileHeader on RADashboardHubState {
     final beatenGames = showCompletions
         ? (raProvider.userAwards?.beatenCasualAwardsCount ?? 0)
         : (raProvider.userAwards?.beatenHardcoreAwardsCount ?? 0);
+    final summary = raProvider.userSummary;
+    final rank = summary?.rank ?? 0;
+    final totalRanked = summary?.totalRanked ?? 0;
+    final standingLabel = rank <= 0
+        ? AppLocale.raUnranked.getString(context)
+        : totalRanked > 0 && rank <= totalRanked
+        ? AppLocale.raStandingPill
+              .getString(context)
+              .replaceFirst('{rank}', _formatRank(rank))
+              .replaceFirst('{percent}', _formatPercentile(rank, totalRanked))
+        : AppLocale.raYourRank
+              .getString(context)
+              .replaceFirst('{rank}', _formatRank(rank));
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 14.r, vertical: 12.r),
@@ -121,6 +134,12 @@ extension _ProfileHeader on RADashboardHubState {
                       label: '$highlightCount $highlightLabel',
                       color: highlightColor,
                     ),
+                    _buildPill(
+                      context,
+                      icon: Symbols.leaderboard_rounded,
+                      label: standingLabel,
+                      color: theme.colorScheme.secondary,
+                    ),
                   ],
                 ),
               ],
@@ -149,5 +168,16 @@ extension _ProfileHeader on RADashboardHubState {
         ],
       ),
     );
+  }
+
+  String _formatRank(int rank) => rank.toString().replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (match) => ',',
+  );
+
+  String _formatPercentile(int rank, int totalRanked) {
+    final percent = rank / totalRanked * 100;
+    if (percent > 0 && percent < 0.1) return '<0.1%';
+    return '${percent.toStringAsFixed(1)}%';
   }
 }

@@ -1250,11 +1250,12 @@ mixin AppLocale {
   static const String raSubtabGames = 'ra_subtab_games';
   static const String raSubtabLeaderboards = 'ra_subtab_leaderboards';
   static const String raStanding = 'ra_standing';
+  static const String raStandingPill = 'ra_standing_pill';
+  static const String raUnranked = 'ra_unranked';
   static const String raYourRank = 'ra_your_rank';
   static const String raYourPoints = 'ra_your_points';
   static const String raUserType = 'ra_user_type';
   static const String raCasual = 'ra_casual';
-  static const String raTopTen = 'ra_top_ten';
   static const String raYourGamesLeaderboards = 'ra_your_games_leaderboards';
   static const String raNoLeaderboardGames = 'ra_no_leaderboard_games';
   static const String raLeaderboardSignIn = 'ra_leaderboard_sign_in';
@@ -1271,7 +1272,7 @@ mixin AppLocale {
       'ra_leaderboard_rank_descending';
   static const String raGamesHeaderHint = 'ra_games_header_hint';
   static const String raFilterMastered = 'ra_filter_mastered';
-  static const String raFilterCompleted = 'ra_filter_completed';
+  static const String raFilterBeaten = 'ra_filter_beaten';
   static const String raGamesEndOfList = 'ra_games_end_of_list';
   static const String raGamesEmpty = 'ra_games_empty';
   static const String raErrorLoadGames = 'ra_error_load_games';
@@ -1285,6 +1286,7 @@ mixin AppLocale {
   static const String raRecentCompletions = 'ra_recent_completions';
   static const String raRecentMasteries = 'ra_recent_masteries';
   static const String raNoCompletionsYet = 'ra_no_completions_yet';
+  static const String raNoBeatenYet = 'ra_no_beaten_yet';
   static const String raNoMasteriesYet = 'ra_no_masteries_yet';
   static const String raTrackedGames = 'ra_tracked_games';
   static const String raCompletionLabel = 'ra_completion_label';
@@ -1294,6 +1296,7 @@ mixin AppLocale {
   static const String raMissable = 'ra_missable';
   static const String raFilterLocked = 'ra_filter_locked';
   static const String raFilterMissables = 'ra_filter_missables';
+  static const String raGuide = 'ra_guide';
   static const String raNoAchievementsForFilter =
       'ra_no_achievements_for_filter';
   static const String raComments = 'ra_comments';
@@ -1350,7 +1353,6 @@ mixin AppLocale {
       'ra_error_load_recently_played';
   static const String raErrorLoadRecentUnlocks = 'ra_error_load_recent_unlocks';
   static const String raErrorLoadLeaderboards = 'ra_error_load_leaderboards';
-  static const String raErrorLoadTopTen = 'ra_error_load_top_ten';
   static const String raErrorLoadLeaderboardEntries =
       'ra_error_load_leaderboard_entries';
 

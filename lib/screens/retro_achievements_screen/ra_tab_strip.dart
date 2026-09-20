@@ -14,7 +14,7 @@ import '../../themes/corner_radii.dart';
 /// The strip renders the tabs in enum order, and the shell's IndexedStack
 /// hosts them in the same order. The set grows by *adding* values — a sub-tab
 /// that cannot be shown yet is absent from the strip, never a disabled pill.
-enum RaSubTab { dashboard, unlocks, games, leaderboards }
+enum RaSubTab { dashboard, unlocks, games }
 
 /// The sub-tab strip across the top of the signed-in RetroAchievements tab:
 /// which mini-app is open, and that left/right on the D-pad walks between
@@ -46,7 +46,7 @@ class RaTabStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tabs = RaSubTab.values;
+    final tabs = const [RaSubTab.dashboard, RaSubTab.unlocks, RaSubTab.games];
     final numTabs = tabs.length;
     final tabWidth = 36.r;
     final visualIndex = tabs.indexOf(currentTab).clamp(0, numTabs - 1);
@@ -183,7 +183,6 @@ class _TabItem extends StatelessWidget {
       RaSubTab.dashboard => Symbols.dashboard_rounded,
       RaSubTab.unlocks => Symbols.lock_open_rounded,
       RaSubTab.games => Symbols.sports_esports_rounded,
-      RaSubTab.leaderboards => Symbols.leaderboard_rounded,
     };
   }
 
@@ -192,9 +191,6 @@ class _TabItem extends StatelessWidget {
       RaSubTab.dashboard => AppLocale.raSubtabDashboard.getString(context),
       RaSubTab.unlocks => AppLocale.raSubtabUnlocks.getString(context),
       RaSubTab.games => AppLocale.raSubtabGames.getString(context),
-      RaSubTab.leaderboards => AppLocale.raSubtabLeaderboards.getString(
-        context,
-      ),
     };
   }
 }

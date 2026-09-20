@@ -735,7 +735,8 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raDescription:
       'RetroAchievements es un esfuerzo comunitario para proporcionar logros en juegos clásicos mediante emuladores.',
   AppLocale.raEarnPoints: 'Gana puntos hardcore y exhíbelos',
-  AppLocale.raGlobalLeaderboards: 'Clasificaciones por juego y top 10',
+  AppLocale.raGlobalLeaderboards:
+      'Clasificaciones por juego y posición personal',
   AppLocale.raGameplayHistory: 'Juegos recientes y progreso de logros',
   AppLocale.raCreateAccountAt: 'Crea una cuenta en ',
   AppLocale.raToStartEarning: ' para empezar a ganar.',
@@ -1188,11 +1189,12 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raSubtabGames: 'Juegos',
   AppLocale.raSubtabLeaderboards: 'Clasificaciones',
   AppLocale.raStanding: 'Mi clasificación',
+  AppLocale.raStandingPill: 'Puesto #{rank} · Top {percent}',
+  AppLocale.raUnranked: 'Sin clasificación',
   AppLocale.raYourRank: 'Puesto: {rank}',
   AppLocale.raYourPoints: 'Puntos: {points}',
   AppLocale.raUserType: '{type}',
   AppLocale.raCasual: 'Casual',
-  AppLocale.raTopTen: 'Top 10',
   AppLocale.raYourGamesLeaderboards: 'Clasificaciones de tus juegos',
   AppLocale.raNoLeaderboardGames:
       'Aún no hay juegos con actividad en clasificaciones',
@@ -1209,7 +1211,7 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raLeaderboardRankDescending: 'Los valores más altos quedan arriba',
   AppLocale.raGamesHeaderHint: 'Jugados + seguidos',
   AppLocale.raFilterMastered: 'Dominados',
-  AppLocale.raFilterCompleted: 'Completados',
+  AppLocale.raFilterBeaten: 'Superados',
   AppLocale.raGamesEndOfList: 'Estos son todos los juegos de tu historial',
   AppLocale.raGamesEmpty: 'Aún no hay actividad de juego',
   AppLocale.raErrorLoadGames: 'Error al cargar los juegos: {error}',
@@ -1225,6 +1227,7 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raRecentCompletions: 'Completados Recientes',
   AppLocale.raRecentMasteries: 'Dominados Recientes',
   AppLocale.raNoCompletionsYet: 'Aún no hay completados',
+  AppLocale.raNoBeatenYet: 'Aún no hay juegos superados',
   AppLocale.raNoMasteriesYet: 'Aún no hay dominados',
   AppLocale.raTrackedGames: 'juegos seguidos',
   AppLocale.raCompletionLabel: 'Completado',
@@ -1234,6 +1237,7 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raMissable: 'EVITABLE',
   AppLocale.raFilterLocked: 'Bloqueados',
   AppLocale.raFilterMissables: 'Perdibles',
+  AppLocale.raGuide: 'Guía',
   AppLocale.raNoAchievementsForFilter: 'Ningún logro coincide con este filtro.',
   AppLocale.raComments: 'COMENTARIOS',
   AppLocale.raCommentsCouldNotLoad: 'No se pudieron cargar los comentarios.',
@@ -1299,7 +1303,6 @@ const Map<String, dynamic> appLocaleEs = {
 
   AppLocale.raErrorLoadLeaderboards:
       'Error al cargar las clasificaciones: {error}',
-  AppLocale.raErrorLoadTopTen: 'No se pudo cargar el top 10: {error}',
   AppLocale.raErrorLoadLeaderboardEntries:
       'Error al cargar los registros: {error}',
   // Custom save folders (NeoSync v2)

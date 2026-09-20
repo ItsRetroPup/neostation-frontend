@@ -725,7 +725,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raDescription:
       'RetroAchievements — это сообщество, добавляющее достижения в классические игры.',
   AppLocale.raEarnPoints: 'Зарабатывайте «хардкорные» очки и хвастайтесь ими',
-  AppLocale.raGlobalLeaderboards: 'Таблицы лидеров по играм и топ-10',
+  AppLocale.raGlobalLeaderboards: 'Таблицы лидеров по играм и личное место',
   AppLocale.raGameplayHistory: 'Недавние игры и прогресс достижений',
   AppLocale.raCreateAccountAt: 'Создайте аккаунт на ',
   AppLocale.raToStartEarning: ' , чтобы начать зарабатывать.',
@@ -1160,11 +1160,12 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raSubtabGames: 'Игры',
   AppLocale.raSubtabLeaderboards: 'Таблицы лидеров',
   AppLocale.raStanding: 'Моя позиция',
+  AppLocale.raStandingPill: 'Место #{rank} · Топ {percent}',
+  AppLocale.raUnranked: 'Без рейтинга',
   AppLocale.raYourRank: 'Место: {rank}',
   AppLocale.raYourPoints: 'Очки: {points}',
   AppLocale.raUserType: '{type}',
   AppLocale.raCasual: 'Казуальный',
-  AppLocale.raTopTen: 'Топ-10',
   AppLocale.raYourGamesLeaderboards: 'Таблицы лидеров ваших игр',
   AppLocale.raNoLeaderboardGames:
       'Пока нет игр с активностью в таблицах лидеров',
@@ -1180,7 +1181,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raLeaderboardRankDescending: 'Большие результаты выше',
   AppLocale.raGamesHeaderHint: 'Пройденные + отслеживаемые игры',
   AppLocale.raFilterMastered: 'Освоены',
-  AppLocale.raFilterCompleted: 'Завершены',
+  AppLocale.raFilterBeaten: 'Пройдены',
   AppLocale.raGamesEndOfList: 'Это все игры из вашей истории',
   AppLocale.raGamesEmpty: 'Игровой активности пока нет',
   AppLocale.raErrorLoadGames: 'Ошибка загрузки игр: {error}',
@@ -1195,6 +1196,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raRecentCompletions: 'Недавние прохождения',
   AppLocale.raRecentMasteries: 'Недавние мастерства',
   AppLocale.raNoCompletionsYet: 'Пока нет прохождений',
+  AppLocale.raNoBeatenYet: 'Пока нет пройденных игр',
   AppLocale.raNoMasteriesYet: 'Пока нет мастерств',
   AppLocale.raTrackedGames: 'отслеживаемых игр',
   AppLocale.raCompletionLabel: 'Прохождение',
@@ -1204,6 +1206,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raMissable: 'МОЖНО ПРОПУСТИТЬ',
   AppLocale.raFilterLocked: 'Заблокированные',
   AppLocale.raFilterMissables: 'Пропускаемые',
+  AppLocale.raGuide: 'Руководство',
   AppLocale.raNoAchievementsForFilter:
       'Нет достижений, соответствующих этому фильтру.',
   AppLocale.raComments: 'КОММЕНТАРИИ',
@@ -1262,7 +1265,6 @@ const Map<String, dynamic> appLocaleRu = {
       'Ошибка загрузки недавних достижений: {error}',
 
   AppLocale.raErrorLoadLeaderboards: 'Ошибка загрузки таблиц лидеров: {error}',
-  AppLocale.raErrorLoadTopTen: 'Не удалось загрузить топ-10: {error}',
   AppLocale.raErrorLoadLeaderboardEntries:
       'Ошибка загрузки записей таблицы лидеров: {error}',
   // Custom save folders (NeoSync v2)

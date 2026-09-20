@@ -18,16 +18,14 @@ import 'package:flutter_localization/flutter_localization.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import '../../utils/login_form_selection.dart';
 import '../../models/retro_achievements_dashboard_models.dart';
-import '../../models/romm_rom.dart';
 import '../../models/system_model.dart';
-import '../../providers/romm_provider.dart';
 import '../game_screen/my_games_list.dart';
 import '../game_screen/game_details_card/detail_tab.dart';
 import 'ra_dashboard.dart';
 import 'ra_tab_strip.dart';
 import 'ra_unlocks_tab.dart';
 import 'ra_games_tab.dart';
-import 'ra_leaderboards_tab.dart';
+import 'ra_game_achievements_page.dart';
 
 part 'ra_content/dashboard_host.dart';
 part 'ra_content/gamepad_nav.dart';
@@ -67,11 +65,9 @@ class _RAContentState extends State<RAContent>
 
   /// The see-all Games sub-tab, same treatment.
   final GlobalKey<RaGamesTabState> _gamesKey = GlobalKey<RaGamesTabState>();
-  final GlobalKey<RaLeaderboardsTabState> _leaderboardsKey =
-      GlobalKey<RaLeaderboardsTabState>();
 
-  /// Set while a row's drill-down (local resolve → RomM → notice) is between
-  /// presses, so a double-tap can't start two downloads or push two routes.
+  /// Set while a row's game page is being pushed, so a double-tap cannot push
+  /// duplicate routes.
   bool _gameActivationInFlight = false;
 
   /// Set while a selection is scrolling the header back into view, so the
@@ -225,15 +221,6 @@ class _RAContentState extends State<RAContent>
                     child: RaGamesTab(
                       key: _gamesKey,
                       active: _activeSubTab == RaSubTab.games,
-                      onActivate: _activateGame,
-                      onBack: _handleBack,
-                      onSelect: _selectCurrent,
-                    ),
-                  ),
-                  RepaintBoundary(
-                    child: RaLeaderboardsTab(
-                      key: _leaderboardsKey,
-                      active: _activeSubTab == RaSubTab.leaderboards,
                       onActivate: _activateGame,
                       onBack: _handleBack,
                       onSelect: _selectCurrent,

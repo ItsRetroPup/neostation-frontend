@@ -58,10 +58,6 @@ extension _GamepadNav on _RAContentState {
         _gamesKey.currentState?.selectCurrent();
         return;
       }
-      if (_activeSubTab == RaSubTab.leaderboards) {
-        _leaderboardsKey.currentState?.activateCurrent();
-        return;
-      }
       if (_logoutSelected) {
         _requestDisconnect();
         return;
@@ -122,7 +118,7 @@ extension _GamepadNav on _RAContentState {
   /// contract cares about the return: the caller plays the switch sound when
   /// a press actually changed the sub-tab.
   bool _switchSubTab(int delta) {
-    final tabs = RaSubTab.values;
+    final tabs = const [RaSubTab.dashboard, RaSubTab.unlocks, RaSubTab.games];
     if (tabs.length < 2) return false;
     final current = tabs.indexOf(_activeSubTab);
     final next = tabs[(current + delta + tabs.length) % tabs.length];
@@ -177,10 +173,6 @@ extension _GamepadNav on _RAContentState {
       final moved = _gamesKey.currentState?.handleNavigateUp() ?? false;
       return moved || _setStripFocused(true);
     }
-    if (_activeSubTab == RaSubTab.leaderboards) {
-      final moved = _leaderboardsKey.currentState?.moveSelection(-1) ?? false;
-      return moved || _setStripFocused(true);
-    }
     final released = _setWeekCardSelected(false);
     final scrolled = _scrollDashboard(-160.r);
     if (scrolled || released) return true;
@@ -209,9 +201,6 @@ extension _GamepadNav on _RAContentState {
     }
     if (_activeSubTab == RaSubTab.games) {
       return _gamesKey.currentState?.handleNavigateDown() ?? false;
-    }
-    if (_activeSubTab == RaSubTab.leaderboards) {
-      return _leaderboardsKey.currentState?.moveSelection(1) ?? false;
     }
     if (!_logoutSelected &&
         !_weekCardSelected &&
@@ -247,7 +236,6 @@ extension _GamepadNav on _RAContentState {
     if (_activeSubTab == RaSubTab.games) {
       return _gamesKey.currentState?.handleNavigateRight() ?? false;
     }
-    if (_activeSubTab == RaSubTab.leaderboards) return false;
     if (_logoutSelected) return false;
     _setWeekCardSelected(false);
     _scrollHeaderIntoView();
@@ -269,7 +257,6 @@ extension _GamepadNav on _RAContentState {
       // rows.
       return _gamesKey.currentState?.handleNavigateLeft() ?? false;
     }
-    if (_activeSubTab == RaSubTab.leaderboards) return false;
     final released = _logoutSelected ? _setLogoutSelected(false) : false;
     if (_dashboardKey.currentState?.weekCardSelectable != true) {
       return released;

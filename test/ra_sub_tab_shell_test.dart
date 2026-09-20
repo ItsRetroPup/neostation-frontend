@@ -4,11 +4,8 @@ import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neostation/l10n/app_locale.dart';
-import 'package:neostation/models/database_game_model.dart';
 import 'package:neostation/models/retro_achievements_dashboard_models.dart';
-import 'package:neostation/models/retro_achievements_leaderboard.dart';
 import 'package:neostation/models/retro_achievements_user.dart';
-import 'package:neostation/models/romm_rom.dart';
 import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/providers/retro_achievements_provider.dart';
 import 'package:neostation/providers/romm_provider.dart';
@@ -18,9 +15,7 @@ import 'package:neostation/screens/retro_achievements_screen/ra_dashboard.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_tab_strip.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_unlocks_tab.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_games_tab.dart';
-import 'package:neostation/screens/retro_achievements_screen/ra_leaderboards_tab.dart';
 import 'package:neostation/services/gamepad/gamepad_navigation_manager.dart';
-import 'package:neostation/services/global_notification_service.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/widgets/core_footer.dart';
 import 'package:neostation/widgets/ra_refresh_action.dart';
@@ -36,11 +31,9 @@ class _ShellProvider extends RetroAchievementsProvider {
   _ShellProvider({
     bool connected = true,
     List<RetroAchievementRecentUnlockItem> unlocksItems = const [],
-    List<RaTopTenUser> topTenUsers = const [],
     List<RaGamesListItem> gamesListItems = const [],
   }) : _connected = connected,
        _unlocksItems = unlocksItems,
-       _topTenUsers = topTenUsers,
        _gamesListItems = gamesListItems;
 
   final bool _connected;
@@ -48,16 +41,9 @@ class _ShellProvider extends RetroAchievementsProvider {
   /// See-all rows for the Unlocks sub-tab. Empty by default so every other
   /// shell test sees exactly the pre-tab behaviour.
   final List<RetroAchievementRecentUnlockItem> _unlocksItems;
-  final List<RaTopTenUser> _topTenUsers;
   final List<RaGamesListItem> _gamesListItems;
   final List<String> fetchLog = [];
   bool _dashboardLoading = false;
-
-  /// Test seam for the shell's local-library resolution — the drill-down's
-  /// first branch. Every ask is recorded, and the answer comes from the
-  /// callback (null when unset, matching "not in the library").
-  Future<OwnedWeekGameResolution?> Function(int raGameId)? resolveLocal;
-  final List<int> resolvedGameIds = [];
 
   void setDashboardLoading(bool value) {
     _dashboardLoading = value;
@@ -72,18 +58,6 @@ class _ShellProvider extends RetroAchievementsProvider {
 
   @override
   bool get summaryLoaded => true;
-
-  @override
-  List<RaTopTenUser> get topTenUsers => _topTenUsers;
-
-  @override
-  bool get topTenUsersLoaded => true;
-
-  @override
-  bool get topTenUsersLoading => false;
-
-  @override
-  String? get topTenUsersError => null;
 
   @override
   List<RaGamesListItem> get gamesListItems => _gamesListItems;
@@ -165,14 +139,6 @@ class _ShellProvider extends RetroAchievementsProvider {
   List<RetroAchievementRecentUnlockItem> get unlocksListItems => _unlocksItems;
 
   @override
-  Future<OwnedWeekGameResolution?> resolveLocalGameForRaId(int raGameId) async {
-    resolvedGameIds.add(raGameId);
-    final handler = resolveLocal;
-    if (handler == null) return null;
-    return handler(raGameId);
-  }
-
-  @override
   Future<bool> loadUnlocksPage({bool reset = false}) async {
     fetchLog.add('unlocks-page${reset ? '-reset' : ''}');
     // Enough of the real bookkeeping for the tab's staleness checks to see a
@@ -187,43 +153,6 @@ class _ShellProvider extends RetroAchievementsProvider {
 
   @override
   bool get unlocksListLoaded => _unlocksListLoaded;
-}
-
-/// RomM stub for the Unlocks drill-down tests: records every lookup it was
-/// asked for and answers from fields, so the branches never touch a server.
-/// A download's tracker comes back already completed and pre-indexed —
-/// standing in for the library scan that lands the file in the local
-/// database, which is what the drill-down waits on after the transfer.
-class _RommStub extends RommProvider {
-  _RommStub({this.remoteRom});
-
-  final RommRom? remoteRom;
-  final List<String> log = [];
-
-  @override
-  bool get isConnected => true;
-
-  @override
-  Future<RommRom?> findRomByRaGameId(int gameId, String gameTitle) async {
-    log.add('find:$gameId:$gameTitle');
-    return remoteRom;
-  }
-
-  @override
-  RommDownload? downloadFor(int romId) => null;
-
-  @override
-  Future<RommDownload> downloadRom(
-    RommRom rom, {
-    required List<String> romFolders,
-    FileProvider? fileProvider,
-  }) async {
-    log.add('download:${rom.id}');
-    final tracker = RommDownload(romId: rom.id)
-      ..status = RommDownloadStatus.completed;
-    tracker.markIndexed();
-    return tracker;
-  }
 }
 
 RetroAchievementRecentUnlockItem _unlock(int i) =>
@@ -267,9 +196,6 @@ RetroAchievementRecentlyPlayedGameItem _played(int i) =>
       scoreAchievedHardcore: 10,
     );
 
-List<String> notificationMessages() =>
-    GlobalNotificationService().notifier.value.map((n) => n.message).toList();
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -291,12 +217,6 @@ void main() {
       mapLocales: [MapLocale('en', AppLocale.en)],
       initLanguageCode: 'en',
     );
-  });
-
-  setUp(() {
-    // The drill-down asserts read the global notification center — a plain
-    // singleton — so it resets between tests like any other shared service.
-    GlobalNotificationService().notifier.value = [];
   });
 
   /// The wall-clock parts of input (the inter-key throttle and the layer
@@ -413,20 +333,19 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('signed in: the strip renders all four sub-tab pills', (
+  testWidgets('signed in: the strip renders the three sub-tab pills', (
     tester,
   ) async {
     await pumpShell(tester, _ShellProvider());
 
     expect(find.byType(RaTabStrip), findsOneWidget);
     expect(find.byType(RADashboardHub), findsOneWidget);
-    // The IndexedStack hosts all four sub-tabs from the start; only the
+    // The IndexedStack hosts all three sub-tabs from the start; only the
     // dashboard is showing, and the other two wait off-stage at their dwell
     // gates. (skipOffstage: IndexedStack parks non-showing children in an
     // Offstage wrapper, which the default finders skip.)
     expect(find.byType(RaUnlocksTab, skipOffstage: false), findsOneWidget);
     expect(find.byType(RaGamesTab, skipOffstage: false), findsOneWidget);
-    expect(find.byType(RaLeaderboardsTab, skipOffstage: false), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (w) =>
@@ -450,15 +369,6 @@ void main() {
         (w) =>
             w is Semantics &&
             w.properties.label == 'Games' &&
-            w.properties.selected == false,
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.byWidgetPredicate(
-        (w) =>
-            w is Semantics &&
-            w.properties.label == 'Leaderboards' &&
             w.properties.selected == false,
       ),
       findsOneWidget,
@@ -588,16 +498,14 @@ void main() {
         isTrue,
       );
 
-      // Right enters Leaderboards, then wraps around to Dashboard — four
-      // pills, both directions live, no dead press at either end.
-      await press(tester, LogicalKeyboardKey.arrowRight);
-      expect(stripOf(tester).currentTab, RaSubTab.leaderboards);
+      // Right wraps from Games back around to Dashboard — three pills, both
+      // directions live, no dead press at either end.
       await press(tester, LogicalKeyboardKey.arrowRight);
       expect(stripOf(tester).currentTab, RaSubTab.dashboard);
 
-      // And Left wraps the other way, straight back onto Leaderboards.
+      // And Left wraps the other way, straight back onto Games.
       await press(tester, LogicalKeyboardKey.arrowLeft);
-      expect(stripOf(tester).currentTab, RaSubTab.leaderboards);
+      expect(stripOf(tester).currentTab, RaSubTab.games);
       expect(
         tester.state<RADashboardHubState>(
           find.byType(RADashboardHub, skipOffstage: false),
@@ -611,68 +519,6 @@ void main() {
       // initial-centering timer (it starts from a post-frame callback, so it
       // may only be *created* on the next frame), then advance past the timer
       // itself — an anonymous timer dispose cannot cancel.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 150));
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    },
-  );
-
-  testWidgets(
-    'D-pad walks leaderboards into your games and activates the selected game',
-    (tester) async {
-      final provider = _ShellProvider(
-        topTenUsers: const [
-          RaTopTenUser(
-            username: 'TopPlayer',
-            totalPoints: 999,
-            totalRatioPoints: 1000,
-            ulid: '01TOP',
-          ),
-        ],
-        gamesListItems: [
-          RaGamesListItem(
-            gameId: 42,
-            title: 'Leaderboard Game',
-            consoleId: 1,
-            consoleName: 'NES',
-            imageIcon: '',
-            imageBoxArt: '',
-            maxPossible: 20,
-            numAwarded: 5,
-            numAwardedHardcore: 4,
-            highestAwardKind: null,
-            lastPlayed: DateTime.utc(2026, 9, 1),
-            mostRecentAwardedDate: null,
-          ),
-        ],
-      )..resolveLocal = (_) async => null;
-      final romm = _RommStub();
-
-      await pumpShell(tester, provider, romm: romm);
-      await settleInput(tester);
-
-      await press(tester, LogicalKeyboardKey.arrowUp);
-      await press(tester, LogicalKeyboardKey.arrowRight);
-      await press(tester, LogicalKeyboardKey.arrowRight);
-      await press(tester, LogicalKeyboardKey.arrowRight);
-      expect(stripOf(tester).currentTab, RaSubTab.leaderboards);
-
-      // Down first enters the tab's content zone. The next Down crosses the
-      // top-ten row into the first "your games" row; A must use the same
-      // shared activation path as the Unlocks and Games sub-tabs.
-      await press(tester, LogicalKeyboardKey.arrowDown);
-      await press(tester, LogicalKeyboardKey.arrowDown);
-      await press(tester, LogicalKeyboardKey.enter);
-      await tester.pump(const Duration(milliseconds: 450));
-      await tester.pump();
-
-      expect(provider.resolvedGameIds, [42]);
-      expect(romm.log, ['find:42:Leaderboard Game']);
-      expect(notificationMessages(), [
-        "This game isn't in your library or RomM",
-      ]);
-
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
       await tester.pumpWidget(const SizedBox.shrink());
@@ -867,140 +713,6 @@ void main() {
     },
   );
 
-  /// Steps onto the Unlocks sub-tab, enters its content, and presses A on the
-  /// first row — the full path a player takes to the drill-down. The dashboard
-  /// must already have had its dwell fired (a `pump(400ms)` before this).
-  Future<void> pressAOnFirstUnlockRow(WidgetTester tester) async {
-    await press(tester, LogicalKeyboardKey.arrowUp);
-    await press(tester, LogicalKeyboardKey.arrowRight);
-    await press(tester, LogicalKeyboardKey.arrowDown);
-    await tester.pump(const Duration(milliseconds: 400));
-    // The select chord dispatches its tap on a 400ms timer; the sub-tab's own
-    // dwell fires on the same advance.
-    await press(tester, LogicalKeyboardKey.enter);
-    await tester.pump(const Duration(milliseconds: 450));
-    // The drill-down chain is all microtasks off the tap.
-    await tester.pump();
-  }
-
-  testWidgets(
-    'A on a row with a local match opens the local game without RomM',
-    (tester) async {
-      final provider = _ShellProvider(unlocksItems: List.generate(3, _unlock))
-        ..resolveLocal = (gameId) async => OwnedWeekGameResolution(
-          raGameId: gameId,
-          game: DatabaseGameModel(
-            filename: 'owned.nes',
-            romPath: '/x/owned.nes',
-          ),
-        );
-      final romm = _RommStub();
-      await pumpShell(tester, provider, romm: romm);
-      await settleInput(tester);
-      await tester.pump(const Duration(milliseconds: 400));
-      await pressAOnFirstUnlockRow(tester);
-
-      // The local library answered, so RomM was never consulted… (the row
-      // fixtures use their index as the gameId: the cursor is on row 0.)
-      expect(provider.resolvedGameIds, [0]);
-      expect(romm.log, isEmpty);
-      // …and the open path ran as far as its system resolution: the fixture's
-      // game carries no system folder, and the mismatch is reported rather
-      // than pushed — the push itself is production-tested, never pumped.
-      expect(notificationMessages(), [
-        'Could not resolve the local system for this game',
-      ]);
-
-      // Flush the post-frame chain that creates the unlocks tab's 100ms
-      // initial-centering timer (it starts from a post-frame callback, so it
-      // may only be *created* on the next frame), then advance past the timer
-      // itself — an anonymous timer dispose cannot cancel.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 150));
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    },
-  );
-
-  testWidgets('A on a row RomM has downloads it, then opens it once indexed', (
-    tester,
-  ) async {
-    var resolves = 0;
-    final provider = _ShellProvider(unlocksItems: List.generate(3, _unlock))
-      ..resolveLocal = (gameId) async {
-        resolves++;
-        // First ask: not owned locally. After the transfer lands and
-        // indexing completes, the re-resolve finds it in the library.
-        return resolves == 1
-            ? null
-            : OwnedWeekGameResolution(
-                raGameId: gameId,
-                game: DatabaseGameModel(
-                  filename: 'indexed.nes',
-                  romPath: '/x/indexed.nes',
-                ),
-              );
-      };
-    final romm = _RommStub(
-      remoteRom: RommRom(
-        id: 7,
-        name: 'Remote game',
-        platformId: 1,
-        platformSlug: 'nes',
-        fsName: 'remote.nes',
-        fsNameNoExt: 'remote',
-        fsExtension: '.nes',
-      ),
-    );
-    await pumpShell(tester, provider, romm: romm);
-    await settleInput(tester);
-    await tester.pump(const Duration(milliseconds: 400));
-    await pressAOnFirstUnlockRow(tester);
-
-    // Not local, found on RomM, downloaded; the pre-indexed tracker stands
-    // in for the library scan, so the same press re-resolves and carries
-    // on into the open path. (Row fixtures use their index as the gameId.)
-    expect(romm.log, ['find:0:Game 0', 'download:7']);
-    expect(resolves, 2);
-    expect(notificationMessages(), [
-      'Download complete',
-      'Could not resolve the local system for this game',
-    ]);
-
-    // Flush the post-frame chain that creates the unlocks tab's 100ms
-    // initial-centering timer (it starts from a post-frame callback, so it
-    // may only be *created* on the next frame), then advance past the timer
-    // itself — an anonymous timer dispose cannot cancel.
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 150));
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-  });
-
-  testWidgets("A on a row nobody owns says so instead of doing nothing", (
-    tester,
-  ) async {
-    final provider = _ShellProvider(unlocksItems: List.generate(3, _unlock))
-      ..resolveLocal = (_) async => null;
-    final romm = _RommStub();
-    await pumpShell(tester, provider, romm: romm);
-    await settleInput(tester);
-    await tester.pump(const Duration(milliseconds: 400));
-    await pressAOnFirstUnlockRow(tester);
-
-    expect(romm.log, ['find:0:Game 0']);
-    expect(notificationMessages(), ["This game isn't in your library or RomM"]);
-
-    // Flush the post-frame chain that creates the unlocks tab's 100ms
-    // initial-centering timer (it starts from a post-frame callback, so it
-    // may only be *created* on the next frame), then advance past the timer
-    // itself — an anonymous timer dispose cannot cancel.
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 150));
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-  });
-
   testWidgets('the complete RA shell fits a narrow landscape viewport', (
     tester,
   ) async {
@@ -1020,7 +732,7 @@ void main() {
     await settleInput(tester);
 
     expect(find.byType(RaSubTabFooter), findsOneWidget);
-    expect(find.byType(RaSubTabFooter, skipOffstage: false), findsNWidgets(4));
+    expect(find.byType(RaSubTabFooter, skipOffstage: false), findsNWidgets(3));
 
     // The strip remains the shared focus zone while each active sub-tab gets
     // a full paint at the handheld-class width.
