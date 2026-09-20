@@ -25,11 +25,12 @@ import '../game_screen/my_games_list.dart';
 import 'ra_dashboard.dart';
 import 'ra_tab_strip.dart';
 import 'ra_unlocks_tab.dart';
+import 'ra_games_tab.dart';
 
 part 'ra_content/dashboard_host.dart';
 part 'ra_content/gamepad_nav.dart';
 part 'ra_content/login_form.dart';
-part 'ra_content/unlocks_host.dart';
+part 'ra_content/drill_down_host.dart';
 
 class RAContent extends StatefulWidget {
   const RAContent({super.key});
@@ -62,9 +63,12 @@ class _RAContentState extends State<RAContent>
   final GlobalKey<RaUnlocksTabState> _unlocksKey =
       GlobalKey<RaUnlocksTabState>();
 
+  /// The see-all Games sub-tab, same treatment.
+  final GlobalKey<RaGamesTabState> _gamesKey = GlobalKey<RaGamesTabState>();
+
   /// Set while a row's drill-down (local resolve → RomM → notice) is between
   /// presses, so a double-tap can't start two downloads or push two routes.
-  bool _unlockActivationInFlight = false;
+  bool _gameActivationInFlight = false;
 
   /// Set while a selection is scrolling the header back into view, so the
   /// scroll listener doesn't read that movement as the user leaving the
@@ -208,6 +212,13 @@ class _RAContentState extends State<RAContent>
                       key: _unlocksKey,
                       active: _activeSubTab == RaSubTab.unlocks,
                       onActivate: _activateUnlock,
+                    ),
+                  ),
+                  RepaintBoundary(
+                    child: RaGamesTab(
+                      key: _gamesKey,
+                      active: _activeSubTab == RaSubTab.games,
+                      onActivate: _activateGame,
                     ),
                   ),
                 ],

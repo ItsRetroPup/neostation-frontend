@@ -1157,6 +1157,13 @@ const Map<String, dynamic> appLocaleRu = {
 
   AppLocale.raSubtabDashboard: 'Панель',
   AppLocale.raSubtabUnlocks: 'Достижения',
+  AppLocale.raSubtabGames: 'Игры',
+  AppLocale.raGamesHeaderHint: 'Пройденные + отслеживаемые игры',
+  AppLocale.raFilterMastered: 'Освоены',
+  AppLocale.raFilterCompleted: 'Завершены',
+  AppLocale.raGamesEndOfList: 'Это все игры из вашей истории',
+  AppLocale.raGamesEmpty: 'Игровой активности пока нет',
+  AppLocale.raErrorLoadGames: 'Ошибка загрузки игр: {error}',
   AppLocale.raHardcore: 'Хардкор',
   AppLocale.raUnlocksEndOfList: 'Это все достижения за последние 30 дней',
   AppLocale.raUnlockGameNotOwned:

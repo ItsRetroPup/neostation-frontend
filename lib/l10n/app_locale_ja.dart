@@ -1051,6 +1051,13 @@ const Map<String, dynamic> appLocaleJa = {
 
   AppLocale.raSubtabDashboard: 'ダッシュボード',
   AppLocale.raSubtabUnlocks: '解除',
+  AppLocale.raSubtabGames: 'ゲーム',
+  AppLocale.raGamesHeaderHint: 'プレイ済み＋進行状況のあるゲーム',
+  AppLocale.raFilterMastered: 'マスター済み',
+  AppLocale.raFilterCompleted: 'クリア済み',
+  AppLocale.raGamesEndOfList: '履歴にあるゲームはこれで全部です',
+  AppLocale.raGamesEmpty: 'まだゲームのアクティビティはありません',
+  AppLocale.raErrorLoadGames: 'ゲームの読み込みエラー: {error}',
   AppLocale.raHardcore: 'ハードコア',
   AppLocale.raUnlocksEndOfList: '過去30日間の解除はこれですべてです',
   AppLocale.raUnlockGameNotOwned: 'このゲームはライブラリにもRomMにもありません',

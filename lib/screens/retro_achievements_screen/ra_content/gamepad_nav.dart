@@ -52,6 +52,11 @@ extension _GamepadNav on _RAContentState {
         _unlocksKey.currentState?.activateCurrent();
         return;
       }
+      if (_activeSubTab == RaSubTab.games) {
+        // On the chips, A enters the list; on a row, A is the drill-down.
+        _gamesKey.currentState?.selectCurrent();
+        return;
+      }
       if (_logoutSelected) {
         _requestDisconnect();
         return;
@@ -140,7 +145,8 @@ extension _GamepadNav on _RAContentState {
   /// the sub-tab strip instead of scrolling nowhere. Per sub-tab: the
   /// dashboard releases its week card first (the finer move), then scrolls,
   /// then parks; the Unlocks list has no finer move than its top row, so
-  /// Up past the first row parks immediately.
+  /// Up past the first row parks immediately; the Games list has one finer
+  /// move — its filter chips — so Up steps list → chips → strip.
   bool _handleNavigateUp() {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) {
@@ -149,6 +155,12 @@ extension _GamepadNav on _RAContentState {
     if (_stripFocused) return false;
     if (_activeSubTab == RaSubTab.unlocks) {
       final moved = _unlocksKey.currentState?.moveSelection(-1) ?? false;
+      return moved || _setStripFocused(true);
+    }
+    if (_activeSubTab == RaSubTab.games) {
+      // The tab answers false only once its chips are already armed — that
+      // is the "content top" signal, same contract as the Unlocks branch.
+      final moved = _gamesKey.currentState?.handleNavigateUp() ?? false;
       return moved || _setStripFocused(true);
     }
     final released = _setWeekCardSelected(false);
@@ -163,7 +175,9 @@ extension _GamepadNav on _RAContentState {
   /// only from the top and at rest, because selecting a card already
   /// scrolled out of view would arm a highlight the player cannot see; the
   /// Unlocks list walks its rows, and at the wall of loaded rows the press
-  /// requests the next page (a silent boundary only at the true end).
+  /// requests the next page (a silent boundary only at the true end); the
+  /// Games list walks its rows the same way, with one step before them —
+  /// its filter chips.
   ///
   /// From the strip, Down is how it hands the cursor back: the sub-tab's own
   /// cursor (scroll position, parked selection) is where it always was,
@@ -174,6 +188,9 @@ extension _GamepadNav on _RAContentState {
     if (_stripFocused) return _setStripFocused(false);
     if (_activeSubTab == RaSubTab.unlocks) {
       return _unlocksKey.currentState?.moveSelection(1) ?? false;
+    }
+    if (_activeSubTab == RaSubTab.games) {
+      return _gamesKey.currentState?.handleNavigateDown() ?? false;
     }
     if (!_logoutSelected &&
         !_weekCardSelected &&
@@ -196,7 +213,8 @@ extension _GamepadNav on _RAContentState {
   /// Right parks the cursor on the header's logout button — the dashboard's
   /// one in-content horizontal axis. The Unlocks list has no in-row actions,
   /// so there Right (and Left) are silent; their press is spent on the strip
-  /// only, which is one Up away.
+  /// only, which is one Up away. The Games list's horizontal axis is its
+  /// filter chips — on the rows themselves, Right is silent there too.
   ///
   /// The header scrolls with the content, so anything below the top has to come
   /// back into view first — parking on a button that is off screen would leave
@@ -205,6 +223,9 @@ extension _GamepadNav on _RAContentState {
     if (!context.read<RetroAchievementsProvider>().isConnected) return false;
     if (_stripFocused) return _switchSubTab(1);
     if (_activeSubTab == RaSubTab.unlocks) return false;
+    if (_activeSubTab == RaSubTab.games) {
+      return _gamesKey.currentState?.handleNavigateRight() ?? false;
+    }
     if (_logoutSelected) return false;
     _setWeekCardSelected(false);
     _scrollHeaderIntoView();
@@ -220,6 +241,12 @@ extension _GamepadNav on _RAContentState {
     if (!raProvider.isConnected) return false;
     if (_stripFocused) return _switchSubTab(-1);
     if (_activeSubTab == RaSubTab.unlocks) return false;
+    if (_activeSubTab == RaSubTab.games) {
+      // The chips row is the Games list's one in-content horizontal axis;
+      // on the rows themselves, Left is silent like it is on the Unlocks
+      // rows.
+      return _gamesKey.currentState?.handleNavigateLeft() ?? false;
+    }
     final released = _logoutSelected ? _setLogoutSelected(false) : false;
     if (_dashboardKey.currentState?.weekCardSelectable != true) {
       return released;

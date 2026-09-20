@@ -1195,6 +1195,13 @@ const Map<String, dynamic> appLocaleFr = {
 
   AppLocale.raSubtabDashboard: 'Tableau de bord',
   AppLocale.raSubtabUnlocks: 'Succès',
+  AppLocale.raSubtabGames: 'Jeux',
+  AppLocale.raGamesHeaderHint: 'Joués + jeux suivis',
+  AppLocale.raFilterMastered: 'Maîtrisés',
+  AppLocale.raFilterCompleted: 'Terminés',
+  AppLocale.raGamesEndOfList: 'Voici tous les jeux de votre historique',
+  AppLocale.raGamesEmpty: "Pas encore d'activité de jeu",
+  AppLocale.raErrorLoadGames: 'Erreur lors du chargement des jeux : {error}',
   AppLocale.raHardcore: 'Hardcore',
   AppLocale.raUnlocksEndOfList: 'Ce sont tous les succès des 30 derniers jours',
   AppLocale.raUnlockGameNotOwned:

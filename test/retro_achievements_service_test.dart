@@ -296,7 +296,7 @@ void main() {
       test('replays the last good response when the network drops', () async {
         await primeCache('Cached');
         expect(
-          RetroAchievementsCache.servedFromCache('recently_played_Cached'),
+          RetroAchievementsCache.servedFromCache('recently_played_Cached_10_0'),
           isFalse,
         );
 
@@ -312,7 +312,7 @@ void main() {
 
         expect(offline.single.title, 'Final Fantasy Origins');
         expect(
-          RetroAchievementsCache.servedFromCache('recently_played_Cached'),
+          RetroAchievementsCache.servedFromCache('recently_played_Cached_10_0'),
           isTrue,
         );
       });
@@ -331,7 +331,7 @@ void main() {
 
         expect(served.single.gameId, 11332);
         expect(
-          RetroAchievementsCache.servedFromCache('recently_played_Flaky'),
+          RetroAchievementsCache.servedFromCache('recently_played_Flaky_10_0'),
           isTrue,
         );
       });
@@ -363,7 +363,9 @@ void main() {
             ),
           );
           expect(
-            RetroAchievementsCache.servedFromCache('recently_played_Limited'),
+            RetroAchievementsCache.servedFromCache(
+              'recently_played_Limited_10_0',
+            ),
             isFalse,
           );
         },
@@ -457,6 +459,141 @@ void main() {
         expect(replayTwo.single.gameId, 99999);
         expect(
           RetroAchievementsCache.servedFromCache('recent_unlocks_Paged_50_50'),
+          isTrue,
+        );
+      });
+
+      test('caches games-list pages under per-page keys', () async {
+        // One row per page per source, differing by game id, so a replay
+        // from the wrong key is obvious. Both endpoints the Games sub-tab
+        // walks are paginated, so both need page-named keys.
+        const playedOne =
+            '[{"GameID":4001,"ConsoleID":12,"ConsoleName":"PlayStation",'
+            '"Title":"Game One","ImageIcon":"/Images/060249.png",'
+            '"ImageTitle":"/Images/026707.png",'
+            '"ImageIngame":"/Images/026708.png",'
+            '"ImageBoxArt":"/Images/046257.png",'
+            '"LastPlayed":"2024-01-01 00:30:04","AchievementsTotal":119,'
+            '"NumPossibleAchievements":119,"PossibleScore":945,'
+            '"NumAchieved":38,"ScoreAchieved":382,'
+            '"NumAchievedHardcore":38,"ScoreAchievedHardcore":382}]';
+        const playedTwo =
+            '[{"GameID":4002,"ConsoleID":12,"ConsoleName":"PlayStation",'
+            '"Title":"Game Two","ImageIcon":"/Images/060249.png",'
+            '"ImageTitle":"/Images/026707.png",'
+            '"ImageIngame":"/Images/026708.png",'
+            '"ImageBoxArt":"/Images/046257.png",'
+            '"LastPlayed":"2024-01-02 00:30:04","AchievementsTotal":119,'
+            '"NumPossibleAchievements":119,"PossibleScore":945,'
+            '"NumAchieved":38,"ScoreAchieved":382,'
+            '"NumAchievedHardcore":38,"ScoreAchievedHardcore":382}]';
+        const progressOne =
+            '{"Count":1,"Total":2,"Results":[{"GameID":5001,'
+            '"Title":"Tracked One","ImageIcon":"/Images/074560.png",'
+            '"ConsoleID":1,"ConsoleName":"Mega Drive / Genesis",'
+            '"MaxPossible":56,"NumAwarded":56,"NumAwardedHardcore":56,'
+            '"MostRecentAwardedDate":"2024-01-01T02:52:34+00:00",'
+            '"HighestAwardKind":"mastered",'
+            '"HighestAwardDate":"2024-01-01T02:52:34+00:00"}]}';
+        const progressTwo =
+            '{"Count":1,"Total":2,"Results":[{"GameID":5002,'
+            '"Title":"Tracked Two","ImageIcon":"/Images/074560.png",'
+            '"ConsoleID":1,"ConsoleName":"Mega Drive / Genesis",'
+            '"MaxPossible":40,"NumAwarded":40,"NumAwardedHardcore":0,'
+            '"MostRecentAwardedDate":"2024-01-02T02:52:34+00:00",'
+            '"HighestAwardKind":"completed",'
+            '"HighestAwardDate":"2024-01-02T02:52:34+00:00"}]}';
+
+        // Prime both pages of both endpoints live.
+        for (final (body, offset) in [(playedOne, 0), (playedTwo, 50)]) {
+          final page =
+              await RetroAchievementsService.getUserRecentlyPlayedGames(
+                'PagedGames',
+                count: 50,
+                offset: offset,
+                apiKey: 'secret-key',
+                client: MockClient((request) async => http.Response(body, 200)),
+              );
+          expect(page.single.gameId, offset == 0 ? 4001 : 4002);
+        }
+        for (final (body, offset) in [(progressOne, 0), (progressTwo, 100)]) {
+          final summary =
+              await RetroAchievementsService.getUserCompletionProgress(
+                'PagedGames',
+                count: 100,
+                offset: offset,
+                apiKey: 'secret-key',
+                client: MockClient((request) async => http.Response(body, 200)),
+              );
+          expect(summary.results.single.gameId, offset == 0 ? 5001 : 5002);
+        }
+
+        // Offline, each page of each endpoint replays its own rows: pages of
+        // one list must never collide on one key, whichever endpoint they
+        // came from.
+        final offline = MockClient(
+          (request) async =>
+              throw const SocketException('Network is unreachable'),
+        );
+        final replayPlayedOne =
+            await RetroAchievementsService.getUserRecentlyPlayedGames(
+              'PagedGames',
+              count: 50,
+              offset: 0,
+              apiKey: 'secret-key',
+              client: offline,
+            );
+        expect(replayPlayedOne.single.gameId, 4001);
+        expect(
+          RetroAchievementsCache.servedFromCache(
+            'recently_played_PagedGames_50_0',
+          ),
+          isTrue,
+        );
+
+        final replayPlayedTwo =
+            await RetroAchievementsService.getUserRecentlyPlayedGames(
+              'PagedGames',
+              count: 50,
+              offset: 50,
+              apiKey: 'secret-key',
+              client: offline,
+            );
+        expect(replayPlayedTwo.single.gameId, 4002);
+        expect(
+          RetroAchievementsCache.servedFromCache(
+            'recently_played_PagedGames_50_50',
+          ),
+          isTrue,
+        );
+
+        final replayProgressOne =
+            await RetroAchievementsService.getUserCompletionProgress(
+              'PagedGames',
+              count: 100,
+              offset: 0,
+              apiKey: 'secret-key',
+              client: offline,
+            );
+        expect(replayProgressOne.results.single.gameId, 5001);
+        expect(
+          RetroAchievementsCache.servedFromCache('completion_PagedGames_100_0'),
+          isTrue,
+        );
+
+        final replayProgressTwo =
+            await RetroAchievementsService.getUserCompletionProgress(
+              'PagedGames',
+              count: 100,
+              offset: 100,
+              apiKey: 'secret-key',
+              client: offline,
+            );
+        expect(replayProgressTwo.results.single.gameId, 5002);
+        expect(
+          RetroAchievementsCache.servedFromCache(
+            'completion_PagedGames_100_100',
+          ),
           isTrue,
         );
       });

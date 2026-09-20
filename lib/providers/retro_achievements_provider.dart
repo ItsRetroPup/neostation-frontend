@@ -16,6 +16,13 @@ import '../models/retro_achievements_user_awards.dart';
 import '../services/game/game_session_manager.dart';
 import 'retro_achievements_credentials.dart';
 
+/// The Games sub-tab's award filter — which slice of the merged list the
+/// chips at the top of the tab are showing. Filter state lives in the
+/// provider so the choice survives sub-tab switches; switching never
+/// refetches (the merged list is already loaded — see
+/// [RetroAchievementsProvider.visibleGamesListItems]).
+enum RaGamesFilter { all, mastered, completed }
+
 /// Provider responsible for managing the integration with RetroAchievements.org.
 ///
 /// Handles user authentication, dashboard data (weekly event, unlocks,
@@ -114,6 +121,26 @@ class RetroAchievementsProvider extends ChangeNotifier {
   /// on, even before [_unlocksListHasMore] is consulted).
   int _unlocksListOffset = 0;
 
+  /// The see-all Games sub-tab's merged list. The same accumulator shape as
+  /// the Unlocks list above, but folded from two paginated endpoints — so
+  /// there is an offset and a hasMore per source, and the merged rows are
+  /// re-derived from the source pages whenever a page lands (see
+  /// [_rebuildGamesList]) rather than appended in place. Deliberately
+  /// separate from [_recentlyPlayedGames] and [_completionProgress]: those
+  /// are the dashboard's single default-parameter reads.
+  List<RaGamesListItem> _gamesListItems = [];
+  bool _gamesListLoaded = false;
+  bool _gamesListLoading = false;
+  bool _gamesListHasMore = true;
+  String? _gamesListError;
+  RaGamesFilter _gamesFilter = RaGamesFilter.all;
+  List<RetroAchievementRecentlyPlayedGameItem> _gamesPlayedPages = [];
+  List<RetroAchievementCompletionProgressItem> _gamesCompletionPages = [];
+  int _gamesPlayedOffset = 0;
+  int _gamesCompletionOffset = 0;
+  bool _gamesPlayedHasMore = true;
+  bool _gamesCompletionHasMore = true;
+
   List<RetroAchievementRecentlyPlayedGameItem> _recentlyPlayedGames = [];
   bool _recentlyPlayedLoaded = false;
   bool _recentlyPlayedLoading = false;
@@ -181,6 +208,38 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool get unlocksListLoading => _unlocksListLoading;
   bool get unlocksListHasMore => _unlocksListHasMore;
   String? get unlocksListError => _unlocksListError;
+
+  /// The see-all Games list: every merged row accumulated so far, across
+  /// pages of both sources, in freshest-activity order.
+  List<RaGamesListItem> get gamesListItems => _gamesListItems;
+  bool get gamesListLoaded => _gamesListLoaded;
+  bool get gamesListLoading => _gamesListLoading;
+  bool get gamesListHasMore => _gamesListHasMore;
+  String? get gamesListError => _gamesListError;
+  RaGamesFilter get gamesFilter => _gamesFilter;
+
+  /// The merged list as the active award filter shows it. Client-side by
+  /// design: the merge is already loaded, so switching the filter re-derives
+  /// the view without a refetch.
+  List<RaGamesListItem> get visibleGamesListItems {
+    switch (_gamesFilter) {
+      case RaGamesFilter.all:
+        return _gamesListItems;
+      case RaGamesFilter.mastered:
+        return _gamesListItems.where((item) => item.isMastered).toList();
+      case RaGamesFilter.completed:
+        return _gamesListItems.where((item) => item.isCompleted).toList();
+    }
+  }
+
+  /// The tab's chip row calls this; it never fetches — the filter only
+  /// changes how the already-loaded merge is presented.
+  void setGamesFilter(RaGamesFilter filter) {
+    if (_gamesFilter == filter) return;
+    _gamesFilter = filter;
+    notifyListeners();
+  }
+
   List<RetroAchievementRecentlyPlayedGameItem> get recentlyPlayedGames =>
       _recentlyPlayedGames;
   bool get recentlyPlayedLoaded => _recentlyPlayedLoaded;
@@ -528,6 +587,17 @@ class RetroAchievementsProvider extends ChangeNotifier {
   /// Records that an Unlocks list load attempt has just finished.
   void markUnlocksListAttempted() => _unlocksListAttemptedAt = DateTime.now();
 
+  DateTime? _gamesListAttemptedAt;
+
+  /// Whether entering the Games sub-tab should re-read the list. Same window
+  /// and same reasoning as [unlocksListIsStale].
+  bool get gamesListIsStale =>
+      _gamesListAttemptedAt == null ||
+      DateTime.now().difference(_gamesListAttemptedAt!) > dashboardStaleAfter;
+
+  /// Records that a Games list load attempt has just finished.
+  void markGamesListAttempted() => _gamesListAttemptedAt = DateTime.now();
+
   /// Drops every cached RetroAchievements read so the next look re-fetches.
   ///
   /// [_gameInfoCache] and the dashboard's `*Loaded` flags both live for the
@@ -571,6 +641,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
     // parked tab keeps its rows on screen until the moment it refetches.
     _unlocksListLoaded = false;
     _unlocksListAttemptedAt = null;
+    // The Games merge goes stale through the same generation watch, with the
+    // same leave-the-rows-until-refetch behaviour.
+    _gamesListLoaded = false;
+    _gamesListAttemptedAt = null;
     notifyListeners();
   }
 
@@ -695,6 +769,11 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _unlocksListError = null;
     _unlocksListOffset = 0;
     _unlocksListAttemptedAt = null;
+    // The Games merge is per-account for the same reason, and its filter is
+    // a per-connection preference: a new sign-in starts at All.
+    _resetGamesListState();
+    _gamesListAttemptedAt = null;
+    _gamesFilter = RaGamesFilter.all;
     _recentlyPlayedGames = [];
     _recentlyPlayedLoaded = false;
     _recentlyPlayedLoading = false;
@@ -997,6 +1076,137 @@ class RetroAchievementsProvider extends ChangeNotifier {
       _unlocksListLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Page sizes for the see-all Games list ([loadGamesPage]). Recently
+  /// played is capped at 50 by the API; completion progress allows more, and
+  /// 100 keeps the two sources roughly level in rows-per-page.
+  static const int gamesPlayedPageSize = 50;
+  static const int gamesCompletionPageSize = 100;
+
+  /// Clears the merged list and both source accumulators back to "never
+  /// loaded". Called by [loadGamesPage] on reset and by [disconnect] — never
+  /// by invalidation, which only marks the list stale so a parked tab keeps
+  /// its rows until it refetches.
+  void _resetGamesListState() {
+    _gamesListItems = [];
+    _gamesPlayedPages = [];
+    _gamesCompletionPages = [];
+    _gamesPlayedOffset = 0;
+    _gamesCompletionOffset = 0;
+    _gamesPlayedHasMore = true;
+    _gamesCompletionHasMore = true;
+    _gamesListHasMore = true;
+    _gamesListLoaded = false;
+    _gamesListError = null;
+  }
+
+  /// Loads one "page" of the see-all Games list: the next recently-played
+  /// page and the next completion-progress page, whichever of the two still
+  /// has rows. [reset] starts both sources over from offset 0 — first entry
+  /// into the sub-tab, the REFRESH action, or the staleness window elapsing.
+  /// Without it the next pages append to the merge.
+  ///
+  /// A failed append keeps the merged rows on screen and leaves the error
+  /// for the list footer, while a failed reset empties everything — the
+  /// partial pages a half-successful reset fetched are dropped too, because
+  /// the full error state must be able to trust "no rows" as "no data". The
+  /// retry re-reads those pages from cache, so nothing is fetched twice.
+  ///
+  /// The two fetches are sequential, like every other multi-fetch in this
+  /// provider: the RA API rate-limits per key, and a 429 from the second
+  /// source must not be re-triggered by a retry that re-sends the first.
+  Future<bool> loadGamesPage({bool reset = false}) async {
+    if (!_isConnected || _username.isEmpty) return false;
+    if (_gamesListLoading) return false;
+    if (!reset && !_gamesListHasMore) return false;
+
+    if (!hasResolvedApiKey) {
+      _resetGamesListState();
+      _gamesListError = AppLocale.raErrorApiKeyRequired
+          .getStringForCurrentLocale();
+      notifyListeners();
+      return false;
+    }
+
+    final playedOffset = reset ? 0 : _gamesPlayedOffset;
+    final completionOffset = reset ? 0 : _gamesCompletionOffset;
+    final needPlayed = reset || _gamesPlayedHasMore;
+    final needCompletion = reset || _gamesCompletionHasMore;
+    // Stamped up front, like [markUnlocksListAttempted]: the stamp is what
+    // stops a re-entry from starting a duplicate page while this one is in
+    // flight.
+    markGamesListAttempted();
+
+    _gamesListLoading = true;
+    _gamesListError = null;
+    if (reset) {
+      _resetGamesListState();
+    }
+    notifyListeners();
+
+    try {
+      if (needPlayed) {
+        final page = await RetroAchievementsService.getUserRecentlyPlayedGames(
+          _username,
+          apiKey: _apiKey,
+          count: gamesPlayedPageSize,
+          offset: playedOffset,
+        );
+        _gamesPlayedPages = [..._gamesPlayedPages, ...page];
+        _gamesPlayedOffset = playedOffset + page.length;
+        // A bare list with no total: a short page is the end of the data.
+        _gamesPlayedHasMore = page.length == gamesPlayedPageSize;
+      }
+      if (needCompletion) {
+        final summary =
+            await RetroAchievementsService.getUserCompletionProgress(
+              _username,
+              apiKey: _apiKey,
+              count: gamesCompletionPageSize,
+              offset: completionOffset,
+            );
+        _gamesCompletionPages = [..._gamesCompletionPages, ...summary.results];
+        _gamesCompletionOffset = completionOffset + summary.results.length;
+        // This endpoint reports a total, so "more" is offset < total — but
+        // trust a full page over a wrong total, and never trust a total past
+        // an empty page (that way a miscounted total cannot loop empty
+        // fetches).
+        final fetched = summary.results.length;
+        _gamesCompletionHasMore =
+            fetched > 0 &&
+            (fetched == gamesCompletionPageSize ||
+                _gamesCompletionOffset < summary.total);
+      }
+      _rebuildGamesList();
+      _gamesListHasMore = _gamesPlayedHasMore || _gamesCompletionHasMore;
+      _gamesListLoaded = true;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      if (reset) {
+        _resetGamesListState();
+      }
+      _gamesListError = _describeApiError(e, AppLocale.raErrorLoadGames);
+      _log.e(_gamesListError ?? 'Unknown games page error');
+      return false;
+    } finally {
+      _gamesListLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Re-derives the merged list from the accumulated source pages. Runs
+  /// after every page lands rather than patching rows in place: the merge is
+  /// a map-and-sort over a few hundred rows, and one code path beats an
+  /// incremental one that has to keep two sort orders consistent. The fold
+  /// itself lives on [RaGamesListItem.mergeAll], where it is testable
+  /// without the provider.
+  void _rebuildGamesList() {
+    _gamesListItems = RaGamesListItem.mergeAll(
+      played: _gamesPlayedPages,
+      progress: _gamesCompletionPages,
+    );
   }
 
   Future<void> _resolveOwnedWeekGame() async {

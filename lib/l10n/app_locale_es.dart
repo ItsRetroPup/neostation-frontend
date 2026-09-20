@@ -1186,6 +1186,13 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.deleteGameSubtitle: 'Elimina el archivo ROM del disco',
   AppLocale.raSubtabDashboard: 'Panel',
   AppLocale.raSubtabUnlocks: 'Logros',
+  AppLocale.raSubtabGames: 'Juegos',
+  AppLocale.raGamesHeaderHint: 'Jugados + seguidos',
+  AppLocale.raFilterMastered: 'Dominados',
+  AppLocale.raFilterCompleted: 'Completados',
+  AppLocale.raGamesEndOfList: 'Estos son todos los juegos de tu historial',
+  AppLocale.raGamesEmpty: 'Aún no hay actividad de juego',
+  AppLocale.raErrorLoadGames: 'Error al cargar los juegos: {error}',
   AppLocale.raHardcore: 'Hardcore',
   AppLocale.raUnlocksEndOfList:
       'Esos son todos los logros de los últimos 30 días',

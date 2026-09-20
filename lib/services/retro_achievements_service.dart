@@ -403,12 +403,18 @@ class RetroAchievementsService {
     String? apiKey,
     http.Client? client,
   }) async {
+    // Clamped once so the request and its cache key agree: the key names the
+    // page, because this endpoint is paginated now (the Games sub-tab walks
+    // it in pages) and a page-less key would make every later page replay
+    // page one's cached copy offline.
+    final effectiveCount = count.clamp(1, 50);
+    final effectiveOffset = offset.clamp(0, 1 << 31);
     final url = Uri.parse('$_baseUrl/API_GetUserRecentlyPlayedGames.php')
         .replace(
           queryParameters: {
             'u': username,
-            'c': count.clamp(1, 50).toString(),
-            'o': offset.clamp(0, 1 << 31).toString(),
+            'c': effectiveCount.toString(),
+            'o': effectiveOffset.toString(),
             'y': resolveApiKey(apiKey),
           },
         );
@@ -419,7 +425,8 @@ class RetroAchievementsService {
     };
 
     return _fetchWithCache<List<RetroAchievementRecentlyPlayedGameItem>>(
-      cacheKey: 'recently_played_$username',
+      cacheKey:
+          'recently_played_${username}_${effectiveCount}_$effectiveOffset',
       send: () => client == null
           ? http.get(url, headers: headers)
           : client.get(url, headers: headers),
@@ -451,12 +458,16 @@ class RetroAchievementsService {
     String? apiKey,
     http.Client? client,
   }) async {
+    // Same page-named key as the recently-played endpoint above, for the same
+    // reason: the Games sub-tab walks this endpoint in pages too.
+    final effectiveCount = count.clamp(1, 500);
+    final effectiveOffset = offset.clamp(0, 1 << 31);
     final url = Uri.parse('$_baseUrl/API_GetUserCompletionProgress.php')
         .replace(
           queryParameters: {
             'u': username,
-            'c': count.clamp(1, 500).toString(),
-            'o': offset.clamp(0, 1 << 31).toString(),
+            'c': effectiveCount.toString(),
+            'o': effectiveOffset.toString(),
             'y': resolveApiKey(apiKey),
           },
         );
@@ -467,7 +478,7 @@ class RetroAchievementsService {
     };
 
     return _fetchWithCache<RetroAchievementCompletionProgressSummary>(
-      cacheKey: 'completion_$username',
+      cacheKey: 'completion_${username}_${effectiveCount}_$effectiveOffset',
       send: () => client == null
           ? http.get(url, headers: headers)
           : client.get(url, headers: headers),

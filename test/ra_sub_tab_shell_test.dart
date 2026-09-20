@@ -16,6 +16,7 @@ import 'package:neostation/screens/retro_achievements_screen/ra_content.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_dashboard.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_tab_strip.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_unlocks_tab.dart';
+import 'package:neostation/screens/retro_achievements_screen/ra_games_tab.dart';
 import 'package:neostation/services/gamepad/gamepad_navigation_manager.dart';
 import 'package:neostation/services/global_notification_service.dart';
 import 'package:neostation/services/sfx_service.dart';
@@ -367,18 +368,19 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('signed in: the strip renders the Dashboard and Unlocks pills', (
+  testWidgets('signed in: the strip renders all three sub-tab pills', (
     tester,
   ) async {
     await pumpShell(tester, _ShellProvider());
 
     expect(find.byType(RaTabStrip), findsOneWidget);
     expect(find.byType(RADashboardHub), findsOneWidget);
-    // The IndexedStack hosts both sub-tabs from the start; only the dashboard
-    // is showing, and the unlocks tab waits off-stage at its dwell gate.
-    // (skipOffstage: IndexedStack parks non-showing children in an Offstage
-    // wrapper, which the default finders skip.)
+    // The IndexedStack hosts all three sub-tabs from the start; only the
+    // dashboard is showing, and the other two wait off-stage at their dwell
+    // gates. (skipOffstage: IndexedStack parks non-showing children in an
+    // Offstage wrapper, which the default finders skip.)
     expect(find.byType(RaUnlocksTab, skipOffstage: false), findsOneWidget);
+    expect(find.byType(RaGamesTab, skipOffstage: false), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (w) =>
@@ -393,6 +395,15 @@ void main() {
         (w) =>
             w is Semantics &&
             w.properties.label == 'Unlocks' &&
+            w.properties.selected == false,
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Semantics &&
+            w.properties.label == 'Games' &&
             w.properties.selected == false,
       ),
       findsOneWidget,
@@ -499,19 +510,37 @@ void main() {
         find.byType(RADashboardHub, skipOffstage: false),
       );
 
-      // Right steps onto Unlocks; the dashboard's State survives underneath.
+      // Right steps onto Unlocks, then Games; the dashboard's State survives
+      // underneath throughout.
       await press(tester, LogicalKeyboardKey.arrowRight);
       expect(stripOf(tester).currentTab, RaSubTab.unlocks);
       expect(stripOf(tester).focused, isTrue);
+      // The active flag follows the strip: the tab being shown is the one
+      // that may fetch and animate.
+      expect(
+        tester
+            .widget<RaGamesTab>(find.byType(RaGamesTab, skipOffstage: false))
+            .active,
+        isFalse,
+      );
 
-      // Right again wraps around to the Dashboard — two pills, both directions
-      // live, no dead press at either end.
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      expect(stripOf(tester).currentTab, RaSubTab.games);
+      expect(
+        tester
+            .widget<RaGamesTab>(find.byType(RaGamesTab, skipOffstage: false))
+            .active,
+        isTrue,
+      );
+
+      // Right again wraps around to the Dashboard — three pills, both
+      // directions live, no dead press at either end.
       await press(tester, LogicalKeyboardKey.arrowRight);
       expect(stripOf(tester).currentTab, RaSubTab.dashboard);
 
-      // And Left wraps the other way, straight back onto Unlocks.
+      // And Left wraps the other way, straight back onto Games.
       await press(tester, LogicalKeyboardKey.arrowLeft);
-      expect(stripOf(tester).currentTab, RaSubTab.unlocks);
+      expect(stripOf(tester).currentTab, RaSubTab.games);
       expect(
         tester.state<RADashboardHubState>(
           find.byType(RADashboardHub, skipOffstage: false),

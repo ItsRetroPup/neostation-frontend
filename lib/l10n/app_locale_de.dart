@@ -1192,6 +1192,13 @@ const Map<String, dynamic> appLocaleDe = {
 
   AppLocale.raSubtabDashboard: 'Übersicht',
   AppLocale.raSubtabUnlocks: 'Freischaltungen',
+  AppLocale.raSubtabGames: 'Spiele',
+  AppLocale.raGamesHeaderHint: 'Gespielt + verfolgte Spiele',
+  AppLocale.raFilterMastered: 'Gemeistert',
+  AppLocale.raFilterCompleted: 'Abgeschlossen',
+  AppLocale.raGamesEndOfList: 'Das sind alle Spiele in deinem Verlauf',
+  AppLocale.raGamesEmpty: 'Noch keine Spielaktivität',
+  AppLocale.raErrorLoadGames: 'Fehler beim Laden der Spiele: {error}',
   AppLocale.raHardcore: 'Hardcore',
   AppLocale.raUnlocksEndOfList:
       'Das sind alle Freischaltungen der letzten 30 Tage',

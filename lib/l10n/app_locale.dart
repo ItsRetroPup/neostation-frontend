@@ -1247,6 +1247,13 @@ mixin AppLocale {
   // RetroAchievements dashboard & achievement comments
   static const String raSubtabDashboard = 'ra_subtab_dashboard';
   static const String raSubtabUnlocks = 'ra_subtab_unlocks';
+  static const String raSubtabGames = 'ra_subtab_games';
+  static const String raGamesHeaderHint = 'ra_games_header_hint';
+  static const String raFilterMastered = 'ra_filter_mastered';
+  static const String raFilterCompleted = 'ra_filter_completed';
+  static const String raGamesEndOfList = 'ra_games_end_of_list';
+  static const String raGamesEmpty = 'ra_games_empty';
+  static const String raErrorLoadGames = 'ra_error_load_games';
   static const String raHardcore = 'ra_hardcore';
   static const String raUnlocksEndOfList = 'ra_unlocks_end_of_list';
   static const String raUnlockGameNotOwned = 'ra_unlock_game_not_owned';

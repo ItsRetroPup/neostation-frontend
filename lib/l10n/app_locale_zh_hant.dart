@@ -1026,6 +1026,13 @@ const Map<String, dynamic> appLocaleZhHant = {
 
   AppLocale.raSubtabDashboard: '主頁',
   AppLocale.raSubtabUnlocks: '解鎖',
+  AppLocale.raSubtabGames: '遊戲',
+  AppLocale.raGamesHeaderHint: '玩過的 + 有進度的遊戲',
+  AppLocale.raFilterMastered: '已精通',
+  AppLocale.raFilterCompleted: '已通關',
+  AppLocale.raGamesEndOfList: '以上就是你記錄中的全部遊戲',
+  AppLocale.raGamesEmpty: '還沒有遊戲動態',
+  AppLocale.raErrorLoadGames: '載入遊戲出錯：{error}',
   AppLocale.raHardcore: '硬核',
   AppLocale.raUnlocksEndOfList: '已顯示過去 30 天的所有解鎖',
   AppLocale.raUnlockGameNotOwned: '此遊戲不在你的媒體庫或 RomM 中',

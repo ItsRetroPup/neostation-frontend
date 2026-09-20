@@ -1186,6 +1186,14 @@ const Map<String, dynamic> appLocaleIt = {
 
   AppLocale.raSubtabDashboard: 'Pannello',
   AppLocale.raSubtabUnlocks: 'Obiettivi',
+  AppLocale.raSubtabGames: 'Giochi',
+  AppLocale.raGamesHeaderHint: 'Giocati + giochi monitorati',
+  AppLocale.raFilterMastered: 'Padroneggiati',
+  AppLocale.raFilterCompleted: 'Completati',
+  AppLocale.raGamesEndOfList: 'Questi sono tutti i giochi della tua cronologia',
+  AppLocale.raGamesEmpty: 'Ancora nessuna attività di gioco',
+  AppLocale.raErrorLoadGames:
+      'Errore durante il caricamento dei giochi: {error}',
   AppLocale.raHardcore: 'Hardcore',
   AppLocale.raUnlocksEndOfList:
       'Questi sono tutti gli obiettivi degli ultimi 30 giorni',

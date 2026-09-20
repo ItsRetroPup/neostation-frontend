@@ -1159,6 +1159,13 @@ const Map<String, dynamic> appLocaleId = {
 
   AppLocale.raSubtabDashboard: 'Dasbor',
   AppLocale.raSubtabUnlocks: 'Pencapaian',
+  AppLocale.raSubtabGames: 'Game',
+  AppLocale.raGamesHeaderHint: 'Dimainkan + game terlacak',
+  AppLocale.raFilterMastered: 'Dikuasai',
+  AppLocale.raFilterCompleted: 'Selesai',
+  AppLocale.raGamesEndOfList: 'Itu semua game dalam riwayatmu',
+  AppLocale.raGamesEmpty: 'Belum ada aktivitas game',
+  AppLocale.raErrorLoadGames: 'Gagal memuat game: {error}',
   AppLocale.raHardcore: 'Hardcore',
   AppLocale.raUnlocksEndOfList: 'Itu semua pencapaian dari 30 hari terakhir',
   AppLocale.raUnlockGameNotOwned:
