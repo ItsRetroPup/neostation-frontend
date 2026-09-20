@@ -1248,6 +1248,27 @@ mixin AppLocale {
   static const String raSubtabDashboard = 'ra_subtab_dashboard';
   static const String raSubtabUnlocks = 'ra_subtab_unlocks';
   static const String raSubtabGames = 'ra_subtab_games';
+  static const String raSubtabLeaderboards = 'ra_subtab_leaderboards';
+  static const String raStanding = 'ra_standing';
+  static const String raYourRank = 'ra_your_rank';
+  static const String raYourPoints = 'ra_your_points';
+  static const String raUserType = 'ra_user_type';
+  static const String raCasual = 'ra_casual';
+  static const String raTopTen = 'ra_top_ten';
+  static const String raYourGamesLeaderboards = 'ra_your_games_leaderboards';
+  static const String raNoLeaderboardGames = 'ra_no_leaderboard_games';
+  static const String raLeaderboardSignIn = 'ra_leaderboard_sign_in';
+  static const String raLeaderboardNoLeaderboards =
+      'ra_leaderboard_no_leaderboards';
+  static const String raLeaderboardNoEntries = 'ra_leaderboard_no_entries';
+  static const String raLeaderboardEntries = 'ra_leaderboard_entries';
+  static const String raLeaderboardTopEntry = 'ra_leaderboard_top_entry';
+  static const String raLeaderboardYourEntry = 'ra_leaderboard_your_entry';
+  static const String raLeaderboardFormat = 'ra_leaderboard_format';
+  static const String raLeaderboardRankAscending =
+      'ra_leaderboard_rank_ascending';
+  static const String raLeaderboardRankDescending =
+      'ra_leaderboard_rank_descending';
   static const String raGamesHeaderHint = 'ra_games_header_hint';
   static const String raFilterMastered = 'ra_filter_mastered';
   static const String raFilterCompleted = 'ra_filter_completed';
@@ -1328,6 +1349,10 @@ mixin AppLocale {
   static const String raErrorLoadRecentlyPlayed =
       'ra_error_load_recently_played';
   static const String raErrorLoadRecentUnlocks = 'ra_error_load_recent_unlocks';
+  static const String raErrorLoadLeaderboards = 'ra_error_load_leaderboards';
+  static const String raErrorLoadTopTen = 'ra_error_load_top_ten';
+  static const String raErrorLoadLeaderboardEntries =
+      'ra_error_load_leaderboard_entries';
 
   // Custom save folders (NeoSync v2)
   static const String customSaveFoldersTitle = 'custom_save_folders_title';

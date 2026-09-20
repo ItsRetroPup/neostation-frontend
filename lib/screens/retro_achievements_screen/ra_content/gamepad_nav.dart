@@ -24,6 +24,7 @@ extension _GamepadNav on _RAContentState {
       onNavigateLeft: _handleNavigateLeft,
       onNavigateRight: _handleNavigateRight,
       onSelectItem: _selectCurrent,
+      onFavorite: _refresh,
       onPreviousTab: AppNavigation.previousTab,
       onNextTab: AppNavigation.nextTab,
       onLeftBumper: AppNavigation.previousTab,
@@ -57,6 +58,10 @@ extension _GamepadNav on _RAContentState {
         _gamesKey.currentState?.selectCurrent();
         return;
       }
+      if (_activeSubTab == RaSubTab.leaderboards) {
+        _leaderboardsKey.currentState?.activateCurrent();
+        return;
+      }
       if (_logoutSelected) {
         _requestDisconnect();
         return;
@@ -72,6 +77,15 @@ extension _GamepadNav on _RAContentState {
       return;
     }
     _connectToRA();
+  }
+
+  /// Y is the shared refresh action for the RA mini-app. It invalidates all
+  /// cached reads; the active sub-tab owns the resulting reload and parked
+  /// tabs pick it up when they become visible.
+  void _refresh() {
+    final provider = context.read<RetroAchievementsProvider>();
+    if (!provider.isConnected || provider.isDashboardLoading) return;
+    provider.invalidateCachedReads();
   }
 
   /// B: in the content, it parks the cursor on the strip; on the strip (or
@@ -163,6 +177,10 @@ extension _GamepadNav on _RAContentState {
       final moved = _gamesKey.currentState?.handleNavigateUp() ?? false;
       return moved || _setStripFocused(true);
     }
+    if (_activeSubTab == RaSubTab.leaderboards) {
+      final moved = _leaderboardsKey.currentState?.moveSelection(-1) ?? false;
+      return moved || _setStripFocused(true);
+    }
     final released = _setWeekCardSelected(false);
     final scrolled = _scrollDashboard(-160.r);
     if (scrolled || released) return true;
@@ -191,6 +209,9 @@ extension _GamepadNav on _RAContentState {
     }
     if (_activeSubTab == RaSubTab.games) {
       return _gamesKey.currentState?.handleNavigateDown() ?? false;
+    }
+    if (_activeSubTab == RaSubTab.leaderboards) {
+      return _leaderboardsKey.currentState?.moveSelection(1) ?? false;
     }
     if (!_logoutSelected &&
         !_weekCardSelected &&
@@ -226,6 +247,7 @@ extension _GamepadNav on _RAContentState {
     if (_activeSubTab == RaSubTab.games) {
       return _gamesKey.currentState?.handleNavigateRight() ?? false;
     }
+    if (_activeSubTab == RaSubTab.leaderboards) return false;
     if (_logoutSelected) return false;
     _setWeekCardSelected(false);
     _scrollHeaderIntoView();
@@ -247,6 +269,7 @@ extension _GamepadNav on _RAContentState {
       // rows.
       return _gamesKey.currentState?.handleNavigateLeft() ?? false;
     }
+    if (_activeSubTab == RaSubTab.leaderboards) return false;
     final released = _logoutSelected ? _setLogoutSelected(false) : false;
     if (_dashboardKey.currentState?.weekCardSelectable != true) {
       return released;

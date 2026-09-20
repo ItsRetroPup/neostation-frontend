@@ -725,8 +725,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raDescription:
       'RetroAchievements — это сообщество, добавляющее достижения в классические игры.',
   AppLocale.raEarnPoints: 'Зарабатывайте «хардкорные» очки и хвастайтесь ими',
-  AppLocale.raGlobalLeaderboards: 'Глобальные таблицы лидеров и рейтинги',
-  AppLocale.raGameplayHistory: 'Подробная история игры и прогресс',
+  AppLocale.raGlobalLeaderboards: 'Таблицы лидеров по играм и топ-10',
+  AppLocale.raGameplayHistory: 'Недавние игры и прогресс достижений',
   AppLocale.raCreateAccountAt: 'Создайте аккаунт на ',
   AppLocale.raToStartEarning: ' , чтобы начать зарабатывать.',
   AppLocale.userProfile: 'ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ',
@@ -1158,6 +1158,26 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raSubtabDashboard: 'Панель',
   AppLocale.raSubtabUnlocks: 'Достижения',
   AppLocale.raSubtabGames: 'Игры',
+  AppLocale.raSubtabLeaderboards: 'Таблицы лидеров',
+  AppLocale.raStanding: 'Моя позиция',
+  AppLocale.raYourRank: 'Место: {rank}',
+  AppLocale.raYourPoints: 'Очки: {points}',
+  AppLocale.raUserType: '{type}',
+  AppLocale.raCasual: 'Казуальный',
+  AppLocale.raTopTen: 'Топ-10',
+  AppLocale.raYourGamesLeaderboards: 'Таблицы лидеров ваших игр',
+  AppLocale.raNoLeaderboardGames:
+      'Пока нет игр с активностью в таблицах лидеров',
+  AppLocale.raLeaderboardSignIn:
+      'Войдите, чтобы увидеть таблицы лидеров этой игры.',
+  AppLocale.raLeaderboardNoLeaderboards: 'Для этой игры нет таблиц лидеров',
+  AppLocale.raLeaderboardNoEntries: 'Записей пока нет',
+  AppLocale.raLeaderboardEntries: 'Записи',
+  AppLocale.raLeaderboardTopEntry: 'Лучший результат: {user} · {score}',
+  AppLocale.raLeaderboardYourEntry: 'Ваш результат',
+  AppLocale.raLeaderboardFormat: 'Формат: {format}',
+  AppLocale.raLeaderboardRankAscending: 'Меньшие результаты выше',
+  AppLocale.raLeaderboardRankDescending: 'Большие результаты выше',
   AppLocale.raGamesHeaderHint: 'Пройденные + отслеживаемые игры',
   AppLocale.raFilterMastered: 'Освоены',
   AppLocale.raFilterCompleted: 'Завершены',
@@ -1241,6 +1261,10 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.raErrorLoadRecentUnlocks:
       'Ошибка загрузки недавних достижений: {error}',
 
+  AppLocale.raErrorLoadLeaderboards: 'Ошибка загрузки таблиц лидеров: {error}',
+  AppLocale.raErrorLoadTopTen: 'Не удалось загрузить топ-10: {error}',
+  AppLocale.raErrorLoadLeaderboardEntries:
+      'Ошибка загрузки записей таблицы лидеров: {error}',
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Папки сохранений standalone',
   AppLocale.customSaveFolderPickSystem: 'Выберите систему',

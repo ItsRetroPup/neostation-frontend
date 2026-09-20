@@ -366,6 +366,8 @@ extension _WeekCard on RADashboardHubState {
             child: Image.network(
               _raMediaUrl(gotw.achievement.badgeUrl),
               fit: BoxFit.cover,
+              cacheWidth: (72 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+              cacheHeight: (72 * MediaQuery.devicePixelRatioOf(context)).ceil(),
               errorBuilder: (context, error, stackTrace) => Container(
                 color: theme.colorScheme.surface,
                 child: Icon(

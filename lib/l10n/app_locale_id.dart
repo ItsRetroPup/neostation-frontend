@@ -717,8 +717,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.raDescription:
       'RetroAchievements adalah komunitas yang menawarkan pencapaian untuk game klasik melalui emulasi.',
   AppLocale.raEarnPoints: 'Dapatkan poin Hardcore dan tampilkan',
-  AppLocale.raGlobalLeaderboards: 'Papan peringkat global',
-  AppLocale.raGameplayHistory: 'Riwayat permainan dan kemajuan mendetail',
+  AppLocale.raGlobalLeaderboards: 'Papan peringkat per game dan 10 teratas',
+  AppLocale.raGameplayHistory: 'Game terbaru dan kemajuan pencapaian',
   AppLocale.raCreateAccountAt: 'Buat akun di',
   AppLocale.raToStartEarning: ' untuk mulai mendapatkan poin.',
   AppLocale.userProfile: 'Profil Pengguna',
@@ -1160,6 +1160,29 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.raSubtabDashboard: 'Dasbor',
   AppLocale.raSubtabUnlocks: 'Pencapaian',
   AppLocale.raSubtabGames: 'Game',
+  AppLocale.raSubtabLeaderboards: 'Papan peringkat',
+  AppLocale.raStanding: 'Peringkat saya',
+  AppLocale.raYourRank: 'Peringkat: {rank}',
+  AppLocale.raYourPoints: 'Poin: {points}',
+  AppLocale.raUserType: '{type}',
+  AppLocale.raCasual: 'Kasual',
+  AppLocale.raTopTen: '10 teratas',
+  AppLocale.raYourGamesLeaderboards: 'Papan peringkat game Anda',
+  AppLocale.raNoLeaderboardGames:
+      'Belum ada game dengan aktivitas papan peringkat',
+  AppLocale.raLeaderboardSignIn:
+      'Masuk untuk melihat papan peringkat game ini.',
+  AppLocale.raLeaderboardNoLeaderboards:
+      'Tidak ada papan peringkat untuk game ini',
+  AppLocale.raLeaderboardNoEntries: 'Belum ada entri',
+  AppLocale.raLeaderboardEntries: 'Entri',
+  AppLocale.raLeaderboardTopEntry: 'Teratas: {user} · {score}',
+  AppLocale.raLeaderboardYourEntry: 'Entri Anda',
+  AppLocale.raLeaderboardFormat: 'Format: {format}',
+  AppLocale.raLeaderboardRankAscending:
+      'Skor lebih rendah mendapat peringkat lebih tinggi',
+  AppLocale.raLeaderboardRankDescending:
+      'Skor lebih tinggi mendapat peringkat lebih tinggi',
   AppLocale.raGamesHeaderHint: 'Dimainkan + game terlacak',
   AppLocale.raFilterMastered: 'Dikuasai',
   AppLocale.raFilterCompleted: 'Selesai',
@@ -1245,6 +1268,10 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.raErrorLoadRecentUnlocks:
       'Kesalahan saat memuat pencapaian yang baru dibuka: {error}',
 
+  AppLocale.raErrorLoadLeaderboards: 'Gagal memuat papan peringkat: {error}',
+  AppLocale.raErrorLoadTopTen: 'Gagal memuat 10 teratas: {error}',
+  AppLocale.raErrorLoadLeaderboardEntries:
+      'Gagal memuat entri papan peringkat: {error}',
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Folder penyimpanan standalone',
   AppLocale.customSaveFolderPickSystem: 'Pilih sistem',

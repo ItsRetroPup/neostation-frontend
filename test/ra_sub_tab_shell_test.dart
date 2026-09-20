@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/models/database_game_model.dart';
 import 'package:neostation/models/retro_achievements_dashboard_models.dart';
+import 'package:neostation/models/retro_achievements_leaderboard.dart';
 import 'package:neostation/models/retro_achievements_user.dart';
 import 'package:neostation/models/romm_rom.dart';
 import 'package:neostation/providers/file_provider.dart';
@@ -17,11 +18,13 @@ import 'package:neostation/screens/retro_achievements_screen/ra_dashboard.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_tab_strip.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_unlocks_tab.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_games_tab.dart';
+import 'package:neostation/screens/retro_achievements_screen/ra_leaderboards_tab.dart';
 import 'package:neostation/services/gamepad/gamepad_navigation_manager.dart';
 import 'package:neostation/services/global_notification_service.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/widgets/core_footer.dart';
 import 'package:neostation/widgets/ra_refresh_action.dart';
+import 'package:neostation/widgets/ra_subtab_footer.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,14 +36,20 @@ class _ShellProvider extends RetroAchievementsProvider {
   _ShellProvider({
     bool connected = true,
     List<RetroAchievementRecentUnlockItem> unlocksItems = const [],
+    List<RaTopTenUser> topTenUsers = const [],
+    List<RaGamesListItem> gamesListItems = const [],
   }) : _connected = connected,
-       _unlocksItems = unlocksItems;
+       _unlocksItems = unlocksItems,
+       _topTenUsers = topTenUsers,
+       _gamesListItems = gamesListItems;
 
   final bool _connected;
 
   /// See-all rows for the Unlocks sub-tab. Empty by default so every other
   /// shell test sees exactly the pre-tab behaviour.
   final List<RetroAchievementRecentUnlockItem> _unlocksItems;
+  final List<RaTopTenUser> _topTenUsers;
+  final List<RaGamesListItem> _gamesListItems;
   final List<String> fetchLog = [];
   bool _dashboardLoading = false;
 
@@ -60,6 +69,39 @@ class _ShellProvider extends RetroAchievementsProvider {
 
   @override
   bool get isDashboardLoading => _dashboardLoading;
+
+  @override
+  bool get summaryLoaded => true;
+
+  @override
+  List<RaTopTenUser> get topTenUsers => _topTenUsers;
+
+  @override
+  bool get topTenUsersLoaded => true;
+
+  @override
+  bool get topTenUsersLoading => false;
+
+  @override
+  String? get topTenUsersError => null;
+
+  @override
+  List<RaGamesListItem> get gamesListItems => _gamesListItems;
+
+  @override
+  bool get gamesListLoaded => true;
+
+  @override
+  bool get gamesListIsStale => false;
+
+  @override
+  bool get gamesListLoading => false;
+
+  @override
+  bool get gamesListHasMore => false;
+
+  @override
+  String? get gamesListError => null;
 
   @override
   RetroAchievementsUser? get user => RetroAchievementsUser(
@@ -225,6 +267,9 @@ RetroAchievementRecentlyPlayedGameItem _played(int i) =>
       scoreAchievedHardcore: 10,
     );
 
+List<String> notificationMessages() =>
+    GlobalNotificationService().notifier.value.map((n) => n.message).toList();
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -368,19 +413,20 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('signed in: the strip renders all three sub-tab pills', (
+  testWidgets('signed in: the strip renders all four sub-tab pills', (
     tester,
   ) async {
     await pumpShell(tester, _ShellProvider());
 
     expect(find.byType(RaTabStrip), findsOneWidget);
     expect(find.byType(RADashboardHub), findsOneWidget);
-    // The IndexedStack hosts all three sub-tabs from the start; only the
+    // The IndexedStack hosts all four sub-tabs from the start; only the
     // dashboard is showing, and the other two wait off-stage at their dwell
     // gates. (skipOffstage: IndexedStack parks non-showing children in an
     // Offstage wrapper, which the default finders skip.)
     expect(find.byType(RaUnlocksTab, skipOffstage: false), findsOneWidget);
     expect(find.byType(RaGamesTab, skipOffstage: false), findsOneWidget);
+    expect(find.byType(RaLeaderboardsTab, skipOffstage: false), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (w) =>
@@ -404,6 +450,15 @@ void main() {
         (w) =>
             w is Semantics &&
             w.properties.label == 'Games' &&
+            w.properties.selected == false,
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Semantics &&
+            w.properties.label == 'Leaderboards' &&
             w.properties.selected == false,
       ),
       findsOneWidget,
@@ -533,14 +588,16 @@ void main() {
         isTrue,
       );
 
-      // Right again wraps around to the Dashboard — three pills, both
-      // directions live, no dead press at either end.
+      // Right enters Leaderboards, then wraps around to Dashboard — four
+      // pills, both directions live, no dead press at either end.
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      expect(stripOf(tester).currentTab, RaSubTab.leaderboards);
       await press(tester, LogicalKeyboardKey.arrowRight);
       expect(stripOf(tester).currentTab, RaSubTab.dashboard);
 
-      // And Left wraps the other way, straight back onto Games.
+      // And Left wraps the other way, straight back onto Leaderboards.
       await press(tester, LogicalKeyboardKey.arrowLeft);
-      expect(stripOf(tester).currentTab, RaSubTab.games);
+      expect(stripOf(tester).currentTab, RaSubTab.leaderboards);
       expect(
         tester.state<RADashboardHubState>(
           find.byType(RADashboardHub, skipOffstage: false),
@@ -554,6 +611,68 @@ void main() {
       // initial-centering timer (it starts from a post-frame callback, so it
       // may only be *created* on the next frame), then advance past the timer
       // itself — an anonymous timer dispose cannot cancel.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
+
+  testWidgets(
+    'D-pad walks leaderboards into your games and activates the selected game',
+    (tester) async {
+      final provider = _ShellProvider(
+        topTenUsers: const [
+          RaTopTenUser(
+            username: 'TopPlayer',
+            totalPoints: 999,
+            totalRatioPoints: 1000,
+            ulid: '01TOP',
+          ),
+        ],
+        gamesListItems: [
+          RaGamesListItem(
+            gameId: 42,
+            title: 'Leaderboard Game',
+            consoleId: 1,
+            consoleName: 'NES',
+            imageIcon: '',
+            imageBoxArt: '',
+            maxPossible: 20,
+            numAwarded: 5,
+            numAwardedHardcore: 4,
+            highestAwardKind: null,
+            lastPlayed: DateTime.utc(2026, 9, 1),
+            mostRecentAwardedDate: null,
+          ),
+        ],
+      )..resolveLocal = (_) async => null;
+      final romm = _RommStub();
+
+      await pumpShell(tester, provider, romm: romm);
+      await settleInput(tester);
+
+      await press(tester, LogicalKeyboardKey.arrowUp);
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      expect(stripOf(tester).currentTab, RaSubTab.leaderboards);
+
+      // Down first enters the tab's content zone. The next Down crosses the
+      // top-ten row into the first "your games" row; A must use the same
+      // shared activation path as the Unlocks and Games sub-tabs.
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.enter);
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump();
+
+      expect(provider.resolvedGameIds, [42]);
+      expect(romm.log, ['find:42:Leaderboard Game']);
+      expect(notificationMessages(), [
+        "This game isn't in your library or RomM",
+      ]);
+
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
       await tester.pumpWidget(const SizedBox.shrink());
@@ -602,7 +721,12 @@ void main() {
     final initialFetches = provider.fetchLog.length;
     final generationBefore = provider.cacheGeneration;
 
-    await tester.tap(find.text('Refresh'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(RaRefreshAction),
+        matching: find.text('Refresh'),
+      ),
+    );
     await tester.pump();
 
     expect(provider.cacheGeneration, generationBefore + 1);
@@ -623,6 +747,25 @@ void main() {
     // initial-centering timer (it starts from a post-frame callback, so it
     // may only be *created* on the next frame), then advance past the timer
     // itself — an anonymous timer dispose cannot cancel.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('Y refreshes the active RA sub-tab without changing tabs', (
+    tester,
+  ) async {
+    final provider = _ShellProvider();
+    await pumpShell(tester, provider);
+    await settleInput(tester);
+
+    final generationBefore = provider.cacheGeneration;
+    await press(tester, LogicalKeyboardKey.keyY);
+
+    expect(provider.cacheGeneration, generationBefore + 1);
+    expect(stripOf(tester).currentTab, RaSubTab.dashboard);
+
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
     await tester.pumpWidget(const SizedBox.shrink());
@@ -698,7 +841,12 @@ void main() {
         1,
       );
 
-      await tester.tap(find.text('Refresh'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(RaRefreshAction),
+          matching: find.text('Refresh'),
+        ),
+      );
       await tester.pump();
 
       expect(provider.cacheGeneration, generationBefore + 1);
@@ -734,9 +882,6 @@ void main() {
     // The drill-down chain is all microtasks off the tap.
     await tester.pump();
   }
-
-  List<String> notificationMessages() =>
-      GlobalNotificationService().notifier.value.map((n) => n.message).toList();
 
   testWidgets(
     'A on a row with a local match opens the local game without RomM',
@@ -852,6 +997,41 @@ void main() {
     // itself — an anonymous timer dispose cannot cancel.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('the complete RA shell fits a narrow landscape viewport', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(640, 360);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final overflowMessages = <String>[];
+    final previousErrorHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('overflow')) overflowMessages.add(message);
+    };
+    addTearDown(() => FlutterError.onError = previousErrorHandler);
+
+    await pumpShell(tester, _ShellProvider());
+    await settleInput(tester);
+
+    expect(find.byType(RaSubTabFooter), findsOneWidget);
+    expect(find.byType(RaSubTabFooter, skipOffstage: false), findsNWidgets(4));
+
+    // The strip remains the shared focus zone while each active sub-tab gets
+    // a full paint at the handheld-class width.
+    await press(tester, LogicalKeyboardKey.arrowUp);
+    for (var i = 0; i < RaSubTab.values.length - 1; i++) {
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(RaSubTabFooter), findsOneWidget);
+    }
+
+    expect(overflowMessages, isEmpty);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });

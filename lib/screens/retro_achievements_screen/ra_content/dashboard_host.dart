@@ -27,7 +27,10 @@ extension _DashboardHost on _RAContentState {
     );
   }
 
-  Future<void> _openOwnedWeekGame(OwnedWeekGameResolution owned) async {
+  Future<void> _openOwnedWeekGame(
+    OwnedWeekGameResolution owned, {
+    DetailTab? initialDetailTab,
+  }) async {
     final configProvider = context.read<SqliteConfigProvider>();
     final fileProvider = context.read<FileProvider>();
     final system = _resolveSystem(configProvider.detectedSystems, owned);
@@ -47,6 +50,7 @@ extension _DashboardHost on _RAContentState {
           system: system,
           fileProvider: fileProvider,
           initialRomPath: owned.game.romPath,
+          initialDetailTab: initialDetailTab,
         ),
       ),
     );

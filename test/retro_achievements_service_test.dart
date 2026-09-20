@@ -198,6 +198,118 @@ void main() {
     });
 
     test(
+      'requests game leaderboards with pagination and parses top entry',
+      () async {
+        late Uri requestedUri;
+        final client = MockClient((request) async {
+          requestedUri = request.url;
+          return http.Response(
+            '{"Count":1,"Total":3,"Results":[{"ID":104370,"RankAsc":false,"Title":"South Island Conqueror","Description":"Highest score","Format":"VALUE","Author":"Scott","AuthorULID":"author-ulid","TopEntry":{"User":"vani11a","ULID":"user-ulid","Score":"390490","FormattedScore":"390,490"}}]}',
+            200,
+          );
+        });
+
+        final page = await RetroAchievementsService.getGameLeaderboards(
+          14402,
+          count: 1,
+          offset: 2,
+          apiKey: 'secret-key',
+          client: client,
+        );
+
+        expect(requestedUri.path, '/API/API_GetGameLeaderboards.php');
+        expect(requestedUri.queryParameters['i'], '14402');
+        expect(requestedUri.queryParameters['c'], '1');
+        expect(requestedUri.queryParameters['o'], '2');
+        expect(requestedUri.queryParameters['y'], 'secret-key');
+        expect(page.total, 3);
+        expect(page.results.single.topEntry?.formattedScore, '390,490');
+        expect(page.results.single.rankAsc, isFalse);
+      },
+    );
+
+    test(
+      'requests leaderboard entries with pagination and parses RA dates',
+      () async {
+        late Uri requestedUri;
+        final client = MockClient((request) async {
+          requestedUri = request.url;
+          return http.Response(
+            '{"count":1,"total":101,"results":[{"rank":7,"user":"vani11a","ulid":"entry-ulid","score":390490,"formattedScore":"390,490","dateSubmitted":"2024-07-25T15:51:00+00:00"}]}',
+            200,
+          );
+        });
+
+        final page = await RetroAchievementsService.getLeaderboardEntries(
+          104370,
+          count: 100,
+          offset: 100,
+          apiKey: 'secret-key',
+          client: client,
+        );
+
+        expect(requestedUri.path, '/API/API_GetLeaderboardEntries.php');
+        expect(requestedUri.queryParameters['i'], '104370');
+        expect(requestedUri.queryParameters['c'], '100');
+        expect(requestedUri.queryParameters['o'], '100');
+        expect(page.total, 101);
+        expect(page.results.single.rank, 7);
+        expect(page.results.single.dateSubmitted, isNotNull);
+      },
+    );
+
+    test(
+      'requests the signed-in user leaderboard entries with user identity',
+      () async {
+        late Uri requestedUri;
+        final client = MockClient((request) async {
+          requestedUri = request.url;
+          return http.Response(
+            '{"Count":1,"Total":1,"Results":[{"ID":104370,"RankAsc":false,"Title":"South Island Conqueror","Description":"Highest score","Format":"VALUE","UserEntry":{"User":"me","ULID":"my-ulid","Score":120,"FormattedScore":"120","Rank":9,"DateUpdated":"2024-12-12T16:40:59+00:00"}}]}',
+            200,
+          );
+        });
+
+        final page = await RetroAchievementsService.getUserGameLeaderboards(
+          14402,
+          'my-ulid',
+          apiKey: 'secret-key',
+          client: client,
+        );
+
+        expect(requestedUri.path, '/API/API_GetUserGameLeaderboards.php');
+        expect(requestedUri.queryParameters['i'], '14402');
+        expect(requestedUri.queryParameters['u'], 'my-ulid');
+        expect(requestedUri.queryParameters['c'], '200');
+        expect(requestedUri.queryParameters['o'], '0');
+        expect(page.results.single.userEntry?.rank, 9);
+        expect(page.results.single.userEntry?.formattedScore, '120');
+      },
+    );
+
+    test('requests and parses the top-ten feed', () async {
+      late Uri requestedUri;
+      final client = MockClient((request) async {
+        requestedUri = request.url;
+        return http.Response(
+          '[{"1":"TopPlayer","2":399597,"3":1599212,"4":"01TOP"}]',
+          200,
+        );
+      });
+
+      final users = await RetroAchievementsService.getTopTenUsers(
+        apiKey: 'secret-key',
+        client: client,
+      );
+
+      expect(requestedUri.path, '/API/API_GetTopTenUsers.php');
+      expect(requestedUri.queryParameters['y'], 'secret-key');
+      expect(users.single.username, 'TopPlayer');
+      expect(users.single.totalPoints, 399597);
+      expect(users.single.ulid, '01TOP');
+    });
+
+    test(
       'user awards expose mastery and completion rows via AwardDataExtra mode',
       () {
         final awards = RetroAchievementsUserAwards.fromJson({

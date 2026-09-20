@@ -735,9 +735,8 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raDescription:
       'RetroAchievements es un esfuerzo comunitario para proporcionar logros en juegos clásicos mediante emuladores.',
   AppLocale.raEarnPoints: 'Gana puntos hardcore y exhíbelos',
-  AppLocale.raGlobalLeaderboards:
-      'Tablas de clasificación y rankings mundiales',
-  AppLocale.raGameplayHistory: 'Historial detallado de juego y progreso',
+  AppLocale.raGlobalLeaderboards: 'Clasificaciones por juego y top 10',
+  AppLocale.raGameplayHistory: 'Juegos recientes y progreso de logros',
   AppLocale.raCreateAccountAt: 'Crea una cuenta en ',
   AppLocale.raToStartEarning: ' para empezar a ganar.',
   AppLocale.userProfile: 'PERFIL DE USUARIO',
@@ -1187,6 +1186,27 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raSubtabDashboard: 'Panel',
   AppLocale.raSubtabUnlocks: 'Logros',
   AppLocale.raSubtabGames: 'Juegos',
+  AppLocale.raSubtabLeaderboards: 'Clasificaciones',
+  AppLocale.raStanding: 'Mi clasificación',
+  AppLocale.raYourRank: 'Puesto: {rank}',
+  AppLocale.raYourPoints: 'Puntos: {points}',
+  AppLocale.raUserType: '{type}',
+  AppLocale.raCasual: 'Casual',
+  AppLocale.raTopTen: 'Top 10',
+  AppLocale.raYourGamesLeaderboards: 'Clasificaciones de tus juegos',
+  AppLocale.raNoLeaderboardGames:
+      'Aún no hay juegos con actividad en clasificaciones',
+  AppLocale.raLeaderboardSignIn:
+      'Inicia sesión para ver las clasificaciones de este juego.',
+  AppLocale.raLeaderboardNoLeaderboards:
+      'No hay clasificaciones para este juego',
+  AppLocale.raLeaderboardNoEntries: 'Aún no hay registros',
+  AppLocale.raLeaderboardEntries: 'Registros',
+  AppLocale.raLeaderboardTopEntry: 'Mejor: {user} · {score}',
+  AppLocale.raLeaderboardYourEntry: 'Tu registro',
+  AppLocale.raLeaderboardFormat: 'Formato: {format}',
+  AppLocale.raLeaderboardRankAscending: 'Los valores más bajos quedan arriba',
+  AppLocale.raLeaderboardRankDescending: 'Los valores más altos quedan arriba',
   AppLocale.raGamesHeaderHint: 'Jugados + seguidos',
   AppLocale.raFilterMastered: 'Dominados',
   AppLocale.raFilterCompleted: 'Completados',
@@ -1277,6 +1297,11 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.raErrorLoadRecentUnlocks:
       'Error al cargar los logros desbloqueados recientemente: {error}',
 
+  AppLocale.raErrorLoadLeaderboards:
+      'Error al cargar las clasificaciones: {error}',
+  AppLocale.raErrorLoadTopTen: 'No se pudo cargar el top 10: {error}',
+  AppLocale.raErrorLoadLeaderboardEntries:
+      'Error al cargar los registros: {error}',
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Carpetas de guardado standalone',
   AppLocale.customSaveFolderPickSystem: 'Elige un sistema',

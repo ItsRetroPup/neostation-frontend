@@ -739,8 +739,9 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.raDescription:
       'RetroAchievements ist eine Community, die Erfolge für klassische Spiele über Emulation anbietet.',
   AppLocale.raEarnPoints: 'Verdiene Hardcore-Punkte und zeige sie an',
-  AppLocale.raGlobalLeaderboards: 'Globale Ranglisten und Bestenlisten',
-  AppLocale.raGameplayHistory: 'Detaillierter Spielverlauf und Fortschritt',
+  AppLocale.raGlobalLeaderboards: 'Ranglisten pro Spiel und die Top 10',
+  AppLocale.raGameplayHistory:
+      'Zuletzt gespielte Spiele und Erfolgsfortschritt',
   AppLocale.raCreateAccountAt: 'Erstelle ein Konto auf',
   AppLocale.raToStartEarning: ' , um mit dem Sammeln zu beginnen.',
   AppLocale.userProfile: 'Benutzerprofil',
@@ -1193,6 +1194,25 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.raSubtabDashboard: 'Übersicht',
   AppLocale.raSubtabUnlocks: 'Freischaltungen',
   AppLocale.raSubtabGames: 'Spiele',
+  AppLocale.raSubtabLeaderboards: 'Bestenlisten',
+  AppLocale.raStanding: 'Meine Platzierung',
+  AppLocale.raYourRank: 'Rang: {rank}',
+  AppLocale.raYourPoints: 'Punkte: {points}',
+  AppLocale.raUserType: '{type}',
+  AppLocale.raCasual: 'Casual',
+  AppLocale.raTopTen: 'Top 10',
+  AppLocale.raYourGamesLeaderboards: 'Ranglisten deiner Spiele',
+  AppLocale.raNoLeaderboardGames: 'Noch keine Spiele mit Ranglistenaktivität',
+  AppLocale.raLeaderboardSignIn:
+      'Melde dich an, um Bestenlisten für dieses Spiel zu sehen.',
+  AppLocale.raLeaderboardNoLeaderboards: 'Keine Bestenlisten für dieses Spiel',
+  AppLocale.raLeaderboardNoEntries: 'Noch keine Einträge',
+  AppLocale.raLeaderboardEntries: 'Einträge',
+  AppLocale.raLeaderboardTopEntry: 'Spitze: {user} · {score}',
+  AppLocale.raLeaderboardYourEntry: 'Dein Eintrag',
+  AppLocale.raLeaderboardFormat: 'Format: {format}',
+  AppLocale.raLeaderboardRankAscending: 'Niedrigere Werte stehen höher',
+  AppLocale.raLeaderboardRankDescending: 'Höhere Werte stehen höher',
   AppLocale.raGamesHeaderHint: 'Gespielt + verfolgte Spiele',
   AppLocale.raFilterMastered: 'Gemeistert',
   AppLocale.raFilterCompleted: 'Abgeschlossen',
@@ -1285,6 +1305,11 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.raErrorLoadRecentUnlocks:
       'Fehler beim Laden der kürzlich freigeschalteten Erfolge: {error}',
 
+  AppLocale.raErrorLoadLeaderboards:
+      'Fehler beim Laden der Bestenlisten: {error}',
+  AppLocale.raErrorLoadTopTen: 'Top 10 konnte nicht geladen werden: {error}',
+  AppLocale.raErrorLoadLeaderboardEntries:
+      'Fehler beim Laden der Bestenlisteneinträge: {error}',
   // Custom save folders (NeoSync v2)
   AppLocale.customSaveFoldersTitle: 'Standalone-Spielstandordner',
   AppLocale.customSaveFolderPickSystem: 'System auswählen',

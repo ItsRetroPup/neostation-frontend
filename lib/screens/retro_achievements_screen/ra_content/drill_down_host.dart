@@ -35,7 +35,7 @@ extension _DrillDownHost on _RAContentState {
       final owned = await raProvider.resolveLocalGameForRaId(gameId);
       if (!mounted) return;
       if (owned != null) {
-        _openOwnedWeekGame(owned);
+        _openOwnedWeekGame(owned, initialDetailTab: DetailTab.leaderboards);
         return;
       }
       final rommProvider = context.read<RommProvider>();
@@ -109,7 +109,7 @@ extension _DrillDownHost on _RAContentState {
     final raProvider = context.read<RetroAchievementsProvider>();
     final owned = await raProvider.resolveLocalGameForRaId(raGameId);
     if (!mounted || owned == null) return;
-    _openOwnedWeekGame(owned);
+    _openOwnedWeekGame(owned, initialDetailTab: DetailTab.leaderboards);
   }
 
   String _raGameDownloadErrorMessage(RommDownloadError error) {

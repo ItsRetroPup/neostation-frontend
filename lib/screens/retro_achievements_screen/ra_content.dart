@@ -22,10 +22,12 @@ import '../../models/romm_rom.dart';
 import '../../models/system_model.dart';
 import '../../providers/romm_provider.dart';
 import '../game_screen/my_games_list.dart';
+import '../game_screen/game_details_card/detail_tab.dart';
 import 'ra_dashboard.dart';
 import 'ra_tab_strip.dart';
 import 'ra_unlocks_tab.dart';
 import 'ra_games_tab.dart';
+import 'ra_leaderboards_tab.dart';
 
 part 'ra_content/dashboard_host.dart';
 part 'ra_content/gamepad_nav.dart';
@@ -65,6 +67,8 @@ class _RAContentState extends State<RAContent>
 
   /// The see-all Games sub-tab, same treatment.
   final GlobalKey<RaGamesTabState> _gamesKey = GlobalKey<RaGamesTabState>();
+  final GlobalKey<RaLeaderboardsTabState> _leaderboardsKey =
+      GlobalKey<RaLeaderboardsTabState>();
 
   /// Set while a row's drill-down (local resolve → RomM → notice) is between
   /// presses, so a double-tap can't start two downloads or push two routes.
@@ -81,8 +85,7 @@ class _RAContentState extends State<RAContent>
   bool _obscureApiKey = true;
   GamepadNavigation? _gamepadNav;
 
-  /// Which sub-tab mini-app is open. Games and Leaderboards join
-  /// [RaSubTab] as their tickets land.
+  /// Which sub-tab mini-app is open.
   RaSubTab _activeSubTab = RaSubTab.dashboard;
 
   /// Whether the D-pad cursor is parked on the sub-tab strip rather than in
@@ -204,6 +207,8 @@ class _RAContentState extends State<RAContent>
                       weekCardSelected: _weekCardSelected,
                       onDisconnectRequested: _requestDisconnect,
                       onOwnedWeekGameSelected: _openOwnedWeekGame,
+                      onBack: _handleBack,
+                      onSelect: _selectCurrent,
                       active: _activeSubTab == RaSubTab.dashboard,
                     ),
                   ),
@@ -212,6 +217,8 @@ class _RAContentState extends State<RAContent>
                       key: _unlocksKey,
                       active: _activeSubTab == RaSubTab.unlocks,
                       onActivate: _activateUnlock,
+                      onBack: _handleBack,
+                      onSelect: _selectCurrent,
                     ),
                   ),
                   RepaintBoundary(
@@ -219,6 +226,17 @@ class _RAContentState extends State<RAContent>
                       key: _gamesKey,
                       active: _activeSubTab == RaSubTab.games,
                       onActivate: _activateGame,
+                      onBack: _handleBack,
+                      onSelect: _selectCurrent,
+                    ),
+                  ),
+                  RepaintBoundary(
+                    child: RaLeaderboardsTab(
+                      key: _leaderboardsKey,
+                      active: _activeSubTab == RaSubTab.leaderboards,
+                      onActivate: _activateGame,
+                      onBack: _handleBack,
+                      onSelect: _selectCurrent,
                     ),
                   ),
                 ],

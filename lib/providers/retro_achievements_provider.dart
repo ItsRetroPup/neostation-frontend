@@ -12,6 +12,7 @@ import '../repositories/retro_achievements_repository.dart';
 import '../models/retro_achievements_dashboard_models.dart';
 import '../models/retro_achievements_game_info.dart';
 import '../models/retro_achievements_gotw.dart';
+import '../models/retro_achievements_leaderboard.dart';
 import '../models/retro_achievements_user_awards.dart';
 import '../services/game/game_session_manager.dart';
 import 'retro_achievements_credentials.dart';
@@ -141,6 +142,11 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool _gamesPlayedHasMore = true;
   bool _gamesCompletionHasMore = true;
 
+  List<RaTopTenUser> _topTenUsers = [];
+  bool _topTenUsersLoaded = false;
+  bool _topTenUsersLoading = false;
+  String? _topTenUsersError;
+
   List<RetroAchievementRecentlyPlayedGameItem> _recentlyPlayedGames = [];
   bool _recentlyPlayedLoaded = false;
   bool _recentlyPlayedLoading = false;
@@ -217,6 +223,11 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool get gamesListHasMore => _gamesListHasMore;
   String? get gamesListError => _gamesListError;
   RaGamesFilter get gamesFilter => _gamesFilter;
+
+  List<RaTopTenUser> get topTenUsers => _topTenUsers;
+  bool get topTenUsersLoaded => _topTenUsersLoaded;
+  bool get topTenUsersLoading => _topTenUsersLoading;
+  String? get topTenUsersError => _topTenUsersError;
 
   /// The merged list as the active award filter shows it. Client-side by
   /// design: the merge is already loaded, so switching the filter re-derives
@@ -537,6 +548,134 @@ class RetroAchievementsProvider extends ChangeNotifier {
     }
   }
 
+  /// Loads the leaderboards available for a game through the authenticated
+  /// service layer. A null result means the request failed; [error] contains
+  /// the localized message suitable for the details card.
+  Future<RaGameLeaderboardsPage?> getGameLeaderboards(
+    int gameId, {
+    int count = 100,
+    int offset = 0,
+  }) async {
+    if (!_isConnected || _username.isEmpty) {
+      _error = AppLocale.raErrorUserNotConnected.getStringForCurrentLocale();
+      return null;
+    }
+    if (!hasResolvedApiKey) {
+      _error = AppLocale.raErrorApiKeyRequired.getStringForCurrentLocale();
+      return null;
+    }
+
+    try {
+      _error = null;
+      return await RetroAchievementsService.getGameLeaderboards(
+        gameId,
+        count: count,
+        offset: offset,
+        apiKey: _apiKey,
+      );
+    } catch (e) {
+      _error = _describeApiError(e, AppLocale.raErrorLoadLeaderboards);
+      _log.e('$_error');
+      return null;
+    }
+  }
+
+  /// Loads one leaderboard's public entries through the authenticated service.
+  Future<RaLeaderboardEntriesPage?> getLeaderboardEntries(
+    int leaderboardId, {
+    int count = 100,
+    int offset = 0,
+  }) async {
+    if (!_isConnected || _username.isEmpty) {
+      _error = AppLocale.raErrorUserNotConnected.getStringForCurrentLocale();
+      return null;
+    }
+    if (!hasResolvedApiKey) {
+      _error = AppLocale.raErrorApiKeyRequired.getStringForCurrentLocale();
+      return null;
+    }
+
+    try {
+      _error = null;
+      return await RetroAchievementsService.getLeaderboardEntries(
+        leaderboardId,
+        count: count,
+        offset: offset,
+        apiKey: _apiKey,
+      );
+    } catch (e) {
+      _error = _describeApiError(e, AppLocale.raErrorLoadLeaderboardEntries);
+      _log.e('$_error');
+      return null;
+    }
+  }
+
+  /// Loads the signed-in user's submitted entries for a game's leaderboards.
+  Future<RaUserGameLeaderboardsPage?> getUserGameLeaderboards(
+    int gameId, {
+    int count = 200,
+    int offset = 0,
+  }) async {
+    if (!_isConnected || _username.isEmpty) {
+      _error = AppLocale.raErrorUserNotConnected.getStringForCurrentLocale();
+      return null;
+    }
+    if (!hasResolvedApiKey) {
+      _error = AppLocale.raErrorApiKeyRequired.getStringForCurrentLocale();
+      return null;
+    }
+
+    try {
+      _error = null;
+      final userIdentifier = _user?.ulid.trim() ?? '';
+      return await RetroAchievementsService.getUserGameLeaderboards(
+        gameId,
+        userIdentifier.isNotEmpty ? userIdentifier : _username,
+        count: count,
+        offset: offset,
+        apiKey: _apiKey,
+      );
+    } catch (e) {
+      _error = _describeApiError(e, AppLocale.raErrorLoadLeaderboards);
+      _log.e('$_error');
+      return null;
+    }
+  }
+
+  /// Loads the cached top-ten feed used by the Leaderboards sub-tab.
+  Future<bool> loadTopTenUsers() async {
+    if (!_isConnected || _username.isEmpty) return false;
+    if (_topTenUsersLoading) return false;
+    if (!hasResolvedApiKey) {
+      _topTenUsers = [];
+      _topTenUsersLoaded = false;
+      _topTenUsersError = AppLocale.raErrorApiKeyRequired
+          .getStringForCurrentLocale();
+      notifyListeners();
+      return false;
+    }
+
+    _topTenUsersLoading = true;
+    _topTenUsersError = null;
+    notifyListeners();
+    try {
+      _topTenUsers = await RetroAchievementsService.getTopTenUsers(
+        apiKey: _apiKey,
+      );
+      _topTenUsersLoaded = true;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _topTenUsersError = _describeApiError(e, AppLocale.raErrorLoadTopTen);
+      _topTenUsersLoaded = false;
+      _log.e(_topTenUsersError ?? 'Unknown top ten error');
+      return false;
+    } finally {
+      _topTenUsersLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Incremented by every [invalidateCachedReads]. A mounted dashboard watches
   /// this rather than the `*Loaded` flags: the flags cannot distinguish "was
   /// invalidated" from "the last load failed", so reacting to them would retry
@@ -645,6 +784,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
     // same leave-the-rows-until-refetch behaviour.
     _gamesListLoaded = false;
     _gamesListAttemptedAt = null;
+    _topTenUsersLoaded = false;
+    _topTenUsersError = null;
     notifyListeners();
   }
 
@@ -773,6 +914,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
     // a per-connection preference: a new sign-in starts at All.
     _resetGamesListState();
     _gamesListAttemptedAt = null;
+    _topTenUsers = [];
+    _topTenUsersLoaded = false;
+    _topTenUsersLoading = false;
+    _topTenUsersError = null;
     _gamesFilter = RaGamesFilter.all;
     _recentlyPlayedGames = [];
     _recentlyPlayedLoaded = false;

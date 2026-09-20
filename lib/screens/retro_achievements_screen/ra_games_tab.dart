@@ -12,6 +12,7 @@ import 'package:neostation/utils/centered_scroll_controller.dart';
 import 'package:provider/provider.dart';
 
 import '../../themes/corner_radii.dart';
+import '../../widgets/ra_subtab_footer.dart';
 
 /// The Games sub-tab: recently played and completion progress merged into
 /// one date-ordered list — everything the player has activity in, not just
@@ -41,8 +42,16 @@ class RaGamesTab extends StatefulWidget {
   /// Shell-side drill-down for the game under the cursor (A or tap) — the
   /// same resolution the Unlocks rows get.
   final ValueChanged<RaGamesListItem> onActivate;
+  final VoidCallback? onBack;
+  final VoidCallback? onSelect;
 
-  const RaGamesTab({super.key, required this.active, required this.onActivate});
+  const RaGamesTab({
+    super.key,
+    required this.active,
+    required this.onActivate,
+    this.onBack,
+    this.onSelect,
+  });
 
   @override
   State<RaGamesTab> createState() => RaGamesTabState();
@@ -311,27 +320,44 @@ class RaGamesTabState extends State<RaGamesTab> {
           _scrollController.updateTotalItems(items.length + 1);
           _scrollController.setItemExtent(_rowExtent);
           final theme = Theme.of(context);
-          return Container(
-            decoration: _cardDecoration(theme),
-            padding: EdgeInsets.all(14.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                SizedBox(height: 10.r),
-                _buildFilterChips(context, provider),
-                SizedBox(height: 10.r),
-                Expanded(
-                  child: items.isEmpty
-                      ? _buildPendingArea(context, provider)
-                      : _buildList(context, provider, items),
+          return Column(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: _cardDecoration(theme),
+                  padding: EdgeInsets.all(14.r),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(context),
+                      SizedBox(height: 10.r),
+                      _buildFilterChips(context, provider),
+                      SizedBox(height: 10.r),
+                      Expanded(
+                        child: items.isEmpty
+                            ? _buildPendingArea(context, provider)
+                            : _buildList(context, provider, items),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              RaSubTabFooter(
+                label: _footerLabel(context, items),
+                onRefresh: () => provider.invalidateCachedReads(),
+                onBack: widget.onBack,
+                onSelect: widget.onSelect,
+              ),
+            ],
           );
         },
       ),
     );
+  }
+
+  String _footerLabel(BuildContext context, List<RaGamesListItem> items) {
+    if (items.isEmpty) return AppLocale.raSubtabGames.getString(context);
+    return items[_selectedIndexIn(items).clamp(0, items.length - 1)].title;
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -759,6 +785,8 @@ class RaGamesTabState extends State<RaGamesTab> {
             item.imageBoxArt.isNotEmpty ? item.imageBoxArt : item.imageIcon,
           ),
           fit: BoxFit.cover,
+          cacheWidth: (38 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+          cacheHeight: (50 * MediaQuery.devicePixelRatioOf(context)).ceil(),
           errorBuilder: (context, error, stackTrace) => Container(
             color: theme.colorScheme.surface,
             child: Icon(

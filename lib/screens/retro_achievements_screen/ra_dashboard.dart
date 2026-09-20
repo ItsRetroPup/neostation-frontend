@@ -16,6 +16,7 @@ import '../../providers/retro_achievements_provider.dart';
 import '../../providers/romm_provider.dart';
 import '../../providers/sqlite_config_provider.dart';
 import '../../widgets/custom_notification.dart';
+import '../../widgets/ra_subtab_footer.dart';
 
 part 'ra_dashboard/data_loading.dart';
 part 'ra_dashboard/profile_header.dart';
@@ -29,6 +30,8 @@ class RADashboardHub extends StatefulWidget {
   final bool weekCardSelected;
   final VoidCallback onDisconnectRequested;
   final ValueChanged<OwnedWeekGameResolution> onOwnedWeekGameSelected;
+  final VoidCallback? onBack;
+  final VoidCallback? onSelect;
 
   /// Whether the dashboard sub-tab is the one on screen. The shell's
   /// IndexedStack keeps this hub mounted while another sub-tab is open, so
@@ -45,6 +48,8 @@ class RADashboardHub extends StatefulWidget {
     required this.weekCardSelected,
     required this.onDisconnectRequested,
     required this.onOwnedWeekGameSelected,
+    this.onBack,
+    this.onSelect,
     this.active = true,
   });
 
@@ -157,81 +162,104 @@ class RADashboardHubState extends State<RADashboardHub> {
         final user = raProvider.user;
         if (user == null) return const SizedBox.shrink();
 
-        return SingleChildScrollView(
-          controller: widget.scrollController,
-          padding: EdgeInsets.only(bottom: 16.r),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context, raProvider),
-              SizedBox(height: 12.r),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // constraints.maxWidth is already in logical pixels (the same
-                  // space .r resolves to), so the breakpoint is a raw value — a
-                  // .r here double-scales it and forces stacked mode on wide
-                  // landscape screens, wasting the right half of every card.
-                  final twoColumn = constraints.maxWidth >= 720;
-                  final weekCard = _buildWeekCard(context, raProvider);
-                  final unlocksCard = _buildRecentUnlocksCard(
-                    context,
-                    raProvider,
-                  );
-                  final masteriesCard = _buildRecentMasteriesSection(
-                    context,
-                    raProvider,
-                  );
-                  final playedCard = _buildRecentlyPlayedSection(
-                    context,
-                    raProvider,
-                  );
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                controller: widget.scrollController,
+                padding: EdgeInsets.only(bottom: 16.r),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context, raProvider),
+                    SizedBox(height: 12.r),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        // constraints.maxWidth is already in logical pixels (the same
+                        // space .r resolves to), so the breakpoint is a raw value — a
+                        // .r here double-scales it and forces stacked mode on wide
+                        // landscape screens, wasting the right half of every card.
+                        final twoColumn = constraints.maxWidth >= 720;
+                        final weekCard = _buildWeekCard(context, raProvider);
+                        final unlocksCard = _buildRecentUnlocksCard(
+                          context,
+                          raProvider,
+                        );
+                        final masteriesCard = _buildRecentMasteriesSection(
+                          context,
+                          raProvider,
+                        );
+                        final playedCard = _buildRecentlyPlayedSection(
+                          context,
+                          raProvider,
+                        );
 
-                  if (!twoColumn) {
-                    return Column(
-                      children: [
-                        weekCard,
-                        SizedBox(height: 12.r),
-                        unlocksCard,
-                        SizedBox(height: 12.r),
-                        masteriesCard,
-                        SizedBox(height: 12.r),
-                        playedCard,
-                      ],
-                    );
-                  }
-                  // Split the two long lists (Recent Unlocks / Recently Played)
-                  // across columns and pair each with a shorter card, so neither
-                  // column runs far longer than the other and leaves a tall gap.
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
+                        if (!twoColumn) {
+                          return Column(
+                            children: [
+                              weekCard,
+                              SizedBox(height: 12.r),
+                              unlocksCard,
+                              SizedBox(height: 12.r),
+                              masteriesCard,
+                              SizedBox(height: 12.r),
+                              playedCard,
+                            ],
+                          );
+                        }
+                        // Split the two long lists (Recent Unlocks / Recently Played)
+                        // across columns and pair each with a shorter card, so neither
+                        // column runs far longer than the other and leaves a tall gap.
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            weekCard,
-                            SizedBox(height: 12.r),
-                            playedCard,
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  weekCard,
+                                  SizedBox(height: 12.r),
+                                  playedCard,
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 12.r),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  unlocksCard,
+                                  SizedBox(height: 12.r),
+                                  masteriesCard,
+                                ],
+                              ),
+                            ),
                           ],
-                        ),
-                      ),
-                      SizedBox(width: 12.r),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            unlocksCard,
-                            SizedBox(height: 12.r),
-                            masteriesCard,
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+            RaSubTabFooter(
+              label: _footerLabel(context, raProvider),
+              onRefresh: () => raProvider.invalidateCachedReads(),
+              onBack: widget.onBack,
+              onSelect: widget.onSelect,
+            ),
+          ],
         );
       },
     );
+  }
+
+  String _footerLabel(
+    BuildContext context,
+    RetroAchievementsProvider provider,
+  ) {
+    if (widget.logoutSelected) return AppLocale.logout.getString(context);
+    if (widget.weekCardSelected && provider.gotw != null) {
+      return provider.gotw!.game.title;
+    }
+    return AppLocale.raSubtabDashboard.getString(context);
   }
 }

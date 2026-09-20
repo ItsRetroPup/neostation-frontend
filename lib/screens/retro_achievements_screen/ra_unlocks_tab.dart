@@ -12,6 +12,7 @@ import 'package:neostation/utils/centered_scroll_controller.dart';
 import 'package:provider/provider.dart';
 
 import '../../themes/corner_radii.dart';
+import '../../widgets/ra_subtab_footer.dart';
 
 /// The Unlocks sub-tab: every achievement unlocked in the last 30 days, not
 /// just the dashboard preview's five.
@@ -33,11 +34,15 @@ class RaUnlocksTab extends StatefulWidget {
 
   /// Shell-side drill-down for a row the cursor is on (A or tap).
   final ValueChanged<RetroAchievementRecentUnlockItem> onActivate;
+  final VoidCallback? onBack;
+  final VoidCallback? onSelect;
 
   const RaUnlocksTab({
     super.key,
     required this.active,
     required this.onActivate,
+    this.onBack,
+    this.onSelect,
   });
 
   @override
@@ -214,25 +219,45 @@ class RaUnlocksTabState extends State<RaUnlocksTab> {
           _scrollController.updateTotalItems(items.length + 1);
           _scrollController.setItemExtent(_rowExtent);
           final theme = Theme.of(context);
-          return Container(
-            decoration: _cardDecoration(theme),
-            padding: EdgeInsets.all(14.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                SizedBox(height: 12.r),
-                Expanded(
-                  child: items.isEmpty
-                      ? _buildPendingArea(context, provider)
-                      : _buildList(context, provider, items),
+          return Column(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: _cardDecoration(theme),
+                  padding: EdgeInsets.all(14.r),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(context),
+                      SizedBox(height: 12.r),
+                      Expanded(
+                        child: items.isEmpty
+                            ? _buildPendingArea(context, provider)
+                            : _buildList(context, provider, items),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              RaSubTabFooter(
+                label: _footerLabel(context, items),
+                onRefresh: () => provider.invalidateCachedReads(),
+                onBack: widget.onBack,
+                onSelect: widget.onSelect,
+              ),
+            ],
           );
         },
       ),
     );
+  }
+
+  String _footerLabel(
+    BuildContext context,
+    List<RetroAchievementRecentUnlockItem> items,
+  ) {
+    if (items.isEmpty) return AppLocale.raSubtabUnlocks.getString(context);
+    return items[_selectedIndex.clamp(0, items.length - 1)].title;
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -563,6 +588,8 @@ class RaUnlocksTabState extends State<RaUnlocksTab> {
                 : '/Badge/${item.badgeName}.png',
           ),
           fit: BoxFit.cover,
+          cacheWidth: (40 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+          cacheHeight: (40 * MediaQuery.devicePixelRatioOf(context)).ceil(),
           errorBuilder: (context, error, stackTrace) => Container(
             color: theme.colorScheme.surface,
             child: Icon(

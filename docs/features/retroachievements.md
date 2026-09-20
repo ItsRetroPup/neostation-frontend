@@ -7,7 +7,7 @@ nav_order: 1
 
 # RetroAchievements
 
-Connect your RetroAchievements account to view supported-game information, achievement progress, recent unlocks, completions, masteries, and leaderboards in NeoStation.
+NeoStation connects to your RetroAchievements account so you can browse matched games, achievement progress, recent unlocks, completions, masteries, and per-game leaderboards without leaving the app.
 
 ## Sign In
 
@@ -16,7 +16,41 @@ Connect your RetroAchievements account to view supported-game information, achie
 3. Enter your personal Web API key.
 4. Select **Login**.
 
-Use **Get API Key** in NeoStation to open the RetroAchievements control panel, where you can obtain your personal key. NeoStation does not use a shared build-time RetroAchievements key.
+Use **Get API Key** in NeoStation to open the RetroAchievements control panel, where you can obtain your personal key. NeoStation does not use a shared build-time key. Your API key is used for your account's requests and is stored with the rest of your saved login credentials when the device allows it.
+
+If the device cannot save the credentials, the session can still work until you sign out or close the app. You will need to sign in again next time.
+
+## The RetroAchievements Mini-App
+
+After you sign in, the tab is divided into four sub-tabs. Use the pill strip, touch, or the D-pad to switch between them. The active sub-tab owns its data loading, so switching away does not keep its spinner or requests running.
+
+### Dashboard
+
+The Dashboard contains your profile and standing, Achievement of the Week, and compact previews of your recent unlocks, recently played games, completions, and masteries. Select **Refresh** in the header to reload the active RetroAchievements view without leaving the tab.
+
+### Unlocks
+
+**Unlocks** shows your recent achievements from the last 30 days. Open the full list to browse more results. Selecting an unlock opens its game when NeoStation can find a local match; if it is available through RomM, NeoStation can download it and continue once it has been indexed.
+
+### Games
+
+**Games** combines your recently played games with your completion-progress games into one list. Use the filters to show **All**, **Mastered**, or **Completed** games. The list is loaded in pages as you move through it. Selecting a game uses the same local-library and RomM handoff as the Unlocks list.
+
+### Leaderboards
+
+**Leaderboards** shows your own RetroAchievements standing, the site's top-ten feed, and leaderboards for games in your activity list. The standing card uses the rank and points from your profile and distinguishes hardcore and casual users.
+
+RetroAchievements does not provide a global user-ranking board. In NeoStation, “leaderboards” means the per-game leaderboards plus the top-ten feed.
+
+## Per-Game Leaderboards
+
+To open a game's leaderboards:
+
+1. Select a game from **Leaderboards**, or open a matched game in your library.
+2. In the game details card, select the **Leaderboards** pill.
+3. Select a leaderboard to open its entries.
+
+The entries show the leaderboard's rank direction and formatted score. Results load in pages, and your own entry is pinned and highlighted when RetroAchievements returns one. A game can have no leaderboards or no entries even when the game itself is matched.
 
 ## Match Your Library
 
@@ -27,15 +61,15 @@ NeoStation can match new ROMs after the startup scan. To process your whole libr
 
 Matching reads unmatched ROMs to identify them. It can take several minutes for a large library. Selecting the tool again pauses it; completed matches are kept and a later run continues. Disc images are sampled, but NeoStation does not move or delete files while matching.
 
-You can run matching while signed out, but you must sign in to see results. When a match needs correcting, NeoStation provides a RetroAchievements title search for a manual match.
+You can run matching while signed out, but you must sign in to see RetroAchievements results. When a match needs correcting, NeoStation provides a RetroAchievements title search for a manual match.
 
 ## Offline Use
 
-If NeoStation starts without a network connection but has cached sign-in data, it can show an offline banner. Reconnect to refresh online data.
+NeoStation caches successful RetroAchievements responses on the device. If the network is unavailable and cached data exists, the tab can show the last synced results and displays an offline banner. New data, uncached pages, and refreshes need a connection; reconnect and select **Refresh** to update them.
 
 ## Sign Out
 
-Disconnecting signs you out and removes the saved RetroAchievements credentials from that device.
+Disconnecting signs you out and removes the saved RetroAchievements credentials from that device. Cached account data is cleared with the session.
 
 ## Related Pages
 

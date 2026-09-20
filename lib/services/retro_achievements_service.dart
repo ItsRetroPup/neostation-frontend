@@ -9,6 +9,7 @@ import '../models/retro_achievements_game_info.dart';
 import '../models/retro_achievements_gotw.dart';
 import '../models/retro_achievement_comment.dart';
 import '../models/retro_achievements_dashboard_models.dart';
+import '../models/retro_achievements_leaderboard.dart';
 
 /// Service for interacting with the RetroAchievements API.
 ///
@@ -494,6 +495,194 @@ class RetroAchievementsService {
       },
       onMiss: (statusCode) => throw HttpException(
         'RetroAchievements completion progress request failed (${statusCode ?? 'offline'})',
+      ),
+    );
+  }
+
+  /// Retrieves the leaderboards defined for a game.
+  static Future<RaGameLeaderboardsPage> getGameLeaderboards(
+    int gameId, {
+    int count = 100,
+    int offset = 0,
+    String? apiKey,
+    http.Client? client,
+  }) async {
+    final effectiveApiKey = resolveApiKey(apiKey);
+    if (effectiveApiKey.isEmpty) {
+      throw StateError('A RetroAchievements API key is required');
+    }
+
+    final effectiveCount = count.clamp(1, 500);
+    final effectiveOffset = offset.clamp(0, 1 << 31);
+    final url = Uri.parse('$_baseUrl/API_GetGameLeaderboards.php').replace(
+      queryParameters: {
+        'i': gameId.toString(),
+        'c': effectiveCount.toString(),
+        'o': effectiveOffset.toString(),
+        'y': effectiveApiKey,
+      },
+    );
+
+    return _fetchWithCache<RaGameLeaderboardsPage>(
+      cacheKey:
+          'game_leaderboards_${gameId}_${effectiveCount}_$effectiveOffset',
+      send: () => client == null
+          ? http.get(url, headers: _raHeaders)
+          : client.get(url, headers: _raHeaders),
+      parse: (decoded) {
+        if (decoded is! Map) {
+          throw const FormatException(
+            'Invalid RetroAchievements game leaderboards response',
+          );
+        }
+        return RaGameLeaderboardsPage.fromJson(
+          Map<String, dynamic>.from(decoded),
+        );
+      },
+      onMiss: (statusCode) => throw HttpException(
+        'RetroAchievements game leaderboards request failed (${statusCode ?? 'offline'})',
+      ),
+    );
+  }
+
+  /// Retrieves one leaderboard's ranked entries.
+  static Future<RaLeaderboardEntriesPage> getLeaderboardEntries(
+    int leaderboardId, {
+    int count = 100,
+    int offset = 0,
+    String? apiKey,
+    http.Client? client,
+  }) async {
+    final effectiveApiKey = resolveApiKey(apiKey);
+    if (effectiveApiKey.isEmpty) {
+      throw StateError('A RetroAchievements API key is required');
+    }
+
+    final effectiveCount = count.clamp(1, 500);
+    final effectiveOffset = offset.clamp(0, 1 << 31);
+    final url = Uri.parse('$_baseUrl/API_GetLeaderboardEntries.php').replace(
+      queryParameters: {
+        'i': leaderboardId.toString(),
+        'c': effectiveCount.toString(),
+        'o': effectiveOffset.toString(),
+        'y': effectiveApiKey,
+      },
+    );
+
+    return _fetchWithCache<RaLeaderboardEntriesPage>(
+      cacheKey:
+          'leaderboard_entries_${leaderboardId}_${effectiveCount}_$effectiveOffset',
+      send: () => client == null
+          ? http.get(url, headers: _raHeaders)
+          : client.get(url, headers: _raHeaders),
+      parse: (decoded) {
+        if (decoded is! Map) {
+          throw const FormatException(
+            'Invalid RetroAchievements leaderboard entries response',
+          );
+        }
+        return RaLeaderboardEntriesPage.fromJson(
+          Map<String, dynamic>.from(decoded),
+        );
+      },
+      onMiss: (statusCode) => throw HttpException(
+        'RetroAchievements leaderboard entries request failed (${statusCode ?? 'offline'})',
+      ),
+    );
+  }
+
+  /// Retrieves the signed-in user's leaderboard entries for a game.
+  ///
+  /// [username] may be the stable ULID returned by the profile endpoint. The
+  /// API accepts either a username or ULID, and the provider prefers the ULID
+  /// so a username change cannot make the request target another account.
+  static Future<RaUserGameLeaderboardsPage> getUserGameLeaderboards(
+    int gameId,
+    String username, {
+    int count = 200,
+    int offset = 0,
+    String? apiKey,
+    http.Client? client,
+  }) async {
+    final effectiveApiKey = resolveApiKey(apiKey);
+    if (effectiveApiKey.isEmpty) {
+      throw StateError('A RetroAchievements API key is required');
+    }
+
+    final effectiveCount = count.clamp(1, 500);
+    final effectiveOffset = offset.clamp(0, 1 << 31);
+    final url = Uri.parse('$_baseUrl/API_GetUserGameLeaderboards.php').replace(
+      queryParameters: {
+        'i': gameId.toString(),
+        'u': username,
+        'c': effectiveCount.toString(),
+        'o': effectiveOffset.toString(),
+        'y': effectiveApiKey,
+      },
+    );
+
+    return _fetchWithCache<RaUserGameLeaderboardsPage>(
+      cacheKey:
+          'user_game_leaderboards_${username}_${gameId}_${effectiveCount}_$effectiveOffset',
+      send: () => client == null
+          ? http.get(url, headers: _raHeaders)
+          : client.get(url, headers: _raHeaders),
+      parse: (decoded) {
+        if (decoded is! Map) {
+          throw const FormatException(
+            'Invalid RetroAchievements user game leaderboards response',
+          );
+        }
+        return RaUserGameLeaderboardsPage.fromJson(
+          Map<String, dynamic>.from(decoded),
+        );
+      },
+      onMiss: (statusCode) => throw HttpException(
+        'RetroAchievements user game leaderboards request failed (${statusCode ?? 'offline'})',
+      ),
+    );
+  }
+
+  static const Map<String, String> _raHeaders = {
+    'User-Agent': 'NeoStation/1.0',
+    'Accept': 'application/json',
+  };
+
+  /// Retrieves the site's top ten hardcore-point earners.
+  static Future<List<RaTopTenUser>> getTopTenUsers({
+    String? apiKey,
+    http.Client? client,
+  }) async {
+    final effectiveApiKey = resolveApiKey(apiKey);
+    if (effectiveApiKey.isEmpty) {
+      throw StateError('A RetroAchievements API key is required');
+    }
+
+    final url = Uri.parse(
+      '$_baseUrl/API_GetTopTenUsers.php',
+    ).replace(queryParameters: {'y': effectiveApiKey});
+
+    return _fetchWithCache<List<RaTopTenUser>>(
+      cacheKey: 'top_ten_users',
+      send: () => client == null
+          ? http.get(url, headers: _raHeaders)
+          : client.get(url, headers: _raHeaders),
+      parse: (decoded) {
+        if (decoded is! List) {
+          throw const FormatException(
+            'Invalid RetroAchievements top ten response',
+          );
+        }
+        return decoded
+            .whereType<Map>()
+            .map(
+              (item) => RaTopTenUser.fromJson(Map<String, dynamic>.from(item)),
+            )
+            .where((user) => user.username.isNotEmpty)
+            .toList(growable: false);
+      },
+      onMiss: (statusCode) => throw HttpException(
+        'RetroAchievements top ten request failed (${statusCode ?? 'offline'})',
       ),
     );
   }

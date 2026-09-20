@@ -139,6 +139,8 @@ extension _SharedHelpers on RADashboardHubState {
             child: Image.network(
               url,
               fit: BoxFit.cover,
+              cacheWidth: (40 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+              cacheHeight: (40 * MediaQuery.devicePixelRatioOf(context)).ceil(),
               errorBuilder: (context, error, stackTrace) => Container(
                 color: theme.colorScheme.surface,
                 child: Icon(icon, color: theme.colorScheme.primary, size: 18.r),

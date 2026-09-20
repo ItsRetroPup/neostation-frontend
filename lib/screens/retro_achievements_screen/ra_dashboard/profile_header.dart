@@ -49,6 +49,10 @@ extension _ProfileHeader on RADashboardHubState {
                   ? Image.network(
                       'https://retroachievements.org${user.userPic}',
                       fit: BoxFit.cover,
+                      cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context))
+                          .ceil(),
+                      cacheHeight: (48 * MediaQuery.devicePixelRatioOf(context))
+                          .ceil(),
                       errorBuilder: (context, error, stackTrace) => Icon(
                         Symbols.account_circle_rounded,
                         color: theme.colorScheme.primary,
