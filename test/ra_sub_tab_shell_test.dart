@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/models/retro_achievements_dashboard_models.dart';
+import 'package:neostation/models/retro_achievements_summary.dart';
 import 'package:neostation/models/retro_achievements_user.dart';
 import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/providers/retro_achievements_provider.dart';
@@ -30,13 +31,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _ShellProvider extends RetroAchievementsProvider {
   _ShellProvider({
     bool connected = true,
+    RetroAchievementsUserSummary? summary,
     List<RetroAchievementRecentUnlockItem> unlocksItems = const [],
     List<RaGamesListItem> gamesListItems = const [],
   }) : _connected = connected,
+       _summary = summary,
        _unlocksItems = unlocksItems,
        _gamesListItems = gamesListItems;
 
   final bool _connected;
+  final RetroAchievementsUserSummary? _summary;
 
   /// See-all rows for the Unlocks sub-tab. Empty by default so every other
   /// shell test sees exactly the pre-tab behaviour.
@@ -58,6 +62,9 @@ class _ShellProvider extends RetroAchievementsProvider {
 
   @override
   bool get summaryLoaded => true;
+
+  @override
+  RetroAchievementsUserSummary? get userSummary => _summary;
 
   @override
   List<RaGamesListItem> get gamesListItems => _gamesListItems;
@@ -327,6 +334,24 @@ void main() {
     // initial-centering timer (it starts from a post-frame callback, so it
     // may only be *created* on the next frame), then advance past the timer
     // itself — an anonymous timer dispose cannot cancel.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('profile shows rank and percentile from the user summary', (
+    tester,
+  ) async {
+    final provider = _ShellProvider(
+      summary: RetroAchievementsUserSummary.fromJson({
+        'Rank': 1234,
+        'TotalRanked': 22025,
+      }),
+    );
+    await pumpShell(tester, provider);
+
+    expect(find.text('Rank #1,234 · Top 5.6%'), findsOneWidget);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
     await tester.pumpWidget(const SizedBox.shrink());
