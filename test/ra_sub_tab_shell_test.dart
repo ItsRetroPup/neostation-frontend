@@ -340,23 +340,48 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('profile shows rank and percentile from the user summary', (
-    tester,
-  ) async {
-    final provider = _ShellProvider(
-      summary: RetroAchievementsUserSummary.fromJson({
-        'Rank': 1234,
-        'TotalRanked': 22025,
-      }),
-    );
-    await pumpShell(tester, provider);
+  RetroAchievementsUserSummary summary(int rank, int total) =>
+      RetroAchievementsUserSummary.fromJson({
+        'Rank': rank,
+        'TotalRanked': total,
+      });
 
-    expect(find.text('Rank #1,234 · Top 5.6%'), findsOneWidget);
+  Future<void> disposeShell(WidgetTester tester) async {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
+  }
+
+  testWidgets('profile shows rank and percentile from the user summary', (
+    tester,
+  ) async {
+    await pumpShell(tester, _ShellProvider(summary: summary(1234, 22025)));
+
+    expect(find.text('Rank #1,234 · Top 5.6%'), findsOneWidget);
+    await disposeShell(tester);
   });
+
+  testWidgets('profile shows Unranked without a rank', (tester) async {
+    await pumpShell(tester, _ShellProvider(summary: summary(0, 22025)));
+
+    expect(find.text('Unranked'), findsOneWidget);
+    await disposeShell(tester);
+  });
+
+  testWidgets(
+    'profile omits an inconsistent percentile and rounds tiny values',
+    (tester) async {
+      await pumpShell(tester, _ShellProvider(summary: summary(2, 1)));
+      expect(find.text('Rank: 2'), findsOneWidget);
+      expect(find.textContaining('Top '), findsNothing);
+      await disposeShell(tester);
+
+      await pumpShell(tester, _ShellProvider(summary: summary(1, 2001)));
+      expect(find.text('Rank #1 · Top <0.1%'), findsOneWidget);
+      await disposeShell(tester);
+    },
+  );
 
   testWidgets('signed in: the strip renders the three sub-tab pills', (
     tester,
