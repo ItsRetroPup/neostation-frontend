@@ -283,7 +283,15 @@ class RaGamesTabState extends State<RaGamesTab> {
     if (provider.gamesListLoading) return;
     // Fresh within the staleness window and already on screen: walking back
     // and forth between sub-tabs costs nothing.
-    if (provider.gamesListLoaded && !provider.gamesListIsStale) return;
+    if (provider.gamesListLoaded && !provider.gamesListIsStale) {
+      if (provider.gamesFilter != RaGamesFilter.all &&
+          provider.visibleGamesListItems.isEmpty &&
+          provider.gamesListHasMore) {
+        final token = ++_filterLoadToken;
+        unawaited(_ensureFilterResults(provider, token));
+      }
+      return;
+    }
     _resetSelection();
     unawaited(_loadListAndSatisfyFilter(provider));
   }
@@ -489,7 +497,9 @@ class RaGamesTabState extends State<RaGamesTab> {
         ),
       );
     }
-    if (provider.gamesListLoaded) {
+    if (provider.gamesListLoaded &&
+        (provider.gamesFilter == RaGamesFilter.all ||
+            !provider.gamesFilterResultsLoading)) {
       return Center(
         child: Text(
           switch (provider.gamesFilter) {

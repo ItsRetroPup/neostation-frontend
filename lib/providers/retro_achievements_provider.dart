@@ -145,6 +145,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
   int _gamesCompletionOffset = 0;
   bool _gamesPlayedHasMore = true;
   bool _gamesCompletionHasMore = true;
+  bool _gamesFilterResultsLoading = false;
 
   List<RetroAchievementRecentlyPlayedGameItem> _recentlyPlayedGames = [];
   bool _recentlyPlayedLoaded = false;
@@ -223,6 +224,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool get gamesListHasMore => _gamesListHasMore;
   String? get gamesListError => _gamesListError;
   RaGamesFilter get gamesFilter => _gamesFilter;
+  bool get gamesFilterResultsLoading => _gamesFilterResultsLoading;
 
   /// The merged list as the active award filter shows it. Client-side by
   /// design: the merge is already loaded, so switching the filter re-derives
@@ -751,6 +753,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
     // same leave-the-rows-until-refetch behaviour.
     _gamesListLoaded = false;
     _gamesListAttemptedAt = null;
+    _gamesFilterResultsLoading = false;
     notifyListeners();
   }
 
@@ -762,17 +765,25 @@ class RetroAchievementsProvider extends ChangeNotifier {
     int maxPages = 20,
     bool Function()? shouldContinue,
   }) async {
-    var pages = 0;
-    while (pages < maxPages &&
-        (shouldContinue?.call() ?? true) &&
-        _isConnected &&
-        !_gamesListLoading &&
-        visibleGamesListItems.isEmpty &&
-        _gamesListHasMore &&
-        _gamesListError == null) {
-      pages++;
-      final loaded = await loadGamesPage();
-      if (!loaded) break;
+    if (_gamesFilterResultsLoading || _gamesListLoading) return;
+    _gamesFilterResultsLoading = true;
+    notifyListeners();
+    try {
+      var pages = 0;
+      while (pages < maxPages &&
+          (shouldContinue?.call() ?? true) &&
+          _isConnected &&
+          !_gamesListLoading &&
+          visibleGamesListItems.isEmpty &&
+          _gamesListHasMore &&
+          _gamesListError == null) {
+        pages++;
+        final loaded = await loadGamesPage();
+        if (!loaded) break;
+      }
+    } finally {
+      _gamesFilterResultsLoading = false;
+      notifyListeners();
     }
   }
 
@@ -902,6 +913,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
     // a per-connection preference: a new sign-in starts at All.
     _resetGamesListState();
     _gamesListAttemptedAt = null;
+    _gamesFilterResultsLoading = false;
     _gamesFilter = RaGamesFilter.all;
     _recentlyPlayedGames = [];
     _recentlyPlayedLoaded = false;
