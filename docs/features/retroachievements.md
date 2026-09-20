@@ -22,35 +22,25 @@ If the device cannot save the credentials, the session can still work until you 
 
 ## The RetroAchievements Mini-App
 
-After you sign in, the tab is divided into four sub-tabs. Use the pill strip, touch, or the D-pad to switch between them. The active sub-tab owns its data loading, so switching away does not keep its spinner or requests running.
+After you sign in, the tab is divided into three sub-tabs: **Dashboard**, **Unlocks**, and **Games**. Use the pill strip, touch, or the D-pad to switch between them. The active sub-tab owns its data loading, so switching away does not keep its spinner or requests running.
 
 ### Dashboard
 
-The Dashboard contains your profile and standing, Achievement of the Week, and compact previews of your recent unlocks, recently played games, completions, and masteries. Select **Refresh** in the header to reload the active RetroAchievements view without leaving the tab.
+The Dashboard contains your profile and standing, Achievement of the Week, and compact previews of your recent unlocks, recently played games, completions, and masteries. Your profile includes a standing pill with your rank and percentile when those values are available. Select **Refresh** in the header to reload the active RetroAchievements view without leaving the tab.
 
 ### Unlocks
 
-**Unlocks** shows your recent achievements from the last 30 days. Open the full list to browse more results. Selecting an unlock opens its game when NeoStation can find a local match; if it is available through RomM, NeoStation can download it and continue once it has been indexed.
+**Unlocks** shows your recent achievements from the last 30 days. Open the full list to browse more results. Selecting an unlock opens the game's RetroAchievements page and highlights that achievement. This works whether or not the game is installed locally.
 
 ### Games
 
-**Games** combines your recently played games with your completion-progress games into one list. Use the filters to show **All**, **Mastered**, or **Completed** games. The list is loaded in pages as you move through it. Selecting a game uses the same local-library and RomM handoff as the Unlocks list.
+**Games** combines your recently played games with your completion-progress games into one list. Use the filters to show **All**, **Mastered**, or **Beaten** games. Beaten includes games with a beaten softcore, beaten hardcore, completed, or mastered award; mastered remains available as its own narrower filter. The list is loaded in pages as you move through it, including when a filtered result is beyond the first page. Selecting a game opens its RetroAchievements page.
 
-### Leaderboards
+## Game Achievements
 
-**Leaderboards** shows your own RetroAchievements standing, the site's top-ten feed, and leaderboards for games in your activity list. The standing card uses the rank and points from your profile and distinguishes hardcore and casual users.
+Selecting a game from **Games**, or selecting an unlock from **Unlocks**, opens a dedicated RetroAchievements page keyed by the game's RA ID. The page shows the artwork, console, achievement totals, casual and hardcore progress, and the complete achievement list in API order. Use **All**, **Unlocked**, **Locked**, or **Missable** filters; missable is an overlapping category and can include unlocked achievements. Each row shows its badge, description, points, available unlock date, and casual/hardcore rarity when the API provides valid counts. An external guide action appears only when the game supplies a valid web URL.
 
-RetroAchievements does not provide a global user-ranking board. In NeoStation, “leaderboards” means the per-game leaderboards plus the top-ten feed.
-
-## Per-Game Leaderboards
-
-To open a game's leaderboards:
-
-1. Select a game from **Leaderboards**, or open a matched game in your library.
-2. In the game details card, select the **Leaderboards** pill.
-3. Select a leaderboard to open its entries.
-
-The entries show the leaderboard's rank direction and formatted score. Results load in pages, and your own entry is pinned and highlighted when RetroAchievements returns one. A game can have no leaderboards or no entries even when the game itself is matched.
+The game page also contains a **Leaderboards** view. It loads only when opened, shows paginated entries, and highlights the signed-in user's entry when RetroAchievements returns one. A game can have no leaderboards or no entries even when the game itself is matched.
 
 ## Match Your Library
 
