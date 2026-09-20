@@ -648,45 +648,6 @@ class RetroAchievementsService {
     'Accept': 'application/json',
   };
 
-  /// Retrieves the site's top ten hardcore-point earners.
-  static Future<List<RaTopTenUser>> getTopTenUsers({
-    String? apiKey,
-    http.Client? client,
-  }) async {
-    final effectiveApiKey = resolveApiKey(apiKey);
-    if (effectiveApiKey.isEmpty) {
-      throw StateError('A RetroAchievements API key is required');
-    }
-
-    final url = Uri.parse(
-      '$_baseUrl/API_GetTopTenUsers.php',
-    ).replace(queryParameters: {'y': effectiveApiKey});
-
-    return _fetchWithCache<List<RaTopTenUser>>(
-      cacheKey: 'top_ten_users',
-      send: () => client == null
-          ? http.get(url, headers: _raHeaders)
-          : client.get(url, headers: _raHeaders),
-      parse: (decoded) {
-        if (decoded is! List) {
-          throw const FormatException(
-            'Invalid RetroAchievements top ten response',
-          );
-        }
-        return decoded
-            .whereType<Map>()
-            .map(
-              (item) => RaTopTenUser.fromJson(Map<String, dynamic>.from(item)),
-            )
-            .where((user) => user.username.isNotEmpty)
-            .toList(growable: false);
-      },
-      onMiss: (statusCode) => throw HttpException(
-        'RetroAchievements top ten request failed (${statusCode ?? 'offline'})',
-      ),
-    );
-  }
-
   /// Retrieves the list of site-wide awards earned by a user.
   static Future<Map<String, dynamic>?> getUserAwards(
     String username, {

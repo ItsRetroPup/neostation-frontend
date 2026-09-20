@@ -382,6 +382,18 @@ class RaGamesListItem {
 
   bool get isMastered => _kindIs('mastered');
   bool get isCompleted => _kindIs('completed');
+  bool get isBeaten =>
+      isMastered ||
+      isCompleted ||
+      _kindIs('beaten-hardcore') ||
+      _kindIs('beaten-softcore');
+
+  String? get awardMode {
+    final kind = (highestAwardKind ?? '').trim().toLowerCase();
+    if (kind.endsWith('-hardcore')) return 'hardcore';
+    if (kind.endsWith('-softcore')) return 'softcore';
+    return null;
+  }
 
   bool _kindIs(String kind) =>
       (highestAwardKind ?? '').trim().toLowerCase() == kind;

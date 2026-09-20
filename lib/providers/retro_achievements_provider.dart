@@ -22,7 +22,7 @@ import 'retro_achievements_credentials.dart';
 /// provider so the choice survives sub-tab switches; switching never
 /// refetches (the merged list is already loaded — see
 /// [RetroAchievementsProvider.visibleGamesListItems]).
-enum RaGamesFilter { all, mastered, completed }
+enum RaGamesFilter { all, mastered, beaten }
 
 /// Provider responsible for managing the integration with RetroAchievements.org.
 ///
@@ -54,6 +54,10 @@ class RetroAchievementsProvider extends ChangeNotifier {
 
   /// Current authenticated username.
   String _username = '';
+
+  /// Changes whenever the active account changes, so an older in-flight API
+  /// response cannot populate the newly signed-in user's view.
+  int _sessionGeneration = 0;
 
   /// Current RetroAchievements API key used for requests.
   String _apiKey = '';
@@ -142,11 +146,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool _gamesPlayedHasMore = true;
   bool _gamesCompletionHasMore = true;
 
-  List<RaTopTenUser> _topTenUsers = [];
-  bool _topTenUsersLoaded = false;
-  bool _topTenUsersLoading = false;
-  String? _topTenUsersError;
-
   List<RetroAchievementRecentlyPlayedGameItem> _recentlyPlayedGames = [];
   bool _recentlyPlayedLoaded = false;
   bool _recentlyPlayedLoading = false;
@@ -178,6 +177,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
   String? get error => _error;
   String get username => _username;
   String get apiKey => _apiKey;
+  int get sessionGeneration => _sessionGeneration;
 
   int get totalLocalRoms => _totalLocalRoms;
   int get retroAchievementsCompatibleLocalRoms =>
@@ -224,11 +224,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
   String? get gamesListError => _gamesListError;
   RaGamesFilter get gamesFilter => _gamesFilter;
 
-  List<RaTopTenUser> get topTenUsers => _topTenUsers;
-  bool get topTenUsersLoaded => _topTenUsersLoaded;
-  bool get topTenUsersLoading => _topTenUsersLoading;
-  String? get topTenUsersError => _topTenUsersError;
-
   /// The merged list as the active award filter shows it. Client-side by
   /// design: the merge is already loaded, so switching the filter re-derives
   /// the view without a refetch.
@@ -238,8 +233,8 @@ class RetroAchievementsProvider extends ChangeNotifier {
         return _gamesListItems;
       case RaGamesFilter.mastered:
         return _gamesListItems.where((item) => item.isMastered).toList();
-      case RaGamesFilter.completed:
-        return _gamesListItems.where((item) => item.isCompleted).toList();
+      case RaGamesFilter.beaten:
+        return _gamesListItems.where((item) => item.isBeaten).toList();
     }
   }
 
@@ -306,6 +301,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
       return false;
     }
 
+    final sessionGeneration = ++_sessionGeneration;
     _setLoading(true);
     _error = null;
     _username = username.trim();
@@ -317,6 +313,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
         apiKey: _apiKey,
       );
 
+      if (sessionGeneration != _sessionGeneration) return false;
       if (userProfile != null) {
         _user = userProfile;
         _isConnected = true;
@@ -360,6 +357,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
       return false;
     }
 
+    final sessionGeneration = _sessionGeneration;
     _setLoading(true);
     _error = null;
 
@@ -369,6 +367,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
         apiKey: _apiKey,
       );
 
+      if (sessionGeneration != _sessionGeneration) return false;
       if (summary != null) {
         _userSummary = summary;
         _summaryLoaded = true;
@@ -521,6 +520,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
       return _gameInfoCache[gameId];
     }
 
+    final sessionGeneration = _sessionGeneration;
     _error = null;
 
     try {
@@ -533,6 +533,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
             apiKey: _apiKey,
           );
 
+      if (sessionGeneration != _sessionGeneration) return null;
       if (gameInfo != null) {
         _gameInfoCache[gameId] = gameInfo;
         return gameInfo;
@@ -639,40 +640,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
       _error = _describeApiError(e, AppLocale.raErrorLoadLeaderboards);
       _log.e('$_error');
       return null;
-    }
-  }
-
-  /// Loads the cached top-ten feed used by the Leaderboards sub-tab.
-  Future<bool> loadTopTenUsers() async {
-    if (!_isConnected || _username.isEmpty) return false;
-    if (_topTenUsersLoading) return false;
-    if (!hasResolvedApiKey) {
-      _topTenUsers = [];
-      _topTenUsersLoaded = false;
-      _topTenUsersError = AppLocale.raErrorApiKeyRequired
-          .getStringForCurrentLocale();
-      notifyListeners();
-      return false;
-    }
-
-    _topTenUsersLoading = true;
-    _topTenUsersError = null;
-    notifyListeners();
-    try {
-      _topTenUsers = await RetroAchievementsService.getTopTenUsers(
-        apiKey: _apiKey,
-      );
-      _topTenUsersLoaded = true;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _topTenUsersError = _describeApiError(e, AppLocale.raErrorLoadTopTen);
-      _topTenUsersLoaded = false;
-      _log.e(_topTenUsersError ?? 'Unknown top ten error');
-      return false;
-    } finally {
-      _topTenUsersLoading = false;
-      notifyListeners();
     }
   }
 
@@ -784,9 +751,29 @@ class RetroAchievementsProvider extends ChangeNotifier {
     // same leave-the-rows-until-refetch behaviour.
     _gamesListLoaded = false;
     _gamesListAttemptedAt = null;
-    _topTenUsersLoaded = false;
-    _topTenUsersError = null;
     notifyListeners();
+  }
+
+  /// Keeps paging the two source lists until the active filter has a result
+  /// or the API has no more rows. This matters for Beaten/Mastered: the
+  /// completion endpoint is date ordered, so a valid match can be beyond the
+  /// first page even though the UI initially has no visible rows.
+  Future<void> ensureGamesFilterResults({
+    int maxPages = 20,
+    bool Function()? shouldContinue,
+  }) async {
+    var pages = 0;
+    while (pages < maxPages &&
+        (shouldContinue?.call() ?? true) &&
+        _isConnected &&
+        !_gamesListLoading &&
+        visibleGamesListItems.isEmpty &&
+        _gamesListHasMore &&
+        _gamesListError == null) {
+      pages++;
+      final loaded = await loadGamesPage();
+      if (!loaded) break;
+    }
   }
 
   /// Initializes the provider and attempts automatic login with stored credentials.
@@ -876,6 +863,7 @@ class RetroAchievementsProvider extends ChangeNotifier {
   ///
   /// If [clearSavedUser] is true, the credentials are removed from persistent storage.
   void disconnect({bool clearSavedUser = true}) {
+    _sessionGeneration++;
     _user = null;
     _isConnected = false;
     _username = '';
@@ -914,10 +902,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
     // a per-connection preference: a new sign-in starts at All.
     _resetGamesListState();
     _gamesListAttemptedAt = null;
-    _topTenUsers = [];
-    _topTenUsersLoaded = false;
-    _topTenUsersLoading = false;
-    _topTenUsersError = null;
     _gamesFilter = RaGamesFilter.all;
     _recentlyPlayedGames = [];
     _recentlyPlayedLoaded = false;

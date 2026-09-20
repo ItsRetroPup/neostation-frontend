@@ -58,6 +58,11 @@ class RaGamesTab extends StatefulWidget {
 }
 
 class RaGamesTabState extends State<RaGamesTab> {
+  static const _visibleFilters = [
+    RaGamesFilter.all,
+    RaGamesFilter.mastered,
+    RaGamesFilter.beaten,
+  ];
   int? _selectedGameId;
 
   /// Whether the D-pad cursor is parked on the filter chips — the one zone
@@ -77,6 +82,7 @@ class RaGamesTabState extends State<RaGamesTab> {
   Timer? _loadTimer;
   RetroAchievementsProvider? _provider;
   int _seenCacheGeneration = 0;
+  int _filterLoadToken = 0;
 
   /// How close to the wall the cursor gets before the next page is
   /// requested — in rows of the *visible* (filtered) list, because that is
@@ -235,7 +241,7 @@ class RaGamesTabState extends State<RaGamesTab> {
 
   bool _switchFilter(int delta) {
     final provider = context.read<RetroAchievementsProvider>();
-    final values = RaGamesFilter.values;
+    final values = _visibleFilters;
     final current = values.indexOf(provider.gamesFilter);
     final next = values[(current + delta + values.length) % values.length];
     _applyFilter(provider, next);
@@ -257,6 +263,10 @@ class RaGamesTabState extends State<RaGamesTab> {
       _resetSelection();
     }
     setState(() {});
+    final token = ++_filterLoadToken;
+    if (filter != RaGamesFilter.all) {
+      unawaited(_ensureFilterResults(provider, token));
+    }
   }
 
   // --- Fetch orchestration (the hub pattern, scoped to the games list) -----
@@ -275,7 +285,32 @@ class RaGamesTabState extends State<RaGamesTab> {
     // and forth between sub-tabs costs nothing.
     if (provider.gamesListLoaded && !provider.gamesListIsStale) return;
     _resetSelection();
-    unawaited(provider.loadGamesPage(reset: true));
+    unawaited(_loadListAndSatisfyFilter(provider));
+  }
+
+  Future<void> _loadListAndSatisfyFilter(
+    RetroAchievementsProvider provider,
+  ) async {
+    final loaded = await provider.loadGamesPage(reset: true);
+    if (!loaded || !mounted || !widget.active) return;
+    final token = _filterLoadToken;
+    if (provider.gamesFilter != RaGamesFilter.all) {
+      await _ensureFilterResults(provider, token);
+    }
+  }
+
+  Future<void> _ensureFilterResults(
+    RetroAchievementsProvider provider,
+    int token,
+  ) async {
+    bool shouldContinue() =>
+        mounted && widget.active && token == _filterLoadToken;
+
+    while (provider.gamesListLoading && shouldContinue()) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    if (!shouldContinue() || provider.gamesFilter == RaGamesFilter.all) return;
+    await provider.ensureGamesFilterResults(shouldContinue: shouldContinue);
   }
 
   /// Reloads when the cached reads were invalidated under us — a finished
@@ -397,14 +432,14 @@ class RaGamesTabState extends State<RaGamesTab> {
   ) {
     return Row(
       children: [
-        for (final filter in RaGamesFilter.values) ...[
+        for (final filter in _visibleFilters) ...[
           _FilterChip(
             label: switch (filter) {
               RaGamesFilter.all => AppLocale.filterAll.getString(context),
               RaGamesFilter.mastered => AppLocale.raFilterMastered.getString(
                 context,
               ),
-              RaGamesFilter.completed => AppLocale.raFilterCompleted.getString(
+              RaGamesFilter.beaten => AppLocale.raFilterBeaten.getString(
                 context,
               ),
             },
@@ -415,7 +450,7 @@ class RaGamesTabState extends State<RaGamesTab> {
               _applyFilter(provider, filter);
             },
           ),
-          if (filter != RaGamesFilter.values.last) SizedBox(width: 6.r),
+          if (filter != _visibleFilters.last) SizedBox(width: 6.r),
         ],
       ],
     );
@@ -462,9 +497,7 @@ class RaGamesTabState extends State<RaGamesTab> {
             RaGamesFilter.mastered => AppLocale.raNoMasteriesYet.getString(
               context,
             ),
-            RaGamesFilter.completed => AppLocale.raNoCompletionsYet.getString(
-              context,
-            ),
+            RaGamesFilter.beaten => AppLocale.raNoBeatenYet.getString(context),
           },
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(
@@ -669,13 +702,17 @@ class RaGamesTabState extends State<RaGamesTab> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (item.isMastered || item.isCompleted) ...[
+                      if (item.isBeaten) ...[
                         _awardChip(
                           context,
                           label: item.isMastered
                               ? AppLocale.raMasteryLabel.getString(context)
-                              : AppLocale.raCompletionLabel.getString(context),
-                          color: item.isMastered ? goldColor : silverColor,
+                              : item.isCompleted
+                              ? AppLocale.raCompletionLabel.getString(context)
+                              : AppLocale.raFilterBeaten.getString(context),
+                          color: item.awardMode == 'hardcore' || item.isMastered
+                              ? goldColor
+                              : silverColor,
                         ),
                         SizedBox(height: 4.r),
                       ],
@@ -704,10 +741,16 @@ class RaGamesTabState extends State<RaGamesTab> {
   String _subtitle(BuildContext context, RaGamesListItem item) {
     final date = item.sortDate;
     final console = item.consoleName;
+    final mode = item.awardMode == 'hardcore'
+        ? AppLocale.raHardcore.getString(context)
+        : item.awardMode == 'softcore'
+        ? AppLocale.raCasual.getString(context)
+        : null;
+    final suffix = mode == null ? '' : ' · $mode';
     if (date == null || console.isEmpty) {
-      return date == null ? console : _formatDate(date);
+      return '${date == null ? console : _formatDate(date)}$suffix';
     }
-    return '$console • ${_formatDate(date)}';
+    return '$console • ${_formatDate(date)}$suffix';
   }
 
   /// The hardcore/casual split as a two-tone bar: the gold segment is the

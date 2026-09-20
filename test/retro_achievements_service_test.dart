@@ -287,28 +287,6 @@ void main() {
       },
     );
 
-    test('requests and parses the top-ten feed', () async {
-      late Uri requestedUri;
-      final client = MockClient((request) async {
-        requestedUri = request.url;
-        return http.Response(
-          '[{"1":"TopPlayer","2":399597,"3":1599212,"4":"01TOP"}]',
-          200,
-        );
-      });
-
-      final users = await RetroAchievementsService.getTopTenUsers(
-        apiKey: 'secret-key',
-        client: client,
-      );
-
-      expect(requestedUri.path, '/API/API_GetTopTenUsers.php');
-      expect(requestedUri.queryParameters['y'], 'secret-key');
-      expect(users.single.username, 'TopPlayer');
-      expect(users.single.totalPoints, 399597);
-      expect(users.single.ulid, '01TOP');
-    });
-
     test(
       'user awards expose mastery and completion rows via AwardDataExtra mode',
       () {

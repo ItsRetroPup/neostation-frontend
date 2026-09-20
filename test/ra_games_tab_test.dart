@@ -61,7 +61,7 @@ void main() {
     // The chips row is part of the tab, All selected first.
     expect(find.text('All'), findsOneWidget);
     expect(find.text('Mastered'), findsOneWidget);
-    expect(find.text('Completed'), findsOneWidget);
+    expect(find.text('Beaten'), findsOneWidget);
     // More pages exist, so the end-of-list label must not.
     expect(find.text(raGamesEndOfListText), findsNothing);
     // The first row holds the cursor.
@@ -162,9 +162,9 @@ void main() {
     final state = tabKey.currentState!;
     state.handleNavigateUp(); // arm the chips
 
-    // Left from All wraps to Completed.
+    // Left from All wraps to Beaten.
     expect(state.handleNavigateLeft(), isTrue);
-    expect(provider.gamesFilter, RaGamesFilter.completed);
+    expect(provider.gamesFilter, RaGamesFilter.beaten);
     await tester.pump();
     expect(find.text('Game 2'), findsOneWidget);
     expect(find.text('Game 0'), findsNothing);
@@ -177,7 +177,7 @@ void main() {
     await tester.pump();
     expect(find.text('Game 1'), findsOneWidget);
     expect(state.handleNavigateRight(), isTrue);
-    expect(provider.gamesFilter, RaGamesFilter.completed);
+    expect(provider.gamesFilter, RaGamesFilter.beaten);
     await tester.pump();
 
     // Left/Right on the rows themselves are silent.
@@ -238,13 +238,13 @@ void main() {
     state.activateCurrent();
     expect(activated.single.gameId, 201);
 
-    // A filter that hides every row lands the tab somewhere honest: the
-    // per-filter empty state, and A has nothing to activate.
-    expect(state.handleNavigateRight(), isTrue); // Mastered → Completed
+    // Beaten includes mastered games, so the same row remains available under
+    // the broader filter.
+    expect(state.handleNavigateRight(), isTrue); // Mastered → Beaten
     await tester.pump();
-    expect(find.text('No completions yet'), findsOneWidget);
+    expect(find.text('Game 1'), findsOneWidget);
     state.activateCurrent();
-    expect(activated.length, 1);
+    expect(activated.length, 2);
 
     await _disposeTab(tester);
   });
@@ -610,8 +610,8 @@ class _TabProvider extends RetroAchievementsProvider {
         return items;
       case RaGamesFilter.mastered:
         return items.where((item) => item.isMastered).toList();
-      case RaGamesFilter.completed:
-        return items.where((item) => item.isCompleted).toList();
+      case RaGamesFilter.beaten:
+        return items.where((item) => item.isBeaten).toList();
     }
   }
 
