@@ -333,19 +333,33 @@ class RetroAchievementsService {
 
   static const String apiGetUserAwards = 'API_GetUserAwards.php';
 
+  /// The user's recent achievement unlocks (`API_GetUserRecentAchievements`).
+  ///
+  /// Without [count]/[offset] this is the dashboard's preview read — the
+  /// server's default page, cached whole under the legacy key. With them it is
+  /// one page of the see-all list: the parameters land in the query (`c`
+  /// count, `o` offset, the endpoint's documented maximum of 500 enforced
+  /// here) and in the cache key, because two offsets are different reads and
+  /// must never replay each other's payload — the mistake the recently-played
+  /// key carries latently (its caller has only ever used the defaults).
   static Future<List<RetroAchievementRecentUnlockItem>>
   getUserRecentAchievements(
     String username, {
     int minutes = 43200,
+    int? count,
+    int? offset,
     String? apiKey,
     http.Client? client,
   }) async {
+    final paginated = count != null || offset != null;
     final url = Uri.parse('$_baseUrl/API_GetUserRecentAchievements.php')
         .replace(
           queryParameters: {
             'u': username,
             'm': minutes.toString(),
             'y': resolveApiKey(apiKey),
+            if (count != null) 'c': count.clamp(1, 500).toString(),
+            if (offset != null) 'o': offset.clamp(0, 1 << 31).toString(),
           },
         );
 
@@ -355,7 +369,9 @@ class RetroAchievementsService {
     };
 
     return _fetchWithCache<List<RetroAchievementRecentUnlockItem>>(
-      cacheKey: 'recent_unlocks_$username',
+      cacheKey: paginated
+          ? 'recent_unlocks_${username}_${count ?? 0}_${offset ?? 0}'
+          : 'recent_unlocks_$username',
       send: () => client == null
           ? http.get(url, headers: headers)
           : client.get(url, headers: headers),

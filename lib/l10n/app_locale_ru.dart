@@ -1156,6 +1156,11 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.deleteGameSubtitle: 'Навсегда удаляет ROM-файл с диска',
 
   AppLocale.raSubtabDashboard: 'Панель',
+  AppLocale.raSubtabUnlocks: 'Достижения',
+  AppLocale.raHardcore: 'Хардкор',
+  AppLocale.raUnlocksEndOfList: 'Это все достижения за последние 30 дней',
+  AppLocale.raUnlockGameNotOwned:
+      'Этой игры нет ни в вашей библиотеке, ни в RomM',
   AppLocale.raCompletionsLabel: 'Прохождения',
   AppLocale.raMasteriesLabel: 'Мастерства',
   AppLocale.raPointsAbbrev: 'очк.',

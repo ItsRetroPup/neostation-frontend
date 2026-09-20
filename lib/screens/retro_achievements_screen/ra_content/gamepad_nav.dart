@@ -48,6 +48,10 @@ extension _GamepadNav on _RAContentState {
         _setStripFocused(false);
         return;
       }
+      if (_activeSubTab == RaSubTab.unlocks) {
+        _unlocksKey.currentState?.activateCurrent();
+        return;
+      }
       if (_logoutSelected) {
         _requestDisconnect();
         return;
@@ -96,9 +100,8 @@ extension _GamepadNav on _RAContentState {
   }
 
   /// Steps the sub-tab cursor by [delta] with wrap-around. Only the sound
-  /// contract cares about the return: with a single sub-tab there is nothing
-  /// to switch, so the press is a silent no-op rather than a wrap onto
-  /// itself.
+  /// contract cares about the return: the caller plays the switch sound when
+  /// a press actually changed the sub-tab.
   bool _switchSubTab(int delta) {
     final tabs = RaSubTab.values;
     if (tabs.length < 2) return false;
@@ -133,17 +136,21 @@ extension _GamepadNav on _RAContentState {
   /// Returns whether the selection/scroll actually moved, so the gamepad
   /// handler can suppress the nav sound at a boundary.
   ///
-  /// From the top of the dashboard, Up parks the cursor on the sub-tab strip
-  /// instead of scrolling nowhere — but only once the press has nothing
-  /// finer to do inside the content: releasing the week card still counts as
-  /// the move, so a selected card costs one Up to clear and a second to
-  /// reach the strip.
+  /// From the top of the active sub-tab's content, Up parks the cursor on
+  /// the sub-tab strip instead of scrolling nowhere. Per sub-tab: the
+  /// dashboard releases its week card first (the finer move), then scrolls,
+  /// then parks; the Unlocks list has no finer move than its top row, so
+  /// Up past the first row parks immediately.
   bool _handleNavigateUp() {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) {
       return moveSelection(-1);
     }
     if (_stripFocused) return false;
+    if (_activeSubTab == RaSubTab.unlocks) {
+      final moved = _unlocksKey.currentState?.moveSelection(-1) ?? false;
+      return moved || _setStripFocused(true);
+    }
     final released = _setWeekCardSelected(false);
     final scrolled = _scrollDashboard(-160.r);
     if (scrolled || released) return true;
@@ -151,21 +158,23 @@ extension _GamepadNav on _RAContentState {
     return false;
   }
 
-  /// Down steps onto the dashboard's one actionable card before it starts
-  /// scrolling, so the card is reachable without knowing to press Left.
+  /// Down is the cursor step inside whichever sub-tab is open. Per sub-tab:
+  /// the dashboard steps onto its one actionable card before scrolling —
+  /// only from the top and at rest, because selecting a card already
+  /// scrolled out of view would arm a highlight the player cannot see; the
+  /// Unlocks list walks its rows, and at the wall of loaded rows the press
+  /// requests the next page (a silent boundary only at the true end).
   ///
-  /// Only from the top, and only at rest: selecting a card that has already
-  /// scrolled out of view would leave the highlight invisible, which is the
-  /// same trap [_scrollHeaderIntoView] exists to keep the logout button out of.
-  /// Once the card is selected — or the cursor is parked on logout — Down goes
-  /// back to being a plain scroll.
+  /// From the strip, Down is how it hands the cursor back: the sub-tab's own
+  /// cursor (scroll position, parked selection) is where it always was,
+  /// because switching zones tears nothing down.
   bool _handleNavigateDown() {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) return moveSelection(1);
-    // Down is how the strip hands the cursor back: the sub-tab's own cursor
-    // (scroll position, parked selection) is where it always was, because
-    // switching zones tears nothing down.
     if (_stripFocused) return _setStripFocused(false);
+    if (_activeSubTab == RaSubTab.unlocks) {
+      return _unlocksKey.currentState?.moveSelection(1) ?? false;
+    }
     if (!_logoutSelected &&
         !_weekCardSelected &&
         _dashboardKey.currentState?.weekCardSelectable == true &&
@@ -184,7 +193,10 @@ extension _GamepadNav on _RAContentState {
     return position.pixels <= position.minScrollExtent + 1;
   }
 
-  /// Right parks the cursor on the header's logout button.
+  /// Right parks the cursor on the header's logout button — the dashboard's
+  /// one in-content horizontal axis. The Unlocks list has no in-row actions,
+  /// so there Right (and Left) are silent; their press is spent on the strip
+  /// only, which is one Up away.
   ///
   /// The header scrolls with the content, so anything below the top has to come
   /// back into view first — parking on a button that is off screen would leave
@@ -192,6 +204,7 @@ extension _GamepadNav on _RAContentState {
   bool _handleNavigateRight() {
     if (!context.read<RetroAchievementsProvider>().isConnected) return false;
     if (_stripFocused) return _switchSubTab(1);
+    if (_activeSubTab == RaSubTab.unlocks) return false;
     if (_logoutSelected) return false;
     _setWeekCardSelected(false);
     _scrollHeaderIntoView();
@@ -206,6 +219,7 @@ extension _GamepadNav on _RAContentState {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) return false;
     if (_stripFocused) return _switchSubTab(-1);
+    if (_activeSubTab == RaSubTab.unlocks) return false;
     final released = _logoutSelected ? _setLogoutSelected(false) : false;
     if (_dashboardKey.currentState?.weekCardSelectable != true) {
       return released;

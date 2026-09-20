@@ -98,6 +98,22 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool _recentUnlocksLoading = false;
   String? _recentUnlocksError;
 
+  /// The see-all Unlocks sub-tab's page accumulator. Deliberately separate
+  /// from [_recentUnlocks]: the dashboard preview is one server-default read
+  /// capped at five rows, while this list paginates through everything the
+  /// 30-day window holds, so the two must never overwrite each other.
+  List<RetroAchievementRecentUnlockItem> _unlocksListItems = [];
+  bool _unlocksListLoaded = false;
+  bool _unlocksListLoading = false;
+  bool _unlocksListHasMore = true;
+  String? _unlocksListError;
+
+  /// Where the next see-all page starts. Advances by the page length, not by
+  /// [unlocksPageSize], so a short final page still leaves the offset pointing
+  /// past the data (which is what makes [loadUnlocksPage] a no-op from then
+  /// on, even before [_unlocksListHasMore] is consulted).
+  int _unlocksListOffset = 0;
+
   List<RetroAchievementRecentlyPlayedGameItem> _recentlyPlayedGames = [];
   bool _recentlyPlayedLoaded = false;
   bool _recentlyPlayedLoading = false;
@@ -157,6 +173,14 @@ class RetroAchievementsProvider extends ChangeNotifier {
   bool get recentUnlocksLoaded => _recentUnlocksLoaded;
   bool get recentUnlocksLoading => _recentUnlocksLoading;
   String? get recentUnlocksError => _recentUnlocksError;
+
+  /// The see-all Unlocks list: every row accumulated so far, across pages.
+  List<RetroAchievementRecentUnlockItem> get unlocksListItems =>
+      _unlocksListItems;
+  bool get unlocksListLoaded => _unlocksListLoaded;
+  bool get unlocksListLoading => _unlocksListLoading;
+  bool get unlocksListHasMore => _unlocksListHasMore;
+  String? get unlocksListError => _unlocksListError;
   List<RetroAchievementRecentlyPlayedGameItem> get recentlyPlayedGames =>
       _recentlyPlayedGames;
   bool get recentlyPlayedLoaded => _recentlyPlayedLoaded;
@@ -486,6 +510,24 @@ class RetroAchievementsProvider extends ChangeNotifier {
   /// Records that a dashboard load attempt has just finished.
   void markDashboardAttempted() => _dashboardAttemptedAt = DateTime.now();
 
+  /// When the see-all Unlocks list last finished a load *attempt* — the same
+  /// attempt-based semantics as [_dashboardAttemptedAt], for the same reason:
+  /// a failing endpoint should be retried on the next entry, not on every
+  /// entry, and a success should not be re-fetched just because the player
+  /// walked between sub-tabs.
+  DateTime? _unlocksListAttemptedAt;
+
+  /// Whether entering the Unlocks sub-tab should re-read the list. Shares
+  /// [dashboardStaleAfter]: both are "recent activity" reads of the same
+  /// account, and one window for both keeps the mental model to a single
+  /// number.
+  bool get unlocksListIsStale =>
+      _unlocksListAttemptedAt == null ||
+      DateTime.now().difference(_unlocksListAttemptedAt!) > dashboardStaleAfter;
+
+  /// Records that an Unlocks list load attempt has just finished.
+  void markUnlocksListAttempted() => _unlocksListAttemptedAt = DateTime.now();
+
   /// Drops every cached RetroAchievements read so the next look re-fetches.
   ///
   /// [_gameInfoCache] and the dashboard's `*Loaded` flags both live for the
@@ -522,6 +564,13 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _recentUnlocksLoaded = false;
     _recentlyPlayedLoaded = false;
     _completionProgressLoaded = false;
+    // The see-all list goes stale the same way: a mounted Unlocks sub-tab
+    // watches the generation and reloads from its first page, and one that is
+    // merely parked behind another sub-tab re-reads on its next activation.
+    // Items are left in place — the reset happens in loadUnlocksPage, so a
+    // parked tab keeps its rows on screen until the moment it refetches.
+    _unlocksListLoaded = false;
+    _unlocksListAttemptedAt = null;
     notifyListeners();
   }
 
@@ -636,6 +685,16 @@ class RetroAchievementsProvider extends ChangeNotifier {
     _recentUnlocksLoaded = false;
     _recentUnlocksLoading = false;
     _recentUnlocksError = null;
+    // The see-all list is per-account too: a different user signing in must
+    // never inherit the previous one's rows (the page cache keys carry the
+    // username, so the refetch re-keys itself).
+    _unlocksListItems = [];
+    _unlocksListLoaded = false;
+    _unlocksListLoading = false;
+    _unlocksListHasMore = true;
+    _unlocksListError = null;
+    _unlocksListOffset = 0;
+    _unlocksListAttemptedAt = null;
     _recentlyPlayedGames = [];
     _recentlyPlayedLoaded = false;
     _recentlyPlayedLoading = false;
@@ -865,6 +924,81 @@ class RetroAchievementsProvider extends ChangeNotifier {
     }
   }
 
+  /// Page size for the see-all Unlocks list ([loadUnlocksPage]). 50 sits in
+  /// the plan's 50–100 band: small enough that a page renders before the next
+  /// arrives, large enough that the whole 30-day window is usually one or two
+  /// presses of Down at the end of the list.
+  static const int unlocksPageSize = 50;
+
+  /// Loads one page of the see-all Unlocks list.
+  ///
+  /// [reset] starts over from offset 0 — first entry into the sub-tab, the
+  /// REFRESH action, or the staleness window elapsing. Without it, the next
+  /// page appends (the "load more as the cursor approaches the end" path).
+  /// A short page is the end of the data; a failed append keeps the rows
+  /// already on screen and leaves the error for the list footer, while a
+  /// failed reset empties the list so the full error state shows.
+  Future<bool> loadUnlocksPage({bool reset = false}) async {
+    if (!_isConnected || _username.isEmpty) return false;
+    if (_unlocksListLoading) return false;
+    if (!reset && !_unlocksListHasMore) return false;
+
+    if (!hasResolvedApiKey) {
+      _unlocksListItems = [];
+      _unlocksListLoaded = false;
+      _unlocksListHasMore = false;
+      _unlocksListOffset = 0;
+      _unlocksListError = AppLocale.raErrorApiKeyRequired
+          .getStringForCurrentLocale();
+      notifyListeners();
+      return false;
+    }
+
+    final offset = reset ? 0 : _unlocksListOffset;
+    // Stamped up front for the same reason [markDashboardAttempted] is: the
+    // stamp is what stops a re-entry from starting a duplicate page while
+    // this one is still in flight.
+    markUnlocksListAttempted();
+
+    _unlocksListLoading = true;
+    _unlocksListError = null;
+    if (reset) {
+      _unlocksListItems = [];
+      _unlocksListOffset = 0;
+      _unlocksListHasMore = true;
+      _unlocksListLoaded = false;
+    }
+    notifyListeners();
+
+    try {
+      final page = await RetroAchievementsService.getUserRecentAchievements(
+        _username,
+        apiKey: _apiKey,
+        count: unlocksPageSize,
+        offset: offset,
+      );
+      _unlocksListItems = [..._unlocksListItems, ...page];
+      _unlocksListOffset = offset + page.length;
+      _unlocksListHasMore = page.length == unlocksPageSize;
+      _unlocksListLoaded = true;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      // A failed reset already emptied the list when it started, so the full
+      // error state shows; a failed append keeps the rows on screen and
+      // leaves the error for the footer — the list stays usable.
+      _unlocksListError = _describeApiError(
+        e,
+        AppLocale.raErrorLoadRecentUnlocks,
+      );
+      _log.e(_unlocksListError ?? 'Unknown unlocks page error');
+      return false;
+    } finally {
+      _unlocksListLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> _resolveOwnedWeekGame() async {
     final raGameId = _gotw?.game.id;
     if (raGameId == null || raGameId <= 0) {
@@ -891,6 +1025,23 @@ class RetroAchievementsProvider extends ChangeNotifier {
     if (_gotw == null) return;
     await _resolveOwnedWeekGame();
     notifyListeners();
+  }
+
+  /// Resolves the local library entry for an arbitrary RA game id — the same
+  /// query the AOTW link uses, exposed for drill-downs that start from rows
+  /// the dashboard doesn't pre-resolve (see-all unlock entries). Returns null
+  /// when the player owns no matching ROM; failures resolve to null rather
+  /// than throw so a drill-down falls through to its RomM/notice branches.
+  Future<OwnedWeekGameResolution?> resolveLocalGameForRaId(int raGameId) async {
+    if (raGameId <= 0) return null;
+    try {
+      return await RetroAchievementsRepository.findBestLocalGameByRaGameId(
+        raGameId,
+      );
+    } catch (e) {
+      _log.e('Error resolving local game for RA id $raGameId: $e');
+      return null;
+    }
   }
 
   Future<void> _resolveAotwPersonalProgress() async {

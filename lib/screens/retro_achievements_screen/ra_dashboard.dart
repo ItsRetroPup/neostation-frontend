@@ -30,6 +30,14 @@ class RADashboardHub extends StatefulWidget {
   final VoidCallback onDisconnectRequested;
   final ValueChanged<OwnedWeekGameResolution> onOwnedWeekGameSelected;
 
+  /// Whether the dashboard sub-tab is the one on screen. The shell's
+  /// IndexedStack keeps this hub mounted while another sub-tab is open, so
+  /// this flag — not mounting — is what decides whether a generation bump
+  /// (refresh, finished session) reloads *now* or waits for the next
+  /// activation, when the staleness window sends the same reload through the
+  /// entry path.
+  final bool active;
+
   const RADashboardHub({
     super.key,
     this.scrollController,
@@ -37,6 +45,7 @@ class RADashboardHub extends StatefulWidget {
     required this.weekCardSelected,
     required this.onDisconnectRequested,
     required this.onOwnedWeekGameSelected,
+    this.active = true,
   });
 
   @override
@@ -44,8 +53,6 @@ class RADashboardHub extends StatefulWidget {
 }
 
 class RADashboardHubState extends State<RADashboardHub> {
-  bool _requestedInitialLoad = false;
-
   /// Timer used to avoid starting heavy dashboard network loads when the user
   /// is just quickly passing through this tab.
   Timer? _dashboardLoadTimer;
@@ -96,21 +103,44 @@ class RADashboardHubState extends State<RADashboardHub> {
       provider.addListener(_onProviderChanged);
     }
     _resolveRommWeekGame(provider);
-    // Entering the tab re-reads anything past its staleness window, which is
-    // what stands in for a refresh control: leaving and coming back is the
-    // gesture. Without it the dashboard was a once-per-app-session snapshot —
-    // a section that failed, an unlock earned on another device, or the
-    // offline banner from a launch with no network, all stuck until restart.
-    if (!_requestedInitialLoad &&
-        provider.isConnected &&
-        (!provider.dashboardLoaded || provider.dashboardIsStale) &&
-        !provider.isDashboardLoading) {
-      _requestedInitialLoad = true;
-      _dashboardLoadTimer?.cancel();
-      _dashboardLoadTimer = Timer(const Duration(milliseconds: 300), () {
-        if (mounted) _loadDashboard(provider);
-      });
+    _maybeScheduleInitialLoad(provider);
+  }
+
+  @override
+  void didUpdateWidget(RADashboardHub oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The shell's IndexedStack never unmounts this hub while another sub-tab
+    // is open, so a sub-tab switch arrives here rather than as a
+    // dependencies change.
+    if (widget.active && !oldWidget.active) {
+      _maybeScheduleInitialLoad(
+        _provider ?? context.read<RetroAchievementsProvider>(),
+      );
     }
+  }
+
+  /// Re-reads anything past its staleness window when the dashboard sub-tab
+  /// is (or becomes) the one on screen — leaving and coming back is the
+  /// refresh gesture. Without it the dashboard was a once-per-app-session
+  /// snapshot: a section that failed, an unlock earned on another device, or
+  /// the offline banner from a launch with no network, all stuck until
+  /// restart.
+  ///
+  /// Re-checked on every activation rather than once per mount: the sub-tab
+  /// shell keeps this state alive across switches, so "I'll look at Unlocks
+  /// for a bit and come back" has to find the same staleness rule as walking
+  /// away from the app tab entirely.
+  void _maybeScheduleInitialLoad(RetroAchievementsProvider provider) {
+    if (!widget.active || !provider.isConnected) return;
+    if (provider.isDashboardLoading) return;
+    if (provider.dashboardLoaded && !provider.dashboardIsStale) return;
+    _dashboardLoadTimer?.cancel();
+    _dashboardLoadTimer = Timer(const Duration(milliseconds: 300), () {
+      // A sub-tab switch while the dwell is still running must not let the
+      // parked dashboard fire its load off-stage; the next activation
+      // re-runs the same staleness check that scheduled this one.
+      if (mounted && widget.active) _loadDashboard(provider);
+    });
   }
 
   @override

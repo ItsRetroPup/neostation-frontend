@@ -1185,6 +1185,12 @@ const Map<String, dynamic> appLocaleEs = {
       'Esto eliminará permanentemente el ROM del juego, sus datos escrapeados y archivos multimedia. Esta acción no se puede deshacer.',
   AppLocale.deleteGameSubtitle: 'Elimina el archivo ROM del disco',
   AppLocale.raSubtabDashboard: 'Panel',
+  AppLocale.raSubtabUnlocks: 'Logros',
+  AppLocale.raHardcore: 'Hardcore',
+  AppLocale.raUnlocksEndOfList:
+      'Esos son todos los logros de los últimos 30 días',
+  AppLocale.raUnlockGameNotOwned:
+      'Este juego no está en tu biblioteca ni en RomM',
   AppLocale.raCompletionsLabel: 'Completados',
   AppLocale.raMasteriesLabel: 'Dominados',
   AppLocale.raPointsAbbrev: 'pts',

@@ -27,15 +27,19 @@ extension _DataLoading on RADashboardHubState {
   /// game session, or when the user pressed refresh. Deliberately keyed to the
   /// generation counter and not to `dashboardLoaded`: a section that failed
   /// leaves that flag false too, and retrying on it would loop.
+  ///
+  /// Only while the dashboard is the sub-tab on screen: a refresh pressed on
+  /// another sub-tab is that sub-tab's business, and this one catches up on
+  /// its next activation, when the invalidation's staleness reset sends the
+  /// same reload through the entry path.
   void _onProviderChanged() {
     final provider = _provider;
     if (provider == null || !mounted) return;
     _resolveRommWeekGame(provider);
     if (provider.cacheGeneration == _seenCacheGeneration) return;
     _seenCacheGeneration = provider.cacheGeneration;
-    if (!provider.isConnected) return;
+    if (!provider.isConnected || !widget.active) return;
     _dashboardLoadTimer?.cancel();
-    _requestedInitialLoad = true;
     // ignore: unawaited_futures
     _loadDashboard(provider);
   }

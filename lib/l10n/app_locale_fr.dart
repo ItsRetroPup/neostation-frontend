@@ -1194,6 +1194,11 @@ const Map<String, dynamic> appLocaleFr = {
       'Supprime définitivement le fichier ROM du disque',
 
   AppLocale.raSubtabDashboard: 'Tableau de bord',
+  AppLocale.raSubtabUnlocks: 'Succès',
+  AppLocale.raHardcore: 'Hardcore',
+  AppLocale.raUnlocksEndOfList: 'Ce sont tous les succès des 30 derniers jours',
+  AppLocale.raUnlockGameNotOwned:
+      "Ce jeu n'est ni dans votre bibliothèque ni dans RomM",
   AppLocale.raCompletionsLabel: 'Complétions',
   AppLocale.raMasteriesLabel: 'Maîtrises',
   AppLocale.raPointsAbbrev: 'pts',

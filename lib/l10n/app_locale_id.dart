@@ -1158,6 +1158,11 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.deleteGameSubtitle: 'Menghapus permanen file ROM dari disk',
 
   AppLocale.raSubtabDashboard: 'Dasbor',
+  AppLocale.raSubtabUnlocks: 'Pencapaian',
+  AppLocale.raHardcore: 'Hardcore',
+  AppLocale.raUnlocksEndOfList: 'Itu semua pencapaian dari 30 hari terakhir',
+  AppLocale.raUnlockGameNotOwned:
+      'Game ini tidak ada di pustaka atau RomM Anda',
   AppLocale.raCompletionsLabel: 'Penyelesaian',
   AppLocale.raMasteriesLabel: 'Penguasaan',
   AppLocale.raPointsAbbrev: 'poin',

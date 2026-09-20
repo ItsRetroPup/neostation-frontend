@@ -1050,6 +1050,10 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.deleteGameSubtitle: 'ROMファイルをディスクから完全に削除します',
 
   AppLocale.raSubtabDashboard: 'ダッシュボード',
+  AppLocale.raSubtabUnlocks: '解除',
+  AppLocale.raHardcore: 'ハードコア',
+  AppLocale.raUnlocksEndOfList: '過去30日間の解除はこれですべてです',
+  AppLocale.raUnlockGameNotOwned: 'このゲームはライブラリにもRomMにもありません',
   AppLocale.raCompletionsLabel: 'コンプリート',
   AppLocale.raMasteriesLabel: 'マスター',
   AppLocale.raPointsAbbrev: 'pt',

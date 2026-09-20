@@ -1185,6 +1185,12 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.deleteGameSubtitle: 'Rimuove permanentemente il file ROM dal disco',
 
   AppLocale.raSubtabDashboard: 'Pannello',
+  AppLocale.raSubtabUnlocks: 'Obiettivi',
+  AppLocale.raHardcore: 'Hardcore',
+  AppLocale.raUnlocksEndOfList:
+      'Questi sono tutti gli obiettivi degli ultimi 30 giorni',
+  AppLocale.raUnlockGameNotOwned:
+      'Questo gioco non è nella tua libreria né in RomM',
   AppLocale.raCompletionsLabel: 'Completamenti',
   AppLocale.raMasteriesLabel: 'Padronanze',
   AppLocale.raPointsAbbrev: 'pt',

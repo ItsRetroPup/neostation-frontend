@@ -116,6 +116,33 @@ void main() {
       expect(requestedUri.queryParameters['u'], 'Scott');
       expect(requestedUri.queryParameters['m'], '43200');
       expect(requestedUri.queryParameters['y'], 'secret-key');
+      // The dashboard's preview call stays byte-identical to its pre-see-all
+      // form: the pagination parameters only exist when asked for.
+      expect(requestedUri.queryParameters.containsKey('c'), isFalse);
+      expect(requestedUri.queryParameters.containsKey('o'), isFalse);
+      expect(result.single.gameId, 14715);
+    });
+
+    test('paginates the see-all list with count and offset', () async {
+      late Uri requestedUri;
+      final client = MockClient((request) async {
+        requestedUri = request.url;
+        return http.Response(
+          '[{"Date":"2023-12-27 16:04:50","HardcoreMode":1,"AchievementID":98012,"Title":"Beginner I","Description":"Clear stages 01 - 05 in Quest.","BadgeName":"108302","Points":5,"TrueRatio":25,"Type":null,"Author":"jos","AuthorULID":"ULID","GameTitle":"Pokemon Pinball mini","GameIcon":"/Images/028399.png","GameID":14715,"ConsoleName":"Pokemon Mini","BadgeURL":"/Badge/108302.png","GameURL":"/game/14715"}]',
+          200,
+        );
+      });
+
+      final result = await RetroAchievementsService.getUserRecentAchievements(
+        'Scott',
+        count: 50,
+        offset: 50,
+        apiKey: 'secret-key',
+        client: client,
+      );
+
+      expect(requestedUri.queryParameters['c'], '50');
+      expect(requestedUri.queryParameters['o'], '50');
       expect(result.single.gameId, 14715);
     });
 
@@ -366,6 +393,73 @@ void main() {
           );
         },
       );
+
+      test('caches see-all pages under per-page keys', () async {
+        // One row per page, differing by game id, so a replay from the wrong
+        // key is obvious.
+        const pageOne =
+            '[{"Date":"2023-12-27 16:04:50","HardcoreMode":1,'
+            '"AchievementID":98012,"Title":"Beginner I","Description":"Clear",'
+            '"BadgeName":"108302","Points":5,"TrueRatio":25,"Type":null,'
+            '"Author":"jos","AuthorULID":"ULID","GameTitle":"Pinball mini",'
+            '"GameIcon":"/Images/028399.png","GameID":14715,'
+            '"ConsoleName":"Pokemon Mini","BadgeURL":"/Badge/108302.png",'
+            '"GameURL":"/game/14715"}]';
+        const pageTwo =
+            '[{"Date":"2023-12-28 16:04:50","HardcoreMode":1,'
+            '"AchievementID":98013,"Title":"Beginner II","Description":"Clear",'
+            '"BadgeName":"108303","Points":5,"TrueRatio":25,"Type":null,'
+            '"Author":"jos","AuthorULID":"ULID","GameTitle":"Pinball mini",'
+            '"GameIcon":"/Images/028399.png","GameID":99999,'
+            '"ConsoleName":"Pokemon Mini","BadgeURL":"/Badge/108303.png",'
+            '"GameURL":"/game/99999"}]';
+
+        // Prime both pages live.
+        for (final (body, offset) in [(pageOne, 0), (pageTwo, 50)]) {
+          final page = await RetroAchievementsService.getUserRecentAchievements(
+            'Paged',
+            count: 50,
+            offset: offset,
+            apiKey: 'secret-key',
+            client: MockClient((request) async => http.Response(body, 200)),
+          );
+          expect(page.single.gameId, offset == 0 ? 14715 : 99999);
+        }
+
+        // Offline, each page replays its own rows: two pages of one list
+        // must never collide on one key.
+        final offline = MockClient(
+          (request) async =>
+              throw const SocketException('Network is unreachable'),
+        );
+        final replayOne =
+            await RetroAchievementsService.getUserRecentAchievements(
+              'Paged',
+              count: 50,
+              offset: 0,
+              apiKey: 'secret-key',
+              client: offline,
+            );
+        expect(replayOne.single.gameId, 14715);
+        expect(
+          RetroAchievementsCache.servedFromCache('recent_unlocks_Paged_50_0'),
+          isTrue,
+        );
+
+        final replayTwo =
+            await RetroAchievementsService.getUserRecentAchievements(
+              'Paged',
+              count: 50,
+              offset: 50,
+              apiKey: 'secret-key',
+              client: offline,
+            );
+        expect(replayTwo.single.gameId, 99999);
+        expect(
+          RetroAchievementsCache.servedFromCache('recent_unlocks_Paged_50_50'),
+          isTrue,
+        );
+      });
     });
   });
 }

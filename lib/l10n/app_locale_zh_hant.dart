@@ -1025,6 +1025,10 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.deleteGameSubtitle: '從磁碟上永久刪除 ROM 檔案',
 
   AppLocale.raSubtabDashboard: '主頁',
+  AppLocale.raSubtabUnlocks: '解鎖',
+  AppLocale.raHardcore: '硬核',
+  AppLocale.raUnlocksEndOfList: '已顯示過去 30 天的所有解鎖',
+  AppLocale.raUnlockGameNotOwned: '此遊戲不在你的媒體庫或 RomM 中',
   AppLocale.raCompletionsLabel: '完成',
   AppLocale.raMasteriesLabel: '精通',
   AppLocale.raPointsAbbrev: '分',

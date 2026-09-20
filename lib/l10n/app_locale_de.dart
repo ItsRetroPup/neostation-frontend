@@ -1191,6 +1191,12 @@ const Map<String, dynamic> appLocaleDe = {
       'Entfernt die ROM-Datei dauerhaft von der Festplatte',
 
   AppLocale.raSubtabDashboard: 'Übersicht',
+  AppLocale.raSubtabUnlocks: 'Freischaltungen',
+  AppLocale.raHardcore: 'Hardcore',
+  AppLocale.raUnlocksEndOfList:
+      'Das sind alle Freischaltungen der letzten 30 Tage',
+  AppLocale.raUnlockGameNotOwned:
+      'Dieses Spiel ist weder in deiner Bibliothek noch in RomM',
   AppLocale.raCompletionsLabel: 'Abschlüsse',
   AppLocale.raMasteriesLabel: 'Meisterungen',
   AppLocale.raPointsAbbrev: 'Pkt.',
