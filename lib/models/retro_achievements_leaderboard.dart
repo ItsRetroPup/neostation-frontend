@@ -1,38 +1,6 @@
 import '../utils/ra_utils.dart';
 import 'retro_achievements_date.dart';
 
-/// One of the ten highest hardcore-point earners returned by the RA feed.
-class RaTopTenUser {
-  final String username;
-  final int totalPoints;
-  final int totalRatioPoints;
-  final String ulid;
-
-  const RaTopTenUser({
-    required this.username,
-    required this.totalPoints,
-    required this.totalRatioPoints,
-    required this.ulid,
-  });
-
-  /// The endpoint uses numeric JSON keys in its raw v1 response, while some
-  /// clients normalize it to named keys. Accept both shapes so cached payloads
-  /// remain readable across API/client versions.
-  factory RaTopTenUser.fromJson(Map<String, dynamic> json) {
-    return RaTopTenUser(
-      username: (json['1'] ?? json['username'] ?? json['Username'] ?? '')
-          .toString(),
-      totalPoints: RAParsingUtils.toInt(
-        json['2'] ?? json['totalPoints'] ?? json['TotalPoints'],
-      ),
-      totalRatioPoints: RAParsingUtils.toInt(
-        json['3'] ?? json['totalRatioPoints'] ?? json['TotalRatioPoints'],
-      ),
-      ulid: (json['4'] ?? json['ulid'] ?? json['ULID'] ?? '').toString(),
-    );
-  }
-}
-
 /// The user at the top of a game's leaderboard.
 class RaLeaderboardTopEntry {
   final String user;
@@ -185,6 +153,11 @@ class RaGameLeaderboardsPage {
     required this.results,
   });
 
+  const RaGameLeaderboardsPage.empty()
+    : count = 0,
+      total = 0,
+      results = const [];
+
   factory RaGameLeaderboardsPage.fromJson(Map<String, dynamic> json) {
     return RaGameLeaderboardsPage(
       count: RAParsingUtils.toInt(json['Count'] ?? json['count']),
@@ -206,6 +179,11 @@ class RaLeaderboardEntriesPage {
     required this.results,
   });
 
+  const RaLeaderboardEntriesPage.empty()
+    : count = 0,
+      total = 0,
+      results = const [];
+
   factory RaLeaderboardEntriesPage.fromJson(Map<String, dynamic> json) {
     return RaLeaderboardEntriesPage(
       count: RAParsingUtils.toInt(json['Count'] ?? json['count']),
@@ -226,6 +204,11 @@ class RaUserGameLeaderboardsPage {
     required this.total,
     required this.results,
   });
+
+  const RaUserGameLeaderboardsPage.empty()
+    : count = 0,
+      total = 0,
+      results = const [];
 
   factory RaUserGameLeaderboardsPage.fromJson(Map<String, dynamic> json) {
     return RaUserGameLeaderboardsPage(
