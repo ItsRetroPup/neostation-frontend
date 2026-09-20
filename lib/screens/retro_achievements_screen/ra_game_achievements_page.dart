@@ -372,11 +372,17 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
             IconButton(
               tooltip: AppLocale.raGuide.getString(context),
               onPressed: () => launchUrl(Uri.parse(url)),
+              color: _headerActionFocused('guide')
+                  ? theme.colorScheme.primary
+                  : null,
               icon: const Icon(Symbols.menu_book_rounded),
             ),
           IconButton(
             tooltip: AppLocale.refresh.getString(context),
             onPressed: () => _load(forceRefresh: true),
+            color: _headerActionFocused('refresh')
+                ? theme.colorScheme.primary
+                : null,
             icon: const Icon(Symbols.refresh_rounded),
           ),
         ],
@@ -469,6 +475,7 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
             context,
             AppLocale.achievements.getString(context),
             !_leaderboardsView,
+            _headerActionFocused('achievements'),
             () => setState(() => _leaderboardsView = false),
           ),
         ),
@@ -477,6 +484,7 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
             context,
             AppLocale.raSubtabLeaderboards.getString(context),
             _leaderboardsView,
+            _headerActionFocused('leaderboards'),
             () => setState(() => _leaderboardsView = true),
           ),
         ),
@@ -488,6 +496,7 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
     BuildContext context,
     String label,
     bool selected,
+    bool focused,
     VoidCallback onTap,
   ) {
     final theme = Theme.of(context);
@@ -501,8 +510,10 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: selected ? theme.colorScheme.primary : Colors.transparent,
-              width: 2.r,
+              color: selected || focused
+                  ? theme.colorScheme.primary
+                  : Colors.transparent,
+              width: focused ? 3.r : 2.r,
             ),
           ),
         ),
@@ -515,6 +526,12 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
         ),
       ),
     );
+  }
+
+  bool _headerActionFocused(String action) {
+    final actions = _headerActions;
+    return _headerFocused &&
+        actions[_headerActionIndex.clamp(0, actions.length - 1)] == action;
   }
 
   Widget _buildAchievements(
