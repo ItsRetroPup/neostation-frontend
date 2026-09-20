@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neostation/models/retro_achievements_dashboard_models.dart';
 import 'package:neostation/models/retro_achievements_game_info.dart';
 
-gameInfoFixture() => {
+Map<String, dynamic> gameInfoFixture() => {
   'ID': 42,
   'Title': 'Example Quest',
   'ConsoleID': 7,

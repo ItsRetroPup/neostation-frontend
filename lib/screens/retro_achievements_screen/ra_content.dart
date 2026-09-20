@@ -23,7 +23,7 @@ import '../game_screen/my_games_list.dart';
 import '../game_screen/game_details_card/detail_tab.dart';
 import 'ra_dashboard.dart';
 import 'ra_tab_strip.dart';
-import 'ra_unlocks_tab.dart';
+import 'ra_collection_tab.dart';
 import 'ra_games_tab.dart';
 import 'ra_game_achievements_page.dart';
 
@@ -55,13 +55,17 @@ class _RAContentState extends State<RAContent>
   /// The dashboard's one actionable content card. It is selectable when the
   /// weekly game is local or has a matched RomM download.
   bool _weekCardSelected = false;
+  bool _recentUnlocksSelected = false;
+  bool _gamesPreviewSelected = false;
   final GlobalKey<RADashboardHubState> _dashboardKey =
       GlobalKey<RADashboardHubState>();
 
-  /// The see-all Unlocks sub-tab, addressed by the input handlers the same
-  /// way the dashboard is.
-  final GlobalKey<RaUnlocksTabState> _unlocksKey =
-      GlobalKey<RaUnlocksTabState>();
+  /// The AOTW and Awards grids, addressed by the input handlers the same way
+  /// the profile and Games views are.
+  final _eventsKey = GlobalKey<RaCollectionTabState>();
+  final _awardsKey = GlobalKey<RaCollectionTabState>();
+  RaCollectionTabState? get _collection =>
+      (_activeSubTab == RaSubTab.events ? _eventsKey : _awardsKey).currentState;
 
   /// The see-all Games sub-tab, same treatment.
   final GlobalKey<RaGamesTabState> _gamesKey = GlobalKey<RaGamesTabState>();
@@ -82,7 +86,7 @@ class _RAContentState extends State<RAContent>
   GamepadNavigation? _gamepadNav;
 
   /// Which sub-tab mini-app is open.
-  RaSubTab _activeSubTab = RaSubTab.dashboard;
+  RaSubTab _activeSubTab = RaSubTab.profile;
 
   /// Whether the D-pad cursor is parked on the sub-tab strip rather than in
   /// the active sub-tab's content. The strip is a *zone* of this tab's one
@@ -201,20 +205,27 @@ class _RAContentState extends State<RAContent>
                       scrollController: _dashboardScrollController,
                       logoutSelected: _logoutSelected,
                       weekCardSelected: _weekCardSelected,
+                      recentUnlocksSelected: _recentUnlocksSelected,
+                      gamesSelected: _gamesPreviewSelected,
                       onDisconnectRequested: _requestDisconnect,
                       onOwnedWeekGameSelected: _openOwnedWeekGame,
-                      onBack: _handleBack,
-                      onSelect: _selectCurrent,
-                      active: _activeSubTab == RaSubTab.dashboard,
+                      onUnlockSelected: _activateUnlock,
+                      onGameSelected: (gameId, title) =>
+                          _openRaGameAchievements(
+                            gameId: gameId,
+                            gameTitle: title,
+                          ),
+                      active: _activeSubTab == RaSubTab.profile,
                     ),
                   ),
                   RepaintBoundary(
-                    child: RaUnlocksTab(
-                      key: _unlocksKey,
-                      active: _activeSubTab == RaSubTab.unlocks,
-                      onActivate: _activateUnlock,
-                      onBack: _handleBack,
-                      onSelect: _selectCurrent,
+                    child: RaCollectionTab(
+                      key: _eventsKey,
+                      events: true,
+                      active: _activeSubTab == RaSubTab.events,
+                      focused: !_stripFocused,
+                      onOpenGame: (id, title) =>
+                          _openRaGameAchievements(gameId: id, gameTitle: title),
                     ),
                   ),
                   RepaintBoundary(
@@ -222,9 +233,15 @@ class _RAContentState extends State<RAContent>
                       key: _gamesKey,
                       active: _activeSubTab == RaSubTab.games,
                       onActivate: _activateGame,
-                      onBack: _handleBack,
-                      onSelect: _selectCurrent,
                     ),
+                  ),
+                  RaCollectionTab(
+                    key: _awardsKey,
+                    events: false,
+                    active: _activeSubTab == RaSubTab.awards,
+                    focused: !_stripFocused,
+                    onOpenGame: (id, title) =>
+                        _openRaGameAchievements(gameId: id, gameTitle: title),
                   ),
                 ],
               ),

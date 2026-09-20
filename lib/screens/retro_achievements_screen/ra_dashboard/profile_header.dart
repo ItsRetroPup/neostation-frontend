@@ -1,6 +1,7 @@
 part of '../ra_dashboard.dart';
 
-/// The profile header: avatar, stat pills, and the logout button.
+/// The profile hero: identity and standing first, with supporting lifetime
+/// stats kept in a quieter rail beneath it.
 ///
 /// All state lives on the host [State]; this extension only moves the
 /// methods out of the monolith — behaviour is unchanged.
@@ -43,127 +44,142 @@ extension _ProfileHeader on RADashboardHubState {
               .replaceFirst('{rank}', _formatRank(rank));
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.r, vertical: 12.r),
+      padding: EdgeInsets.fromLTRB(16.r, 14.r, 10.r, 12.r),
       decoration: _cardDecoration(theme),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 48.r,
-            height: 48.r,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.28),
-                width: 2.r,
-              ),
-            ),
-            child: ClipOval(
-              child: user.userPic.isNotEmpty
-                  ? Image.network(
-                      'https://retroachievements.org${user.userPic}',
-                      fit: BoxFit.cover,
-                      cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context))
-                          .ceil(),
-                      cacheHeight: (48 * MediaQuery.devicePixelRatioOf(context))
-                          .ceil(),
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Symbols.account_circle_rounded,
-                        color: theme.colorScheme.primary,
-                        size: 28.r,
-                      ),
-                    )
-                  : Icon(
-                      Symbols.account_circle_rounded,
-                      color: theme.colorScheme.primary,
-                      size: 28.r,
-                    ),
-            ),
-          ),
-          SizedBox(width: 12.r),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.user,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.r,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 56.r,
+                height: 56.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                    width: 2.r,
                   ),
                 ),
-                SizedBox(height: 4.r),
-                Wrap(
-                  spacing: 8.r,
-                  runSpacing: 6.r,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                child: ClipOval(
+                  child: user.userPic.isNotEmpty
+                      ? Image.network(
+                          'https://retroachievements.org${user.userPic}',
+                          fit: BoxFit.cover,
+                          cacheWidth:
+                              (56 * MediaQuery.devicePixelRatioOf(context))
+                                  .ceil(),
+                          cacheHeight:
+                              (56 * MediaQuery.devicePixelRatioOf(context))
+                                  .ceil(),
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Symbols.account_circle_rounded,
+                            color: theme.colorScheme.primary,
+                            size: 32.r,
+                          ),
+                        )
+                      : Icon(
+                          Symbols.account_circle_rounded,
+                          color: theme.colorScheme.primary,
+                          size: 32.r,
+                        ),
+                ),
+              ),
+              SizedBox(width: 12.r),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildPill(
-                      context,
-                      icon: Symbols.shield_rounded,
-                      label: user.userType,
-                      color: theme.colorScheme.primary,
+                    Text(
+                      user.user,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18.r,
+                      ),
                     ),
-                    _buildPill(
-                      context,
-                      icon: Symbols.stars_rounded,
-                      label:
-                          '${user.totalPoints} ${AppLocale.raPointsAbbrev.getString(context)}',
-                      color: theme.colorScheme.primary,
+                    SizedBox(height: 3.r),
+                    Text(
+                      standingLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11.r,
+                      ),
                     ),
-                    _buildPill(
-                      context,
-                      icon: Symbols.sports_esports_rounded,
-                      label: AppLocale.raGamesPlayed
-                          .getString(context)
-                          .replaceFirst('{count}', '$trackedGames'),
-                      color: theme.colorScheme.primary,
-                    ),
-                    _buildPill(
-                      context,
-                      icon: Symbols.flag_rounded,
-                      label: AppLocale.raGamesBeaten
-                          .getString(context)
-                          .replaceFirst('{count}', '$beatenGames'),
-                      color: theme.colorScheme.secondary,
-                    ),
-                    _buildPill(
-                      context,
-                      icon: Symbols.workspace_premium_rounded,
-                      label: '$highlightCount $highlightLabel',
-                      color: highlightColor,
-                    ),
-                    _buildPill(
-                      context,
-                      icon: Symbols.leaderboard_rounded,
-                      label: standingLabel,
-                      color: theme.colorScheme.secondary,
+                    SizedBox(height: 3.r),
+                    Text(
+                      '${user.totalPoints} ${AppLocale.raPointsAbbrev.getString(context)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.68,
+                        ),
+                        fontSize: 10.r,
+                      ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(
+                    color: widget.logoutSelected
+                        ? theme.colorScheme.primary
+                        : Colors.transparent,
+                    width: 2.r,
+                  ),
+                ),
+                child: IconButton(
+                  onPressed: widget.onDisconnectRequested,
+                  icon: Icon(
+                    Symbols.logout_rounded,
+                    color: theme.colorScheme.error,
+                    size: 20.r,
+                  ),
+                  tooltip: AppLocale.logout.getString(context),
+                ),
+              ),
+            ],
           ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(
-                color: widget.logoutSelected
-                    ? theme.colorScheme.primary
-                    : Colors.transparent,
-                width: 2.r,
+          SizedBox(height: 12.r),
+          Wrap(
+            spacing: 8.r,
+            runSpacing: 6.r,
+            children: [
+              _buildPill(
+                context,
+                icon: Symbols.shield_rounded,
+                label: user.userType,
+                color: theme.colorScheme.primary,
               ),
-            ),
-            child: IconButton(
-              onPressed: widget.onDisconnectRequested,
-              icon: Icon(
-                Symbols.logout_rounded,
-                color: theme.colorScheme.error,
-                size: 20.r,
+              _buildPill(
+                context,
+                icon: Symbols.sports_esports_rounded,
+                label: AppLocale.raGamesPlayed
+                    .getString(context)
+                    .replaceFirst('{count}', '$trackedGames'),
+                color: theme.colorScheme.primary,
               ),
-              tooltip: AppLocale.logout.getString(context),
-            ),
+              _buildPill(
+                context,
+                icon: Symbols.flag_rounded,
+                label: AppLocale.raGamesBeaten
+                    .getString(context)
+                    .replaceFirst('{count}', '$beatenGames'),
+                color: theme.colorScheme.secondary,
+              ),
+              _buildPill(
+                context,
+                icon: Symbols.workspace_premium_rounded,
+                label: '$highlightCount $highlightLabel',
+                color: highlightColor,
+              ),
+            ],
           ),
         ],
       ),

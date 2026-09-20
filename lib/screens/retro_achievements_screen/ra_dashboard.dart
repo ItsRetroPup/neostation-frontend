@@ -1,3 +1,4 @@
+import '../../widgets/ra_earned_badge.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,14 +10,12 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_locale.dart';
 import '../../models/retro_achievements_dashboard_models.dart';
 import '../../models/retro_achievements_gotw.dart';
-import '../../models/retro_achievements_user_awards.dart';
 import '../../models/romm_rom.dart';
 import '../../providers/file_provider.dart';
 import '../../providers/retro_achievements_provider.dart';
 import '../../providers/romm_provider.dart';
 import '../../providers/sqlite_config_provider.dart';
 import '../../widgets/custom_notification.dart';
-import '../../widgets/ra_subtab_footer.dart';
 
 part 'ra_dashboard/data_loading.dart';
 part 'ra_dashboard/profile_header.dart';
@@ -28,8 +27,12 @@ class RADashboardHub extends StatefulWidget {
   final ScrollController? scrollController;
   final bool logoutSelected;
   final bool weekCardSelected;
+  final bool recentUnlocksSelected;
+  final bool gamesSelected;
   final VoidCallback onDisconnectRequested;
   final ValueChanged<OwnedWeekGameResolution> onOwnedWeekGameSelected;
+  final ValueChanged<RetroAchievementRecentUnlockItem>? onUnlockSelected;
+  final void Function(int gameId, String title)? onGameSelected;
   final VoidCallback? onBack;
   final VoidCallback? onSelect;
 
@@ -46,8 +49,12 @@ class RADashboardHub extends StatefulWidget {
     this.scrollController,
     required this.logoutSelected,
     required this.weekCardSelected,
+    this.recentUnlocksSelected = false,
+    this.gamesSelected = false,
     required this.onDisconnectRequested,
     required this.onOwnedWeekGameSelected,
+    this.onUnlockSelected,
+    this.onGameSelected,
     this.onBack,
     this.onSelect,
     this.active = true,
@@ -96,6 +103,25 @@ class RADashboardHubState extends State<RADashboardHub> {
   bool get weekCardSelectable =>
       context.read<RetroAchievementsProvider>().ownedWeekGame != null ||
       _rommWeekGame != null;
+
+  bool get recentUnlocksSelectable =>
+      context.read<RetroAchievementsProvider>().recentUnlocks.isNotEmpty;
+
+  bool get gamesSelectable =>
+      context.read<RetroAchievementsProvider>().recentlyPlayedGames.isNotEmpty;
+
+  void selectRecentUnlockPreview() {
+    final items = context.read<RetroAchievementsProvider>().recentUnlocks;
+    if (items.isNotEmpty) widget.onUnlockSelected?.call(items.first);
+  }
+
+  void selectGamesPreview() {
+    final items = context.read<RetroAchievementsProvider>().recentlyPlayedGames;
+    if (items.isNotEmpty) {
+      final item = items.first;
+      widget.onGameSelected?.call(item.gameId, item.title);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -185,10 +211,6 @@ class RADashboardHubState extends State<RADashboardHub> {
                           context,
                           raProvider,
                         );
-                        final masteriesCard = _buildRecentMasteriesSection(
-                          context,
-                          raProvider,
-                        );
                         final playedCard = _buildRecentlyPlayedSection(
                           context,
                           raProvider,
@@ -201,36 +223,24 @@ class RADashboardHubState extends State<RADashboardHub> {
                               SizedBox(height: 12.r),
                               unlocksCard,
                               SizedBox(height: 12.r),
-                              masteriesCard,
-                              SizedBox(height: 12.r),
                               playedCard,
                             ],
                           );
                         }
-                        // Split the two long lists (Recent Unlocks / Recently Played)
-                        // across columns and pair each with a shorter card, so neither
-                        // column runs far longer than the other and leaves a tall gap.
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // The profile keeps only the two useful activity rails
+                        // beneath the AOTW focus card. Lifetime awards remain in
+                        // the hero summary and the full Games view.
+                        return Column(
                           children: [
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  weekCard,
-                                  SizedBox(height: 12.r),
-                                  playedCard,
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: 12.r),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  unlocksCard,
-                                  SizedBox(height: 12.r),
-                                  masteriesCard,
-                                ],
-                              ),
+                            weekCard,
+                            SizedBox(height: 12.r),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: unlocksCard),
+                                SizedBox(width: 12.r),
+                                Expanded(child: playedCard),
+                              ],
                             ),
                           ],
                         );
@@ -240,26 +250,9 @@ class RADashboardHubState extends State<RADashboardHub> {
                 ),
               ),
             ),
-            RaSubTabFooter(
-              label: _footerLabel(context, raProvider),
-              onRefresh: () => raProvider.invalidateCachedReads(),
-              onBack: widget.onBack,
-              onSelect: widget.onSelect,
-            ),
           ],
         );
       },
     );
-  }
-
-  String _footerLabel(
-    BuildContext context,
-    RetroAchievementsProvider provider,
-  ) {
-    if (widget.logoutSelected) return AppLocale.logout.getString(context);
-    if (widget.weekCardSelected && provider.gotw != null) {
-      return provider.gotw!.game.title;
-    }
-    return AppLocale.raSubtabDashboard.getString(context);
   }
 }

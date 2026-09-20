@@ -1,6 +1,20 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleId = {
+  AppLocale.raEvents: 'Acara',
+  AppLocale.raAotw: 'AOTW',
+  AppLocale.raAwards: 'Penghargaan',
+  AppLocale.raSetOrder: 'Urutan set',
+  AppLocale.raPointsSort: 'Poin tertinggi',
+  AppLocale.raRaritySort: 'Paling langka dahulu',
+  AppLocale.raProgression: 'Progres',
+  AppLocale.raWinCondition: 'Syarat menang',
+  AppLocale.raWeek: 'Minggu {week}',
+  AppLocale.raMissed: 'Terlewat',
+  AppLocale.raUpcoming: 'Mendatang',
+  AppLocale.raCurrent: 'Saat ini',
+  AppLocale.raEventUnavailable: 'Kredit acara tidak tersedia',
+  AppLocale.raEarned: 'Diraih',
   AppLocale.navigate: 'Navigasi',
   AppLocale.select: 'Pilih',
   AppLocale.back: 'Kembali',
@@ -1158,7 +1172,7 @@ const Map<String, dynamic> appLocaleId = {
       'Ini akan menghapus permanen ROM game, data scraping, dan file media. Tindakan ini tidak dapat dibatalkan.',
   AppLocale.deleteGameSubtitle: 'Menghapus permanen file ROM dari disk',
 
-  AppLocale.raSubtabDashboard: 'Dasbor',
+  AppLocale.raSubtabDashboard: 'Profil',
   AppLocale.raSubtabUnlocks: 'Pencapaian',
   AppLocale.raSubtabGames: 'Game',
   AppLocale.raSubtabLeaderboards: 'Papan peringkat',

@@ -1,6 +1,20 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleJa = {
+  AppLocale.raEvents: 'イベント',
+  AppLocale.raAotw: 'AOTW',
+  AppLocale.raAwards: 'アワード',
+  AppLocale.raSetOrder: 'セット順',
+  AppLocale.raPointsSort: 'ポイントの高い順',
+  AppLocale.raRaritySort: 'レア順',
+  AppLocale.raProgression: '進行',
+  AppLocale.raWinCondition: '勝利条件',
+  AppLocale.raWeek: '第{week}週',
+  AppLocale.raMissed: '未達成',
+  AppLocale.raUpcoming: '今後',
+  AppLocale.raCurrent: '開催中',
+  AppLocale.raEventUnavailable: 'イベント達成状況を取得できません',
+  AppLocale.raEarned: '獲得済み',
   AppLocale.navigate: 'ナビゲート',
   AppLocale.select: '選択',
   AppLocale.back: '戻る',
@@ -1049,7 +1063,7 @@ const Map<String, dynamic> appLocaleJa = {
       'ゲームのROMファイル、スクレイピングデータ、メディアファイルを完全に削除します。この操作は元に戻せません。',
   AppLocale.deleteGameSubtitle: 'ROMファイルをディスクから完全に削除します',
 
-  AppLocale.raSubtabDashboard: 'ダッシュボード',
+  AppLocale.raSubtabDashboard: 'プロフィール',
   AppLocale.raSubtabUnlocks: '解除',
   AppLocale.raSubtabGames: 'ゲーム',
   AppLocale.raSubtabLeaderboards: 'リーダーボード',

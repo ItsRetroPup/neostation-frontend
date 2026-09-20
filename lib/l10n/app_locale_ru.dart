@@ -1,6 +1,20 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleRu = {
+  AppLocale.raEvents: 'События',
+  AppLocale.raAotw: 'AOTW',
+  AppLocale.raAwards: 'Награды',
+  AppLocale.raSetOrder: 'Порядок набора',
+  AppLocale.raPointsSort: 'По убыванию очков',
+  AppLocale.raRaritySort: 'Сначала редкие',
+  AppLocale.raProgression: 'Прогресс',
+  AppLocale.raWinCondition: 'Условие победы',
+  AppLocale.raWeek: 'Неделя {week}',
+  AppLocale.raMissed: 'Пропущено',
+  AppLocale.raUpcoming: 'Предстоящее',
+  AppLocale.raCurrent: 'Текущее',
+  AppLocale.raEventUnavailable: 'Данные участия недоступны',
+  AppLocale.raEarned: 'Получено',
   AppLocale.navigate: 'Навигация',
   AppLocale.select: 'Выбрать',
   AppLocale.back: 'Назад',
@@ -1155,7 +1169,7 @@ const Map<String, dynamic> appLocaleRu = {
       'ROM-файл игры, данные скрапинга и медиафайлы будут безвозвратно удалены. Это действие нельзя отменить.',
   AppLocale.deleteGameSubtitle: 'Навсегда удаляет ROM-файл с диска',
 
-  AppLocale.raSubtabDashboard: 'Панель',
+  AppLocale.raSubtabDashboard: 'Профиль',
   AppLocale.raSubtabUnlocks: 'Достижения',
   AppLocale.raSubtabGames: 'Игры',
   AppLocale.raSubtabLeaderboards: 'Таблицы лидеров',

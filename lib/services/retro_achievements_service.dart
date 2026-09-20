@@ -30,6 +30,59 @@ class RetroAchievementsService {
 
   static final _log = LoggerService.instance;
 
+  /// Discover the legacy event set through the public Events-system catalogue.
+  /// No website scraping or assumptions about event IDs being game IDs.
+  static Future<GameInfoAndUserProgress?> getAnnualEventProgress(
+    int year,
+    String username, {
+    required String apiKey,
+    http.Client? client,
+  }) async {
+    if (resolveApiKey(apiKey).isEmpty) throw StateError('API key required');
+    Future<dynamic> read(
+      String endpoint,
+      Map<String, String> parameters,
+      String cacheKey,
+    ) {
+      final url = Uri.parse(
+        '$_baseUrl/$endpoint.php',
+      ).replace(queryParameters: {...parameters, 'y': apiKey});
+      final headers = {
+        'User-Agent': 'NeoStation/1.0',
+        'Accept': 'application/json',
+      };
+      return _fetchWithCache<dynamic>(
+        cacheKey: cacheKey,
+        send: () => client == null
+            ? http.get(url, headers: headers)
+            : client.get(url, headers: headers),
+        parse: (data) => data,
+        onMiss: (_) => throw const HttpException('Event data unavailable'),
+      );
+    }
+
+    final list = await read('API_GetGameList', {
+      'i': '101',
+    }, 'event_catalogue_$year');
+    if (list is! List) throw const FormatException('Invalid event catalogue');
+    final matches = list
+        .whereType<Map>()
+        .where((g) => g['Title'] == 'Achievement of the Week $year')
+        .toList();
+    if (matches.length != 1) return null;
+    final id = matches.single['ID'].toString();
+    final data = await read('API_GetGameInfoAndUserProgress', {
+      'g': id,
+      'u': username,
+    }, 'event_${year}_$username');
+    if (data is! Map ||
+        data['Achievements'] is! Map ||
+        data['Title'] != 'Achievement of the Week $year') {
+      return null;
+    }
+    return GameInfoAndUserProgress.fromJson(Map<String, dynamic>.from(data));
+  }
+
   /// Runs a cache-aware GET.
   ///
   /// On a successful (200) response the decoded body is stored under

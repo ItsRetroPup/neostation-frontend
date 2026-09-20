@@ -14,7 +14,8 @@ import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_content.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_dashboard.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_tab_strip.dart';
-import 'package:neostation/screens/retro_achievements_screen/ra_unlocks_tab.dart';
+import 'package:neostation/screens/retro_achievements_screen/ra_collection_tab.dart';
+import 'package:neostation/models/retro_achievements_game_info.dart';
 import 'package:neostation/screens/retro_achievements_screen/ra_games_tab.dart';
 import 'package:neostation/services/gamepad/gamepad_navigation_manager.dart';
 import 'package:neostation/services/sfx_service.dart';
@@ -53,6 +54,22 @@ class _ShellProvider extends RetroAchievementsProvider {
     _dashboardLoading = value;
     notifyListeners();
   }
+
+  @override
+  Future<Map<String, dynamic>> getEventCatalogue(int year) async => {
+    'year': year,
+    'source': 'https://retroachievements.org/event/196',
+    'weeks': [],
+  };
+  @override
+  Future<GameInfoAndUserProgress?> getAnnualEventProgress(int year) async {
+    fetchLog.add('events-progress');
+    return null;
+  }
+
+  @override
+  Future<List<RetroAchievementCompletionProgressItem>>
+  getAwardProgress() async => [];
 
   @override
   bool get isConnected => _connected;
@@ -383,24 +400,24 @@ void main() {
     },
   );
 
-  testWidgets('signed in: the strip renders the three sub-tab pills', (
+  testWidgets('signed in: the strip renders the four sub-tab pills', (
     tester,
   ) async {
     await pumpShell(tester, _ShellProvider());
 
     expect(find.byType(RaTabStrip), findsOneWidget);
     expect(find.byType(RADashboardHub), findsOneWidget);
-    // The IndexedStack hosts all three sub-tabs from the start; only the
-    // dashboard is showing, and the other two wait off-stage at their dwell
+    // The IndexedStack hosts all four sub-tabs from the start; only the
+    // dashboard is showing, and the other three wait off-stage at their dwell
     // gates. (skipOffstage: IndexedStack parks non-showing children in an
     // Offstage wrapper, which the default finders skip.)
-    expect(find.byType(RaUnlocksTab, skipOffstage: false), findsOneWidget);
+    expect(find.byType(RaCollectionTab, skipOffstage: false), findsNWidgets(2));
     expect(find.byType(RaGamesTab, skipOffstage: false), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (w) =>
             w is Semantics &&
-            w.properties.label == 'Dashboard' &&
+            w.properties.label == 'Profile' &&
             w.properties.selected == true,
       ),
       findsOneWidget,
@@ -409,7 +426,7 @@ void main() {
       find.byWidgetPredicate(
         (w) =>
             w is Semantics &&
-            w.properties.label == 'Unlocks' &&
+            w.properties.label == 'AOTW' &&
             w.properties.selected == false,
       ),
       findsOneWidget,
@@ -454,6 +471,13 @@ void main() {
     await press(tester, LogicalKeyboardKey.arrowDown);
     expect(stripOf(tester).focused, isFalse);
     expect(GamepadNavigationManager.stackDepth, depth);
+    await press(tester, LogicalKeyboardKey.arrowDown);
+    expect(
+      tester
+          .widget<RADashboardHub>(find.byType(RADashboardHub))
+          .recentUnlocksSelected,
+      isTrue,
+    );
 
     // Flush the post-frame chain that creates the unlocks tab's 100ms
     // initial-centering timer (it starts from a post-frame callback, so it
@@ -528,7 +552,7 @@ void main() {
       // Right steps onto Unlocks, then Games; the dashboard's State survives
       // underneath throughout.
       await press(tester, LogicalKeyboardKey.arrowRight);
-      expect(stripOf(tester).currentTab, RaSubTab.unlocks);
+      expect(stripOf(tester).currentTab, RaSubTab.events);
       expect(stripOf(tester).focused, isTrue);
       // The active flag follows the strip: the tab being shown is the one
       // that may fetch and animate.
@@ -551,11 +575,13 @@ void main() {
       // Right wraps from Games back around to Dashboard — three pills, both
       // directions live, no dead press at either end.
       await press(tester, LogicalKeyboardKey.arrowRight);
-      expect(stripOf(tester).currentTab, RaSubTab.dashboard);
+      expect(stripOf(tester).currentTab, RaSubTab.awards);
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      expect(stripOf(tester).currentTab, RaSubTab.profile);
 
-      // And Left wraps the other way, straight back onto Games.
+      // Left wraps to the cabinet.
       await press(tester, LogicalKeyboardKey.arrowLeft);
-      expect(stripOf(tester).currentTab, RaSubTab.games);
+      expect(stripOf(tester).currentTab, RaSubTab.awards);
       expect(
         tester.state<RADashboardHubState>(
           find.byType(RADashboardHub, skipOffstage: false),
@@ -660,7 +686,7 @@ void main() {
     await press(tester, LogicalKeyboardKey.keyY);
 
     expect(provider.cacheGeneration, generationBefore + 1);
-    expect(stripOf(tester).currentTab, RaSubTab.dashboard);
+    expect(stripOf(tester).currentTab, RaSubTab.profile);
 
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
@@ -679,33 +705,32 @@ void main() {
       // sub-tab fetches nothing while another sub-tab is showing.
       await tester.pump(const Duration(milliseconds: 400));
       final dashboardFetches = provider.fetchLog.length;
-      expect(provider.fetchLog, isNot(contains('unlocks-page-reset')));
+      expect(provider.fetchLog, isNot(contains('events-progress')));
 
       // Up from the top of the Unlocks content parks on the strip the same
       // way it does on the dashboard; Right steps onto Unlocks.
       await press(tester, LogicalKeyboardKey.arrowUp);
       await press(tester, LogicalKeyboardKey.arrowRight);
-      expect(stripOf(tester).currentTab, RaSubTab.unlocks);
+      expect(stripOf(tester).currentTab, RaSubTab.events);
       await tester.pump(const Duration(milliseconds: 400));
-      expect(provider.fetchLog, contains('unlocks-page-reset'));
+      expect(provider.fetchLog, contains('events-progress'));
 
       // The parked dashboard kept still through all of that.
-      expect(provider.fetchLog.length, dashboardFetches + 1);
+      // Events also makes sure the current AotW metadata is available for
+      // its header when the dashboard fixture has not loaded it yet.
+      expect(provider.fetchLog.length, dashboardFetches + 2);
 
       // Away and back within the staleness window: the list is fresh, so the
       // re-activation re-reads nothing (and the dashboard's own pending
       // dwell, scheduled by the brief stop-over, stays gated while parked).
       await press(tester, LogicalKeyboardKey.arrowUp);
       await press(tester, LogicalKeyboardKey.arrowLeft);
-      expect(stripOf(tester).currentTab, RaSubTab.dashboard);
+      expect(stripOf(tester).currentTab, RaSubTab.profile);
       await press(tester, LogicalKeyboardKey.arrowRight);
-      expect(stripOf(tester).currentTab, RaSubTab.unlocks);
+      expect(stripOf(tester).currentTab, RaSubTab.events);
       await tester.pump(const Duration(milliseconds: 400));
-      expect(
-        provider.fetchLog.where((e) => e == 'unlocks-page-reset').length,
-        1,
-      );
-      expect(provider.fetchLog.length, dashboardFetches + 1);
+      expect(provider.fetchLog.where((e) => e == 'events-progress').length, 1);
+      expect(provider.fetchLog.length, dashboardFetches + 2);
 
       // Advance the fake clock past the unlocks tab's initial-centering timer
       // (an anonymous 100ms timer its scroll controller cannot cancel), so the
@@ -727,15 +752,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       await press(tester, LogicalKeyboardKey.arrowUp);
       await press(tester, LogicalKeyboardKey.arrowRight);
-      expect(stripOf(tester).currentTab, RaSubTab.unlocks);
+      expect(stripOf(tester).currentTab, RaSubTab.events);
       await tester.pump(const Duration(milliseconds: 400));
 
       final fetchesBefore = provider.fetchLog.length;
       final generationBefore = provider.cacheGeneration;
-      expect(
-        provider.fetchLog.where((e) => e == 'unlocks-page-reset').length,
-        1,
-      );
+      expect(provider.fetchLog.where((e) => e == 'events-progress').length, 1);
 
       await tester.tap(
         find.descendant(
@@ -747,12 +769,9 @@ void main() {
 
       expect(provider.cacheGeneration, generationBefore + 1);
       // The sub-tab on screen re-read its first page…
-      expect(
-        provider.fetchLog.where((e) => e == 'unlocks-page-reset').length,
-        2,
-      );
+      expect(provider.fetchLog.where((e) => e == 'events-progress').length, 2);
       // …and the parked dashboard added nothing to the same bump.
-      expect(provider.fetchLog.length, fetchesBefore + 1);
+      expect(provider.fetchLog.length, fetchesBefore + 2);
 
       // Advance the fake clock past the unlocks tab's initial-centering timer
       // (an anonymous 100ms timer its scroll controller cannot cancel), so the
@@ -781,8 +800,8 @@ void main() {
     await pumpShell(tester, _ShellProvider());
     await settleInput(tester);
 
-    expect(find.byType(RaSubTabFooter), findsOneWidget);
-    expect(find.byType(RaSubTabFooter, skipOffstage: false), findsNWidgets(3));
+    expect(find.byType(RaSubTabFooter), findsNothing);
+    expect(find.byType(RaSubTabFooter, skipOffstage: false), findsNothing);
 
     // The strip remains the shared focus zone while each active sub-tab gets
     // a full paint at the handheld-class width.
@@ -790,7 +809,7 @@ void main() {
     for (var i = 0; i < RaSubTab.values.length - 1; i++) {
       await press(tester, LogicalKeyboardKey.arrowRight);
       await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byType(RaSubTabFooter), findsOneWidget);
+      expect(find.byType(RaSubTabFooter), findsNothing);
     }
 
     expect(overflowMessages, isEmpty);

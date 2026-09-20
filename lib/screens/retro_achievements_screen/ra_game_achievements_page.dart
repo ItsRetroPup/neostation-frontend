@@ -10,12 +10,11 @@ import 'package:neostation/models/retro_achievements_leaderboard.dart';
 import 'package:neostation/providers/retro_achievements_provider.dart';
 import 'package:neostation/screens/game_screen/game_details_card/tabs/game_details_leaderboards_tab.dart';
 import 'package:neostation/services/gamepad/gamepad_navigation_manager.dart';
-import 'package:neostation/services/sfx_service.dart';
+import 'package:neostation/widgets/ra_earned_badge.dart';
+import 'ra_achievement_browser.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-enum RaAchievementFilter { all, unlocked, locked, missable }
 
 /// A ROM-independent RetroAchievements game view. It is intentionally keyed
 /// by the RA game id so rows from the dashboard can open it even when the
@@ -39,12 +38,9 @@ class RaGameAchievementsPage extends StatefulWidget {
 class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
   final GlobalKey<GameDetailsLeaderboardsTabState> _leaderboardsKey =
       GlobalKey<GameDetailsLeaderboardsTabState>();
-  final ScrollController _scrollController = ScrollController();
+  final _browserKey = GlobalKey<RaAchievementBrowserState>();
   GamepadNavigation? _gamepadNav;
   GameInfoAndUserProgress? _gameInfo;
-  RaAchievementFilter _filter = RaAchievementFilter.all;
-  int _selectedIndex = 0;
-  bool _filterFocused = false;
   bool _headerFocused = false;
   int _headerActionIndex = 0;
   bool _leaderboardsView = false;
@@ -76,7 +72,7 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
   void dispose() {
     GamepadNavigationManager.popLayer('ra_game_achievements');
     _gamepadNav?.dispose();
-    _scrollController.dispose();
+
     super.dispose();
   }
 
@@ -102,62 +98,8 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
           ? (provider.error ??
                 AppLocale.raErrorGameInfoUnavailable.getString(context))
           : null;
-      _selectedIndex = _initialIndex(info);
     });
     _requestInFlight = false;
-  }
-
-  int _initialIndex(GameInfoAndUserProgress? info) {
-    if (info == null || widget.highlightAchievementId == null) return 0;
-    final items = _filteredAchievements(info);
-    final index = items.indexWhere(
-      (a) => a.id == widget.highlightAchievementId,
-    );
-    return index < 0 ? 0 : index;
-  }
-
-  List<Achievement> _filteredAchievements(GameInfoAndUserProgress info) {
-    final values = info.achievements.values.toList();
-    values.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
-    return values.where(_matchesFilter).toList(growable: false);
-  }
-
-  bool _matchesFilter(Achievement achievement) {
-    final unlocked = achievement.isUnlocked;
-    switch (_filter) {
-      case RaAchievementFilter.all:
-        return true;
-      case RaAchievementFilter.unlocked:
-        return unlocked;
-      case RaAchievementFilter.locked:
-        return !unlocked;
-      case RaAchievementFilter.missable:
-        return achievement.isMissable;
-    }
-  }
-
-  void _setFilter(RaAchievementFilter filter) {
-    if (_filter == filter) return;
-    final current = _selectedAchievement?.id;
-    setState(() {
-      _filter = filter;
-      _selectedIndex = 0;
-      final items = _gameInfo == null
-          ? <Achievement>[]
-          : _filteredAchievements(_gameInfo!);
-      if (current != null) {
-        final index = items.indexWhere((a) => a.id == current);
-        if (index >= 0) _selectedIndex = index;
-      }
-    });
-  }
-
-  Achievement? get _selectedAchievement {
-    final items = _gameInfo == null
-        ? <Achievement>[]
-        : _filteredAchievements(_gameInfo!);
-    if (items.isEmpty) return null;
-    return items[_selectedIndex.clamp(0, items.length - 1)];
   }
 
   void _moveUp() {
@@ -166,19 +108,9 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
       return;
     }
     if (_headerFocused) return;
-    if (_filterFocused) {
-      setState(() {
-        _filterFocused = false;
-        _headerFocused = true;
-      });
-      return;
+    if (_browserKey.currentState?.move(0, -1) != true) {
+      setState(() => _headerFocused = true);
     }
-    if (_selectedIndex == 0) {
-      setState(() => _filterFocused = true);
-      return;
-    }
-    setState(() => _selectedIndex--);
-    _scrollToSelected();
   }
 
   void _moveDown() {
@@ -188,18 +120,10 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
     }
     if (_headerFocused) {
       setState(() => _headerFocused = false);
+      _browserKey.currentState?.enterFilters();
       return;
     }
-    if (_filterFocused) {
-      setState(() => _filterFocused = false);
-      return;
-    }
-    final items = _gameInfo == null
-        ? <Achievement>[]
-        : _filteredAchievements(_gameInfo!);
-    if (_selectedIndex + 1 >= items.length) return;
-    setState(() => _selectedIndex++);
-    _scrollToSelected();
+    _browserKey.currentState?.move(0, 1);
   }
 
   void _moveLeft() {
@@ -208,12 +132,7 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
       _moveHeaderAction(-1);
       return;
     }
-    if (_filterFocused) {
-      final values = RaAchievementFilter.values;
-      final index =
-          (values.indexOf(_filter) - 1 + values.length) % values.length;
-      _setFilter(values[index]);
-    }
+    _browserKey.currentState?.move(-1, 0);
   }
 
   void _moveRight() {
@@ -222,18 +141,12 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
       _moveHeaderAction(1);
       return;
     }
-    if (_filterFocused) {
-      final values = RaAchievementFilter.values;
-      final index = (values.indexOf(_filter) + 1) % values.length;
-      _setFilter(values[index]);
-    }
+    _browserKey.currentState?.move(1, 0);
   }
 
   List<String> get _headerActions => [
-    'achievements',
     'leaderboards',
     if (_gameInfo?.guideUrl case final url? when _isHttpUrl(url)) 'guide',
-    'refresh',
   ];
 
   void _moveHeaderAction(int delta) {
@@ -248,18 +161,26 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
     final actions = _headerActions;
     final action = actions[_headerActionIndex.clamp(0, actions.length - 1)];
     switch (action) {
-      case 'achievements':
-        setState(() => _leaderboardsView = false);
       case 'leaderboards':
-        setState(() => _leaderboardsView = true);
+        _showLeaderboards();
       case 'guide':
         final url = _gameInfo?.guideUrl;
         if (url != null && _isHttpUrl(url)) {
           unawaited(launchUrl(Uri.parse(url)));
         }
-      case 'refresh':
-        unawaited(_load(forceRefresh: true));
     }
+  }
+
+  void _showLeaderboards() {
+    setState(() {
+      _leaderboardsView = true;
+      _headerFocused = false;
+    });
+    // Arm the leaderboard panel after it has been inserted by the view switch
+    // so the next D-pad press moves its first row immediately.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _leaderboardsKey.currentState?.enterPanel();
+    });
   }
 
   void _activate() {
@@ -276,12 +197,11 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
       _activateHeaderAction();
       return;
     }
-    if (_filterFocused) {
-      setState(() => _filterFocused = false);
+    if (_error != null) {
+      unawaited(_load());
       return;
     }
-    final achievement = _selectedAchievement;
-    if (achievement != null) _showDetails(achievement);
+    _browserKey.currentState?.selectCurrent();
   }
 
   void _handleBack() {
@@ -295,51 +215,8 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
       setState(() => _headerFocused = false);
       return;
     }
-    if (_filterFocused) {
-      setState(() => _filterFocused = false);
-      return;
-    }
+    if (_browserKey.currentState?.back() == true) return;
     Navigator.of(context).maybePop();
-  }
-
-  void _scrollToSelected() {
-    if (!_scrollController.hasClients) return;
-    _scrollController.animateTo(
-      (_selectedIndex * 108.r).clamp(
-        0.0,
-        _scrollController.position.maxScrollExtent,
-      ),
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOut,
-    );
-  }
-
-  Future<void> _showDetails(Achievement achievement) async {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(achievement.title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(achievement.description),
-            SizedBox(height: 10.r),
-            Text(
-              '${achievement.points} ${AppLocale.points.getString(context)} · ${_rarity(achievement) ?? '—'}',
-            ),
-            SizedBox(height: 4.r),
-            Text(_unlockDates(context, achievement)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocale.close.getString(context)),
-          ),
-        ],
-      ),
-    );
   }
 
   String _imageUrl(String path) {
@@ -352,16 +229,14 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final info = _gameInfo;
-    final achievements = info == null
-        ? <Achievement>[]
-        : _filteredAchievements(info);
-    if (_selectedIndex >= achievements.length && achievements.isNotEmpty) {
-      _selectedIndex = achievements.length - 1;
-    }
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text(info?.title ?? widget.fallbackTitle ?? 'RetroAchievements'),
+        title: Text(
+          info?.title ??
+              widget.fallbackTitle ??
+              AppLocale.achievements.getString(context),
+        ),
         leading: IconButton(
           tooltip: AppLocale.back.getString(context),
           onPressed: _handleBack,
@@ -377,24 +252,15 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
                   : null,
               icon: const Icon(Symbols.menu_book_rounded),
             ),
-          IconButton(
-            tooltip: AppLocale.refresh.getString(context),
-            onPressed: () => _load(forceRefresh: true),
-            color: _headerActionFocused('refresh')
-                ? theme.colorScheme.primary
-                : null,
-            icon: const Icon(Symbols.refresh_rounded),
-          ),
         ],
       ),
       body: Column(
         children: [
           _buildGameHeader(context, info),
-          _buildViewTabs(context),
           Expanded(
             child: _leaderboardsView
                 ? _buildLeaderboards(context)
-                : _buildAchievements(context, info, achievements),
+                : _buildAchievements(context, info),
           ),
         ],
       ),
@@ -410,9 +276,17 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
     final theme = Theme.of(context);
     final total = info?.numAchievements ?? 0;
     final earned = info?.numAwardedToUser ?? 0;
-    final earnedHardcore = info?.numAwardedToUserHardcore ?? 0;
+    final next = info == null ? null : _nextAchievement(info);
+    final title =
+        info?.title ??
+        widget.fallbackTitle ??
+        AppLocale.achievements.getString(context);
+    final progressLabel = AppLocale.raAchievementProgress
+        .getString(context)
+        .replaceFirst('{earned}', '$earned')
+        .replaceFirst('{total}', '$total');
     return Container(
-      padding: EdgeInsets.all(12.r),
+      padding: EdgeInsets.fromLTRB(16.r, 14.r, 16.r, 14.r),
       decoration: BoxDecoration(
         color: theme.cardColor.withValues(alpha: 0.3),
         border: Border(
@@ -422,25 +296,73 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _boxArt(context, info?.imageBoxArt ?? ''),
-          SizedBox(width: 12.r),
+          SizedBox(width: 16.r),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  info?.title ?? widget.fallbackTitle ?? 'RetroAchievements',
-                  style: theme.textTheme.titleMedium,
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge,
                 ),
                 if ((info?.consoleName ?? '').isNotEmpty)
                   Text(info!.consoleName, style: theme.textTheme.bodySmall),
-                SizedBox(height: 6.r),
-                Text(
-                  '${AppLocale.achievements.getString(context)}: $earned/$total · ${AppLocale.raHardcore.getString(context)}: $earnedHardcore/$total',
-                  style: theme.textTheme.bodySmall,
-                ),
+                if (info == null && _loading)
+                  Padding(
+                    padding: EdgeInsets.only(top: 10.r),
+                    child: const LinearProgressIndicator(),
+                  )
+                else if (info != null) ...[
+                  SizedBox(height: 8.r),
+                  Text(progressLabel, style: theme.textTheme.bodySmall),
+                  SizedBox(height: 5.r),
+                  _combinedProgressMeter(context, info),
+                  if (info.highestAwardKind case final award?
+                      when award.trim().isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top: 6.r),
+                      child: Row(
+                        children: [
+                          Icon(Symbols.emoji_events_rounded, size: 15.r),
+                          SizedBox(width: 4.r),
+                          Text(
+                            _awardLabel(context, award),
+                            style: theme.textTheme.labelMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (next != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: 5.r),
+                      child: Text(
+                        '${AppLocale.next.getString(context)}: ${next.title} · ${next.points} ${AppLocale.points.getString(context)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium,
+                      ),
+                    ),
+                ],
               ],
+            ),
+          ),
+          SizedBox(width: 12.r),
+          OutlinedButton.icon(
+            onPressed: _showLeaderboards,
+            icon: const Icon(Symbols.leaderboard_rounded),
+            label: Text(AppLocale.raSubtabLeaderboards.getString(context)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.primary,
+              backgroundColor: theme.colorScheme.primary.withValues(alpha: .1),
+              side: BorderSide(
+                color: theme.colorScheme.primary,
+                width: _headerActionFocused('leaderboards') ? 2.r : 1.r,
+              ),
             ),
           ),
         ],
@@ -448,13 +370,97 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
     );
   }
 
+  Widget _combinedProgressMeter(
+    BuildContext context,
+    GameInfoAndUserProgress info,
+  ) {
+    final theme = Theme.of(context);
+    final total = info.numAchievements;
+    final casual = info.numAwardedToUser.clamp(0, total).toInt();
+    final hardcore = info.numAwardedToUserHardcore.clamp(0, casual).toInt();
+    final casualOnly = casual - hardcore;
+    final remaining = (total - casual).clamp(0, total).toInt();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              '${AppLocale.raCasual.getString(context)} $casual/$total',
+              style: theme.textTheme.labelSmall,
+            ),
+            const Spacer(),
+            Text(
+              '${AppLocale.raHardcore.getString(context)} $hardcore/$total',
+              style: theme.textTheme.labelSmall,
+            ),
+          ],
+        ),
+        SizedBox(height: 4.r),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4.r),
+          child: SizedBox(
+            height: 7.r,
+            child: Row(
+              children: [
+                if (hardcore > 0)
+                  Expanded(
+                    flex: hardcore,
+                    child: Container(color: RaEarnedBadge.gold),
+                  ),
+                if (casualOnly > 0)
+                  Expanded(
+                    flex: casualOnly,
+                    child: Container(color: RaEarnedBadge.silver),
+                  ),
+                if (remaining > 0)
+                  Expanded(
+                    flex: remaining,
+                    child: Container(
+                      color: theme.colorScheme.onSurface.withValues(alpha: .1),
+                    ),
+                  ),
+                if (total == 0)
+                  Expanded(
+                    child: Container(
+                      color: theme.colorScheme.onSurface.withValues(alpha: .1),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Achievement? _nextAchievement(GameInfoAndUserProgress info) {
+    final achievements = info.achievements.values.toList()
+      ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+    for (final achievement in achievements) {
+      if (!achievement.isUnlocked) return achievement;
+    }
+    return null;
+  }
+
+  String _awardLabel(BuildContext context, String award) {
+    final normalized = award.trim().toLowerCase();
+    if (normalized.contains('master')) {
+      return AppLocale.raMasteryLabel.getString(context);
+    }
+    if (normalized.contains('beat') || normalized.contains('complet')) {
+      return AppLocale.raCompletionLabel.getString(context);
+    }
+    return award;
+  }
+
   Widget _boxArt(BuildContext context, String path) {
     final url = _imageUrl(path);
     return ClipRRect(
       borderRadius: BorderRadius.circular(8.r),
       child: SizedBox(
-        width: 56.r,
-        height: 70.r,
+        width: 82.r,
+        height: 104.r,
         child: url.isEmpty
             ? Icon(Symbols.videogame_asset_rounded, size: 28.r)
             : Image.network(
@@ -463,67 +469,6 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
                 errorBuilder: (_, error, stack) =>
                     Icon(Symbols.videogame_asset_rounded, size: 28.r),
               ),
-      ),
-    );
-  }
-
-  Widget _buildViewTabs(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _viewTab(
-            context,
-            AppLocale.achievements.getString(context),
-            !_leaderboardsView,
-            _headerActionFocused('achievements'),
-            () => setState(() => _leaderboardsView = false),
-          ),
-        ),
-        Expanded(
-          child: _viewTab(
-            context,
-            AppLocale.raSubtabLeaderboards.getString(context),
-            _leaderboardsView,
-            _headerActionFocused('leaderboards'),
-            () => setState(() => _leaderboardsView = true),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _viewTab(
-    BuildContext context,
-    String label,
-    bool selected,
-    bool focused,
-    VoidCallback onTap,
-  ) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: () {
-        SfxService().playNavSound();
-        onTap();
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 9.r),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: selected || focused
-                  ? theme.colorScheme.primary
-                  : Colors.transparent,
-              width: focused ? 3.r : 2.r,
-            ),
-          ),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: selected ? theme.colorScheme.primary : null,
-          ),
-        ),
       ),
     );
   }
@@ -537,15 +482,16 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
   Widget _buildAchievements(
     BuildContext context,
     GameInfoAndUserProgress? info,
-    List<Achievement> achievements,
   ) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) {
+    if (_loading && info == null) return _buildLoadingAchievements(context);
+    if (info == null) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, textAlign: TextAlign.center),
+            Text(
+              _error ?? AppLocale.raErrorGameInfoUnavailable.getString(context),
+            ),
             TextButton(
               onPressed: _load,
               child: Text(AppLocale.retry.getString(context)),
@@ -554,219 +500,66 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
         ),
       );
     }
-    return Column(
-      children: [
-        _buildFilters(context, info),
-        Expanded(
-          child: achievements.isEmpty
-              ? Center(
-                  child: Text(
-                    AppLocale.raNoAchievementsForFilter.getString(context),
-                  ),
-                )
-              : ListView.builder(
-                  controller: _scrollController,
-                  itemCount: achievements.length,
-                  itemBuilder: (context, index) => _achievementRow(
-                    context,
-                    achievements[index],
-                    index == _selectedIndex,
-                  ),
-                ),
-        ),
-      ],
+    return RaAchievementBrowser(
+      key: _browserKey,
+      info: info,
+      highlightId: widget.highlightAchievementId,
     );
   }
 
-  Widget _buildFilters(BuildContext context, GameInfoAndUserProgress? info) {
-    final all = info?.achievements.values.toList() ?? <Achievement>[];
-    final counts = <RaAchievementFilter, int>{
-      RaAchievementFilter.all: all.length,
-      RaAchievementFilter.unlocked: all.where((a) => a.isUnlocked).length,
-      RaAchievementFilter.locked: all.where((a) => !a.isUnlocked).length,
-      RaAchievementFilter.missable: all.where((a) => a.isMissable).length,
-    };
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 8.r),
-      child: Row(
-        children: [
-          for (final filter in RaAchievementFilter.values)
-            Padding(
-              padding: EdgeInsets.only(right: 6.r),
-              child: ChoiceChip(
-                label: Text(
-                  '${_filterLabel(context, filter)} ${counts[filter]}',
-                ),
-                selected: _filter == filter,
-                onSelected: (_) => _setFilter(filter),
-                side: BorderSide(
-                  color: _filterFocused && _filter == filter
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.transparent,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _filterLabel(BuildContext context, RaAchievementFilter filter) =>
-      switch (filter) {
-        RaAchievementFilter.all => AppLocale.filterAll.getString(context),
-        RaAchievementFilter.unlocked => AppLocale.unlocked.getString(context),
-        RaAchievementFilter.locked => AppLocale.raFilterLocked.getString(
-          context,
-        ),
-        RaAchievementFilter.missable => AppLocale.raFilterMissables.getString(
-          context,
-        ),
-      };
-
-  Widget _achievementRow(
-    BuildContext context,
-    Achievement achievement,
-    bool selected,
-  ) {
+  Widget _buildLoadingAchievements(BuildContext context) {
     final theme = Theme.of(context);
-    final unlocked = achievement.isUnlocked;
-    final rarity = _rarity(achievement);
-    return InkWell(
-      onTap: () {
-        final index = _filteredAchievements(
-          _gameInfo!,
-        ).indexWhere((a) => a.id == achievement.id);
-        setState(() => _selectedIndex = index < 0 ? 0 : index);
-        _showDetails(achievement);
-      },
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 12.r, vertical: 3.r),
-        padding: EdgeInsets.all(8.r),
+    return ListView.separated(
+      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 12.r),
+      itemCount: 5,
+      separatorBuilder: (_, _) => SizedBox(height: 8.r),
+      itemBuilder: (context, index) => Container(
+        height: 64.r,
+        padding: EdgeInsets.all(10.r),
         decoration: BoxDecoration(
-          color: selected
-              ? theme.colorScheme.primary.withValues(alpha: 0.14)
-              : theme.cardColor.withValues(alpha: 0.18),
+          color: theme.cardColor.withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(
-            color: selected
-                ? theme.colorScheme.primary.withValues(alpha: 0.6)
-                : Colors.transparent,
-          ),
         ),
         child: Row(
           children: [
-            _badge(context, achievement, unlocked),
+            Container(
+              width: 42.r,
+              height: 42.r,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6.r),
+              ),
+            ),
             SizedBox(width: 10.r),
             Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    achievement.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  FractionallySizedBox(
+                    widthFactor: index.isEven ? 0.72 : 0.52,
+                    child: Container(
+                      height: 10.r,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                     ),
                   ),
-                  Text(
-                    achievement.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  SizedBox(height: 3.r),
-                  Text(
-                    _unlockDates(context, achievement),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall,
-                  ),
-                  SizedBox(height: 2.r),
-                  Text(
-                    '${achievement.points} ${AppLocale.points.getString(context)} · ${rarity ?? '—'}',
-                    style: theme.textTheme.labelSmall,
+                  SizedBox(height: 7.r),
+                  FractionallySizedBox(
+                    widthFactor: index.isEven ? 0.44 : 0.62,
+                    child: Container(
+                      height: 8.r,
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.07,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            Icon(
-              unlocked ? Symbols.lock_open_rounded : Symbols.lock_rounded,
-              size: 18.r,
-              color: unlocked
-                  ? theme.colorScheme.secondary
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.45),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Widget _badge(BuildContext context, Achievement achievement, bool unlocked) {
-    final name = achievement.badgeName.trim();
-    final path = name.isEmpty
-        ? ''
-        : 'https://media.retroachievements.org/Badge/$name${unlocked ? '' : '_lock'}.png';
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6.r),
-      child: SizedBox(
-        width: 42.r,
-        height: 42.r,
-        child: path.isEmpty
-            ? Icon(Symbols.emoji_events_rounded, size: 22.r)
-            : Image.network(
-                path,
-                fit: BoxFit.cover,
-                errorBuilder: (_, error, stack) =>
-                    Icon(Symbols.emoji_events_rounded, size: 22.r),
-              ),
-      ),
-    );
-  }
-
-  String _unlockDates(BuildContext context, Achievement achievement) {
-    final dates = <String>[];
-    final casual = achievement.dateEarned;
-    final hardcore = achievement.dateEarnedHardcore;
-    if (casual != null && casual.trim().isNotEmpty) {
-      dates.add(
-        '${AppLocale.raCasual.getString(context)}: ${_formatUnlockDate(casual)}',
-      );
-    }
-    if (hardcore != null && hardcore.trim().isNotEmpty) {
-      dates.add(
-        '${AppLocale.raHardcore.getString(context)}: ${_formatUnlockDate(hardcore)}',
-      );
-    }
-    return dates.isEmpty
-        ? AppLocale.raFilterLocked.getString(context)
-        : dates.join(' · ');
-  }
-
-  String _formatUnlockDate(String value) {
-    final trimmed = value.trim();
-    return trimmed.length > 10 ? trimmed.substring(0, 10) : trimmed;
-  }
-
-  String? _rarity(Achievement achievement) {
-    final info = _gameInfo;
-    if (info == null) return null;
-    final casualRatio = info.numDistinctPlayersCasual > 0
-        ? achievement.numAwarded / info.numDistinctPlayersCasual
-        : null;
-    final hardcoreRatio = info.numDistinctPlayersHardcore > 0
-        ? achievement.numAwardedHardcore / info.numDistinctPlayersHardcore
-        : null;
-    String? format(double? ratio) => ratio == null
-        ? null
-        : '${(ratio * 100).toStringAsFixed(ratio < 0.01 ? 1 : 0)}%';
-    final casual = format(casualRatio);
-    final hardcore = format(hardcoreRatio);
-    if (casual == null && hardcore == null) return null;
-    if (hardcore == null || hardcore == casual) return casual;
-    return 'C $casual · H $hardcore';
   }
 
   Widget _buildLeaderboards(BuildContext context) {

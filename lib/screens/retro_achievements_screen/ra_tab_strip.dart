@@ -14,7 +14,7 @@ import '../../themes/corner_radii.dart';
 /// The strip renders the tabs in enum order, and the shell's IndexedStack
 /// hosts them in the same order. The set grows by *adding* values — a sub-tab
 /// that cannot be shown yet is absent from the strip, never a disabled pill.
-enum RaSubTab { dashboard, unlocks, games }
+enum RaSubTab { profile, events, games, awards }
 
 /// The sub-tab strip across the top of the signed-in RetroAchievements tab:
 /// which mini-app is open, and that left/right on the D-pad walks between
@@ -46,9 +46,17 @@ class RaTabStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tabs = const [RaSubTab.dashboard, RaSubTab.unlocks, RaSubTab.games];
+    final tabs = const [
+      RaSubTab.profile,
+      RaSubTab.events,
+      RaSubTab.games,
+      RaSubTab.awards,
+    ];
     final numTabs = tabs.length;
-    final tabWidth = 36.r;
+    // The strip is a navigation surface, not an icon legend. Keeping a
+    // readable label beside each glyph makes the D-pad destination visible
+    // before the player has learned the focus model.
+    final tabWidth = 84.r;
     final visualIndex = tabs.indexOf(currentTab).clamp(0, numTabs - 1);
 
     return Row(
@@ -165,12 +173,34 @@ class _TabItem extends StatelessWidget {
           child: SizedBox(
             width: width,
             height: 32.r,
-            child: Icon(
-              _iconFor(tab),
-              size: 18.r,
-              color: isSelected
-                  ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.onSurface,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  _iconFor(tab),
+                  size: 16.r,
+                  color: isSelected
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurface,
+                ),
+                SizedBox(width: 5.r),
+                Flexible(
+                  child: Text(
+                    _labelFor(tab, context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontSize: 10.r,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -180,17 +210,19 @@ class _TabItem extends StatelessWidget {
 
   static IconData _iconFor(RaSubTab tab) {
     return switch (tab) {
-      RaSubTab.dashboard => Symbols.dashboard_rounded,
-      RaSubTab.unlocks => Symbols.lock_open_rounded,
+      RaSubTab.profile => Symbols.account_circle_rounded,
+      RaSubTab.events => Symbols.event_rounded,
       RaSubTab.games => Symbols.sports_esports_rounded,
+      RaSubTab.awards => Symbols.emoji_events_rounded,
     };
   }
 
   static String _labelFor(RaSubTab tab, BuildContext context) {
     return switch (tab) {
-      RaSubTab.dashboard => AppLocale.raSubtabDashboard.getString(context),
-      RaSubTab.unlocks => AppLocale.raSubtabUnlocks.getString(context),
+      RaSubTab.profile => AppLocale.raSubtabDashboard.getString(context),
+      RaSubTab.events => AppLocale.raAotw.getString(context),
       RaSubTab.games => AppLocale.raSubtabGames.getString(context),
+      RaSubTab.awards => AppLocale.raAwards.getString(context),
     };
   }
 }

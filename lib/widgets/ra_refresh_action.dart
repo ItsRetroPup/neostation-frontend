@@ -8,9 +8,9 @@ import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/widgets/core_footer.dart';
 import 'package:provider/provider.dart';
 
-/// The RetroAchievements tab's REFRESH chip, hosted by the shared app header
-/// the same way the systems tab hosts its sort dropdown: a per-tab action in
-/// the header's left slot, present only while that tab is on screen.
+/// A standalone RetroAchievements refresh control kept for embedded callers.
+/// The shared app header no longer inserts it; the active RA view reloads when
+/// it becomes visible or when the controller refresh gesture is used.
 ///
 /// Refreshing means asking for fresh data *without leaving the tab*, which
 /// used to be the only way: bumping the provider's cache generation drops

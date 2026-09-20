@@ -148,19 +148,22 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('All 3'), findsOneWidget);
-      expect(find.text('Unlocked! 2'), findsOneWidget);
-      expect(find.text('Locked 1'), findsOneWidget);
-      expect(find.text('Missables 1'), findsOneWidget);
+      expect(find.text('3 / 3 Achievements'), findsOneWidget);
       expect(find.byTooltip('Guide'), findsOneWidget);
-      expect(find.textContaining('Casual: 2026-09-20'), findsOneWidget);
-      expect(find.textContaining('Hardcore: 2026-09-19'), findsOneWidget);
+      expect(find.textContaining('Hardcore: 2026-09-19'), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
       expect(provider.gameLeaderboardCalls, 0);
 
-      await tester.tap(find.text('Missables 1'));
+      await tester.tap(find.text('First'));
       await tester.pump();
       expect(find.text('First'), findsOneWidget);
       expect(find.text('Third'), findsNothing);
+      expect(find.textContaining('Casual: 2026-09-20'), findsOneWidget);
+      expect(find.text('First description'), findsOneWidget);
+
+      await tester.tap(find.text('Back'));
+      await tester.pump();
+      expect(find.text('Third'), findsOneWidget);
 
       await tester.tap(find.text('Leaderboards'));
       await tester.pump();

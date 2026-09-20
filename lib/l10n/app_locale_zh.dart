@@ -1,6 +1,20 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleZh = {
+  AppLocale.raEvents: '活动',
+  AppLocale.raAotw: 'AOTW',
+  AppLocale.raAwards: '奖项',
+  AppLocale.raSetOrder: '套组顺序',
+  AppLocale.raPointsSort: '积分从高到低',
+  AppLocale.raRaritySort: '稀有优先',
+  AppLocale.raProgression: '进度',
+  AppLocale.raWinCondition: '胜利条件',
+  AppLocale.raWeek: '第{week}周',
+  AppLocale.raMissed: '错过',
+  AppLocale.raUpcoming: '即将开始',
+  AppLocale.raCurrent: '进行中',
+  AppLocale.raEventUnavailable: '活动完成状态不可用',
+  AppLocale.raEarned: '已获得',
   AppLocale.navigate: '导航',
   AppLocale.select: '选择',
   AppLocale.back: '返回',
@@ -1023,7 +1037,7 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.deleteGameConfirmBody: '这将永久删除游戏ROM文件、已抓取的数据和媒体文件。此操作无法撤销。',
   AppLocale.deleteGameSubtitle: '从磁盘上永久删除 ROM 文件',
 
-  AppLocale.raSubtabDashboard: '主页',
+  AppLocale.raSubtabDashboard: '个人资料',
   AppLocale.raSubtabUnlocks: '解锁',
   AppLocale.raSubtabGames: '游戏',
   AppLocale.raSubtabLeaderboards: '排行榜',

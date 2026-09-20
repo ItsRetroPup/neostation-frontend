@@ -12,7 +12,6 @@ import 'package:neostation/utils/centered_scroll_controller.dart';
 import 'package:provider/provider.dart';
 
 import '../../themes/corner_radii.dart';
-import '../../widgets/ra_subtab_footer.dart';
 
 /// The Unlocks sub-tab: every achievement unlocked in the last 30 days, not
 /// just the dashboard preview's five.
@@ -239,25 +238,11 @@ class RaUnlocksTabState extends State<RaUnlocksTab> {
                   ),
                 ),
               ),
-              RaSubTabFooter(
-                label: _footerLabel(context, items),
-                onRefresh: () => provider.invalidateCachedReads(),
-                onBack: widget.onBack,
-                onSelect: widget.onSelect,
-              ),
             ],
           );
         },
       ),
     );
-  }
-
-  String _footerLabel(
-    BuildContext context,
-    List<RetroAchievementRecentUnlockItem> items,
-  ) {
-    if (items.isEmpty) return AppLocale.raSubtabUnlocks.getString(context);
-    return items[_selectedIndex.clamp(0, items.length - 1)].title;
   }
 
   Widget _buildHeader(BuildContext context) {

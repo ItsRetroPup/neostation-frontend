@@ -1,6 +1,20 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleZhHant = {
+  AppLocale.raEvents: '活動',
+  AppLocale.raAotw: 'AOTW',
+  AppLocale.raAwards: '獎項',
+  AppLocale.raSetOrder: '套組順序',
+  AppLocale.raPointsSort: '積分由高到低',
+  AppLocale.raRaritySort: '稀有優先',
+  AppLocale.raProgression: '進度',
+  AppLocale.raWinCondition: '勝利條件',
+  AppLocale.raWeek: '第{week}週',
+  AppLocale.raMissed: '錯過',
+  AppLocale.raUpcoming: '即將開始',
+  AppLocale.raCurrent: '進行中',
+  AppLocale.raEventUnavailable: '活動完成狀態無法取得',
+  AppLocale.raEarned: '已獲得',
   AppLocale.navigate: '導航',
   AppLocale.select: '選擇',
   AppLocale.back: '返回',
@@ -1024,7 +1038,7 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.deleteGameConfirmBody: '這將永久刪除遊戲ROM檔案、已抓取的資料和媒體檔案。此操作無法復原。',
   AppLocale.deleteGameSubtitle: '從磁碟上永久刪除 ROM 檔案',
 
-  AppLocale.raSubtabDashboard: '主頁',
+  AppLocale.raSubtabDashboard: '個人資料',
   AppLocale.raSubtabUnlocks: '解鎖',
   AppLocale.raSubtabGames: '遊戲',
   AppLocale.raSubtabLeaderboards: '排行榜',

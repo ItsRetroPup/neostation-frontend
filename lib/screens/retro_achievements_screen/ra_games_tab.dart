@@ -12,7 +12,6 @@ import 'package:neostation/utils/centered_scroll_controller.dart';
 import 'package:provider/provider.dart';
 
 import '../../themes/corner_radii.dart';
-import '../../widgets/ra_subtab_footer.dart';
 
 /// The Games sub-tab: recently played and completion progress merged into
 /// one date-ordered list — everything the player has activity in, not just
@@ -385,22 +384,11 @@ class RaGamesTabState extends State<RaGamesTab> {
                   ),
                 ),
               ),
-              RaSubTabFooter(
-                label: _footerLabel(context, items),
-                onRefresh: () => provider.invalidateCachedReads(),
-                onBack: widget.onBack,
-                onSelect: widget.onSelect,
-              ),
             ],
           );
         },
       ),
     );
-  }
-
-  String _footerLabel(BuildContext context, List<RaGamesListItem> items) {
-    if (items.isEmpty) return AppLocale.raSubtabGames.getString(context);
-    return items[_selectedIndexIn(items).clamp(0, items.length - 1)].title;
   }
 
   Widget _buildHeader(BuildContext context) {

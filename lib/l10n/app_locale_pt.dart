@@ -1,6 +1,20 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocalePt = {
+  AppLocale.raEvents: 'Eventos',
+  AppLocale.raAotw: 'AOTW',
+  AppLocale.raAwards: 'Prêmios',
+  AppLocale.raSetOrder: 'Ordem do conjunto',
+  AppLocale.raPointsSort: 'Pontos decrescentes',
+  AppLocale.raRaritySort: 'Mais raros primeiro',
+  AppLocale.raProgression: 'Progressão',
+  AppLocale.raWinCondition: 'Condição de vitória',
+  AppLocale.raWeek: 'Semana {week}',
+  AppLocale.raMissed: 'Perdido',
+  AppLocale.raUpcoming: 'Próximo',
+  AppLocale.raCurrent: 'Atual',
+  AppLocale.raEventUnavailable: 'Crédito do evento indisponível',
+  AppLocale.raEarned: 'Obtido',
   AppLocale.navigate: 'Navegar',
   AppLocale.select: 'Selecionar',
   AppLocale.back: 'Voltar',
@@ -1168,7 +1182,7 @@ const Map<String, dynamic> appLocalePt = {
       'Isso excluirá permanentemente o ROM do jogo, seus dados de scraping e arquivos de mídia. Esta ação não pode ser desfeita.',
   AppLocale.deleteGameSubtitle: 'Remove permanentemente o arquivo ROM do disco',
 
-  AppLocale.raSubtabDashboard: 'Painel',
+  AppLocale.raSubtabDashboard: 'Perfil',
   AppLocale.raSubtabUnlocks: 'Conquistas',
   AppLocale.raSubtabGames: 'Jogos',
   AppLocale.raSubtabLeaderboards: 'Classificações',

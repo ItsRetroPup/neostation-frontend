@@ -22,23 +22,27 @@ If the device cannot save the credentials, the session can still work until you 
 
 ## The RetroAchievements Mini-App
 
-After you sign in, the tab is divided into three sub-tabs: **Dashboard**, **Unlocks**, and **Games**. Use the pill strip, touch, or the D-pad to switch between them. The active sub-tab owns its data loading, so switching away does not keep its spinner or requests running.
+After you sign in, the tab is divided into four sub-tabs: **Profile**, **AOTW**, **Games**, and **Awards**. The visible labels in the pill strip can be selected by touch or with the D-pad. From content, press **B** to return focus to the strip; **Left/Right** then switches sub-tabs. The active sub-tab owns its data loading, so switching away does not keep its spinner or requests running.
 
-### Dashboard
+### Profile
 
-The Dashboard contains your profile and standing, Achievement of the Week, and compact previews of your recent unlocks, recently played games, completions, and masteries. Your profile includes a standing pill with your rank and percentile when those values are available. Select **Refresh** in the header to reload the active RetroAchievements view without leaving the tab.
+Profile leads with your avatar, standing, points, account mode, and compact lifetime metrics. Achievement of the Week is the primary pursuit, followed by controller-addressable previews of Recent Unlocks and Games. Selecting a preview opens the same game achievement page as the full list.
 
-### Unlocks
+### AOTW
 
-**Unlocks** shows your recent achievements from the last 30 days. Open the full list to browse more results. Selecting an unlock opens the game's RetroAchievements page and highlights that achievement. This works whether or not the game is installed locally.
+**AOTW** shows the current year's Achievement of the Week calendar. Past weeks use the event achievement artwork and account progress returned by the API, and are marked as earned casually, earned hardcore, missed, or unknown when a result cannot be verified; future weeks use placeholder icons. The segmented progress bar shows earned and missed weeks. Select a week to open its achievement.
 
 ### Games
 
-**Games** combines your recently played games with your completion-progress games into one list. Use the filters to show **All**, **Mastered**, or **Beaten** games. Beaten includes games with a beaten softcore, beaten hardcore, completed, or mastered award; mastered remains available as its own narrower filter. The list is loaded in pages as you move through it, including when a filtered result is beyond the first page. Selecting a game opens its RetroAchievements page.
+**Games** combines your recently played games with your completion-progress games into one list. Use the filters to show **All**, **Mastered**, or **Beaten** games. Beaten includes games with a beaten casual, beaten hardcore, completed, or mastered award; mastered remains available as its own narrower filter. The list is loaded in pages as you move through it, including when a filtered result is beyond the first page. Selecting a game opens its RetroAchievements page.
+
+### Awards
+
+**Awards** is a trophy cabinet for mastered, completed, and beaten games. Each tile uses a silver casual border or gold hardcore border. Moving through the grid shows the game title, award type, and highest-award date below the grid.
 
 ## Game Achievements
 
-Selecting a game from **Games**, or selecting an unlock from **Unlocks**, opens a dedicated RetroAchievements page keyed by the game's RA ID. The page shows the artwork, console, achievement totals, casual and hardcore progress, and the complete achievement list in API order. Use **All**, **Unlocked**, **Locked**, or **Missable** filters; missable is an overlapping category and can include unlocked achievements. Each row shows its badge, description, points, available unlock date, and casual/hardcore rarity when the API provides valid counts. An external guide action appears only when the game supplies a valid web URL.
+Selecting a game from **Games**, **AOTW**, or a Profile preview opens a dedicated RetroAchievements page keyed by the game's RA ID. The page shows the artwork, console, a combined casual/hardcore progress bar, and the complete achievement list. Use the **All**, **Locked**, and **Missable** filters; Missable includes only locked missable achievements. Each row shows its badge, description, points, available unlock date, and casual/hardcore rarity when the API provides valid counts. Select a row to open its inline detail panel; the Comments action is available with the controller **A** button. An external guide action appears only when the game supplies a valid web URL.
 
 The game page also contains a **Leaderboards** view. It loads only when opened, shows paginated entries, and highlights the signed-in user's entry when RetroAchievements returns one. A game can have no leaderboards or no entries even when the game itself is matched.
 
@@ -55,7 +59,7 @@ You can run matching while signed out, but you must sign in to see RetroAchievem
 
 ## Offline Use
 
-NeoStation caches successful RetroAchievements responses on the device. If the network is unavailable and cached data exists, the tab can show the last synced results and displays an offline banner. New data, uncached pages, and refreshes need a connection; reconnect and select **Refresh** to update them.
+NeoStation caches successful RetroAchievements responses on the device. If the network is unavailable and cached data exists, the tab can show the last synced results and displays an offline banner. New data and uncached pages need a connection; reconnect before opening them.
 
 ## Sign Out
 

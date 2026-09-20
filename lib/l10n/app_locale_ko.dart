@@ -1,6 +1,20 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleKo = {
+  AppLocale.raEvents: '이벤트',
+  AppLocale.raAotw: 'AOTW',
+  AppLocale.raAwards: '수상',
+  AppLocale.raSetOrder: '세트 순서',
+  AppLocale.raPointsSort: '포인트 높은 순',
+  AppLocale.raRaritySort: '희귀 순',
+  AppLocale.raProgression: '진행',
+  AppLocale.raWinCondition: '승리 조건',
+  AppLocale.raWeek: '{week}주차',
+  AppLocale.raMissed: '놓침',
+  AppLocale.raUpcoming: '예정',
+  AppLocale.raCurrent: '진행 중',
+  AppLocale.raEventUnavailable: '이벤트 달성 정보를 확인할 수 없습니다',
+  AppLocale.raEarned: '획득',
   AppLocale.navigate: '탐색',
   AppLocale.select: '선택',
   AppLocale.back: '뒤로',
@@ -1036,7 +1050,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.deleteGameConfirmBody:
       '게임 ROM, 스크랩된 데이터, 미디어 파일이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.',
   AppLocale.deleteGameSubtitle: '디스크에서 ROM 파일을 영구적으로 제거합니다',
-  AppLocale.raSubtabDashboard: '대시보드',
+  AppLocale.raSubtabDashboard: '프로필',
   AppLocale.raSubtabUnlocks: '잠금 해제',
   AppLocale.raSubtabGames: '게임',
   AppLocale.raSubtabLeaderboards: '리더보드',

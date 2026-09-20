@@ -49,8 +49,9 @@ extension _GamepadNav on _RAContentState {
         _setStripFocused(false);
         return;
       }
-      if (_activeSubTab == RaSubTab.unlocks) {
-        _unlocksKey.currentState?.activateCurrent();
+      if ((_activeSubTab == RaSubTab.events ||
+          _activeSubTab == RaSubTab.awards)) {
+        _collection?.selectCurrent();
         return;
       }
       if (_activeSubTab == RaSubTab.games) {
@@ -60,6 +61,14 @@ extension _GamepadNav on _RAContentState {
       }
       if (_logoutSelected) {
         _requestDisconnect();
+        return;
+      }
+      if (_recentUnlocksSelected) {
+        _dashboardKey.currentState?.selectRecentUnlockPreview();
+        return;
+      }
+      if (_gamesPreviewSelected) {
+        _dashboardKey.currentState?.selectGamesPreview();
         return;
       }
       if (_weekCardSelected) {
@@ -108,6 +117,18 @@ extension _GamepadNav on _RAContentState {
     return true;
   }
 
+  bool _setRecentUnlocksSelected(bool selected) {
+    if (!mounted || _recentUnlocksSelected == selected) return false;
+    rebuild(() => _recentUnlocksSelected = selected);
+    return true;
+  }
+
+  bool _setGamesPreviewSelected(bool selected) {
+    if (!mounted || _gamesPreviewSelected == selected) return false;
+    rebuild(() => _gamesPreviewSelected = selected);
+    return true;
+  }
+
   bool _setStripFocused(bool focused) {
     if (!mounted || _stripFocused == focused) return false;
     rebuild(() => _stripFocused = focused);
@@ -118,7 +139,12 @@ extension _GamepadNav on _RAContentState {
   /// contract cares about the return: the caller plays the switch sound when
   /// a press actually changed the sub-tab.
   bool _switchSubTab(int delta) {
-    final tabs = const [RaSubTab.dashboard, RaSubTab.unlocks, RaSubTab.games];
+    final tabs = const [
+      RaSubTab.profile,
+      RaSubTab.events,
+      RaSubTab.games,
+      RaSubTab.awards,
+    ];
     if (tabs.length < 2) return false;
     final current = tabs.indexOf(_activeSubTab);
     final next = tabs[(current + delta + tabs.length) % tabs.length];
@@ -139,12 +165,19 @@ extension _GamepadNav on _RAContentState {
   /// selection the user can no longer see still answers A.
   void _releaseSelectionOnScroll() {
     if (_scrollingToHeader) return;
-    if (!_logoutSelected && !_weekCardSelected) return;
+    if (!_logoutSelected &&
+        !_weekCardSelected &&
+        !_recentUnlocksSelected &&
+        !_gamesPreviewSelected) {
+      return;
+    }
     if (!_dashboardScrollController.hasClients) return;
     final position = _dashboardScrollController.position;
     if (position.pixels > position.minScrollExtent + 1) {
       _setLogoutSelected(false);
       _setWeekCardSelected(false);
+      _setRecentUnlocksSelected(false);
+      _setGamesPreviewSelected(false);
     }
   }
 
@@ -163,8 +196,9 @@ extension _GamepadNav on _RAContentState {
       return moveSelection(-1);
     }
     if (_stripFocused) return false;
-    if (_activeSubTab == RaSubTab.unlocks) {
-      final moved = _unlocksKey.currentState?.moveSelection(-1) ?? false;
+    if ((_activeSubTab == RaSubTab.events ||
+        _activeSubTab == RaSubTab.awards)) {
+      final moved = _collection?.move(0, -1) ?? false;
       return moved || _setStripFocused(true);
     }
     if (_activeSubTab == RaSubTab.games) {
@@ -172,6 +206,27 @@ extension _GamepadNav on _RAContentState {
       // is the "content top" signal, same contract as the Unlocks branch.
       final moved = _gamesKey.currentState?.handleNavigateUp() ?? false;
       return moved || _setStripFocused(true);
+    }
+    if (_activeSubTab == RaSubTab.profile) {
+      if (_gamesPreviewSelected) {
+        _setGamesPreviewSelected(false);
+        _setRecentUnlocksSelected(true);
+        _scrollDashboard(-160.r);
+        return true;
+      }
+      if (_recentUnlocksSelected) {
+        _setRecentUnlocksSelected(false);
+        if (_dashboardKey.currentState?.weekCardSelectable == true) {
+          _setWeekCardSelected(true);
+          _scrollHeaderIntoView();
+          return true;
+        }
+        return _setStripFocused(true);
+      }
+      if (_weekCardSelected) {
+        _setWeekCardSelected(false);
+        return _setStripFocused(true);
+      }
     }
     final released = _setWeekCardSelected(false);
     final scrolled = _scrollDashboard(-160.r);
@@ -196,17 +251,42 @@ extension _GamepadNav on _RAContentState {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) return moveSelection(1);
     if (_stripFocused) return _setStripFocused(false);
-    if (_activeSubTab == RaSubTab.unlocks) {
-      return _unlocksKey.currentState?.moveSelection(1) ?? false;
+    if ((_activeSubTab == RaSubTab.events ||
+        _activeSubTab == RaSubTab.awards)) {
+      return _collection?.move(0, 1) ?? false;
     }
     if (_activeSubTab == RaSubTab.games) {
       return _gamesKey.currentState?.handleNavigateDown() ?? false;
     }
+    if (_gamesPreviewSelected) return false;
+    if (_recentUnlocksSelected) {
+      _setRecentUnlocksSelected(false);
+      if (_dashboardKey.currentState?.gamesSelectable == true) {
+        _scrollDashboard(160.r);
+        return _setGamesPreviewSelected(true);
+      }
+      return false;
+    }
+    if (_weekCardSelected) {
+      _setWeekCardSelected(false);
+      if (_dashboardKey.currentState?.recentUnlocksSelectable == true) {
+        _scrollDashboard(160.r);
+        return _setRecentUnlocksSelected(true);
+      }
+      return false;
+    }
     if (!_logoutSelected &&
-        !_weekCardSelected &&
         _dashboardKey.currentState?.weekCardSelectable == true &&
         _dashboardAtTop) {
       return _setWeekCardSelected(true);
+    }
+    if (_dashboardKey.currentState?.recentUnlocksSelectable == true) {
+      _scrollDashboard(160.r);
+      return _setRecentUnlocksSelected(true);
+    }
+    if (_dashboardKey.currentState?.gamesSelectable == true) {
+      _scrollDashboard(320.r);
+      return _setGamesPreviewSelected(true);
     }
     final released = _setWeekCardSelected(false);
     return _scrollDashboard(160.r) || released;
@@ -232,10 +312,13 @@ extension _GamepadNav on _RAContentState {
   bool _handleNavigateRight() {
     if (!context.read<RetroAchievementsProvider>().isConnected) return false;
     if (_stripFocused) return _switchSubTab(1);
-    if (_activeSubTab == RaSubTab.unlocks) return false;
+    if (_activeSubTab == RaSubTab.events || _activeSubTab == RaSubTab.awards) {
+      return _collection?.move(1, 0) ?? false;
+    }
     if (_activeSubTab == RaSubTab.games) {
       return _gamesKey.currentState?.handleNavigateRight() ?? false;
     }
+    if (_recentUnlocksSelected || _gamesPreviewSelected) return false;
     if (_logoutSelected) return false;
     _setWeekCardSelected(false);
     _scrollHeaderIntoView();
@@ -250,13 +333,16 @@ extension _GamepadNav on _RAContentState {
     final raProvider = context.read<RetroAchievementsProvider>();
     if (!raProvider.isConnected) return false;
     if (_stripFocused) return _switchSubTab(-1);
-    if (_activeSubTab == RaSubTab.unlocks) return false;
+    if (_activeSubTab == RaSubTab.events || _activeSubTab == RaSubTab.awards) {
+      return _collection?.move(-1, 0) ?? false;
+    }
     if (_activeSubTab == RaSubTab.games) {
       // The chips row is the Games list's one in-content horizontal axis;
       // on the rows themselves, Left is silent like it is on the Unlocks
       // rows.
       return _gamesKey.currentState?.handleNavigateLeft() ?? false;
     }
+    if (_recentUnlocksSelected || _gamesPreviewSelected) return false;
     final released = _logoutSelected ? _setLogoutSelected(false) : false;
     if (_dashboardKey.currentState?.weekCardSelectable != true) {
       return released;

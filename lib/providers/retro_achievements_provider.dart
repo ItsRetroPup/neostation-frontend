@@ -14,6 +14,8 @@ import '../models/retro_achievements_game_info.dart';
 import '../models/retro_achievements_gotw.dart';
 import '../models/retro_achievements_leaderboard.dart';
 import '../models/retro_achievements_user_awards.dart';
+import '../models/retro_achievement_comment.dart';
+import '../repositories/ra_event_catalogue_repository.dart';
 import '../services/game/game_session_manager.dart';
 import 'retro_achievements_credentials.dart';
 
@@ -178,6 +180,62 @@ class RetroAchievementsProvider extends ChangeNotifier {
   String? get error => _error;
   String get username => _username;
   String get apiKey => _apiKey;
+  Future<Map<String, dynamic>> getEventCatalogue(int year) =>
+      RaEventCatalogueRepository.load(year);
+  Future<GameInfoAndUserProgress?> getAnnualEventProgress(int year) async {
+    if (!isConnected || !hasResolvedApiKey) throw StateError('Not connected');
+    final generation = sessionGeneration;
+    final result = await RetroAchievementsService.getAnnualEventProgress(
+      year,
+      _username,
+      apiKey: _apiKey,
+    );
+    if (generation != sessionGeneration) throw StateError('Account changed');
+    return result;
+  }
+
+  final Map<String, RetroAchievementCommentsPage> _commentPages = {};
+  Future<RetroAchievementCommentsPage> getAchievementComments(
+    int achievementId, {
+    int offset = 0,
+  }) async {
+    if (!isConnected || !hasResolvedApiKey) throw StateError('Not connected');
+    final generation = sessionGeneration;
+    final key = '$generation:$achievementId:$offset';
+    if (_commentPages.containsKey(key)) return _commentPages[key]!;
+    final page = await RetroAchievementsService.getAchievementComments(
+      achievementId,
+      offset: offset,
+      count: 25,
+      apiKey: _apiKey,
+    );
+    if (generation != sessionGeneration) throw StateError('Account changed');
+    _commentPages[key] = page;
+    return page;
+  }
+
+  /// Completion pages include awards hidden from the public profile cabinet.
+  Future<List<RetroAchievementCompletionProgressItem>>
+  getAwardProgress() async {
+    if (!isConnected || !hasResolvedApiKey) throw StateError('Not connected');
+    final generation = sessionGeneration;
+    final rows = <RetroAchievementCompletionProgressItem>[];
+    var offset = 0;
+    while (true) {
+      final page = await RetroAchievementsService.getUserCompletionProgress(
+        _username,
+        apiKey: _apiKey,
+        count: 100,
+        offset: offset,
+      );
+      if (generation != sessionGeneration) throw StateError('Account changed');
+      rows.addAll(page.results);
+      offset += page.results.length;
+      if (page.results.isEmpty || offset >= page.total) break;
+    }
+    return rows;
+  }
+
   int get sessionGeneration => _sessionGeneration;
 
   int get totalLocalRoms => _totalLocalRoms;
