@@ -76,6 +76,14 @@ class _RAContentState extends State<RAContent>
   /// method can.
   void rebuild(VoidCallback fn) => setState(fn);
 
+  void _setLogoutSelected(bool selected) {
+    rebuild(() => _logoutSelected = selected);
+  }
+
+  void _setWeekCardSelected(bool selected) {
+    rebuild(() => _weekCardSelected = selected);
+  }
+
   @override
   List<FocusNode?> get selectionSlots => [
     _usernameFocus,

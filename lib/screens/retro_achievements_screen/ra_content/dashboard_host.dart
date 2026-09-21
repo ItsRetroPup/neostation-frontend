@@ -31,29 +31,38 @@ extension _DashboardHost on _RAContentState {
     OwnedWeekGameResolution owned, {
     DetailTab? initialDetailTab,
   }) async {
-    final configProvider = context.read<SqliteConfigProvider>();
-    final fileProvider = context.read<FileProvider>();
-    final system = _resolveSystem(configProvider.detectedSystems, owned);
-    if (system == null) {
-      AppNotification.showNotification(
-        context,
-        AppLocale.raCouldNotResolveLocalSystem.getString(context),
-        type: NotificationType.error,
-      );
-      return;
-    }
+    // The week card can be activated by both tap and gamepad input. Keep a
+    // second activation from stacking another copy of the same games list.
+    if (!mounted || _gameActivationInFlight) return;
+    _gameActivationInFlight = true;
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SystemGamesList(
-          system: system,
-          fileProvider: fileProvider,
-          initialRomPath: owned.game.romPath,
-          initialDetailTab: initialDetailTab,
+    try {
+      final configProvider = context.read<SqliteConfigProvider>();
+      final fileProvider = context.read<FileProvider>();
+      final system = _resolveSystem(configProvider.detectedSystems, owned);
+      if (system == null) {
+        AppNotification.showNotification(
+          context,
+          AppLocale.raCouldNotResolveLocalSystem.getString(context),
+          type: NotificationType.error,
+        );
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SystemGamesList(
+            system: system,
+            fileProvider: fileProvider,
+            initialRomPath: owned.game.romPath,
+            initialDetailTab: initialDetailTab,
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _gameActivationInFlight = false;
+    }
   }
 
   SystemModel? _resolveSystem(
