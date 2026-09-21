@@ -14,7 +14,16 @@ import '../../utils/custom_scroll_behavior.dart';
 class RaAchievementBrowser extends StatefulWidget {
   final GameInfoAndUserProgress info;
   final int? highlightId;
-  const RaAchievementBrowser({super.key, required this.info, this.highlightId});
+  final VoidCallback? onLeaderboards;
+  final VoidCallback? onFilterChanged;
+
+  const RaAchievementBrowser({
+    super.key,
+    required this.info,
+    this.highlightId,
+    this.onLeaderboards,
+    this.onFilterChanged,
+  });
   @override
   State<RaAchievementBrowser> createState() => RaAchievementBrowserState();
 }
@@ -23,7 +32,8 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
   final RaAchievementQuery _query = RaAchievementQuery();
   final _list = ScrollController();
   final _detail = ScrollController();
-  final _controlKeys = List.generate(3, (_) => GlobalKey());
+  final _controlKeys = List.generate(4, (_) => GlobalKey());
+  static const _controlCount = 4;
   int _selected = 0;
   int _control = -1;
   bool _details = false;
@@ -107,7 +117,24 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
         _reveal();
         return true;
       }
-      setState(() => _control = (_control + dx + 3) % 3);
+      setState(
+        () => _control = (_control + dx + _controlCount) % _controlCount,
+      );
+      final ctx = _controlKeys[_control].currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 120),
+        );
+      }
+      return true;
+    }
+    // The control row is a horizontal navigation strip. Enter it from the
+    // current achievement wherever the list cursor is, so the user never has
+    // to return to the first row before reaching All/Locked/Missables/AOTW
+    // leaderboards.
+    if (dx != 0) {
+      setState(() => _control = dx > 0 ? 0 : _controlCount - 1);
       final ctx = _controlKeys[_control].currentContext;
       if (ctx != null) {
         Scrollable.ensureVisible(
@@ -181,6 +208,11 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
   }
 
   void _activateControl(int index) {
+    if (index == 3) {
+      setState(() => _control = -1);
+      widget.onLeaderboards?.call();
+      return;
+    }
     _change(() {
       switch (index) {
         case 0:
@@ -200,6 +232,7 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
             ..type = 'missable';
       }
     });
+    widget.onFilterChanged?.call();
   }
 
   Future<void> _loadComments() async {
@@ -248,13 +281,22 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
   ButtonStyle _filterStyle(BuildContext context, int index) {
     final theme = Theme.of(context);
     final selected = _filterSelected(index);
+    final focused = _control == index;
     final accent = theme.colorScheme.primary;
     return OutlinedButton.styleFrom(
-      foregroundColor: selected ? theme.colorScheme.onPrimary : accent,
+      foregroundColor: selected || focused
+          ? (selected ? theme.colorScheme.onPrimary : accent)
+          : accent,
       backgroundColor: selected
           ? accent
           : accent.withValues(
-              alpha: theme.brightness == Brightness.dark ? .18 : .08,
+              alpha: focused
+                  ? theme.brightness == Brightness.dark
+                        ? .32
+                        : .16
+                  : theme.brightness == Brightness.dark
+                  ? .18
+                  : .08,
             ),
       side: BorderSide(
         width: _control == index ? 2.5 : 1,
@@ -292,7 +334,7 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
             padding: EdgeInsets.all(6.r),
             child: Row(
               children: [
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < _controlCount; i++)
                   Padding(
                     key: _controlKeys[i],
                     padding: EdgeInsets.only(left: 6.r),
@@ -303,7 +345,8 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
                         _s(switch (i) {
                           0 => AppLocale.filterAll,
                           1 => AppLocale.raFilterLocked,
-                          _ => AppLocale.raFilterMissables,
+                          2 => AppLocale.raFilterMissables,
+                          _ => AppLocale.raSubtabLeaderboards,
                         }),
                       ),
                     ),
@@ -422,6 +465,7 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
         ? widget.info.numDistinctPlayersHardcore
         : widget.info.numDistinctPlayersCasual;
     final awarded = _query.hardcore ? a.numAwardedHardcore : a.numAwarded;
+    final metadataColor = Theme.of(context).colorScheme.onSurfaceVariant;
     return Column(
       children: [
         Row(
@@ -500,7 +544,11 @@ class RaAchievementBrowserState extends State<RaAchievementBrowser> {
                         children: [
                           Text(
                             '${comment.user} · ${comment.submitted?.toLocal().toString().split('.').first ?? ''}',
-                            style: Theme.of(context).textTheme.labelMedium,
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  color: metadataColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                           Text(comment.commentText),
                         ],

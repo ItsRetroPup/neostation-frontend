@@ -208,7 +208,7 @@ void main() {
     await pumpShell(tester, _DashboardProvider());
 
     expect(find.byType(RADashboardHub), findsOneWidget);
-    expect(find.text(AppLocale.en[AppLocale.raEvents]!), findsOneWidget);
+    expect(find.text(AppLocale.en[AppLocale.raAotw]!), findsOneWidget);
     expect(find.text(AppLocale.en[AppLocale.raSubtabUnlocks]!), findsOneWidget);
     expect(find.text(AppLocale.en[AppLocale.raSubtabGames]!), findsOneWidget);
     expect(find.text(AppLocale.en[AppLocale.raAwards]!), findsOneWidget);
@@ -243,7 +243,7 @@ void main() {
   ) async {
     await pumpShell(tester, _DashboardProvider());
 
-    await tester.tap(find.text(AppLocale.en[AppLocale.raEvents]!).first);
+    await tester.tap(find.text(AppLocale.en[AppLocale.raAotw]!).first);
     await tester.pumpAndSettle();
     expect(find.byType(RaCollectionPage), findsOneWidget);
     await tester.pageBack();

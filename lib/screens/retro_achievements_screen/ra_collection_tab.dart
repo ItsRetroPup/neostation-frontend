@@ -256,6 +256,41 @@ class RaCollectionTabState extends State<RaCollectionTab> {
   };
   String _weekLabel(RaEventWeek week) =>
       _s(AppLocale.raWeek).replaceFirst('{week}', '${week.week}');
+
+  String _weekFooterLabel(RaEventWeek week, DateTime now) {
+    final weekLabel = _weekLabel(week);
+    final title = week.achievement?.title.trim();
+    if (title == null || title.isEmpty) {
+      return '$weekLabel: ${_status(week.statusAt(now))}';
+    }
+
+    // Some event sets already include the week prefix in the achievement
+    // title. Keep the useful game name while normalizing the separator.
+    final weekPrefix = RegExp(
+      '^Week\\s+${week.week}\\s*[:\\-]\\s*',
+      caseSensitive: false,
+    );
+    if (weekPrefix.hasMatch(title)) {
+      return title.replaceFirst(weekPrefix, '$weekLabel: ');
+    }
+
+    // The live AOTW payload carries the game separately. Use it when the
+    // annual achievement title only contains the achievement name.
+    final current = _provider?.gotw;
+    final currentStart = current?.startDateUtc;
+    final gameTitle =
+        current != null &&
+            currentStart != null &&
+            currentStart.isAtSameMomentAs(week.start)
+        ? current.game.title.trim()
+        : '';
+    if (gameTitle.isNotEmpty &&
+        !title.toLowerCase().contains(gameTitle.toLowerCase())) {
+      return '$weekLabel: $gameTitle - $title';
+    }
+    return '$weekLabel: $title';
+  }
+
   String _awardLabel(RaCabinetAward a) =>
       '${_s(a.kind == 'mastered'
           ? AppLocale.raMasteryLabel
@@ -395,25 +430,27 @@ class RaCollectionTabState extends State<RaCollectionTab> {
                                 setState(() => _selected = index);
                                 _open();
                               },
-                              child: Container(
+                              child: Padding(
                                 padding: EdgeInsets.all(4.r),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  border: Border.all(
-                                    width: 2,
-                                    color: index == _selected && widget.focused
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Colors.transparent,
-                                  ),
-                                ),
                                 child: Column(
                                   children: [
-                                    Expanded(
+                                    AspectRatio(
+                                      aspectRatio: 1,
                                       child: Container(
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            width: 2,
-                                            color: earned
+                                            width:
+                                                index == _selected &&
+                                                    widget.focused
+                                                ? 3.r
+                                                : 2.r,
+                                            color:
+                                                index == _selected &&
+                                                    widget.focused
+                                                ? Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary
+                                                : earned
                                                 ? (award?.hardcore == true ||
                                                           status ==
                                                               RaEventStatus
@@ -483,7 +520,7 @@ class RaCollectionTabState extends State<RaCollectionTab> {
               padding: EdgeInsets.symmetric(vertical: 8.r),
               child: widget.events
                   ? Text(
-                      '${_weekLabel(_weeks[_selected])} · ${_weeks[_selected].achievement?.title ?? _status(_weeks[_selected].statusAt(now))}\n${_weeks[_selected].start.toIso8601String().substring(0, 10)} – ${_weeks[_selected].end.subtract(const Duration(seconds: 1)).toIso8601String().substring(0, 10)} · ${_status(_weeks[_selected].statusAt(now))}',
+                      '${_weekFooterLabel(_weeks[_selected], now)}\n${_weeks[_selected].start.toIso8601String().substring(0, 10)} – ${_weeks[_selected].end.subtract(const Duration(seconds: 1)).toIso8601String().substring(0, 10)} · ${_status(_weeks[_selected].statusAt(now))}',
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     )

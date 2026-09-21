@@ -44,6 +44,8 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
   bool _headerFocused = false;
   int _headerActionIndex = 0;
   bool _leaderboardsView = false;
+  bool _gameHeaderVisible = true;
+  bool _headerRevealArmed = true;
   bool _loading = true;
   String? _error;
   bool _requestInFlight = false;
@@ -108,7 +110,8 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
       return;
     }
     if (_headerFocused) return;
-    if (_browserKey.currentState?.move(0, -1) != true) {
+    if (_browserKey.currentState?.move(0, -1) != true &&
+        _headerActions.isNotEmpty) {
       setState(() => _headerFocused = true);
     }
   }
@@ -145,12 +148,12 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
   }
 
   List<String> get _headerActions => [
-    'leaderboards',
     if (_gameInfo?.guideUrl case final url? when _isHttpUrl(url)) 'guide',
   ];
 
   void _moveHeaderAction(int delta) {
     final actions = _headerActions;
+    if (actions.isEmpty) return;
     setState(() {
       _headerActionIndex =
           (_headerActionIndex + delta + actions.length) % actions.length;
@@ -159,10 +162,9 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
 
   void _activateHeaderAction() {
     final actions = _headerActions;
+    if (actions.isEmpty) return;
     final action = actions[_headerActionIndex.clamp(0, actions.length - 1)];
     switch (action) {
-      case 'leaderboards':
-        _showLeaderboards();
       case 'guide':
         final url = _gameInfo?.guideUrl;
         if (url != null && _isHttpUrl(url)) {
@@ -175,6 +177,8 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
     setState(() {
       _leaderboardsView = true;
       _headerFocused = false;
+      _gameHeaderVisible = false;
+      _headerRevealArmed = false;
     });
     // Arm the leaderboard panel after it has been inserted by the view switch
     // so the next D-pad press moves its first row immediately.
@@ -256,11 +260,21 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
       ),
       body: Column(
         children: [
-          _buildGameHeader(context, info),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: _gameHeaderVisible
+                ? _buildGameHeader(context, info)
+                : const SizedBox.shrink(),
+          ),
           Expanded(
-            child: _leaderboardsView
-                ? _buildLeaderboards(context)
-                : _buildAchievements(context, info),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _handleContentScroll,
+              child: _leaderboardsView
+                  ? _buildLeaderboards(context)
+                  : _buildAchievements(context, info),
+            ),
           ),
         ],
       ),
@@ -349,20 +363,6 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
                     ),
                 ],
               ],
-            ),
-          ),
-          SizedBox(width: 12.r),
-          OutlinedButton.icon(
-            onPressed: _showLeaderboards,
-            icon: const Icon(Symbols.leaderboard_rounded),
-            label: Text(AppLocale.raSubtabLeaderboards.getString(context)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: theme.colorScheme.primary,
-              backgroundColor: theme.colorScheme.primary.withValues(alpha: .1),
-              side: BorderSide(
-                color: theme.colorScheme.primary,
-                width: _headerActionFocused('leaderboards') ? 2.r : 1.r,
-              ),
             ),
           ),
         ],
@@ -475,8 +475,32 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
 
   bool _headerActionFocused(String action) {
     final actions = _headerActions;
-    return _headerFocused &&
+    return actions.isNotEmpty &&
+        _headerFocused &&
         actions[_headerActionIndex.clamp(0, actions.length - 1)] == action;
+  }
+
+  bool _handleContentScroll(ScrollNotification notification) {
+    if (_leaderboardsView || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    final visible = notification.metrics.extentBefore <= 0;
+    if (notification is UserScrollNotification) {
+      _headerRevealArmed = true;
+    }
+    // Programmatic list re-reveals after a filter change must not unlock a
+    // header that the user has already collapsed. UserScrollNotification
+    // above is the explicit gesture that arms it again.
+    if (visible && !_headerRevealArmed) {
+      // A filter change can re-scan the list at offset zero. Keep the header
+      // collapsed in that case; it should return only after the user scrolls
+      // away and back to the top.
+      return false;
+    }
+    if (_gameHeaderVisible != visible) {
+      setState(() => _gameHeaderVisible = visible);
+    }
+    return false;
   }
 
   Widget _buildAchievements(
@@ -504,6 +528,10 @@ class _RaGameAchievementsPageState extends State<RaGameAchievementsPage> {
       key: _browserKey,
       info: info,
       highlightId: widget.highlightAchievementId,
+      onLeaderboards: _showLeaderboards,
+      onFilterChanged: () {
+        if (!_gameHeaderVisible) _headerRevealArmed = false;
+      },
     );
   }
 

@@ -5,15 +5,15 @@ part of '../ra_content.dart';
 /// normal RA row is an information request and should never trigger a
 /// download as a side effect.
 extension _DrillDownHost on _RAContentState {
-  Future<void> _openUnlocks() {
-    _setDashboardAction(2);
+  Future<void> _openUnlocks({int focusAction = 2}) {
+    _setDashboardAction(focusAction);
     return _openRaPage(
       RaUnlocksPage(onActivate: (item) => _activateUnlock(item)),
     );
   }
 
-  Future<void> _openGames() {
-    _setDashboardAction(3);
+  Future<void> _openGames({int focusAction = 3}) {
+    _setDashboardAction(focusAction);
     return _openRaPage(RaGamesPage(onActivate: (item) => _activateGame(item)));
   }
 

@@ -15,27 +15,53 @@ extension _WeekCard on RADashboardHubState {
   void _resolveRommWeekGame(RetroAchievementsProvider raProvider) {
     final gotw = raProvider.gotw;
     final gameId = gotw?.game.id;
-    final key = '$gameId|${gotw?.game.title}';
+    final rommProvider = context.read<RommProvider>();
+    final key = '${rommProvider.isConnected}|$gameId|${gotw?.game.title}';
     if (raProvider.ownedWeekGame != null ||
         gameId == null ||
         gameId <= 0 ||
         _rommLookupKey == key) {
       return;
     }
-    final rommProvider = context.read<RommProvider>();
-    if (!rommProvider.isConnected) return;
     _rommLookupKey = key;
+    if (!rommProvider.isConnected) {
+      rebuild(() {
+        _rommWeekGame = null;
+        _rommWeekGameLoading = false;
+        _rommWeekGameLookupFailed = false;
+      });
+      return;
+    }
     rebuild(() {
       _rommWeekGame = null;
       _rommWeekGameLoading = true;
+      _rommWeekGameLookupFailed = false;
     });
-    rommProvider.findRomByRaGameId(gameId, gotw!.game.title).then((rom) {
-      if (!mounted || _rommLookupKey != key) return;
-      rebuild(() {
-        _rommWeekGame = rom;
-        _rommWeekGameLoading = false;
-      });
-    });
+    final forceRefresh = _forceRommWeekLookup;
+    _forceRommWeekLookup = false;
+    rommProvider
+        .findRomByRaGameIdResult(
+          gameId,
+          gotw!.game.title,
+          forceRefresh: forceRefresh,
+        )
+        .then((result) {
+          if (!mounted || _rommLookupKey != key) return;
+          rebuild(() {
+            _rommWeekGame = result.rom;
+            _rommWeekGameLoading = false;
+            _rommWeekGameLookupFailed =
+                result.status == RommRaLookupStatus.failed;
+          });
+        });
+  }
+
+  void _retryRommWeekLookup(RetroAchievementsProvider raProvider) {
+    final gotw = raProvider.gotw;
+    if (gotw == null) return;
+    _rommLookupKey = null;
+    _forceRommWeekLookup = true;
+    _resolveRommWeekGame(raProvider);
   }
 
   Future<void> _downloadWeekGame(
@@ -84,9 +110,12 @@ extension _WeekCard on RADashboardHubState {
     // The transfer is complete before the normal debounced scan has inserted
     // its user_roms row. Waiting here gives the card a real local target rather
     // than making the player leave/restart to discover it.
+    rebuild(() => _weekDownloadIndexing = true);
     await result.indexed.timeout(const Duration(seconds: 30), onTimeout: () {});
     if (!mounted) return;
     await raProvider.refreshAotwLocalGame();
+    if (!mounted) return;
+    rebuild(() => _weekDownloadIndexing = false);
   }
 
   String _rommDownloadErrorMessage(RommDownloadError error) {
@@ -106,7 +135,8 @@ extension _WeekCard on RADashboardHubState {
     RetroAchievementsProvider raProvider,
   ) {
     final theme = Theme.of(context);
-    final rommLibraryRevision = context.watch<RommProvider>().libraryRevision;
+    final rommProvider = context.watch<RommProvider>();
+    final rommLibraryRevision = rommProvider.libraryRevision;
     if (rommLibraryRevision != _seenRommLibraryRevision) {
       _seenRommLibraryRevision = rommLibraryRevision;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -115,6 +145,13 @@ extension _WeekCard on RADashboardHubState {
     }
     final gotw = raProvider.gotw;
     final owned = raProvider.ownedWeekGame;
+    final lookupKey =
+        '${rommProvider.isConnected}|${gotw?.game.id}|${gotw?.game.title}';
+    if (owned == null && _rommLookupKey != lookupKey) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _resolveRommWeekGame(raProvider);
+      });
+    }
     final progress = raProvider.aotwPersonalProgress;
     final status = _aotwStatusPresentation(context, progress.state);
     final accent = progress.earnedThisWeek
@@ -123,7 +160,7 @@ extension _WeekCard on RADashboardHubState {
         ? theme.colorScheme.secondary
         : theme.colorScheme.primary;
 
-    final selectable = owned != null || _rommWeekGame != null;
+    final selectable = gotw != null;
     final selected = selectable && widget.weekCardSelected;
     final semanticsLabel = gotw == null
         ? AppLocale.aotw.getString(context)
@@ -138,7 +175,7 @@ extension _WeekCard on RADashboardHubState {
         borderRadius: BorderRadius.circular(12.r),
         onTap: selectable ? selectWeekCard : null,
         child: Container(
-          padding: EdgeInsets.all(14.r),
+          padding: EdgeInsets.all(16.r),
           decoration: _cardDecoration(
             theme,
             borderColor: selected
@@ -284,8 +321,57 @@ extension _WeekCard on RADashboardHubState {
         accent,
       );
     }
+    if (_weekDownloadIndexing) {
+      return _aotwLibraryLabel(
+        context,
+        Symbols.sync_rounded,
+        AppLocale.preparingLibrary.getString(context),
+        accent,
+      );
+    }
+    if (_rommWeekGameLookupFailed) {
+      return TextButton.icon(
+        onPressed: () => _retryRommWeekLookup(raProvider),
+        icon: Icon(Symbols.refresh_rounded, size: 15.r),
+        label: Text(AppLocale.retry.getString(context)),
+        style: TextButton.styleFrom(
+          foregroundColor: accent,
+          textStyle: theme.textTheme.bodySmall?.copyWith(
+            fontSize: 8.r,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
     final remote = _rommWeekGame;
     if (remote == null) {
+      final rommConnected = context.read<RommProvider>().isConnected;
+      if (!rommConnected) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _aotwLibraryLabel(
+              context,
+              Symbols.inventory_2_rounded,
+              AppLocale.raAotwNotInLibrary.getString(context),
+              accent,
+            ),
+            SizedBox(height: 6.r),
+            OutlinedButton.icon(
+              onPressed: widget.onOpenRomm,
+              icon: Icon(Symbols.cloud_rounded, size: 15.r),
+              label: Text(AppLocale.rommLogin.getString(context)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: accent,
+                textStyle: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 8.r,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      }
       return _aotwLibraryLabel(
         context,
         Symbols.inventory_2_rounded,
@@ -297,9 +383,7 @@ extension _WeekCard on RADashboardHubState {
         context.watch<RommProvider>().downloadFor(remote.id) ?? _weekDownload;
     final downloading = download?.status == RommDownloadStatus.downloading;
     return OutlinedButton.icon(
-      onPressed: downloading
-          ? null
-          : () => _downloadWeekGame(remote, raProvider),
+      onPressed: () => _downloadWeekGame(remote, raProvider),
       icon: downloading
           ? SizedBox(
               width: 14.r,
@@ -312,7 +396,7 @@ extension _WeekCard on RADashboardHubState {
           : Icon(Symbols.download_rounded, size: 15.r),
       label: Text(
         downloading
-            ? AppLocale.rommDownloading.getString(context)
+            ? AppLocale.cancel.getString(context)
             : AppLocale.raAotwDownloadFromRomm.getString(context),
       ),
       style: OutlinedButton.styleFrom(
@@ -361,13 +445,13 @@ extension _WeekCard on RADashboardHubState {
         ClipRRect(
           borderRadius: BorderRadius.circular(10.r),
           child: SizedBox(
-            width: 72.r,
-            height: 72.r,
+            width: 80.r,
+            height: 80.r,
             child: Image.network(
               _raMediaUrl(gotw.achievement.badgeUrl),
               fit: BoxFit.cover,
-              cacheWidth: (72 * MediaQuery.devicePixelRatioOf(context)).ceil(),
-              cacheHeight: (72 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+              cacheWidth: (80 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+              cacheHeight: (80 * MediaQuery.devicePixelRatioOf(context)).ceil(),
               errorBuilder: (context, error, stackTrace) => Container(
                 color: theme.colorScheme.surface,
                 child: Icon(
@@ -379,7 +463,7 @@ extension _WeekCard on RADashboardHubState {
             ),
           ),
         ),
-        SizedBox(width: 12.r),
+        SizedBox(width: 14.r),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

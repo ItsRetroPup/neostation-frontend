@@ -1257,6 +1257,7 @@ mixin AppLocale {
   static const String raUserType = 'ra_user_type';
   static const String raCasual = 'ra_casual';
   static const String raEvents = 'raEvents';
+  static const String raAotwYearTitle = 'ra_aotw_year_title';
   static const String raAotw = 'raAotw';
   static const String raAwards = 'raAwards';
   static const String raSetOrder = 'raSetOrder';

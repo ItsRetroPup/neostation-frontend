@@ -13,7 +13,7 @@ extension _SectionLists on RADashboardHubState {
           child: _destinationCard(
             context,
             icon: Symbols.event_rounded,
-            label: AppLocale.raEvents.getString(context),
+            label: AppLocale.raAotw.getString(context),
             selected: widget.eventsSelected,
             onTap: widget.onOpenEvents,
           ),
@@ -22,7 +22,7 @@ extension _SectionLists on RADashboardHubState {
         Expanded(
           child: _destinationCard(
             context,
-            icon: Symbols.notifications_active_rounded,
+            icon: Symbols.lock_open_rounded,
             label: AppLocale.raSubtabUnlocks.getString(context),
             selected: widget.recentUnlocksSelected,
             onTap: widget.onOpenUnlocks,
@@ -112,17 +112,17 @@ extension _SectionLists on RADashboardHubState {
       padding: EdgeInsets.all(14.r),
       decoration: _cardDecoration(
         Theme.of(context),
-        borderColor: widget.recentUnlocksSelected
+        borderColor: widget.recentUnlocksPreviewSelected
             ? Theme.of(context).colorScheme.primary
             : null,
-        borderWidth: widget.recentUnlocksSelected ? 2.r : null,
+        borderWidth: widget.recentUnlocksPreviewSelected ? 2.r : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(
             context,
-            icon: Symbols.notifications_active_rounded,
+            icon: Symbols.lock_open_rounded,
             title: AppLocale.raRecentUnlocks.getString(context),
             trailing: AppLocale.raRecent30Days.getString(context),
           ),
@@ -175,7 +175,7 @@ extension _SectionLists on RADashboardHubState {
       error: items.isEmpty ? raProvider.recentlyPlayedError : null,
       emptyMessage: AppLocale.raNoRecentlyPlayed.getString(context),
       items: items,
-      selected: widget.gamesSelected,
+      selected: widget.gamesPreviewSelected,
       onRetry: raProvider.fetchRecentlyPlayedGames,
       itemBuilder: (context, item) => _buildRecentlyPlayedRow(
         context,

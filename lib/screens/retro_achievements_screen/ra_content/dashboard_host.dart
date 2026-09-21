@@ -18,8 +18,7 @@ extension _DashboardHost on _RAContentState {
     context.read<RetroAchievementsProvider>().disconnect(clearSavedUser: true);
     if (!mounted) return;
     resetSelection();
-    _setLogoutSelected(false);
-    _setWeekCardSelected(false);
+    _resetDashboardSelection();
     AppNotification.showNotification(
       context,
       AppLocale.disconnectedRA.getString(context),

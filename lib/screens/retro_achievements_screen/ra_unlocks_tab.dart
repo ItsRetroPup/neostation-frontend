@@ -250,7 +250,7 @@ class RaUnlocksTabState extends State<RaUnlocksTab> {
     return Row(
       children: [
         Icon(
-          Symbols.notifications_active_rounded,
+          Symbols.lock_open_rounded,
           size: 18.r,
           color: theme.colorScheme.primary,
         ),

@@ -2,6 +2,7 @@ part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleId = {
   AppLocale.raEvents: 'Acara',
+  AppLocale.raAotwYearTitle: 'Pencapaian Minggu Ini ({year})',
   AppLocale.raAotw: 'AOTW',
   AppLocale.raAwards: 'Penghargaan',
   AppLocale.raSetOrder: 'Urutan set',

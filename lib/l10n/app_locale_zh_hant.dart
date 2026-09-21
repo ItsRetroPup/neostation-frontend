@@ -2,6 +2,7 @@ part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.raEvents: '活動',
+  AppLocale.raAotwYearTitle: '本週成就（{year}）',
   AppLocale.raAotw: 'AOTW',
   AppLocale.raAwards: '獎項',
   AppLocale.raSetOrder: '套組順序',

@@ -13,7 +13,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/gestures.dart';
 import '../../services/game_service.dart' show GamepadNavigationManager;
-import '../app_screen.dart' show AppNavigation;
+import '../app_screen.dart' show AppNavigation, AppTabs;
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import '../../utils/login_form_selection.dart';
@@ -44,19 +44,25 @@ class _RAContentState extends State<RAContent>
   final FocusNode _usernameFocus = FocusNode();
   final FocusNode _apiKeyFocus = FocusNode();
   final ScrollController _dashboardScrollController = ScrollController();
+  final GlobalKey _aotwFocusKey = GlobalKey();
+  final GlobalKey _recentUnlocksFocusKey = GlobalKey();
+  final GlobalKey _gamesPreviewFocusKey = GlobalKey();
 
-  /// Connected dashboard action focus. The weekly spotlight is the initial
-  /// action; the D-pad then walks the four dedicated destinations and logout.
+  /// Connected dashboard action focus. The D-pad follows the dashboard's
+  /// spatial groups: logout, destination rail, AOTW, and the two previews.
   bool _logoutSelected = false;
 
-  /// The dashboard's one actionable content card. It is selectable when the
-  /// weekly game is local or has a matched RomM download.
+  /// The dashboard's weekly spotlight selection. Availability changes its
+  /// action, but the spotlight remains focusable whenever an event exists.
   bool _weekCardSelected = true;
   bool _eventsSelected = false;
   bool _recentUnlocksSelected = false;
+  bool _gamesSelected = false;
   bool _gamesPreviewSelected = false;
+  bool _recentUnlocksPreviewSelected = false;
   bool _awardsSelected = false;
   int _dashboardActionIndex = 0;
+  int _lastNavigationRailIndex = 1;
   final GlobalKey<RADashboardHubState> _dashboardKey =
       GlobalKey<RADashboardHubState>();
 
@@ -76,14 +82,6 @@ class _RAContentState extends State<RAContent>
   /// method can.
   void rebuild(VoidCallback fn) => setState(fn);
 
-  void _setLogoutSelected(bool selected) {
-    rebuild(() => _logoutSelected = selected);
-  }
-
-  void _setWeekCardSelected(bool selected) {
-    rebuild(() => _weekCardSelected = selected);
-  }
-
   @override
   List<FocusNode?> get selectionSlots => [
     _usernameFocus,
@@ -96,7 +94,6 @@ class _RAContentState extends State<RAContent>
   void initState() {
     super.initState();
     attachFocusSelectionListeners();
-    _dashboardScrollController.addListener(_releaseSelectionOnScroll);
     _initControllerNavigation();
     _prefillUsername();
   }
@@ -176,8 +173,13 @@ class _RAContentState extends State<RAContent>
                   weekCardSelected: _weekCardSelected,
                   eventsSelected: _eventsSelected,
                   recentUnlocksSelected: _recentUnlocksSelected,
-                  gamesSelected: _gamesPreviewSelected,
+                  gamesSelected: _gamesSelected,
+                  recentUnlocksPreviewSelected: _recentUnlocksPreviewSelected,
+                  gamesPreviewSelected: _gamesPreviewSelected,
                   awardsSelected: _awardsSelected,
+                  aotwFocusKey: _aotwFocusKey,
+                  recentUnlocksFocusKey: _recentUnlocksFocusKey,
+                  gamesPreviewFocusKey: _gamesPreviewFocusKey,
                   onDisconnectRequested: _requestDisconnect,
                   onOwnedWeekGameSelected: _openOwnedWeekGame,
                   onUnlockSelected: _activateUnlock,
@@ -187,6 +189,7 @@ class _RAContentState extends State<RAContent>
                   onOpenGames: _openGames,
                   onOpenEvents: _openEvents,
                   onOpenAwards: _openAwards,
+                  onOpenRomm: () => AppNavigation.goToTab(AppTabs.romm),
                   active: true,
                 ),
               ),

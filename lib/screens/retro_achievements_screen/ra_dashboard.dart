@@ -31,6 +31,11 @@ class RADashboardHub extends StatefulWidget {
   final bool recentUnlocksSelected;
   final bool gamesSelected;
   final bool awardsSelected;
+  final bool recentUnlocksPreviewSelected;
+  final bool gamesPreviewSelected;
+  final GlobalKey? aotwFocusKey;
+  final GlobalKey? recentUnlocksFocusKey;
+  final GlobalKey? gamesPreviewFocusKey;
   final VoidCallback onDisconnectRequested;
   final ValueChanged<OwnedWeekGameResolution> onOwnedWeekGameSelected;
   final ValueChanged<RetroAchievementRecentUnlockItem>? onUnlockSelected;
@@ -39,6 +44,7 @@ class RADashboardHub extends StatefulWidget {
   final VoidCallback? onOpenGames;
   final VoidCallback? onOpenEvents;
   final VoidCallback? onOpenAwards;
+  final VoidCallback? onOpenRomm;
   final VoidCallback? onBack;
   final VoidCallback? onSelect;
 
@@ -55,6 +61,11 @@ class RADashboardHub extends StatefulWidget {
     this.recentUnlocksSelected = false,
     this.gamesSelected = false,
     this.awardsSelected = false,
+    this.recentUnlocksPreviewSelected = false,
+    this.gamesPreviewSelected = false,
+    this.aotwFocusKey,
+    this.recentUnlocksFocusKey,
+    this.gamesPreviewFocusKey,
     required this.onDisconnectRequested,
     required this.onOwnedWeekGameSelected,
     this.onUnlockSelected,
@@ -63,6 +74,7 @@ class RADashboardHub extends StatefulWidget {
     this.onOpenGames,
     this.onOpenEvents,
     this.onOpenAwards,
+    this.onOpenRomm,
     this.onBack,
     this.onSelect,
     this.active = true,
@@ -87,7 +99,10 @@ class RADashboardHubState extends State<RADashboardHub> {
   String? _rommLookupKey;
   RommRom? _rommWeekGame;
   bool _rommWeekGameLoading = false;
+  bool _rommWeekGameLookupFailed = false;
+  bool _forceRommWeekLookup = false;
   RommDownload? _weekDownload;
+  bool _weekDownloadIndexing = false;
   int _seenRommLibraryRevision = 0;
 
   /// Bridges [State.setState] for the part-file extensions: `setState` is
@@ -104,16 +119,17 @@ class RADashboardHubState extends State<RADashboardHub> {
       widget.onOwnedWeekGameSelected(owned);
       return;
     }
+    if (_weekDownloadIndexing) return;
     final remote = _rommWeekGame;
-    if (remote != null) _downloadWeekGame(remote, raProvider);
+    if (remote != null) {
+      _downloadWeekGame(remote, raProvider);
+    } else if (!context.read<RommProvider>().isConnected) {
+      widget.onOpenRomm?.call();
+    }
   }
 
   bool get weekCardSelectable =>
-      context.read<RetroAchievementsProvider>().ownedWeekGame != null ||
-      _rommWeekGame != null;
-
-  bool get recentUnlocksSelectable =>
-      context.read<RetroAchievementsProvider>().recentUnlocks.isNotEmpty;
+      context.read<RetroAchievementsProvider>().gotw != null;
 
   bool get gamesSelectable =>
       context.read<RetroAchievementsProvider>().recentlyPlayedGames.isNotEmpty;
@@ -204,14 +220,20 @@ class RADashboardHubState extends State<RADashboardHub> {
                         // .r here double-scales it and forces stacked mode on wide
                         // landscape screens, wasting the right half of every card.
                         final twoColumn = constraints.maxWidth >= 720;
-                        final weekCard = _buildWeekCard(context, raProvider);
-                        final unlocksCard = _buildRecentUnlocksCard(
-                          context,
-                          raProvider,
+                        final weekCard = KeyedSubtree(
+                          key: widget.aotwFocusKey,
+                          child: _buildWeekCard(context, raProvider),
                         );
-                        final playedCard = _buildRecentlyPlayedSection(
-                          context,
-                          raProvider,
+                        final unlocksCard = KeyedSubtree(
+                          key: widget.recentUnlocksFocusKey,
+                          child: _buildRecentUnlocksCard(context, raProvider),
+                        );
+                        final playedCard = KeyedSubtree(
+                          key: widget.gamesPreviewFocusKey,
+                          child: _buildRecentlyPlayedSection(
+                            context,
+                            raProvider,
+                          ),
                         );
 
                         if (!twoColumn) {
@@ -225,22 +247,17 @@ class RADashboardHubState extends State<RADashboardHub> {
                             ],
                           );
                         }
-                        // Wide landscape keeps the weekly spotlight beside the
-                        // two activity previews. This uses the horizontal
-                        // space that was previously left beside the cards and
-                        // keeps the dashboard within one viewport more often.
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        return Column(
                           children: [
-                            Expanded(flex: 5, child: weekCard),
-                            SizedBox(width: 12.r),
-                            Expanded(
-                              flex: 7,
-                              child: Column(
+                            weekCard,
+                            SizedBox(height: 12.r),
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  unlocksCard,
-                                  SizedBox(height: 12.r),
-                                  playedCard,
+                                  Expanded(child: unlocksCard),
+                                  SizedBox(width: 12.r),
+                                  Expanded(child: playedCard),
                                 ],
                               ),
                             ),

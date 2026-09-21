@@ -2,6 +2,7 @@ part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleIt = {
   AppLocale.raEvents: 'Eventi',
+  AppLocale.raAotwYearTitle: 'Achievement della settimana ({year})',
   AppLocale.raAotw: 'AOTW',
   AppLocale.raAwards: 'Premi',
   AppLocale.raSetOrder: 'Ordine del set',

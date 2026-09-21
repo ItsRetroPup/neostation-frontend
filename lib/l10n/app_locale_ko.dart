@@ -2,6 +2,7 @@ part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleKo = {
   AppLocale.raEvents: '이벤트',
+  AppLocale.raAotwYearTitle: '이번 주 업적 ({year})',
   AppLocale.raAotw: 'AOTW',
   AppLocale.raAwards: '수상',
   AppLocale.raSetOrder: '세트 순서',

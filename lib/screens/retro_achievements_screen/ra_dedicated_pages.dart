@@ -66,7 +66,9 @@ class _RaCollectionPageState extends State<RaCollectionPage> {
   @override
   Widget build(BuildContext context) {
     final title = widget.events
-        ? AppLocale.raEvents.getString(context)
+        ? AppLocale.raAotwYearTitle
+              .getString(context)
+              .replaceFirst('{year}', '${DateTime.now().year}')
         : AppLocale.raAwards.getString(context);
     return _RaPageScaffold(
       title: title,
@@ -187,7 +189,7 @@ class _RaUnlocksPageState extends State<RaUnlocksPage> {
   @override
   Widget build(BuildContext context) => _RaPageScaffold(
     title: AppLocale.raSubtabUnlocks.getString(context),
-    icon: Symbols.notifications_active_rounded,
+    icon: Symbols.lock_open_rounded,
     onBack: _pop,
     child: RaUnlocksTab(
       key: _contentKey,
