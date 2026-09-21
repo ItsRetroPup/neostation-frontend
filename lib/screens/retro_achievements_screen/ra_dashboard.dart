@@ -27,21 +27,23 @@ class RADashboardHub extends StatefulWidget {
   final ScrollController? scrollController;
   final bool logoutSelected;
   final bool weekCardSelected;
+  final bool eventsSelected;
   final bool recentUnlocksSelected;
   final bool gamesSelected;
+  final bool awardsSelected;
   final VoidCallback onDisconnectRequested;
   final ValueChanged<OwnedWeekGameResolution> onOwnedWeekGameSelected;
   final ValueChanged<RetroAchievementRecentUnlockItem>? onUnlockSelected;
   final void Function(int gameId, String title)? onGameSelected;
+  final VoidCallback? onOpenUnlocks;
+  final VoidCallback? onOpenGames;
+  final VoidCallback? onOpenEvents;
+  final VoidCallback? onOpenAwards;
   final VoidCallback? onBack;
   final VoidCallback? onSelect;
 
-  /// Whether the dashboard sub-tab is the one on screen. The shell's
-  /// IndexedStack keeps this hub mounted while another sub-tab is open, so
-  /// this flag — not mounting — is what decides whether a generation bump
-  /// (refresh, finished session) reloads *now* or waits for the next
-  /// activation, when the staleness window sends the same reload through the
-  /// entry path.
+  /// Whether the dashboard is currently visible. Dedicated collection pages
+  /// mount separately, so this flag gates dashboard refresh work.
   final bool active;
 
   const RADashboardHub({
@@ -49,12 +51,18 @@ class RADashboardHub extends StatefulWidget {
     this.scrollController,
     required this.logoutSelected,
     required this.weekCardSelected,
+    this.eventsSelected = false,
     this.recentUnlocksSelected = false,
     this.gamesSelected = false,
+    this.awardsSelected = false,
     required this.onDisconnectRequested,
     required this.onOwnedWeekGameSelected,
     this.onUnlockSelected,
     this.onGameSelected,
+    this.onOpenUnlocks,
+    this.onOpenGames,
+    this.onOpenEvents,
+    this.onOpenAwards,
     this.onBack,
     this.onSelect,
     this.active = true,
@@ -111,16 +119,11 @@ class RADashboardHubState extends State<RADashboardHub> {
       context.read<RetroAchievementsProvider>().recentlyPlayedGames.isNotEmpty;
 
   void selectRecentUnlockPreview() {
-    final items = context.read<RetroAchievementsProvider>().recentUnlocks;
-    if (items.isNotEmpty) widget.onUnlockSelected?.call(items.first);
+    widget.onOpenUnlocks?.call();
   }
 
   void selectGamesPreview() {
-    final items = context.read<RetroAchievementsProvider>().recentlyPlayedGames;
-    if (items.isNotEmpty) {
-      final item = items.first;
-      widget.onGameSelected?.call(item.gameId, item.title);
-    }
+    widget.onOpenGames?.call();
   }
 
   @override
@@ -140,9 +143,8 @@ class RADashboardHubState extends State<RADashboardHub> {
   @override
   void didUpdateWidget(RADashboardHub oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // The shell's IndexedStack never unmounts this hub while another sub-tab
-    // is open, so a sub-tab switch arrives here rather than as a
-    // dependencies change.
+    // Route changes can leave this hub mounted, so visibility changes arrive
+    // here rather than through dependency changes.
     if (widget.active && !oldWidget.active) {
       _maybeScheduleInitialLoad(
         _provider ?? context.read<RetroAchievementsProvider>(),
@@ -150,26 +152,20 @@ class RADashboardHubState extends State<RADashboardHub> {
     }
   }
 
-  /// Re-reads anything past its staleness window when the dashboard sub-tab
-  /// is (or becomes) the one on screen — leaving and coming back is the
-  /// refresh gesture. Without it the dashboard was a once-per-app-session
-  /// snapshot: a section that failed, an unlock earned on another device, or
-  /// the offline banner from a launch with no network, all stuck until
-  /// restart.
+  /// Re-reads anything past its staleness window when the dashboard becomes
+  /// visible. This keeps cached sections fresh after returning from a
+  /// dedicated collection page.
   ///
-  /// Re-checked on every activation rather than once per mount: the sub-tab
-  /// shell keeps this state alive across switches, so "I'll look at Unlocks
-  /// for a bit and come back" has to find the same staleness rule as walking
-  /// away from the app tab entirely.
+  /// Re-checked on every activation rather than once per mount so a dedicated
+  /// page can be visited and dismissed without making the dashboard stale.
   void _maybeScheduleInitialLoad(RetroAchievementsProvider provider) {
     if (!widget.active || !provider.isConnected) return;
     if (provider.isDashboardLoading) return;
     if (provider.dashboardLoaded && !provider.dashboardIsStale) return;
     _dashboardLoadTimer?.cancel();
     _dashboardLoadTimer = Timer(const Duration(milliseconds: 300), () {
-      // A sub-tab switch while the dwell is still running must not let the
-      // parked dashboard fire its load off-stage; the next activation
-      // re-runs the same staleness check that scheduled this one.
+      // A route change while the dwell is still running must not let a hidden
+      // dashboard fire its load off-stage; the next activation retries it.
       if (mounted && widget.active) _loadDashboard(provider);
     });
   }
@@ -198,7 +194,9 @@ class RADashboardHubState extends State<RADashboardHub> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(context, raProvider),
-                    SizedBox(height: 12.r),
+                    SizedBox(height: 8.r),
+                    _buildDestinationRail(context),
+                    SizedBox(height: 8.r),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         // constraints.maxWidth is already in logical pixels (the same
@@ -227,20 +225,24 @@ class RADashboardHubState extends State<RADashboardHub> {
                             ],
                           );
                         }
-                        // The profile keeps only the two useful activity rails
-                        // beneath the AOTW focus card. Lifetime awards remain in
-                        // the hero summary and the full Games view.
-                        return Column(
+                        // Wide landscape keeps the weekly spotlight beside the
+                        // two activity previews. This uses the horizontal
+                        // space that was previously left beside the cards and
+                        // keeps the dashboard within one viewport more often.
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            weekCard,
-                            SizedBox(height: 12.r),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(child: unlocksCard),
-                                SizedBox(width: 12.r),
-                                Expanded(child: playedCard),
-                              ],
+                            Expanded(flex: 5, child: weekCard),
+                            SizedBox(width: 12.r),
+                            Expanded(
+                              flex: 7,
+                              child: Column(
+                                children: [
+                                  unlocksCard,
+                                  SizedBox(height: 12.r),
+                                  playedCard,
+                                ],
+                              ),
                             ),
                           ],
                         );

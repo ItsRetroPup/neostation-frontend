@@ -1,21 +1,7 @@
 part of '../ra_content.dart';
 
-/// Gamepad / keyboard input handling for the RetroAchievements tab root.
-///
-/// Registers the [GamepadNavigation] input mappings and the `ra_content`
-/// gamepad layer, and implements its two focus zones: the login form's field
-/// selection while signed out, and — while signed in — the sub-tab shell,
-/// where Up from the top of the content parks the cursor on the strip
-/// [RaTabStrip], Left/Right there switch sub-tabs, and Down (or A, or B in
-/// the content) drops back into the active sub-tab at its parked cursor.
-///
-/// The strip is a zone of this one layer, never a layer of its own:
-/// switching sub-tabs or zones never touches the
-/// [GamepadNavigationManager] stack, so the double-dispatch class of bug
-/// cannot come back through the tab. All state lives on the host [State];
-/// `setState` calls route through the host [rebuild] bridge
-/// (`State.setState` is `@protected` and can't be invoked from an
-/// extension).
+/// Controller handling for the signed-in dashboard and the login form.
+/// Dedicated collections push their own routes and navigation layers.
 extension _GamepadNav on _RAContentState {
   void _initControllerNavigation() {
     _gamepadNav = GamepadNavigation(
@@ -42,342 +28,113 @@ extension _GamepadNav on _RAContentState {
   }
 
   void _selectCurrent() {
-    final raProvider = context.read<RetroAchievementsProvider>();
-    if (raProvider.isConnected) {
-      if (_stripFocused) {
-        // A on the strip enters the sub-tab under its cursor.
-        _setStripFocused(false);
+    final provider = context.read<RetroAchievementsProvider>();
+    if (!provider.isConnected) {
+      if (focusSelectedField()) return;
+      if (selectedSlot == 2) {
+        _openRaControlPanel();
         return;
       }
-      if ((_activeSubTab == RaSubTab.events ||
-          _activeSubTab == RaSubTab.awards)) {
-        _collection?.selectCurrent();
+      _connectToRA();
+      return;
+    }
+
+    switch (_dashboardActionIndex) {
+      case 0:
+        _dashboardKey.currentState?.selectWeekCard();
         return;
-      }
-      if (_activeSubTab == RaSubTab.games) {
-        // On the chips, A enters the list; on a row, A is the drill-down.
-        _gamesKey.currentState?.selectCurrent();
+      case 1:
+        _openEvents();
         return;
-      }
-      if (_logoutSelected) {
+      case 2:
+        _openUnlocks();
+        return;
+      case 3:
+        _openGames();
+        return;
+      case 4:
+        _openAwards();
+        return;
+      case 5:
         _requestDisconnect();
         return;
-      }
-      if (_recentUnlocksSelected) {
-        _dashboardKey.currentState?.selectRecentUnlockPreview();
-        return;
-      }
-      if (_gamesPreviewSelected) {
-        _dashboardKey.currentState?.selectGamesPreview();
-        return;
-      }
-      if (_weekCardSelected) {
-        _dashboardKey.currentState?.selectWeekCard();
-      }
-      return;
     }
-    if (focusSelectedField()) return;
-    if (selectedSlot == 2) {
-      _openRaControlPanel();
-      return;
-    }
-    _connectToRA();
   }
 
-  /// Y is the shared refresh action for the RA mini-app. It invalidates all
-  /// cached reads; the active sub-tab owns the resulting reload and parked
-  /// tabs pick it up when they become visible.
   void _refresh() {
     final provider = context.read<RetroAchievementsProvider>();
     if (!provider.isConnected || provider.isDashboardLoading) return;
     provider.invalidateCachedReads();
   }
 
-  /// B: in the content, it parks the cursor on the strip; on the strip (or
-  /// signed out), it is the app-wide back — today's behaviour, which on a
-  /// root tab means leaving a focused text field, and otherwise nothing.
   void _handleBack() {
-    if (!context.read<RetroAchievementsProvider>().isConnected ||
-        _stripFocused) {
+    if (!context.read<RetroAchievementsProvider>().isConnected) {
       exitTextEntry();
       return;
     }
-    _setStripFocused(true);
+    exitTextEntry();
   }
 
-  bool _setLogoutSelected(bool selected) {
-    if (!mounted || _logoutSelected == selected) return false;
-    rebuild(() => _logoutSelected = selected);
+  bool _setDashboardAction(int action) {
+    if (!mounted) return false;
+    final next = action.clamp(0, 5).toInt();
+    if (_dashboardActionIndex == next) return false;
+    rebuild(() {
+      _dashboardActionIndex = next;
+      _logoutSelected = next == 5;
+      _weekCardSelected = next == 0;
+      _eventsSelected = next == 1;
+      _recentUnlocksSelected = next == 2;
+      _gamesPreviewSelected = next == 3;
+      _awardsSelected = next == 4;
+    });
     return true;
   }
 
-  bool _setWeekCardSelected(bool selected) {
-    if (!mounted || _weekCardSelected == selected) return false;
-    rebuild(() => _weekCardSelected = selected);
-    return true;
-  }
-
-  bool _setRecentUnlocksSelected(bool selected) {
-    if (!mounted || _recentUnlocksSelected == selected) return false;
-    rebuild(() => _recentUnlocksSelected = selected);
-    return true;
-  }
-
-  bool _setGamesPreviewSelected(bool selected) {
-    if (!mounted || _gamesPreviewSelected == selected) return false;
-    rebuild(() => _gamesPreviewSelected = selected);
-    return true;
-  }
-
-  bool _setStripFocused(bool focused) {
-    if (!mounted || _stripFocused == focused) return false;
-    rebuild(() => _stripFocused = focused);
-    return true;
-  }
-
-  /// Steps the sub-tab cursor by [delta] with wrap-around. Only the sound
-  /// contract cares about the return: the caller plays the switch sound when
-  /// a press actually changed the sub-tab.
-  bool _switchSubTab(int delta) {
-    final tabs = const [
-      RaSubTab.profile,
-      RaSubTab.events,
-      RaSubTab.games,
-      RaSubTab.awards,
-    ];
-    if (tabs.length < 2) return false;
-    final current = tabs.indexOf(_activeSubTab);
-    final next = tabs[(current + delta + tabs.length) % tabs.length];
-    rebuild(() => _activeSubTab = next);
-    return true;
-  }
-
-  /// The strip's tap callback: the same switch the D-pad makes, minus the
-  /// sound (the pill plays it, as the details-card tabs do).
-  void _onSubTabTapped(RaSubTab tab) {
-    if (tab == _activeSubTab) return;
-    rebuild(() => _activeSubTab = tab);
-  }
-
-  /// Releases the header selection when the dashboard scrolls off the top by
-  /// any means, so a touch or wheel scroll can't leave the logout button or the
-  /// week card armed behind the content — both live in the header area, and a
-  /// selection the user can no longer see still answers A.
-  void _releaseSelectionOnScroll() {
-    if (_scrollingToHeader) return;
-    if (!_logoutSelected &&
-        !_weekCardSelected &&
-        !_recentUnlocksSelected &&
-        !_gamesPreviewSelected) {
-      return;
-    }
-    if (!_dashboardScrollController.hasClients) return;
-    final position = _dashboardScrollController.position;
-    if (position.pixels > position.minScrollExtent + 1) {
-      _setLogoutSelected(false);
-      _setWeekCardSelected(false);
-      _setRecentUnlocksSelected(false);
-      _setGamesPreviewSelected(false);
-    }
-  }
-
-  /// Returns whether the selection/scroll actually moved, so the gamepad
-  /// handler can suppress the nav sound at a boundary.
-  ///
-  /// From the top of the active sub-tab's content, Up parks the cursor on
-  /// the sub-tab strip instead of scrolling nowhere. Per sub-tab: the
-  /// dashboard releases its week card first (the finer move), then scrolls,
-  /// then parks; the Unlocks list has no finer move than its top row, so
-  /// Up past the first row parks immediately; the Games list has one finer
-  /// move — its filter chips — so Up steps list → chips → strip.
   bool _handleNavigateUp() {
-    final raProvider = context.read<RetroAchievementsProvider>();
-    if (!raProvider.isConnected) {
-      return moveSelection(-1);
-    }
-    if (_stripFocused) return false;
-    if ((_activeSubTab == RaSubTab.events ||
-        _activeSubTab == RaSubTab.awards)) {
-      final moved = _collection?.move(0, -1) ?? false;
-      return moved || _setStripFocused(true);
-    }
-    if (_activeSubTab == RaSubTab.games) {
-      // The tab answers false only once its chips are already armed — that
-      // is the "content top" signal, same contract as the Unlocks branch.
-      final moved = _gamesKey.currentState?.handleNavigateUp() ?? false;
-      return moved || _setStripFocused(true);
-    }
-    if (_activeSubTab == RaSubTab.profile) {
-      if (_gamesPreviewSelected) {
-        _setGamesPreviewSelected(false);
-        _setRecentUnlocksSelected(true);
-        _scrollDashboard(-160.r);
-        return true;
-      }
-      if (_recentUnlocksSelected) {
-        _setRecentUnlocksSelected(false);
-        if (_dashboardKey.currentState?.weekCardSelectable == true) {
-          _setWeekCardSelected(true);
-          _scrollHeaderIntoView();
-          return true;
-        }
-        return _setStripFocused(true);
-      }
-      if (_weekCardSelected) {
-        _setWeekCardSelected(false);
-        return _setStripFocused(true);
-      }
-    }
-    final released = _setWeekCardSelected(false);
-    final scrolled = _scrollDashboard(-160.r);
-    if (scrolled || released) return true;
-    if (_dashboardAtTop) return _setStripFocused(true);
-    return false;
+    final provider = context.read<RetroAchievementsProvider>();
+    if (!provider.isConnected) return moveSelection(-1);
+    return _setDashboardAction(_dashboardActionIndex - 1);
   }
 
-  /// Down is the cursor step inside whichever sub-tab is open. Per sub-tab:
-  /// the dashboard steps onto its one actionable card before scrolling —
-  /// only from the top and at rest, because selecting a card already
-  /// scrolled out of view would arm a highlight the player cannot see; the
-  /// Unlocks list walks its rows, and at the wall of loaded rows the press
-  /// requests the next page (a silent boundary only at the true end); the
-  /// Games list walks its rows the same way, with one step before them —
-  /// its filter chips.
-  ///
-  /// From the strip, Down is how it hands the cursor back: the sub-tab's own
-  /// cursor (scroll position, parked selection) is where it always was,
-  /// because switching zones tears nothing down.
   bool _handleNavigateDown() {
-    final raProvider = context.read<RetroAchievementsProvider>();
-    if (!raProvider.isConnected) return moveSelection(1);
-    if (_stripFocused) return _setStripFocused(false);
-    if ((_activeSubTab == RaSubTab.events ||
-        _activeSubTab == RaSubTab.awards)) {
-      return _collection?.move(0, 1) ?? false;
-    }
-    if (_activeSubTab == RaSubTab.games) {
-      return _gamesKey.currentState?.handleNavigateDown() ?? false;
-    }
-    if (_gamesPreviewSelected) return false;
-    if (_recentUnlocksSelected) {
-      _setRecentUnlocksSelected(false);
-      if (_dashboardKey.currentState?.gamesSelectable == true) {
-        _scrollDashboard(160.r);
-        return _setGamesPreviewSelected(true);
-      }
-      return false;
-    }
-    if (_weekCardSelected) {
-      _setWeekCardSelected(false);
-      if (_dashboardKey.currentState?.recentUnlocksSelectable == true) {
-        _scrollDashboard(160.r);
-        return _setRecentUnlocksSelected(true);
-      }
-      return false;
-    }
-    if (!_logoutSelected &&
-        _dashboardKey.currentState?.weekCardSelectable == true &&
-        _dashboardAtTop) {
-      return _setWeekCardSelected(true);
-    }
-    if (_dashboardKey.currentState?.recentUnlocksSelectable == true) {
-      _scrollDashboard(160.r);
-      return _setRecentUnlocksSelected(true);
-    }
-    if (_dashboardKey.currentState?.gamesSelectable == true) {
-      _scrollDashboard(320.r);
-      return _setGamesPreviewSelected(true);
-    }
-    final released = _setWeekCardSelected(false);
-    return _scrollDashboard(160.r) || released;
+    final provider = context.read<RetroAchievementsProvider>();
+    if (!provider.isConnected) return moveSelection(1);
+    return _setDashboardAction(_dashboardActionIndex + 1);
   }
 
-  /// Whether the dashboard is scrolled to the top, within the same one-pixel
-  /// tolerance [_releaseSelectionOnScroll] and [_scrollHeaderIntoView] use.
-  bool get _dashboardAtTop {
-    if (!_dashboardScrollController.hasClients) return true;
-    final position = _dashboardScrollController.position;
-    return position.pixels <= position.minScrollExtent + 1;
-  }
-
-  /// Right parks the cursor on the header's logout button — the dashboard's
-  /// one in-content horizontal axis. The Unlocks list has no in-row actions,
-  /// so there Right (and Left) are silent; their press is spent on the strip
-  /// only, which is one Up away. The Games list's horizontal axis is its
-  /// filter chips — on the rows themselves, Right is silent there too.
-  ///
-  /// The header scrolls with the content, so anything below the top has to come
-  /// back into view first — parking on a button that is off screen would leave
-  /// the highlight invisible and A destructive-looking out of nowhere.
-  bool _handleNavigateRight() {
-    if (!context.read<RetroAchievementsProvider>().isConnected) return false;
-    if (_stripFocused) return _switchSubTab(1);
-    if (_activeSubTab == RaSubTab.events || _activeSubTab == RaSubTab.awards) {
-      return _collection?.move(1, 0) ?? false;
-    }
-    if (_activeSubTab == RaSubTab.games) {
-      return _gamesKey.currentState?.handleNavigateRight() ?? false;
-    }
-    if (_recentUnlocksSelected || _gamesPreviewSelected) return false;
-    if (_logoutSelected) return false;
-    _setWeekCardSelected(false);
-    _scrollHeaderIntoView();
-    return _setLogoutSelected(true);
-  }
-
-  /// Left is the mirror of Right along the same axis: it steps from the logout
-  /// button straight onto the week card rather than dropping the selection in
-  /// between. Releasing to nothing is only the fallback for when the card is
-  /// not actionable, so the axis never costs a dead press.
   bool _handleNavigateLeft() {
-    final raProvider = context.read<RetroAchievementsProvider>();
-    if (!raProvider.isConnected) return false;
-    if (_stripFocused) return _switchSubTab(-1);
-    if (_activeSubTab == RaSubTab.events || _activeSubTab == RaSubTab.awards) {
-      return _collection?.move(-1, 0) ?? false;
-    }
-    if (_activeSubTab == RaSubTab.games) {
-      // The chips row is the Games list's one in-content horizontal axis;
-      // on the rows themselves, Left is silent like it is on the Unlocks
-      // rows.
-      return _gamesKey.currentState?.handleNavigateLeft() ?? false;
-    }
-    if (_recentUnlocksSelected || _gamesPreviewSelected) return false;
-    final released = _logoutSelected ? _setLogoutSelected(false) : false;
-    if (_dashboardKey.currentState?.weekCardSelectable != true) {
-      return released;
-    }
-    _scrollHeaderIntoView();
-    return _setWeekCardSelected(true) || released;
+    final provider = context.read<RetroAchievementsProvider>();
+    if (!provider.isConnected || _dashboardActionIndex <= 0) return false;
+    return _setDashboardAction(_dashboardActionIndex - 1);
   }
 
-  void _scrollHeaderIntoView() {
+  bool _handleNavigateRight() {
+    final provider = context.read<RetroAchievementsProvider>();
+    if (!provider.isConnected || _dashboardActionIndex >= 5) return false;
+    return _setDashboardAction(_dashboardActionIndex + 1);
+  }
+
+  void _releaseSelectionOnScroll() {
     if (!_dashboardScrollController.hasClients) return;
     final position = _dashboardScrollController.position;
     if (position.pixels <= position.minScrollExtent + 1) return;
-    _scrollingToHeader = true;
-    _dashboardScrollController
-        .animateTo(
-          position.minScrollExtent,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-        )
-        .whenComplete(() => _scrollingToHeader = false);
-  }
-
-  bool _scrollDashboard(double delta) {
-    if (!_dashboardScrollController.hasClients) return false;
-    final position = _dashboardScrollController.position;
-    final target = (position.pixels + delta).clamp(
-      position.minScrollExtent,
-      position.maxScrollExtent,
-    );
-    if ((target - position.pixels).abs() < 1) return false;
-    _dashboardScrollController.animateTo(
-      target,
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-    );
-    return true;
+    if (!_logoutSelected &&
+        !_weekCardSelected &&
+        !_eventsSelected &&
+        !_recentUnlocksSelected &&
+        !_gamesPreviewSelected &&
+        !_awardsSelected) {
+      return;
+    }
+    rebuild(() {
+      _dashboardActionIndex = -1;
+      _logoutSelected = false;
+      _weekCardSelected = false;
+      _eventsSelected = false;
+      _recentUnlocksSelected = false;
+      _gamesPreviewSelected = false;
+      _awardsSelected = false;
+    });
   }
 }

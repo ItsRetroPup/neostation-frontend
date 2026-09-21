@@ -22,9 +22,7 @@ import '../../models/system_model.dart';
 import '../game_screen/my_games_list.dart';
 import '../game_screen/game_details_card/detail_tab.dart';
 import 'ra_dashboard.dart';
-import 'ra_tab_strip.dart';
-import 'ra_collection_tab.dart';
-import 'ra_games_tab.dart';
+import 'ra_dedicated_pages.dart';
 import 'ra_game_achievements_page.dart';
 
 part 'ra_content/dashboard_host.dart';
@@ -47,52 +45,31 @@ class _RAContentState extends State<RAContent>
   final FocusNode _apiKeyFocus = FocusNode();
   final ScrollController _dashboardScrollController = ScrollController();
 
-  /// Connected dashboard: whether the cursor is parked on the header's logout
-  /// button. Nothing is selected at rest — Right parks on it, and Left steps
-  /// back along the axis onto the week card.
+  /// Connected dashboard action focus. The weekly spotlight is the initial
+  /// action; the D-pad then walks the four dedicated destinations and logout.
   bool _logoutSelected = false;
 
   /// The dashboard's one actionable content card. It is selectable when the
   /// weekly game is local or has a matched RomM download.
-  bool _weekCardSelected = false;
+  bool _weekCardSelected = true;
+  bool _eventsSelected = false;
   bool _recentUnlocksSelected = false;
   bool _gamesPreviewSelected = false;
+  bool _awardsSelected = false;
+  int _dashboardActionIndex = 0;
   final GlobalKey<RADashboardHubState> _dashboardKey =
       GlobalKey<RADashboardHubState>();
-
-  /// The AOTW and Awards grids, addressed by the input handlers the same way
-  /// the profile and Games views are.
-  final _eventsKey = GlobalKey<RaCollectionTabState>();
-  final _awardsKey = GlobalKey<RaCollectionTabState>();
-  RaCollectionTabState? get _collection =>
-      (_activeSubTab == RaSubTab.events ? _eventsKey : _awardsKey).currentState;
-
-  /// The see-all Games sub-tab, same treatment.
-  final GlobalKey<RaGamesTabState> _gamesKey = GlobalKey<RaGamesTabState>();
 
   /// Set while a row's game page is being pushed, so a double-tap cannot push
   /// duplicate routes.
   bool _gameActivationInFlight = false;
-
-  /// Set while a selection is scrolling the header back into view, so the
-  /// scroll listener doesn't read that movement as the user leaving the
-  /// selection it just made.
-  bool _scrollingToHeader = false;
+  bool _raPageInFlight = false;
 
   /// Matches the ScreenScraper login's password field, which the RA card sits
   /// next to: an API key is as worth hiding as a password, and as easy to
   /// mistype without being able to check it.
   bool _obscureApiKey = true;
   GamepadNavigation? _gamepadNav;
-
-  /// Which sub-tab mini-app is open.
-  RaSubTab _activeSubTab = RaSubTab.profile;
-
-  /// Whether the D-pad cursor is parked on the sub-tab strip rather than in
-  /// the active sub-tab's content. The strip is a *zone* of this tab's one
-  /// `ra_content` gamepad layer — switching between zones (or sub-tabs) never
-  /// pushes or pops a layer.
-  bool _stripFocused = false;
 
   /// Bridges [State.setState] for the part-file extensions: `setState` is
   /// `@protected` and can't be invoked from an extension, but this public
@@ -182,68 +159,30 @@ class _RAContentState extends State<RAContent>
             ),
           ] else ...[
             if (raProvider.isOffline) _buildOfflineBanner(context),
-            // The sub-tab strip: always on screen above the content, so
-            // parking the D-pad on it can never highlight something the user
-            // has scrolled out of view (the trap the dashboard's header
-            // selection needed [_releaseSelectionOnScroll] for).
-            RaTabStrip(
-              currentTab: _activeSubTab,
-              focused: _stripFocused,
-              onTabChanged: _onSubTabTapped,
-            ),
-            SizedBox(height: 8.r),
-            // IndexedStack so a sub-tab keeps its state — cursor, scroll
-            // position — while another one is open. Children sit in RaSubTab
-            // order, matching the strip.
             Expanded(
-              child: IndexedStack(
-                index: RaSubTab.values.indexOf(_activeSubTab),
-                children: [
-                  RepaintBoundary(
-                    child: RADashboardHub(
-                      key: _dashboardKey,
-                      scrollController: _dashboardScrollController,
-                      logoutSelected: _logoutSelected,
-                      weekCardSelected: _weekCardSelected,
-                      recentUnlocksSelected: _recentUnlocksSelected,
-                      gamesSelected: _gamesPreviewSelected,
-                      onDisconnectRequested: _requestDisconnect,
-                      onOwnedWeekGameSelected: _openOwnedWeekGame,
-                      onUnlockSelected: _activateUnlock,
-                      onGameSelected: (gameId, title) =>
-                          _openRaGameAchievements(
-                            gameId: gameId,
-                            gameTitle: title,
-                          ),
-                      active: _activeSubTab == RaSubTab.profile,
-                    ),
+              child: RepaintBoundary(
+                child: RADashboardHub(
+                  key: _dashboardKey,
+                  scrollController: _dashboardScrollController,
+                  logoutSelected: _logoutSelected,
+                  weekCardSelected: _weekCardSelected,
+                  eventsSelected: _eventsSelected,
+                  recentUnlocksSelected: _recentUnlocksSelected,
+                  gamesSelected: _gamesPreviewSelected,
+                  awardsSelected: _awardsSelected,
+                  onDisconnectRequested: _requestDisconnect,
+                  onOwnedWeekGameSelected: _openOwnedWeekGame,
+                  onUnlockSelected: _activateUnlock,
+                  onGameSelected: (gameId, title) => _openRaGameAchievements(
+                    gameId: gameId,
+                    gameTitle: title,
                   ),
-                  RepaintBoundary(
-                    child: RaCollectionTab(
-                      key: _eventsKey,
-                      events: true,
-                      active: _activeSubTab == RaSubTab.events,
-                      focused: !_stripFocused,
-                      onOpenGame: (id, title) =>
-                          _openRaGameAchievements(gameId: id, gameTitle: title),
-                    ),
-                  ),
-                  RepaintBoundary(
-                    child: RaGamesTab(
-                      key: _gamesKey,
-                      active: _activeSubTab == RaSubTab.games,
-                      onActivate: _activateGame,
-                    ),
-                  ),
-                  RaCollectionTab(
-                    key: _awardsKey,
-                    events: false,
-                    active: _activeSubTab == RaSubTab.awards,
-                    focused: !_stripFocused,
-                    onOpenGame: (id, title) =>
-                        _openRaGameAchievements(gameId: id, gameTitle: title),
-                  ),
-                ],
+                  onOpenUnlocks: _openUnlocks,
+                  onOpenGames: _openGames,
+                  onOpenEvents: _openEvents,
+                  onOpenAwards: _openAwards,
+                  active: true,
+                ),
               ),
             ),
           ],

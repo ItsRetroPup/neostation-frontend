@@ -5,6 +5,54 @@ part of '../ra_content.dart';
 /// normal RA row is an information request and should never trigger a
 /// download as a side effect.
 extension _DrillDownHost on _RAContentState {
+  Future<void> _openUnlocks() {
+    _setDashboardAction(2);
+    return _openRaPage(
+      RaUnlocksPage(onActivate: (item) => _activateUnlock(item)),
+    );
+  }
+
+  Future<void> _openGames() {
+    _setDashboardAction(3);
+    return _openRaPage(
+      RaGamesPage(onActivate: (item) => _activateGame(item)),
+    );
+  }
+
+  Future<void> _openEvents() {
+    _setDashboardAction(1);
+    return _openRaPage(
+      RaCollectionPage(
+        events: true,
+        onOpenGame: (id, title) {
+          _openRaGameAchievements(gameId: id, gameTitle: title);
+        },
+      ),
+    );
+  }
+
+  Future<void> _openAwards() {
+    _setDashboardAction(4);
+    return _openRaPage(
+      RaCollectionPage(
+        events: false,
+        onOpenGame: (id, title) {
+          _openRaGameAchievements(gameId: id, gameTitle: title);
+        },
+      ),
+    );
+  }
+
+  Future<void> _openRaPage(Widget page) async {
+    if (_raPageInFlight || !mounted) return;
+    _raPageInFlight = true;
+    try {
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    } finally {
+      _raPageInFlight = false;
+    }
+  }
+
   Future<void> _activateUnlock(RetroAchievementRecentUnlockItem item) {
     return _openRaGameAchievements(
       gameId: item.gameId,

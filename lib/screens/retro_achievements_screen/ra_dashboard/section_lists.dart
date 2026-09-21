@@ -6,11 +6,108 @@ part of '../ra_dashboard.dart';
 /// All state lives on the host [State]; this extension only moves the
 /// methods out of the monolith — behaviour is unchanged.
 extension _SectionLists on RADashboardHubState {
+  Widget _buildDestinationRail(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _destinationCard(
+            context,
+            icon: Symbols.event_rounded,
+            label: AppLocale.raEvents.getString(context),
+            selected: widget.eventsSelected,
+            onTap: widget.onOpenEvents,
+          ),
+        ),
+        SizedBox(width: 6.r),
+        Expanded(
+          child: _destinationCard(
+            context,
+            icon: Symbols.notifications_active_rounded,
+            label: AppLocale.raSubtabUnlocks.getString(context),
+            selected: widget.recentUnlocksSelected,
+            onTap: widget.onOpenUnlocks,
+          ),
+        ),
+        SizedBox(width: 6.r),
+        Expanded(
+          child: _destinationCard(
+            context,
+            icon: Symbols.sports_esports_rounded,
+            label: AppLocale.raSubtabGames.getString(context),
+            selected: widget.gamesSelected,
+            onTap: widget.onOpenGames,
+          ),
+        ),
+        SizedBox(width: 6.r),
+        Expanded(
+          child: _destinationCard(
+            context,
+            icon: Symbols.emoji_events_rounded,
+            label: AppLocale.raAwards.getString(context),
+            selected: widget.awardsSelected,
+            onTap: widget.onOpenAwards,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _destinationCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10.r),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          height: 54.r,
+          padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 5.r),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withValues(alpha: 0.22),
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(
+              color: selected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline.withValues(alpha: 0.35),
+              width: selected ? 2.r : 1.r,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 17.r, color: theme.colorScheme.primary),
+              SizedBox(height: 3.r),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 8.r,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecentUnlocksCard(
     BuildContext context,
     RetroAchievementsProvider raProvider,
   ) {
-    final unlocks = raProvider.recentUnlocks.take(5).toList();
+    final unlocks = raProvider.recentUnlocks.take(3).toList();
     return Container(
       padding: EdgeInsets.all(14.r),
       decoration: _cardDecoration(
@@ -69,7 +166,7 @@ extension _SectionLists on RADashboardHubState {
     BuildContext context,
     RetroAchievementsProvider raProvider,
   ) {
-    final items = raProvider.recentlyPlayedGames.take(5).toList();
+    final items = raProvider.recentlyPlayedGames.take(3).toList();
     return _buildListSection<RetroAchievementRecentlyPlayedGameItem>(
       context,
       title: AppLocale.raRecentlyPlayedTitle.getString(context),

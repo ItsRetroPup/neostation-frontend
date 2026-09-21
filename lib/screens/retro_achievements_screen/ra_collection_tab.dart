@@ -12,13 +12,12 @@ import '../../providers/retro_achievements_provider.dart';
 import '../../widgets/ra_earned_badge.dart';
 import '../../utils/custom_scroll_behavior.dart';
 
-/// Input stays in the RA shell's single navigation layer.
+/// Collection content used by the dedicated Events and Awards destinations.
 class RaCollectionTab extends StatefulWidget {
   final bool events, active, focused;
   final void Function(int id, String title) onOpenGame;
 
-  /// Retained for shell callers; focus now returns to the shared strip at the
-  /// top edge, so no footer is rendered for this action.
+  /// Retained for callers that embed the collection in another surface.
   final VoidCallback? onBack;
   const RaCollectionTab({
     super.key,
@@ -194,7 +193,7 @@ class RaCollectionTabState extends State<RaCollectionTab> {
   bool move(int dx, int dy) {
     if (_count == 0) return false;
     // The grid is the only focusable surface in this tab. Returning false at
-    // its top edge lets the shell move focus back to the sub-tab strip.
+    // Its top edge lets a parent surface decide what receives focus next.
     if (dy < 0 && _selected < _columns) return false;
     final next = (_selected + dx + dy * _columns).clamp(
       0,
