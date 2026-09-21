@@ -9,6 +9,7 @@ import 'package:neostation/l10n/app_locale.dart';
 import '../../../models/game_model.dart';
 import '../../../providers/file_provider.dart';
 import '../../../themes/corner_radii.dart';
+import '../../../widgets/marquee_text.dart';
 import '../discovery_mosaic.dart';
 
 /// One cell of the mosaic's 3x2 grid.
@@ -72,11 +73,13 @@ class DiscoveryGridTile extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // Grid tiles are narrow and truncate most names, and the
+                  // board has nowhere else to print one in full, so the focused
+                  // tile scrolls its title the way the game lists do.
                   if (entry != null)
-                    Text(
-                      entry.game.realName ?? entry.game.filename,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    MarqueeText(
+                      text: entry.game.realName ?? entry.game.filename,
+                      isActive: isSelected,
                       style: TextStyle(
                         fontSize: 8.r,
                         fontWeight: FontWeight.w500,
@@ -197,14 +200,13 @@ class DiscoveryBandTile extends StatelessWidget {
                             color: Colors.white,
                           ),
                         ),
-                        Text(
-                          notice != null
+                        MarqueeText(
+                          text: notice != null
                               ? notice.getString(context)
                               : entry?.game.realName ??
                                     entry?.game.filename ??
                                     '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          isActive: isSelected,
                           style: TextStyle(
                             fontSize: 7.5.r,
                             color: Colors.white.withValues(alpha: 0.7),
