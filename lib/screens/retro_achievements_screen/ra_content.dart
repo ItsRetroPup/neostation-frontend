@@ -181,10 +181,8 @@ class _RAContentState extends State<RAContent>
                   onDisconnectRequested: _requestDisconnect,
                   onOwnedWeekGameSelected: _openOwnedWeekGame,
                   onUnlockSelected: _activateUnlock,
-                  onGameSelected: (gameId, title) => _openRaGameAchievements(
-                    gameId: gameId,
-                    gameTitle: title,
-                  ),
+                  onGameSelected: (gameId, title) =>
+                      _openRaGameAchievements(gameId: gameId, gameTitle: title),
                   onOpenUnlocks: _openUnlocks,
                   onOpenGames: _openGames,
                   onOpenEvents: _openEvents,

@@ -14,9 +14,7 @@ extension _DrillDownHost on _RAContentState {
 
   Future<void> _openGames() {
     _setDashboardAction(3);
-    return _openRaPage(
-      RaGamesPage(onActivate: (item) => _activateGame(item)),
-    );
+    return _openRaPage(RaGamesPage(onActivate: (item) => _activateGame(item)));
   }
 
   Future<void> _openEvents() {

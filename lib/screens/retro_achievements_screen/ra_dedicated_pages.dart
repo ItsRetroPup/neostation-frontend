@@ -130,15 +130,15 @@ class _RaGamesPageState extends State<RaGamesPage> {
 
   @override
   Widget build(BuildContext context) => _RaPageScaffold(
-        title: AppLocale.raSubtabGames.getString(context),
-        icon: Symbols.sports_esports_rounded,
-        onBack: _pop,
-        child: RaGamesTab(
-          key: _contentKey,
-          active: true,
-          onActivate: widget.onActivate,
-        ),
-      );
+    title: AppLocale.raSubtabGames.getString(context),
+    icon: Symbols.sports_esports_rounded,
+    onBack: _pop,
+    child: RaGamesTab(
+      key: _contentKey,
+      active: true,
+      onActivate: widget.onActivate,
+    ),
+  );
 }
 
 class RaUnlocksPage extends StatefulWidget {
@@ -186,15 +186,15 @@ class _RaUnlocksPageState extends State<RaUnlocksPage> {
 
   @override
   Widget build(BuildContext context) => _RaPageScaffold(
-        title: AppLocale.raSubtabUnlocks.getString(context),
-        icon: Symbols.notifications_active_rounded,
-        onBack: _pop,
-        child: RaUnlocksTab(
-          key: _contentKey,
-          active: true,
-          onActivate: widget.onActivate,
-        ),
-      );
+    title: AppLocale.raSubtabUnlocks.getString(context),
+    icon: Symbols.notifications_active_rounded,
+    onBack: _pop,
+    child: RaUnlocksTab(
+      key: _contentKey,
+      active: true,
+      onActivate: widget.onActivate,
+    ),
+  );
 }
 
 class _RaPageScaffold extends StatelessWidget {
