@@ -341,14 +341,30 @@ class DiscoveryContentState extends State<DiscoveryContent> {
         // row of pixels a control legend took was a row the tiles could not
         // have. Y is advertised by the header's Re-roll pill instead, and A/B
         // carry their app-wide meaning here as everywhere else.
-        return DiscoveryStorefront(
-          board: board,
-          mosaic: _mosaic,
-          fileProvider: context.watch<FileProvider>(),
-          selectedTile: _selectedTile,
-          onTileTapped: _onTileTapped,
-          shuffleSlotId: _shuffleSlotId,
-          shuffleGame: _shuffleGame,
+        // The board settles in rather than popping: a short fade and rise
+        // when it first appears. The tween is constant, so later rebuilds —
+        // every cursor move, every re-roll frame — do not replay it; only a
+        // fresh visit to the tab does.
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          builder: (context, t, child) => Opacity(
+            opacity: t,
+            child: Transform.translate(
+              offset: Offset(0, (1 - t) * 14.r),
+              child: child,
+            ),
+          ),
+          child: DiscoveryStorefront(
+            board: board,
+            mosaic: _mosaic,
+            fileProvider: context.watch<FileProvider>(),
+            selectedTile: _selectedTile,
+            onTileTapped: _onTileTapped,
+            shuffleSlotId: _shuffleSlotId,
+            shuffleGame: _shuffleGame,
+          ),
         );
       },
     );
