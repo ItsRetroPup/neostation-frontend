@@ -227,7 +227,7 @@ void main() {
     await pumpShell(tester, _DashboardProvider());
 
     await tester.tap(find.text(AppLocale.en[AppLocale.raSubtabGames]!).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.byType(RaGamesPage), findsOneWidget);
     expect(GamepadNavigationManager.stackDepth, greaterThan(1));
 
@@ -244,13 +244,13 @@ void main() {
     await pumpShell(tester, _DashboardProvider());
 
     await tester.tap(find.text(AppLocale.en[AppLocale.raEvents]!).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.byType(RaCollectionPage), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
     await tester.tap(find.text(AppLocale.en[AppLocale.raAwards]!).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.byType(RaCollectionPage), findsOneWidget);
   });
 
@@ -260,7 +260,7 @@ void main() {
     await pumpShell(tester, _DashboardProvider());
 
     await tester.tap(find.text(AppLocale.en[AppLocale.raSubtabUnlocks]!).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.byType(RaUnlocksPage), findsOneWidget);
   });
 }
