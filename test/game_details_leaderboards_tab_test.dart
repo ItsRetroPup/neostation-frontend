@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/models/retro_achievements_leaderboard.dart';
 import 'package:neostation/screens/game_screen/game_details_card/tabs/game_details_leaderboards_tab.dart';
+import 'package:neostation/services/sfx_service.dart';
 import 'package:neostation/themes/chrome_surface.dart';
 
 void main() {
@@ -13,6 +14,8 @@ void main() {
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
+    // SoLoud's native library is unavailable to the Flutter test host.
+    SfxService().setEnabled(false);
     await FlutterLocalization.instance.ensureInitialized();
     FlutterLocalization.instance.init(
       mapLocales: [MapLocale('en', AppLocale.en)],
