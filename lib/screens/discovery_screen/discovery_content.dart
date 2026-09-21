@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import 'package:neostation/data/datasources/sqlite_service.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/models/database_game_model.dart';
 import 'package:neostation/models/discovery_models.dart';
+import 'package:neostation/models/game_model.dart';
+import 'package:neostation/models/secondary_display_state.dart';
 import 'package:neostation/providers/discovery_provider.dart';
 import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/screens/app_screen.dart';
@@ -79,6 +82,16 @@ class DiscoveryContentState extends State<DiscoveryContent> {
 
   bool get _isShuffling => _shuffleSlotId != null;
 
+  /// The dual-screen bottom display, on Android only. It runs in a separate
+  /// engine that shares no memory with this one, so the focused pick reaches
+  /// it only through this state's pushes.
+  SecondaryDisplayState? _secondaryDisplayState;
+
+  /// The pick the secondary display was last told about, so it is pushed once
+  /// per cursor move rather than on every rebuild — a re-roll shuffle rebuilds
+  /// the board twenty times without the focused pick changing.
+  String? _secondaryRomPath;
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +114,10 @@ class DiscoveryContentState extends State<DiscoveryContent> {
       onRightBumper: AppNavigation.nextTab,
       allowRepeat: false,
     );
+
+    if (Platform.isAndroid) {
+      _secondaryDisplayState = SecondaryDisplayState.instance;
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _gamepadNav.initialize();
@@ -216,9 +233,14 @@ class DiscoveryContentState extends State<DiscoveryContent> {
       ),
     );
 
+    // The games list drove the secondary display while it was open, so the
+    // pick has to be pushed again even though the cursor has not moved.
+    _secondaryRomPath = null;
+
     // The user may well have played the game from in there, and play time feeds
     // both the "never played" badges and the hero's eligibility.
     if (mounted) await context.read<DiscoveryProvider>().load(force: true);
+    if (mounted) setState(() {});
   }
 
   /// Re-rolls the focused section, for the header's Re-roll pill.
@@ -308,6 +330,12 @@ class DiscoveryContentState extends State<DiscoveryContent> {
           );
         }
         _clampCursor();
+        if (_secondaryDisplayState != null &&
+            _selectedEntry?.game.romPath != _secondaryRomPath) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _syncSecondaryDisplay(),
+          );
+        }
 
         // No footer: the board is a single screen that never scrolls, so every
         // row of pixels a control legend took was a row the tiles could not
@@ -323,6 +351,51 @@ class DiscoveryContentState extends State<DiscoveryContent> {
           shuffleGame: _shuffleGame,
         );
       },
+    );
+  }
+
+  /// Shows the focused pick's art on the secondary display.
+  ///
+  /// Art only, no video preview: a video on the bottom screen would need the
+  /// games list's music ducking, and opening the pick already plays its video
+  /// there. The tab's own clear (`_updateSecondaryScreenTab` in app_screen)
+  /// runs first on the way in, so this only ever replaces the tab placeholder
+  /// or the previous pick.
+  void _syncSecondaryDisplay() {
+    final state = _secondaryDisplayState;
+    if (state == null || !mounted) return;
+    final game = _selectedEntry?.game;
+    if (game == null || game.romPath == _secondaryRomPath) return;
+    _secondaryRomPath = game.romPath;
+
+    final folder = game.systemFolderName ?? '';
+    final fileProvider = context.read<FileProvider>();
+    final model = GameModel.fromDatabaseModel(game);
+    String? existing(String path) =>
+        folder.isNotEmpty && path.isNotEmpty && File(path).existsSync()
+        ? path
+        : null;
+    final fanart = existing(
+      model.getImagePath(folder, 'fanarts', fileProvider),
+    );
+    final screenshot = existing(model.getScreenshotPath(folder, fileProvider));
+    final wheel = existing(model.getImagePath(folder, 'wheels', fileProvider));
+
+    // ignore: unawaited_futures
+    state.updateState(
+      systemName: game.systemRealName ?? '',
+      gameId: game.romPath,
+      isGameSelected: true,
+      gameFanart: fanart,
+      clearFanart: fanart == null,
+      gameScreenshot: screenshot,
+      clearScreenshot: screenshot == null,
+      gameWheel: wheel,
+      clearWheel: wheel == null,
+      clearVideo: true,
+      clearImageBytes: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor.toARGB32(),
+      showAchievementPanel: false,
     );
   }
 
