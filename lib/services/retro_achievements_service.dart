@@ -201,21 +201,68 @@ class RetroAchievementsService {
     );
   }
 
+  /// Mapping of NeoStation system identifiers to RetroAchievements console IDs.
+  static const Map<String, int> _systemMapping = {
+    'nes': 7,
+    'snes': 3,
+    'gb': 4,
+    'gbc': 6,
+    'gba': 5,
+    'n64': 2,
+    'gcn': 16,
+    'wii': 82,
+    'nds': 18,
+    '3ds': 78,
+    'genesis': 1,
+    'sms': 11,
+    'gg': 15,
+    'saturn': 39,
+    'dreamcast': 40,
+    'psx': 12,
+    'ps2': 21,
+    'psp': 41,
+    'atari2600': 25,
+    'atari7800': 51,
+    'lynx': 13,
+    'neogeo': 56,
+    'arcade': 27,
+    'msx': 29,
+  };
+
+  /// Returns the RetroAchievements console ID for a given NeoStation system name.
+  static int? getConsoleIdForSystem(String systemFolderName) {
+    return _systemMapping[systemFolderName.toLowerCase()];
+  }
+
+  /// Cache key for [getUserProfile]. Exposed because the profile and the
+  /// summary are the only reads that happen at sign-in and nowhere else, so
+  /// the provider has to be able to ask whether the session it is holding came
+  /// off the network or off disk.
+  static String profileCacheKey(String username) => 'profile_$username';
+
+  /// Cache key for [getUserSummary]. See [profileCacheKey].
+  static String summaryCacheKey(String username) => 'summary_$username';
+
   /// Retrieves basic profile information for a RetroAchievements user.
   static Future<RetroAchievementsUser?> getUserProfile(
     String username, {
     String? apiKey,
+    http.Client? client,
   }) async {
     final url = Uri.parse(
       '$_baseUrl/API_GetUserProfile.php',
     ).replace(queryParameters: {'u': username, 'y': resolveApiKey(apiKey)});
 
+    const headers = {
+      'User-Agent': 'NeoStation/1.0',
+      'Accept': 'application/json',
+    };
+
     return _fetchWithCache<RetroAchievementsUser?>(
-      cacheKey: 'profile_$username',
-      send: () => http.get(
-        url,
-        headers: {'User-Agent': 'NeoStation/1.0', 'Accept': 'application/json'},
-      ),
+      cacheKey: profileCacheKey(username),
+      send: () => client == null
+          ? http.get(url, headers: headers)
+          : client.get(url, headers: headers),
       parse: (data) {
         if (data != null && data['User'] != null) {
           return RetroAchievementsUser.fromJson(data);
@@ -239,6 +286,7 @@ class RetroAchievementsService {
   static Future<RetroAchievementsUserSummary?> getUserSummary(
     String username, {
     String? apiKey,
+    http.Client? client,
   }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final url = Uri.parse('$_baseUrl/API_GetUserSummary.php').replace(
@@ -251,18 +299,19 @@ class RetroAchievementsService {
       },
     );
 
+    const headers = {
+      'User-Agent': 'NeoStation/1.0',
+      'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    };
+
     return _fetchWithCache<RetroAchievementsUserSummary?>(
-      cacheKey: 'summary_$username',
-      send: () => http.get(
-        url,
-        headers: {
-          'User-Agent': 'NeoStation/1.0',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
-      ),
+      cacheKey: summaryCacheKey(username),
+      send: () => client == null
+          ? http.get(url, headers: headers)
+          : client.get(url, headers: headers),
       parse: (data) {
         if (data is Map && data['User'] != null) {
           return RetroAchievementsUserSummary.fromJson(
