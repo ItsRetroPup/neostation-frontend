@@ -1,4 +1,5 @@
 import '../../widgets/ra_earned_badge.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -18,7 +19,6 @@ import '../../providers/romm_provider.dart';
 import '../../providers/sqlite_config_provider.dart';
 import '../../widgets/custom_notification.dart';
 
-part 'ra_dashboard/data_loading.dart';
 part 'ra_dashboard/profile_header.dart';
 part 'ra_dashboard/section_lists.dart';
 part 'ra_dashboard/shared_helpers.dart';
@@ -86,6 +86,8 @@ class RADashboardHub extends StatefulWidget {
 }
 
 class RADashboardHubState extends State<RADashboardHub> {
+  bool _requestedInitialLoad = false;
+
   /// Timer used to avoid starting heavy dashboard network loads when the user
   /// is just quickly passing through this tab.
   Timer? _dashboardLoadTimer;

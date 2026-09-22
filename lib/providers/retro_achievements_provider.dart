@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:neostation/services/credential_store.dart';
 import 'package:neostation/services/logger_service.dart';
+
 import '../l10n/app_locale.dart';
 import '../models/retro_achievements_user.dart';
 import '../models/retro_achievements_summary.dart';
@@ -49,9 +50,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  static const String _dashboardApiKeyError =
-      'A RetroAchievements web API key is required for this dashboard data.';
-
   /// How long to keep reaching for the API after signing in from the offline
   /// cache. A handheld's Wi-Fi associates anywhere between a few seconds and
   /// a few minutes after power-on, so the schedule widens rather than
@@ -64,9 +62,6 @@ class RetroAchievementsProvider extends ChangeNotifier {
     Duration(seconds: 30),
     Duration(seconds: 60),
   ];
-
-  static const String _rateLimitError =
-      'RetroAchievements is rate-limiting requests. Please wait a moment and try again.';
 
   /// Basic profile information for the authenticated user.
   RetroAchievementsUser? _user;
