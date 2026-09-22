@@ -671,7 +671,9 @@ class GameLaunchService {
 
         if (executable.toLowerCase().contains('retroarch')) {
           final ra = detected['RetroArch'];
-          if (ra != null && ra.path.isNotEmpty) {
+          if (ra != null &&
+              ra.path.isNotEmpty &&
+              await File(ra.path).exists()) {
             if (executable != ra.path) {
               _log.i(
                 'Resolving RetroArch executable from "$executable" to user-configured path: ${ra.path}',
@@ -711,7 +713,7 @@ class GameLaunchService {
             }
           }
 
-          if (resolvedPath != null) {
+          if (resolvedPath != null && await File(resolvedPath).exists()) {
             executable = resolvedPath;
           } else if (Platform.isWindows) {
             final discovered = await WindowsEmulatorDiscovery.resolveExecutable(
