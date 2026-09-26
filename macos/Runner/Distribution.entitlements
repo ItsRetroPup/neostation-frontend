@@ -2,6 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- App Sandbox is intentionally disabled: a sandboxed process passes its
+	     sandbox to the emulators it launches, which stops Ryubing from opening
+	     the ROM as a normal macOS application. -->
 	<!-- Allow loading third-party libraries (important for plugins) -->
 	<key>com.apple.security.cs.disable-library-validation</key>
 	<true/>

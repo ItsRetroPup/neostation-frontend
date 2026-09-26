@@ -738,6 +738,7 @@ class GameLaunchService {
       final argsStr = launchCmd['args']?.toString() ?? '';
       var args = LauncherService.splitArgs(argsStr);
       var processExecutable = executable;
+      var launchedViaOpen = false;
 
       // The systems JSON names cores by filename alone (`-L snes9x_libretro.so`),
       // which RetroArch resolves against the working directory — ours, not its
@@ -775,6 +776,7 @@ class GameLaunchService {
           if (bundlePath != null) {
             processExecutable = '/usr/bin/open';
             args = ['-n', '-a', bundlePath, '--args', ...args];
+            launchedViaOpen = true;
           } else {
             _log.w(
               'Could not find the macOS application bundle for $executable; '
@@ -790,36 +792,44 @@ class GameLaunchService {
         environment: env,
       );
 
-      final diagnostics = EmulatorLaunchDiagnostics.attach(
-        process,
-        processExecutable,
-        args,
-      );
-
       GamepadNavigationManager.deactivateAll();
 
-      process.exitCode
-          .then((exitCode) async {
-            _log.i('Process exited with code: $exitCode');
-            diagnostics.reportExit(exitCode);
-            await Future.delayed(Duration(seconds: 2));
-            bool stillRunning = false;
-            if (GameSessionManager.launchedEmulatorExe != null) {
-              stillRunning = await _isProcessRunning(
-                GameSessionManager.launchedEmulatorExe!,
-              );
-            }
+      // `open` detaches: it exits as soon as Launch Services has started the
+      // app, so its exit code says nothing about Ryubing. Skip the exit monitor
+      // and the crash diagnostics (which would otherwise attach to `open`); the
+      // GameLaunchManager poll ends the session when Ryubing actually exits.
+      if (!launchedViaOpen) {
+        final diagnostics = EmulatorLaunchDiagnostics.attach(
+          process,
+          processExecutable,
+          args,
+        );
 
-            if (!stillRunning &&
-                (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-              GameSessionManager.endGameSession();
-            }
-          })
-          .catchError((err) {
-            if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-              GameSessionManager.endGameSession();
-            }
-          });
+        process.exitCode
+            .then((exitCode) async {
+              _log.i('Process exited with code: $exitCode');
+              diagnostics.reportExit(exitCode);
+              await Future.delayed(Duration(seconds: 2));
+              bool stillRunning = false;
+              if (GameSessionManager.launchedEmulatorExe != null) {
+                stillRunning = await _isProcessRunning(
+                  GameSessionManager.launchedEmulatorExe!,
+                );
+              }
+
+              if (!stillRunning &&
+                  (Platform.isWindows ||
+                      Platform.isLinux ||
+                      Platform.isMacOS)) {
+                GameSessionManager.endGameSession();
+              }
+            })
+            .catchError((err) {
+              if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+                GameSessionManager.endGameSession();
+              }
+            });
+      }
 
       await FavoritesService.recordGamePlayed(game);
 
