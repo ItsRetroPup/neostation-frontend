@@ -48,14 +48,16 @@ class AppScreen extends StatefulWidget {
 /// delegation logic below is written against these names rather than literals.
 abstract final class AppTabs {
   static const int systems = 0;
-  static const int sync = 1;
-  static const int achievements = 2;
-  static const int romm = 3;
-  static const int settings = 4;
-  static const int androidApps = 5;
 
-  /// Appended at the end to match [NavTab]'s ordinal, which is this index.
-  static const int discovery = 6;
+  /// Second in the strip, beside Systems: it is a way into the library rather
+  /// than a tool, so it belongs with the browsing tabs and not after Settings.
+  static const int discovery = 1;
+
+  static const int sync = 2;
+  static const int achievements = 3;
+  static const int romm = 4;
+  static const int settings = 5;
+  static const int androidApps = 6;
 
   /// Total number of tabs, used for wrap-around when cycling with the bumpers.
   static const int count = 7;

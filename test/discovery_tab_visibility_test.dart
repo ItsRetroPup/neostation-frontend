@@ -21,13 +21,22 @@ void main() {
   tearDown(() async => dbHelper.tearDown());
 
   group('nav tab registration', () {
-    test('Discovery is the last tab, after Settings', () {
-      expect(NavTab.values.last, NavTab.discovery);
-      expect(NavTab.discovery.index, greaterThan(NavTab.settings.index));
+    test('Discovery is the second tab, straight after Systems', () {
+      expect(NavTab.discovery.index, 1);
+      expect(NavTab.discovery.index, NavTab.systems.index + 1);
+      expect(NavTab.discovery.index, lessThan(NavTab.sync.index));
     });
 
     test('the NavTab ordinal matches its AppTabs index', () {
+      // Every tab, not just Discovery: moving it renumbered the four after it,
+      // and the two orders are dispatched against independently.
+      expect(NavTab.systems.index, AppTabs.systems);
       expect(NavTab.discovery.index, AppTabs.discovery);
+      expect(NavTab.sync.index, AppTabs.sync);
+      expect(NavTab.achievements.index, AppTabs.achievements);
+      expect(NavTab.romm.index, AppTabs.romm);
+      expect(NavTab.settings.index, AppTabs.settings);
+      expect(NavTab.androidApps.index, AppTabs.androidApps);
       expect(AppTabs.count, NavTab.values.length);
     });
 

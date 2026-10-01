@@ -9,16 +9,17 @@ import 'package:neostation/models/config_model.dart';
 ///
 /// The ordinal **is** the canonical tab index used by `AppScreenState`
 /// (`_selectedTabIndex`, `_buildCurrentTabContent`, the secondary-display tab
-/// names). Append new tabs at the end — inserting one renumbers every existing
-/// tab and silently repoints all of that dispatch.
+/// names). Moving or inserting a tab renumbers every tab after it, so `AppTabs`
+/// has to be renumbered in the same commit — nothing persists a tab index, but
+/// the two must agree or the dispatch silently repoints.
 enum NavTab {
   systems,
+  discovery,
   sync,
   achievements,
   romm,
   settings,
   androidApps,
-  discovery,
 }
 
 /// Static description of one navigation tab: how it is drawn, whether the user
@@ -76,6 +77,15 @@ const Map<NavTab, NavTabSpec> navTabSpecs = {
     icon: 'assets/images/icons/grids.webp',
     labelKey: AppLocale.systems,
   ),
+  NavTab.discovery: NavTabSpec(
+    icon: '',
+    labelKey: AppLocale.discovery,
+    iconData: Symbols.storefront_rounded,
+    hidden: _hideTabDiscovery,
+    withHidden: _withHideTabDiscovery,
+    settingsTitleKey: AppLocale.showDiscoveryTab,
+    settingsSubtitleKey: AppLocale.showDiscoveryTabSubtitle,
+  ),
   NavTab.sync: NavTabSpec(
     icon: 'assets/images/icons/cloud-add.webp',
     labelKey: AppLocale.statSaves,
@@ -103,22 +113,6 @@ const Map<NavTab, NavTabSpec> navTabSpecs = {
   NavTab.settings: NavTabSpec(
     icon: 'assets/images/icons/setting.webp',
     labelKey: AppLocale.settings,
-  ),
-  NavTab.androidApps: NavTabSpec(
-    icon: '',
-    labelKey: AppLocale.androidApps,
-    iconData: Symbols.android_rounded,
-  ),
-  // Appended at the end because the ordinal is the tab index: inserting it
-  // in a more natural reading position would renumber every tab after it.
-  NavTab.discovery: NavTabSpec(
-    icon: '',
-    labelKey: AppLocale.discovery,
-    iconData: Symbols.storefront_rounded,
-    hidden: _hideTabDiscovery,
-    withHidden: _withHideTabDiscovery,
-    settingsTitleKey: AppLocale.showDiscoveryTab,
-    settingsSubtitleKey: AppLocale.showDiscoveryTabSubtitle,
   ),
 };
 
