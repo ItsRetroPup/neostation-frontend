@@ -142,6 +142,8 @@ class SqliteMigrations {
     CREATE TABLE IF NOT EXISTS user_collections (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      collection_type TEXT NOT NULL DEFAULT 'manual',
+      rules_json TEXT,
       image_path TEXT,
       color1 TEXT,
       color2 TEXT,
@@ -617,6 +619,9 @@ class SqliteMigrations {
         break;
       case 161:
         await _migrateToVersion161(db);
+        break;
+      case 163:
+        await _migrateToVersion163(db);
         break;
       case 162:
         await _migrateToVersion162(db);
@@ -7111,6 +7116,23 @@ class SqliteMigrations {
         'ALTER TABLE user_config ADD COLUMN android_apps_as_tab '
         'INTEGER DEFAULT 0',
       );
+    }
+  }
+
+  /// Adds smart definitions without changing existing manual memberships.
+  static Future<void> _migrateToVersion163(Database db) async {
+    db.execute(createUserCollectionsTableSql);
+    final columns = db
+        .select('PRAGMA table_info(user_collections)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('collection_type')) {
+      db.execute(
+        "ALTER TABLE user_collections ADD COLUMN collection_type TEXT NOT NULL DEFAULT 'manual'",
+      );
+    }
+    if (!columns.contains('rules_json')) {
+      db.execute('ALTER TABLE user_collections ADD COLUMN rules_json TEXT');
     }
   }
 }
