@@ -92,6 +92,11 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   bool _busy = false;
   String? _error;
   int _selected = 0;
+  bool _previewFocused = false;
+  int _previewSelected = 0;
+  List<DatabaseGameModel> _previewGames = [];
+  final _scrollController = ScrollController();
+  final _rulesSectionKey = GlobalKey();
   final Map<String, GlobalKey> _keys = {};
   final List<VoidCallback> _actions = [];
   final List<GlobalKey> _actionKeys = [];
@@ -123,7 +128,9 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       onNavigateLeft: () => _move(-1),
       onNavigateRight: () => _move(1),
       onSelectItem: () {
-        if (!_busy && _selected < _actions.length) _actions[_selected]();
+        if (!_busy && !_previewFocused && _selected < _actions.length) {
+          _actions[_selected]();
+        }
       },
       onBack: _cancel,
     );
@@ -166,12 +173,43 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   void dispose() {
     GamepadNavigationManager.popLayer(_layer);
     _nav.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _move(int delta, {bool vertical = false}) {
     if (_busy || _actions.isEmpty) return;
+    if (_previewFocused) {
+      if (!vertical ||
+          (delta > 0 && _previewSelected == _previewGames.length - 1)) {
+        setState(() {
+          _previewFocused = false;
+          _selected =
+              _actionRows.indexOf('footer') + (!vertical && delta > 0 ? 1 : 0);
+        });
+      } else if (delta < 0 && _previewSelected == 0) {
+        setState(() {
+          _previewFocused = false;
+          _selected = _actionRows.indexOf('add');
+        });
+        _revealAction();
+      } else {
+        setState(() => _previewSelected += delta);
+        _revealPreview();
+      }
+      return;
+    }
     final row = _actionRows[_selected];
+    if (vertical &&
+        _previewGames.isNotEmpty &&
+        ((row == 'add' && delta > 0) || (row == 'footer' && delta < 0))) {
+      setState(() {
+        _previewFocused = true;
+        if (row == 'add') _previewSelected = 0;
+      });
+      _revealPreview();
+      return;
+    }
     final columns = [
       for (var i = 0; i < _actionRows.length; i++)
         if (_actionRows[i] == row) i,
@@ -191,6 +229,25 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       next = columns[(column + delta).clamp(0, columns.length - 1)];
     }
     setState(() => _selected = next);
+    _revealAction();
+  }
+
+  void _revealPreview() {
+    final section = _rulesSectionKey.currentContext?.findRenderObject();
+    if (section is! RenderBox || !_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final offset =
+        section.size.height +
+        (_previewSelected + .5) * 76.r -
+        position.viewportDimension / 2;
+    _scrollController.animateTo(
+      offset.clamp(0.0, position.maxScrollExtent),
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _revealAction() {
     final target = _actionKeys[_selected].currentContext;
     if (target != null) {
       Scrollable.ensureVisible(
@@ -498,7 +555,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     _actions.add(action);
     _actionKeys.add(key);
     _actionRows.add(navigationRow ?? id);
-    final selected = _selected == index;
+    final selected = !_previewFocused && _selected == index;
     final theme = Theme.of(context);
     return ExcludeFocus(
       child: Padding(
@@ -508,7 +565,10 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
           onPressed: _busy
               ? null
               : () {
-                  setState(() => _selected = index);
+                  setState(() {
+                    _previewFocused = false;
+                    _selected = index;
+                  });
                   action();
                 },
           style: OutlinedButton.styleFrom(
@@ -547,7 +607,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     );
   }
 
-  Widget _previewGame(DatabaseGameModel databaseGame) {
+  Widget _previewGame(DatabaseGameModel databaseGame, int index) {
     final game = GameModel.fromDatabaseModel(databaseGame);
     final folder = databaseGame.systemFolderName ?? '';
     final fileProvider = context.read<FileProvider>();
@@ -563,9 +623,19 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
         ),
       ),
     );
-    return Padding(
+    final selected = _previewFocused && _previewSelected == index;
+    return Container(
       key: ValueKey('preview:${databaseGame.romPath}'),
       padding: EdgeInsets.symmetric(vertical: 6.r, horizontal: 3.r),
+      decoration: BoxDecoration(
+        color: selected
+            ? theme.colorScheme.primary.withValues(alpha: .12)
+            : null,
+        borderRadius: BorderRadius.circular(9.r),
+        border: selected
+            ? Border.all(color: theme.colorScheme.primary, width: 2.r)
+            : null,
+      ),
       child: Row(
         children: [
           SizedBox(
@@ -633,6 +703,13 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     final matches = definition == null
         ? <DatabaseGameModel>[]
         : _library.where((g) => evaluator.matches(g, definition)).toList();
+    _previewGames = !_loading && !_loadError ? matches : [];
+    if (_previewGames.isEmpty) {
+      _previewFocused = false;
+      _previewSelected = 0;
+    } else {
+      _previewSelected = _previewSelected.clamp(0, _previewGames.length - 1);
+    }
     return PopScope(
       canPop: !_busy,
       child: Scaffold(
@@ -662,9 +739,11 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                 SizedBox(height: 12.r),
                 Expanded(
                   child: CustomScrollView(
+                    controller: _scrollController,
                     slivers: [
                       SliverToBoxAdapter(
                         child: Column(
+                          key: _rulesSectionKey,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _button(
@@ -813,10 +892,11 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                         ),
                       ),
                       if (!_loading && !_loadError)
-                        SliverList.builder(
+                        SliverFixedExtentList.builder(
+                          itemExtent: 76.r,
                           itemCount: matches.length,
                           itemBuilder: (context, index) =>
-                              _previewGame(matches[index]),
+                              _previewGame(matches[index], index),
                         ),
                     ],
                   ),

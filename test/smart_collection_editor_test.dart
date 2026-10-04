@@ -287,6 +287,34 @@ void main() {
       await key(LogicalKeyboardKey.arrowDown);
       expect(selected('Add rule'), isTrue);
       await key(LogicalKeyboardKey.arrowDown);
+      expect(
+        (tester
+                    .widget<Container>(
+                      find.byKey(const ValueKey('preview:/snes/Chrono.sfc')),
+                    )
+                    .decoration!
+                as BoxDecoration)
+            .border,
+        isNotNull,
+      );
+      await key(LogicalKeyboardKey.arrowRight);
+      expect(selected('Save'), isTrue);
+      await key(LogicalKeyboardKey.arrowUp);
+      await key(LogicalKeyboardKey.arrowLeft);
+      expect(selected('Cancel'), isTrue);
+      await key(LogicalKeyboardKey.arrowUp);
+      await key(LogicalKeyboardKey.arrowDown);
+      expect(
+        (tester
+                    .widget<Container>(
+                      find.byKey(const ValueKey('preview:/nes/Mario.nes')),
+                    )
+                    .decoration!
+                as BoxDecoration)
+            .border,
+        isNotNull,
+      );
+      await key(LogicalKeyboardKey.arrowDown);
       expect(selected('Cancel'), isTrue);
       await key(LogicalKeyboardKey.arrowRight);
       expect(selected('Save'), isTrue);
