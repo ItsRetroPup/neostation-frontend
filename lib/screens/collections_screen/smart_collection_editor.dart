@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,8 +9,10 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_locale.dart';
 import '../../models/collection_model.dart';
 import '../../models/database_game_model.dart';
+import '../../models/game_model.dart';
 import '../../models/smart_collection_rules.dart';
 import '../../providers/collections_provider.dart';
+import '../../providers/file_provider.dart';
 import '../../services/collections/smart_collection_evaluator.dart';
 import '../../services/gamepad/gamepad_navigation_manager.dart';
 import '../../utils/gamepad_nav.dart';
@@ -544,6 +548,81 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     );
   }
 
+  Widget _previewGame(DatabaseGameModel databaseGame) {
+    final game = GameModel.fromDatabaseModel(databaseGame);
+    final folder = databaseGame.systemFolderName ?? '';
+    final fileProvider = context.read<FileProvider>();
+    final artPath = game.getImagePath(folder, 'box2d', fileProvider);
+    final theme = Theme.of(context);
+    Widget placeholder() => ColoredBox(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Symbols.videogame_asset_rounded,
+          size: 24.r,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+    return Padding(
+      key: ValueKey('preview:${databaseGame.romPath}'),
+      padding: EdgeInsets.symmetric(vertical: 6.r, horizontal: 3.r),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 56.r,
+            height: 64.r,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4.r),
+              child: File(artPath).existsSync()
+                  ? Image.file(
+                      File(artPath),
+                      fit: BoxFit.contain,
+                      cacheWidth:
+                          (112.r * MediaQuery.devicePixelRatioOf(context))
+                              .round(),
+                      errorBuilder: (context, error, stackTrace) =>
+                          placeholder(),
+                    )
+                  : placeholder(),
+            ),
+          ),
+          SizedBox(width: 12.r),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  (databaseGame.screenscraperRealName?.trim().isNotEmpty ??
+                          false)
+                      ? databaseGame.screenscraperRealName!
+                      : (databaseGame.realName?.trim().isNotEmpty ?? false)
+                      ? databaseGame.realName!
+                      : databaseGame.filename,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13.r),
+                ),
+                if (databaseGame.systemRealName != null) ...[
+                  SizedBox(height: 4.r),
+                  Text(
+                    databaseGame.systemRealName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 11.r,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     _actions.clear();
@@ -583,130 +662,124 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                 ),
                 SizedBox(height: 12.r),
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _button(
-                                'name',
-                                '${_text(AppLocale.collectionName)}: $_name',
-                                () => _run(() async {
-                                  final name = await _prompt(
-                                    _text(AppLocale.collectionName),
-                                    _name,
-                                  );
-                                  if (name != null && mounted) {
-                                    setState(() => _name = name);
-                                  }
-                                }),
-                                icon: Symbols.edit_rounded,
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _button(
+                              'name',
+                              '${_text(AppLocale.collectionName)}: $_name',
+                              () => _run(() async {
+                                final name = await _prompt(
+                                  _text(AppLocale.collectionName),
+                                  _name,
+                                );
+                                if (name != null && mounted) {
+                                  setState(() => _name = name);
+                                }
+                              }),
+                              icon: Symbols.edit_rounded,
+                            ),
+                            _button(
+                              'mode',
+                              _text(
+                                _matchAll
+                                    ? AppLocale.smartMatchAll
+                                    : AppLocale.smartMatchAny,
                               ),
-                              _button(
-                                'mode',
-                                _text(
-                                  _matchAll
-                                      ? AppLocale.smartMatchAll
-                                      : AppLocale.smartMatchAny,
-                                ),
-                                () => setState(() => _matchAll = !_matchAll),
-                              ),
-                              if (widget.collection?.rulesInvalid ?? false)
-                                Padding(
-                                  padding: EdgeInsets.all(8.r),
-                                  child: Text(
-                                    _text(AppLocale.smartInvalidRules),
-                                    style: TextStyle(
-                                      color: theme.colorScheme.error,
-                                      fontSize: 12.r,
-                                    ),
+                              () => setState(() => _matchAll = !_matchAll),
+                            ),
+                            if (widget.collection?.rulesInvalid ?? false)
+                              Padding(
+                                padding: EdgeInsets.all(8.r),
+                                child: Text(
+                                  _text(AppLocale.smartInvalidRules),
+                                  style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                    fontSize: 12.r,
                                   ),
                                 ),
-                              SizedBox(height: 12.r),
-                              for (var i = 0; i < _rules.length; i++)
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 2,
-                                      child: _button(
-                                        'field:$i',
-                                        _fieldLabel(_rules[i].field),
-                                        () => _run(() => _editField(_rules[i])),
-                                        navigationRow: 'rule:$i',
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: _button(
-                                        'op:$i',
-                                        _operatorLabel(_rules[i].operator),
-                                        () => _run(
-                                          () => _editOperator(_rules[i]),
-                                        ),
-                                        navigationRow: 'rule:$i',
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: _button(
-                                        'value:$i',
-                                        _valueLabel(_rules[i]),
-                                        () => _run(() => _editValue(_rules[i])),
-                                        navigationRow: 'rule:$i',
-                                      ),
-                                    ),
-                                    _button(
-                                      'remove:$i',
-                                      _text(AppLocale.delete),
-                                      () => setState(() {
-                                        _rules.removeAt(i);
-                                        _selected = 0;
-                                        _error = null;
-                                      }),
-                                      icon: Symbols.delete_rounded,
+                              ),
+                            SizedBox(height: 12.r),
+                            for (var i = 0; i < _rules.length; i++)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: _button(
+                                      'field:$i',
+                                      _fieldLabel(_rules[i].field),
+                                      () => _run(() => _editField(_rules[i])),
                                       navigationRow: 'rule:$i',
                                     ),
-                                  ],
-                                ),
-                              _button(
-                                'add',
-                                _text(AppLocale.smartAddRule),
-                                () => setState(() => _rules.add(_RuleDraft())),
-                                icon: Symbols.add_rounded,
-                              ),
-                              if (_error != null)
-                                Padding(
-                                  padding: EdgeInsets.all(8.r),
-                                  child: Text(
-                                    _error!,
-                                    style: TextStyle(
-                                      color: theme.colorScheme.error,
-                                      fontSize: 12.r,
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: _button(
+                                      'op:$i',
+                                      _operatorLabel(_rules[i].operator),
+                                      () =>
+                                          _run(() => _editOperator(_rules[i])),
+                                      navigationRow: 'rule:$i',
                                     ),
                                   ),
+                                  Expanded(
+                                    flex: 3,
+                                    child: _button(
+                                      'value:$i',
+                                      _valueLabel(_rules[i]),
+                                      () => _run(() => _editValue(_rules[i])),
+                                      navigationRow: 'rule:$i',
+                                    ),
+                                  ),
+                                  _button(
+                                    'remove:$i',
+                                    _text(AppLocale.delete),
+                                    () => setState(() {
+                                      _rules.removeAt(i);
+                                      _selected = 0;
+                                      _error = null;
+                                    }),
+                                    icon: Symbols.delete_rounded,
+                                    navigationRow: 'rule:$i',
+                                  ),
+                                ],
+                              ),
+                            _button(
+                              'add',
+                              _text(AppLocale.smartAddRule),
+                              () => setState(() => _rules.add(_RuleDraft())),
+                              icon: Symbols.add_rounded,
+                            ),
+                            if (_error != null)
+                              Padding(
+                                padding: EdgeInsets.all(8.r),
+                                child: Text(
+                                  _error!,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                    fontSize: 12.r,
+                                  ),
                                 ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 20.r),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                              ),
+                            SizedBox(height: 20.r),
                             Text(
                               _text(AppLocale.smartRulesOnly),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 fontSize: 13.r,
                               ),
                             ),
-                            SizedBox(height: 16.r),
+                            SizedBox(height: 12.r),
                             if (_loading)
-                              const CircularProgressIndicator()
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: EdgeInsets.all(8.r),
+                                  child: const CircularProgressIndicator(),
+                                ),
+                              )
                             else if (_loadError) ...[
                               Text(
                                 _text(AppLocale.smartPreviewError),
@@ -736,28 +809,16 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                                     fontSize: 12.r,
                                   ),
                                 ),
-                              Expanded(
-                                child: ListView(
-                                  children: [
-                                    for (final game in matches.take(12))
-                                      Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 5.r,
-                                        ),
-                                        child: Text(
-                                          game.realName ?? game.filename,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(fontSize: 12.r),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
                             ],
                           ],
                         ),
                       ),
+                      if (!_loading && !_loadError)
+                        SliverList.builder(
+                          itemCount: matches.length,
+                          itemBuilder: (context, index) =>
+                              _previewGame(matches[index]),
+                        ),
                     ],
                   ),
                 ),

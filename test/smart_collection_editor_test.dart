@@ -12,6 +12,7 @@ import 'package:neostation/models/collection_model.dart';
 import 'package:neostation/models/database_game_model.dart';
 import 'package:neostation/models/smart_collection_rules.dart';
 import 'package:neostation/providers/collections_provider.dart';
+import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/screens/collections_screen/smart_collection_editor.dart';
 import 'package:neostation/services/gamepad/gamepad_navigation_manager.dart';
 import 'package:neostation/services/sfx_service.dart';
@@ -39,9 +40,33 @@ class _LibraryProvider extends CollectionsProvider {
   ];
 }
 
+class _ArtworkProvider extends FileProvider {
+  _ArtworkProvider(this.artworkPath);
+  final String artworkPath;
+
+  @override
+  bool get isInitialized => true;
+
+  @override
+  String getMediaPath(
+    String systemFolderName,
+    String imageType,
+    String romName,
+    String extension,
+  ) => artworkPath;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  late Directory artworkDirectory;
+  late String artworkPath;
   setUpAll(() async {
+    artworkDirectory = await Directory.systemTemp.createTemp(
+      'smart-editor-art',
+    );
+    artworkPath = '${artworkDirectory.path}/cover.png';
+    final bytes = await rootBundle.load('assets/images/icons/image-bulk.png');
+    await File(artworkPath).writeAsBytes(bytes.buffer.asUint8List());
     SharedPreferences.setMockInitialValues({});
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -70,6 +95,7 @@ void main() {
       await icons.load();
     }
   });
+  tearDownAll(() async => artworkDirectory.delete(recursive: true));
 
   final rules = SmartCollectionRules(
     rules: [
@@ -99,8 +125,15 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     late BuildContext ctx;
     await tester.pumpWidget(
-      ChangeNotifierProvider<CollectionsProvider>(
-        create: (_) => _LibraryProvider(),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<CollectionsProvider>(
+            create: (_) => _LibraryProvider(),
+          ),
+          ChangeNotifierProvider<FileProvider>(
+            create: (_) => _ArtworkProvider(artworkPath),
+          ),
+        ],
         child: ScreenUtilInit(
           designSize: const Size(640, 480),
           builder: (context, child) => MaterialApp(
@@ -119,6 +152,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => precacheImage(
+        ResizeImage(FileImage(File(artworkPath)), width: (112.r).round()),
+        ctx,
+      ),
+    );
     return ctx;
   }
 
@@ -151,9 +190,31 @@ void main() {
       await tester.pumpAndSettle();
       expect(GamepadNavigationManager.stackDepth, depth + 1);
       expect(find.text('1 matching game'), findsOneWidget);
-      expect(find.text('Chrono Trigger'), findsOneWidget);
-      expect(tester.takeException(), isNull);
       await capture(tester, '${size.width.toInt()}');
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -180));
+      await tester.pumpAndSettle();
+      expect(find.text('Chrono Trigger'), findsOneWidget);
+      final preview = find.byKey(const ValueKey('preview:/snes/Chrono.sfc'));
+      expect(
+        find.descendant(of: preview, matching: find.byType(Image)),
+        findsOneWidget,
+      );
+      final artwork = tester.widget<Image>(
+        find.descendant(of: preview, matching: find.byType(Image)),
+      );
+      expect((artwork.image as ResizeImage).imageProvider, isA<FileImage>());
+      expect(
+        tester.getTopLeft(preview).dx,
+        lessThan(tester.getTopLeft(find.text('Save')).dx),
+      );
+      expect(
+        tester.getTopLeft(preview).dy,
+        greaterThan(tester.getBottomLeft(find.text('Add rule')).dy),
+      );
+      expect(tester.takeException(), isNull);
+      await capture(tester, '${size.width.toInt()}-games');
+      await tester.ensureVisible(find.text('Match all rules'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Match all rules'));
       await tester.pumpAndSettle();
       expect(find.text('2 matching games'), findsOneWidget);
