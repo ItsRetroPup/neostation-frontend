@@ -198,6 +198,37 @@ void main() {
       expect(GamepadNavigationManager.stackDepth, depth + 2);
       await key(LogicalKeyboardKey.backspace);
       expect(GamepadNavigationManager.stackDepth, depth + 1);
+      bool selected(String label) {
+        final button = tester.widget<OutlinedButton>(
+          find.ancestor(
+            of: find.text(label),
+            matching: find.byType(OutlinedButton),
+          ),
+        );
+        return button.style!.backgroundColor!.resolve({}) != null;
+      }
+
+      expect(selected('System'), isTrue);
+      await key(LogicalKeyboardKey.arrowRight);
+      await key(LogicalKeyboardKey.arrowRight);
+      expect(selected('Super Nintendo'), isTrue);
+      await key(LogicalKeyboardKey.arrowDown);
+      expect(selected('No'), isTrue);
+      await key(LogicalKeyboardKey.arrowUp);
+      expect(selected('Super Nintendo'), isTrue);
+      await key(LogicalKeyboardKey.arrowLeft);
+      await key(LogicalKeyboardKey.arrowLeft);
+      expect(selected('System'), isTrue);
+      await key(LogicalKeyboardKey.arrowLeft);
+      expect(selected('System'), isTrue);
+      await key(LogicalKeyboardKey.arrowDown);
+      expect(selected('Played'), isTrue);
+      await key(LogicalKeyboardKey.arrowDown);
+      expect(selected('Add rule'), isTrue);
+      await key(LogicalKeyboardKey.arrowDown);
+      expect(selected('Cancel'), isTrue);
+      await key(LogicalKeyboardKey.arrowRight);
+      expect(selected('Save'), isTrue);
       await key(LogicalKeyboardKey.backspace);
       expect(await result, isNull);
       expect(GamepadNavigationManager.stackDepth, depth);

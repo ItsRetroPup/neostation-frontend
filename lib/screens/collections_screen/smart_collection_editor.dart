@@ -91,6 +91,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   final Map<String, GlobalKey> _keys = {};
   final List<VoidCallback> _actions = [];
   final List<GlobalKey> _actionKeys = [];
+  final List<String> _actionRows = [];
 
   String _text(String key) => key.getString(context);
 
@@ -113,8 +114,8 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
         [_RuleDraft()];
     _nav = GamepadNavigation(
       allowRepeat: true,
-      onNavigateUp: () => _move(-1),
-      onNavigateDown: () => _move(1),
+      onNavigateUp: () => _move(-1, vertical: true),
+      onNavigateDown: () => _move(1, vertical: true),
       onNavigateLeft: () => _move(-1),
       onNavigateRight: () => _move(1),
       onSelectItem: () {
@@ -164,11 +165,28 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     super.dispose();
   }
 
-  void _move(int delta) {
+  void _move(int delta, {bool vertical = false}) {
     if (_busy || _actions.isEmpty) return;
-    setState(
-      () => _selected = (_selected + delta).clamp(0, _actions.length - 1),
-    );
+    final row = _actionRows[_selected];
+    final columns = [
+      for (var i = 0; i < _actionRows.length; i++)
+        if (_actionRows[i] == row) i,
+    ];
+    final column = columns.indexOf(_selected);
+    int next;
+    if (vertical) {
+      final rows = _actionRows.toSet().toList();
+      final nextRow =
+          rows[(rows.indexOf(row) + delta).clamp(0, rows.length - 1)];
+      final targets = [
+        for (var i = 0; i < _actionRows.length; i++)
+          if (_actionRows[i] == nextRow) i,
+      ];
+      next = targets[column.clamp(0, targets.length - 1)];
+    } else {
+      next = columns[(column + delta).clamp(0, columns.length - 1)];
+    }
+    setState(() => _selected = next);
     final target = _actionKeys[_selected].currentContext;
     if (target != null) {
       Scrollable.ensureVisible(
@@ -470,11 +488,13 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     String label,
     VoidCallback action, {
     IconData? icon,
+    String? navigationRow,
   }) {
     final index = _actions.length;
     final key = _keys.putIfAbsent(id, () => GlobalKey());
     _actions.add(action);
     _actionKeys.add(key);
+    _actionRows.add(navigationRow ?? id);
     final selected = _selected == index;
     final theme = Theme.of(context);
     return ExcludeFocus(
@@ -528,6 +548,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   Widget build(BuildContext context) {
     _actions.clear();
     _actionKeys.clear();
+    _actionRows.clear();
     final theme = Theme.of(context);
     final definition = _definition;
     final evaluator = SmartCollectionEvaluator(DateTime.now());
@@ -615,6 +636,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                                         'field:$i',
                                         _fieldLabel(_rules[i].field),
                                         () => _run(() => _editField(_rules[i])),
+                                        navigationRow: 'rule:$i',
                                       ),
                                     ),
                                     Expanded(
@@ -625,6 +647,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                                         () => _run(
                                           () => _editOperator(_rules[i]),
                                         ),
+                                        navigationRow: 'rule:$i',
                                       ),
                                     ),
                                     Expanded(
@@ -633,6 +656,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                                         'value:$i',
                                         _valueLabel(_rules[i]),
                                         () => _run(() => _editValue(_rules[i])),
+                                        navigationRow: 'rule:$i',
                                       ),
                                     ),
                                     _button(
@@ -644,6 +668,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                                         _error = null;
                                       }),
                                       icon: Symbols.delete_rounded,
+                                      navigationRow: 'rule:$i',
                                     ),
                                   ],
                                 ),
@@ -740,12 +765,18 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    _button('cancel', _text(AppLocale.cancel), _cancel),
+                    _button(
+                      'cancel',
+                      _text(AppLocale.cancel),
+                      _cancel,
+                      navigationRow: 'footer',
+                    ),
                     _button(
                       'save',
                       _text(AppLocale.save),
                       _save,
                       icon: Symbols.check_rounded,
+                      navigationRow: 'footer',
                     ),
                   ],
                 ),
