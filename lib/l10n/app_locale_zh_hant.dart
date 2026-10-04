@@ -1,6 +1,9 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleZhHant = {
+  AppLocale.ignoreArticlesInGameSort: "排序遊戲時忽略冠詞",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "忽略標題開頭的 The、A 或 An。例如，The Legend of Zelda 排在 L 下。",
   AppLocale.raEvents: '活動',
   AppLocale.raAotwYearTitle: '本週成就（{year}）',
   AppLocale.raAotw: 'AOTW',

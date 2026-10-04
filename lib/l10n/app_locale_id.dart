@@ -1,6 +1,9 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleId = {
+  AppLocale.ignoreArticlesInGameSort: "Abaikan artikel saat mengurutkan game",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Abaikan The, A, atau An di awal judul. Misalnya, The Legend of Zelda diurutkan di huruf L.",
   AppLocale.raEvents: 'Acara',
   AppLocale.raAotwYearTitle: 'Pencapaian Minggu Ini ({year})',
   AppLocale.raAotw: 'AOTW',

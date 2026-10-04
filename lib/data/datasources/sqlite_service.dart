@@ -459,7 +459,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 162;
+  static const int _databaseVersion = 164;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -1918,6 +1918,7 @@ class SqliteService {
         sfx_enabled INTEGER DEFAULT 1,
         sfx_volume REAL DEFAULT 0.75,
         system_sort_by TEXT DEFAULT 'alphabetical',
+        ignore_articles_in_game_sort INTEGER DEFAULT 0,
         collection_sort_by TEXT DEFAULT 'name',
         collection_sort_order TEXT DEFAULT 'asc',
         system_sort_order TEXT DEFAULT 'asc',
@@ -2766,6 +2767,7 @@ class SqliteService {
     int? bartopExitPoweroff,
     int? scanOnStartup,
     int? ignoreHiddenFiles,
+    int? ignoreArticlesInGameSort,
     int? setupCompleted,
     int? hideBottomScreen,
     int? sfxEnabled,
@@ -2863,6 +2865,9 @@ class SqliteService {
     }
     if (systemSortOrder != null) {
       updates['system_sort_order'] = systemSortOrder;
+    }
+    if (ignoreArticlesInGameSort != null) {
+      updates['ignore_articles_in_game_sort'] = ignoreArticlesInGameSort;
     }
     if (collectionSortBy != null) {
       updates['collection_sort_by'] = collectionSortBy;

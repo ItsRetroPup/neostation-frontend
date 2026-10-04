@@ -1,6 +1,9 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleEn = {
+  AppLocale.ignoreArticlesInGameSort: "Ignore articles when sorting games",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Sort by title without leading The, A, or An. For example, The Legend of Zelda sorts under L.",
   AppLocale.raEvents: 'Events',
   AppLocale.raAotwYearTitle: 'Achievement of the Week ({year})',
   AppLocale.raAotw: 'AOTW',
