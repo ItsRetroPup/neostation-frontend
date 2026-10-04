@@ -27,6 +27,7 @@ import 'package:neostation/widgets/confirm_action_dialog.dart';
 import 'package:neostation/widgets/context_menu/anchored_context_menu.dart';
 import 'package:neostation/widgets/custom_notification.dart';
 import 'package:neostation/widgets/header_sort_dropdown.dart';
+import 'package:neostation/widgets/systems_grid_footer.dart';
 import 'package:neostation/widgets/tv_directory_picker.dart';
 
 import '../game_screen/my_games_list.dart';
@@ -85,11 +86,6 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
   late final String _gridLayerId = 'collections_browser_grid#$_instance';
   late final String _carouselLayerId =
       'collections_browser_carousel#$_instance';
-
-  /// Anchor for the context menu: the footer's Y control, so the menu drops off
-  /// the button that opens it. The cards belong to the systems widgets now, so
-  /// there is no card-level anchor to hang a [GlobalKey] on — and the footer
-  /// control is mounted exactly when the menu is reachable.
 
   /// Anchor for the per-collection menu: the selected card itself.
   ///
@@ -314,11 +310,8 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
     final result = await showAnchoredContextMenu(
       context: context,
       items: items,
-      // The card, not the Y button — see [_selectedCardAnchorKey]. Falls back
-      // to the button when no card is mounted (the key resolves to null and
-      // the menu centres itself).
-      // The card. With the footer gone there is no button to fall back to, so
-      // a null context leaves the menu to centre itself.
+      // Keep the menu next to the collection it acts on; without a mounted
+      // card, the menu falls back to the viewport centre.
       anchorKey: _selectedCardAnchorKey,
       alignment: ContextMenuAlignment.overAnchor,
       layerId: 'collection_context_menu',
@@ -782,6 +775,16 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
                   ? _buildCarousel(items)
                   : _buildGrid(items, cols),
             ),
+            if (!showSpinner)
+              SafeArea(
+                top: false,
+                child: SystemsGridFooter(
+                  system: items[_selectedIndex],
+                  onEnter: _activateSelection,
+                  onOptions: _openContextMenu,
+                  enterLabel: AppLocale.hintSelect.getString(context),
+                ),
+              ),
           ],
         ),
       ),
@@ -835,8 +838,7 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
       child: MySystemsCarousel(
         items: items,
         selectedIndex: _selectedIndex,
-        // The footer carried the selected collection's count; with it gone the
-        // cards say it themselves, as the systems carousel does.
+        // Keep counts visible on the cards as well as in the selected footer.
         showCardCounts: true,
         // "New collection" is an action, not a place, so it is left out of the
         // strip of collections you can jump to.
