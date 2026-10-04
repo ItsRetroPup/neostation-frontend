@@ -389,6 +389,7 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
       ],
       layerId: 'collection_type#$_instance',
       submenuLayerId: 'collection_type_submenu#$_instance',
+      alignment: ContextMenuAlignment.centerScreen,
     );
     if (type == null || !mounted) return;
     final provider = context.read<CollectionsProvider>();

@@ -338,7 +338,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       };
       final entries = systems.entries.toList()
         ..sort((a, b) => a.value.compareTo(b.value));
-      final choice = await showAnchoredContextMenu(
+      await showAnchoredContextMenu(
         context: context,
         items: [
           for (final e in entries)
@@ -365,7 +365,6 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
           return true;
         },
       );
-      if (choice == null) return;
       value = selected.toList();
     } else if (row.field == SmartField.favorite ||
         row.field == SmartField.played) {

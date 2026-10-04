@@ -323,6 +323,31 @@ void main() {
     },
   );
 
+  testWidgets('B keeps selected systems without scrolling to Done', (
+    tester,
+  ) async {
+    final ctx = await host(tester, const Size(1280, 720));
+    final result = SmartCollectionEditor.show(ctx, initialName: 'New smart');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose a value'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Super Nintendo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nintendo Entertainment System'));
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await tester.pumpAndSettle();
+    expect(find.text('2 matching games'), findsOneWidget);
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final draft = await result;
+    expect(draft!.rules.rules.single.value, containsAll(['snes', 'nes']));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets(
     'unsupported rules are explained and cancelling preserves the source',
     (tester) async {
