@@ -49,6 +49,74 @@ void main() {
     ),
   );
 
+  test('Pokemon title rule includes Pokémon', () {
+    expect(
+      matches(
+        game(title: 'Pokémon Emerald'),
+        SmartField.title,
+        SmartOperator.contains,
+        'Pokemon',
+      ),
+      isTrue,
+    );
+  });
+
+  test('text rules ignore accents on either side for every operator', () {
+    for (final title in ['Pokémon', 'Poke\u0301mon', 'Pokemon']) {
+      for (final query in ['Pokemon', 'POKÉMON', 'Poke\u0301mon']) {
+        for (final op in operatorsFor(SmartField.title)) {
+          expect(
+            matches(game(title: title), SmartField.title, op, query),
+            op == SmartOperator.contains || op == SmartOperator.isEqual,
+            reason: '$title $op $query',
+          );
+        }
+      }
+    }
+    for (final field in [
+      SmartField.genre,
+      SmartField.developer,
+      SmartField.publisher,
+    ]) {
+      expect(
+        matches(
+          game(genre: 'Énigme', developer: 'Énigme', publisher: 'Énigme'),
+          field,
+          SmartOperator.isNot,
+          'enigme',
+        ),
+        isFalse,
+      );
+      expect(
+        matches(
+          game(genre: 'Énigme', developer: 'Énigme', publisher: 'Énigme'),
+          field,
+          SmartOperator.isEqual,
+          'enigme',
+        ),
+        isTrue,
+      );
+    }
+    expect(
+      matches(
+        game(title: 'ポケモン'),
+        SmartField.title,
+        SmartOperator.isEqual,
+        'ポケモン',
+      ),
+      isTrue,
+    );
+    expect(
+      matches(
+        game(title: 'Pokémon'),
+        SmartField.title,
+        SmartOperator.contains,
+        'Mario',
+      ),
+      isFalse,
+    );
+  });
+
   test('all/any and multiple systems combine correctly', () {
     final rules = [
       SmartRule(

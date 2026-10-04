@@ -60,8 +60,8 @@ class SmartCollectionEvaluator {
       SmartField.publisher,
     ].contains(rule.field)) {
       if (text == null || text.trim().isEmpty) return false;
-      final actual = text.trim().toLowerCase();
-      final expected = (rule.value as String).trim().toLowerCase();
+      final actual = _normalizeText(text);
+      final expected = _normalizeText(rule.value as String);
       return switch (rule.operator) {
         SmartOperator.isEqual => actual == expected,
         SmartOperator.isNot => actual != expected,
@@ -96,6 +96,43 @@ class SmartCollectionEvaluator {
       _ => false,
     };
   }
+
+  // Fold Latin accents for matching without changing stored/displayed metadata.
+  static final _combiningAccents = RegExp(r'[\u0300-\u036f]');
+  static const _accentGroups = {
+    'a': 'àáâãäåāăą',
+    'c': 'çćĉċč',
+    'd': 'ďđ',
+    'e': 'èéêëēĕėęě',
+    'g': 'ĝğġģ',
+    'h': 'ĥħ',
+    'i': 'ìíîïĩīĭįı',
+    'j': 'ĵ',
+    'k': 'ķ',
+    'l': 'ĺļľŀł',
+    'n': 'ñńņň',
+    'o': 'òóôõöøōŏő',
+    'r': 'ŕŗř',
+    's': 'śŝşš',
+    't': 'ţťŧ',
+    'u': 'ùúûüũūŭůűų',
+    'w': 'ŵ',
+    'y': 'ýÿŷ',
+    'z': 'źżž',
+  };
+  static final _accentReplacements = {
+    for (final group in _accentGroups.entries)
+      for (final rune in group.value.runes) rune: group.key,
+  };
+
+  static String _normalizeText(String text) => String.fromCharCodes(
+    text
+        .trim()
+        .toLowerCase()
+        .replaceAll(_combiningAccents, '')
+        .runes
+        .map((rune) => _accentReplacements[rune]?.codeUnitAt(0) ?? rune),
+  );
 
   /// Earliest instant at which a matching rolling rule can change its answer.
   DateTime? nextBoundary(
