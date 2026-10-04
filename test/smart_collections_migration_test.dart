@@ -4,7 +4,7 @@ import 'package:neostation/data/datasources/sqlite_migrations.dart';
 
 void main() {
   test(
-    'v163 upgrades manual collections without changing data and is idempotent',
+    'v164 upgrades manual collections without changing data and is idempotent',
     () async {
       final db = sqlite3.openInMemory();
       addTearDown(db.close);
@@ -20,8 +20,15 @@ void main() {
       db.execute(
         "INSERT INTO user_collection_items VALUES ('c', 'content://primary%3Aroms%2Fgame.zip')",
       );
-      await SqliteMigrations.migrateToVersion(db, 163);
-      await SqliteMigrations.migrateToVersion(db, 163);
+      // A device on the former smart collections v163 skipped upstream's
+      // migration at that version, leaving its existing RomM map unchanged.
+      db.execute('CREATE TABLE app_romm_rom_map (rom_path TEXT PRIMARY KEY)');
+      await SqliteMigrations.migrateToVersion(db, 164);
+      await SqliteMigrations.migrateToVersion(db, 164);
+      expect(
+        db.select('PRAGMA table_info(app_romm_rom_map)').map((r) => r['name']),
+        contains('link_source'),
+      );
       final row = db.select('SELECT * FROM user_collections').single;
       expect(row['collection_type'], 'manual');
       expect(row['rules_json'], isNull);
@@ -37,7 +44,7 @@ void main() {
     final db = sqlite3.openInMemory();
     addTearDown(db.close);
     db.execute(SqliteMigrations.createUserCollectionsTableSql);
-    await SqliteMigrations.migrateToVersion(db, 163);
+    await SqliteMigrations.migrateToVersion(db, 164);
     expect(
       db.select('PRAGMA table_info(user_collections)').map((r) => r['name']),
       containsAll(['collection_type', 'rules_json']),
@@ -46,7 +53,7 @@ void main() {
     db.execute(
       "CREATE TABLE user_collections (id TEXT, collection_type TEXT DEFAULT 'manual')",
     );
-    await SqliteMigrations.migrateToVersion(db, 163);
+    await SqliteMigrations.migrateToVersion(db, 164);
     expect(
       db.select('PRAGMA table_info(user_collections)').map((r) => r['name']),
       contains('rules_json'),
