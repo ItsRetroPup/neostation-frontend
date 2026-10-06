@@ -626,8 +626,21 @@ class SqliteMigrations {
       case 163:
         await _migrateToVersion163(db);
         break;
+      case 166:
+        await _migrateToVersion166(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
+    }
+  }
+
+  /// Durable, action-specific custom sound assignments. Safe to rerun.
+  static Future<void> _migrateToVersion166(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name']);
+    if (!columns.contains('custom_sfx')) {
+      db.execute('ALTER TABLE user_config ADD COLUMN custom_sfx TEXT');
     }
   }
 
