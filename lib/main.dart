@@ -50,6 +50,8 @@ import 'package:fullscreen_window/fullscreen_window.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:neostation/screens/secondary_screen/secondary_screen.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:neostation/utils/build_flavor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Politica personalizada para deshabilitar navegacion por teclado
 class NoFocusTraversalPolicy extends FocusTraversalPolicy {
@@ -192,8 +194,20 @@ Future<void> _configureImageCache() async {
 /// created them. Used by [AppNotification] for progress notifications.
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Gives a flavored build (`--dart-define=NEOSTATION_FLAVOR=...`) its own
+/// SharedPreferences namespace. Desktop platforms key preferences by vendor
+/// and product rather than app ID, so without this a developer build would
+/// read the release build's settings. Must run before the first
+/// `SharedPreferences.getInstance()` in each engine.
+void _applyBuildFlavorPrefs() {
+  if (BuildFlavor.isFlavored) {
+    SharedPreferences.setPrefix(BuildFlavor.sharedPreferencesPrefix);
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _applyBuildFlavorPrefs();
 
   // Render immediately. Cold boots can wait for removable storage before the
   // database opens, and without this lightweight root Android shows only a
@@ -220,6 +234,7 @@ void main() async {
     await windowManager.ensureInitialized();
 
     WindowOptions windowOptions = WindowOptions(
+      title: BuildFlavor.displayName,
       size: const Size(1280, 720),
       alwaysOnTop: false,
       skipTaskbar: false,
@@ -820,6 +835,7 @@ Future<void> _awaitUserDataStorage() async {
 @pragma('vm:entry-point')
 Future<void> subDisplay() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _applyBuildFlavorPrefs();
   debugPrint('--- [SECONDARY ENGINE] subDisplay signal received ---');
 
   // This engine has its own VideoPlayerPlatform: main()'s registerWith() ran in

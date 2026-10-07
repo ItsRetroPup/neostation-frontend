@@ -6,6 +6,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:neostation/services/logger_service.dart';
+import 'package:neostation/utils/build_flavor.dart';
 import '../models/system_model.dart';
 import '../models/config_model.dart';
 import '../models/emulator_model.dart';
@@ -219,7 +220,7 @@ class ConfigService {
             executable.endsWith('.AppImage')) {
           final home = Platform.environment['HOME'];
           if (home != null) {
-            basePath = path.join(home, '.neostation');
+            basePath = path.join(home, BuildFlavor.homeDataDirName);
           } else {
             basePath = Directory.current.path;
           }
@@ -232,7 +233,7 @@ class ConfigService {
           home,
           'Library',
           'Application Support',
-          'com.neogamelab.neostation',
+          BuildFlavor.appId,
         );
       } else {
         basePath = _getWindowsBasePath();
@@ -312,7 +313,7 @@ class ConfigService {
             executable.endsWith('.AppImage')) {
           final home = Platform.environment['HOME'];
           if (home != null) {
-            basePath = path.join(home, '.neostation');
+            basePath = path.join(home, BuildFlavor.homeDataDirName);
           } else {
             basePath = Directory.current.path;
           }
@@ -325,7 +326,7 @@ class ConfigService {
           home,
           'Library',
           'Application Support',
-          'com.neogamelab.neostation',
+          BuildFlavor.appId,
         );
       } else {
         basePath = _getWindowsBasePath();

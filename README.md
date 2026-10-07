@@ -115,6 +115,7 @@ Create a `.env` file from `.env.example` for local development.
 |----------|-------------|
 | `SCREENSCRAPER_DEV_ID` | ScreenScraper developer ID |
 | `SCREENSCRAPER_DEV_PASSWORD` | ScreenScraper developer password |
+| `NEOSTATION_FLAVOR` | Optional. Builds a side-by-side developer build (see below) |
 
 > RetroAchievements no longer uses a build-time key. Each user signs in with their own RetroAchievements username and web API key (from [retroachievements.org/controlpanel.php](https://retroachievements.org/controlpanel.php)) inside the app.
 
@@ -186,6 +187,20 @@ flutter build linux --release $DART_DEFINES
 # macOS
 flutter build macos --release $DART_DEFINES
 ```
+
+### Side-by-side developer builds
+
+Add `--dart-define=NEOSTATION_FLAVOR=<name>` (lowercase letters only, e.g. `pup`) to any run or build command to make a developer build that can be installed and run next to the official release:
+
+| | Release | `NEOSTATION_FLAVOR=pup` |
+|---|---|---|
+| App ID (Android, macOS) | `com.neogamelab.neostation` | `com.neogamelab.neostation.pup` |
+| App name | NeoStation | NeoStation Pup |
+| Data folder (macOS) | `~/Library/Application Support/com.neogamelab.neostation` | `…/com.neogamelab.neostation.pup` |
+| Data folder (Linux AppImage) | `~/.neostation` | `~/.neostation-pup` |
+| Preferences | `flutter.*` keys | `flutter.pup.*` keys |
+
+Android keeps data per app ID, and Windows and non-AppImage Linux keep data next to the build, so those separate automatically. Flavored builds never self-update. To work on several features at once, `scripts/new_feature.sh <name>` creates a git worktree at `../neostation-<name>` on a new `feature/<name>` branch.
 
 ## Project Structure
 

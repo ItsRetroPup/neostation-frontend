@@ -22,6 +22,19 @@ val hasReleaseSigning = listOf(
     !value.isNullOrBlank()
 }
 
+// Developer builds: `--dart-define=NEOSTATION_FLAVOR=<name>` (e.g. `pup`)
+// installs as `com.neogamelab.neostation.<name>` / "NeoStation <Name>" so it
+// runs side by side with the release. Flutter passes dart-defines to Gradle as
+// a comma-separated list of base64-encoded `KEY=value` entries. Must match
+// lib/utils/build_flavor.dart.
+val neostationFlavor: String = (project.findProperty("dart-defines") as String?)
+    ?.split(",")
+    ?.map { String(java.util.Base64.getDecoder().decode(it)) }
+    ?.firstOrNull { it.startsWith("NEOSTATION_FLAVOR=") }
+    ?.substringAfter("=")
+    ?.trim()
+    .orEmpty()
+
 android {
     namespace = "com.neogamelab.neostation"
     compileSdk = flutter.compileSdkVersion
@@ -47,6 +60,11 @@ android {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.neogamelab.neostation"
         manifestPlaceholders["appName"] = "NeoStation"
+        if (neostationFlavor.isNotEmpty()) {
+            applicationIdSuffix = ".$neostationFlavor"
+            manifestPlaceholders["appName"] =
+                "NeoStation " + neostationFlavor.replaceFirstChar { it.uppercase() }
+        }
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

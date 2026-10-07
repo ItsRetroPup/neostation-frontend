@@ -11,6 +11,7 @@ import 'package:archive/archive_io.dart';
 import 'package:neostation/services/logger_service.dart';
 
 import 'package:neostation/services/permission_service.dart';
+import 'package:neostation/utils/build_flavor.dart';
 import 'package:neostation/utils/version_compare.dart';
 
 /// Service responsible for orchestrating the over-the-air (OTA) update lifecycle.
@@ -33,6 +34,10 @@ class UpdateService {
   static Future<UpdateInfo?> checkForUpdates() async {
     // OTA updates are disabled for web-targeted builds.
     if (kIsWeb) return null;
+
+    // Flavored developer builds must never self-update: the release payload
+    // would replace them with the official build and drop their identity.
+    if (BuildFlavor.isFlavored) return null;
 
     try {
       // 1. Resolve local versioning from the application manifest.
