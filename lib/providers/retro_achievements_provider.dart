@@ -44,12 +44,26 @@ class RetroAchievementsProvider extends ChangeNotifier {
   @visibleForTesting
   http.Client? sessionHttpClient;
 
+  bool _disposed = false;
+
   @override
   void dispose() {
     // In-flight session reads must not update or notify a disposed provider.
     _sessionGeneration++;
+    _disposed = true;
     GameSessionManager.removeSessionEndListener(invalidateCachedReads);
     super.dispose();
+  }
+
+  /// [notifyListeners] that tolerates being disposed mid-call.
+  ///
+  /// [connect] starts the user summary without waiting for it, and most reads
+  /// notify after an `await`, so a call still in flight at [dispose] would
+  /// otherwise notify a disposed notifier, which throws.
+  @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
   }
 
   /// How long to keep reaching for the API after signing in from the offline
