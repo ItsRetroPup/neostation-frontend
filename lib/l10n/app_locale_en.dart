@@ -1410,4 +1410,26 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.rommUnlinkFailed: 'Could not unlink from RomM',
   // Link action on search results
   AppLocale.searchLinkToRomm: 'Link to RomM',
+  // SteamGridDB (manual artwork source)
+  AppLocale.steamGridDbTitle: 'SteamGridDB',
+  AppLocale.steamGridDbApiKey: 'SteamGridDB API key',
+  AppLocale.steamGridDbApiKeyDesc:
+      'Optional. Lets you pick box art, fanart and wheels from SteamGridDB in a game\'s settings.',
+  AppLocale.steamGridDbKeySet: 'Set',
+  AppLocale.steamGridDbKeyNotSet: 'Not set',
+  AppLocale.steamGridDbKeyHint: 'Paste your API key',
+  AppLocale.steamGridDbKeyHelp:
+      'Get a free API key at steamgriddb.com under Preferences > API.',
+  AppLocale.steamGridDbKeySaved: 'SteamGridDB API key saved',
+  AppLocale.steamGridDbKeyInvalid: 'SteamGridDB rejected this API key',
+  AppLocale.steamGridDbKeyRemoved: 'SteamGridDB API key removed',
+  AppLocale.steamGridDbRemoveKey: 'Remove key',
+  AppLocale.steamGridDbUnreachable: 'Could not reach SteamGridDB',
+  AppLocale.artworkFromFile: 'From file',
+  AppLocale.artworkFromSteamGridDb: 'From SteamGridDB',
+  AppLocale.steamGridDbSearchHint: 'Search SteamGridDB',
+  AppLocale.steamGridDbChooseGame: 'Choose the game',
+  AppLocale.steamGridDbChooseArtwork: 'Choose artwork for {game}',
+  AppLocale.steamGridDbNoGames: 'No matching games found',
+  AppLocale.steamGridDbNoArtwork: 'No artwork of this type for this game',
 };

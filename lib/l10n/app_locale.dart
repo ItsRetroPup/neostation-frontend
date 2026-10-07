@@ -1464,6 +1464,27 @@ mixin AppLocale {
 
   // Link action on search results
   static const String searchLinkToRomm = 'search_link_to_romm';
+
+  // SteamGridDB (manual artwork source)
+  static const String steamGridDbTitle = 'steamgriddb_title';
+  static const String steamGridDbApiKey = 'steamgriddb_api_key';
+  static const String steamGridDbApiKeyDesc = 'steamgriddb_api_key_desc';
+  static const String steamGridDbKeySet = 'steamgriddb_key_set';
+  static const String steamGridDbKeyNotSet = 'steamgriddb_key_not_set';
+  static const String steamGridDbKeyHint = 'steamgriddb_key_hint';
+  static const String steamGridDbKeyHelp = 'steamgriddb_key_help';
+  static const String steamGridDbKeySaved = 'steamgriddb_key_saved';
+  static const String steamGridDbKeyInvalid = 'steamgriddb_key_invalid';
+  static const String steamGridDbKeyRemoved = 'steamgriddb_key_removed';
+  static const String steamGridDbRemoveKey = 'steamgriddb_remove_key';
+  static const String steamGridDbUnreachable = 'steamgriddb_unreachable';
+  static const String artworkFromFile = 'artwork_from_file';
+  static const String artworkFromSteamGridDb = 'artwork_from_steamgriddb';
+  static const String steamGridDbSearchHint = 'steamgriddb_search_hint';
+  static const String steamGridDbChooseGame = 'steamgriddb_choose_game';
+  static const String steamGridDbChooseArtwork = 'steamgriddb_choose_artwork';
+  static const String steamGridDbNoGames = 'steamgriddb_no_games';
+  static const String steamGridDbNoArtwork = 'steamgriddb_no_artwork';
   // ==========================================================================
   // Localization Maps
   // ==========================================================================

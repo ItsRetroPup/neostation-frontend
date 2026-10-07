@@ -1299,4 +1299,26 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.rommUnlinkFailed: 'RomM とのリンクを解除できませんでした',
   // Link action on search results
   AppLocale.searchLinkToRomm: 'RomM にリンク',
+  // SteamGridDB (manual artwork source)
+  AppLocale.steamGridDbTitle: 'SteamGridDB',
+  AppLocale.steamGridDbApiKey: 'SteamGridDB APIキー',
+  AppLocale.steamGridDbApiKeyDesc:
+      '任意。ゲーム設定で SteamGridDB からボックスアート、ファンアート、ホイールを選べます。',
+  AppLocale.steamGridDbKeySet: '設定済み',
+  AppLocale.steamGridDbKeyNotSet: '未設定',
+  AppLocale.steamGridDbKeyHint: 'APIキーを貼り付け',
+  AppLocale.steamGridDbKeyHelp:
+      'steamgriddb.com の Preferences > API で無料の APIキーを取得できます。',
+  AppLocale.steamGridDbKeySaved: 'SteamGridDB APIキーを保存しました',
+  AppLocale.steamGridDbKeyInvalid: 'SteamGridDB がこの APIキーを拒否しました',
+  AppLocale.steamGridDbKeyRemoved: 'SteamGridDB APIキーを削除しました',
+  AppLocale.steamGridDbRemoveKey: 'キーを削除',
+  AppLocale.steamGridDbUnreachable: 'SteamGridDB に接続できません',
+  AppLocale.artworkFromFile: 'ファイルから',
+  AppLocale.artworkFromSteamGridDb: 'SteamGridDB から',
+  AppLocale.steamGridDbSearchHint: 'SteamGridDB を検索',
+  AppLocale.steamGridDbChooseGame: 'ゲームを選択',
+  AppLocale.steamGridDbChooseArtwork: '{game} のアートワークを選択',
+  AppLocale.steamGridDbNoGames: '一致するゲームが見つかりません',
+  AppLocale.steamGridDbNoArtwork: 'このゲームにはこの種類のアートワークがありません',
 };

@@ -30,44 +30,52 @@ void main() {
     await dbHelper.tearDown();
   });
 
-  testWidgets('signed out, the page is a single sign-in row', (tester) async {
-    final key = GlobalKey<ScreenScraperSettingsContentState>();
-    await tester.pumpWidget(
-      MediaQuery(
-        data: const MediaQueryData(size: Size(1920, 1080)),
-        child: ScreenUtilInit(
-          designSize: const Size(1920, 1080),
-          builder: (context, child) => MaterialApp(
-            localizationsDelegates:
-                FlutterLocalization.instance.localizationsDelegates,
-            supportedLocales: FlutterLocalization.instance.supportedLocales,
-            home: Scaffold(
-              body: ScreenScraperSettingsContent(
-                key: key,
-                isContentFocused: true,
+  testWidgets(
+    'signed out, the page is the sign-in row and the SteamGridDB key row',
+    (tester) async {
+      final key = GlobalKey<ScreenScraperSettingsContentState>();
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(size: Size(1920, 1080)),
+          child: ScreenUtilInit(
+            designSize: const Size(1920, 1080),
+            builder: (context, child) => MaterialApp(
+              localizationsDelegates:
+                  FlutterLocalization.instance.localizationsDelegates,
+              supportedLocales: FlutterLocalization.instance.supportedLocales,
+              home: Scaffold(
+                body: ScreenScraperSettingsContent(
+                  key: key,
+                  isContentFocused: true,
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
-
-    await tester.pump();
-
-    // The credential lookup hits the real test database; let it settle.
-    for (var i = 0; i < 20 && key.currentState!.getItemCount() == 0; i++) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 20)),
       );
-      await tester.pump();
-    }
-    await tester.pump();
 
-    expect(find.text('Metadata'), findsOneWidget);
-    expect(find.text('ScreenScraper Login'), findsOneWidget);
-    expect(key.currentState!.getItemCount(), 1);
-    // Nothing to move to or drop, so the cursor stays put and B falls through.
-    expect(key.currentState!.navigateDown(), isFalse);
-    expect(key.currentState!.navigateBack(), isFalse);
-  });
+      await tester.pump();
+
+      // The credential lookup hits the real test database; let it settle.
+      for (var i = 0; i < 20 && key.currentState!.getItemCount() == 0; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
+      }
+      await tester.pump();
+
+      expect(find.text('Metadata'), findsOneWidget);
+      expect(find.text('ScreenScraper Login'), findsOneWidget);
+      // The SteamGridDB key does not depend on a ScreenScraper account, so its
+      // row is reachable while signed out too.
+      expect(find.text('SteamGridDB API key'), findsOneWidget);
+      expect(find.text('Not set'), findsOneWidget);
+      expect(key.currentState!.getItemCount(), 2);
+      expect(key.currentState!.navigateDown(), isTrue);
+      // The key row is last, so the cursor stays put and B falls through.
+      expect(key.currentState!.navigateDown(), isFalse);
+      expect(key.currentState!.navigateBack(), isFalse);
+    },
+  );
 }

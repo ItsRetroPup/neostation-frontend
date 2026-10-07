@@ -1436,4 +1436,26 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.rommUnlinkFailed: 'Tidak dapat memutus tautan dari RomM',
   // Link action on search results
   AppLocale.searchLinkToRomm: 'Tautkan ke RomM',
+  // SteamGridDB (manual artwork source)
+  AppLocale.steamGridDbTitle: 'SteamGridDB',
+  AppLocale.steamGridDbApiKey: 'Kunci API SteamGridDB',
+  AppLocale.steamGridDbApiKeyDesc:
+      'Opsional. Memungkinkan kamu memilih box art, fanart, dan wheel dari SteamGridDB di pengaturan game.',
+  AppLocale.steamGridDbKeySet: 'Sudah diatur',
+  AppLocale.steamGridDbKeyNotSet: 'Belum diatur',
+  AppLocale.steamGridDbKeyHint: 'Tempel kunci API kamu',
+  AppLocale.steamGridDbKeyHelp:
+      'Dapatkan kunci API gratis di steamgriddb.com pada Preferences > API.',
+  AppLocale.steamGridDbKeySaved: 'Kunci API SteamGridDB disimpan',
+  AppLocale.steamGridDbKeyInvalid: 'SteamGridDB menolak kunci API ini',
+  AppLocale.steamGridDbKeyRemoved: 'Kunci API SteamGridDB dihapus',
+  AppLocale.steamGridDbRemoveKey: 'Hapus kunci',
+  AppLocale.steamGridDbUnreachable: 'Tidak dapat menghubungi SteamGridDB',
+  AppLocale.artworkFromFile: 'Dari file',
+  AppLocale.artworkFromSteamGridDb: 'Dari SteamGridDB',
+  AppLocale.steamGridDbSearchHint: 'Cari di SteamGridDB',
+  AppLocale.steamGridDbChooseGame: 'Pilih game',
+  AppLocale.steamGridDbChooseArtwork: 'Pilih artwork untuk {game}',
+  AppLocale.steamGridDbNoGames: 'Tidak ada game yang cocok',
+  AppLocale.steamGridDbNoArtwork: 'Tidak ada artwork jenis ini untuk game ini',
 };

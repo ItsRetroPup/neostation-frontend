@@ -8,16 +8,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/models/game_model.dart';
+import 'package:neostation/models/steamgriddb.dart';
 import 'package:neostation/models/system_model.dart';
 import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/repositories/game_repository.dart';
 import 'package:neostation/repositories/scraper_repository.dart';
+import 'package:neostation/repositories/steamgriddb_repository.dart';
 import 'package:neostation/repositories/system_repository.dart';
 import 'package:neostation/screens/game_screen/my_games_carousel.dart';
 import 'package:neostation/screens/game_screen/my_games_grid.dart';
+import 'package:neostation/screens/game_screen/game_settings_dialog/option_picker_overlay.dart';
+import 'package:neostation/screens/game_screen/game_settings_dialog/steamgriddb_picker_dialog.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/screenscraper_service.dart';
 import 'package:neostation/services/sfx_service.dart';
+import 'package:neostation/services/steamgriddb_service.dart';
 import 'package:neostation/utils/artwork_cache.dart';
 import 'package:neostation/widgets/custom_notification.dart';
 
@@ -26,7 +31,8 @@ enum _ScrappingSubTab { data, media }
 
 /// Scrapping tab for [GameSettingsDialog]: force rescrape plus manual
 /// metadata (title, descriptions, developer, publisher, genre) and artwork
-/// (screenshot, wheel, fanart, boxart) editing.
+/// (screenshot, wheel, fanart, boxart) editing. Artwork comes from a local
+/// file or, when the user has a SteamGridDB API key, from SteamGridDB.
 ///
 /// The tab is split into two sub-tabs:
 ///  * [Scraping Data] — metadata fields plus the save action.
@@ -324,11 +330,106 @@ class GameSettingsScrappingTabState extends State<GameSettingsScrappingTab> {
       ? widget.game.getScreenshotPath(_folder, widget.fileProvider)
       : widget.game.getImagePath(_folder, type, widget.fileProvider);
 
-  Future<void> _replaceImage(String type) async {
+  /// A on an artwork row. Offers SteamGridDB next to a local file when the
+  /// user has an API key and SteamGridDB has that kind of art; otherwise goes
+  /// straight to the file picker, as before.
+  Future<void> _changeImage(int navIndex) async {
+    final type = _imageTypes[navIndex - _idxImageStart];
+    final steamGridType = SteamGridDbArtworkType.forMediaType(type);
+    if (steamGridType == null ||
+        await SteamGridDbRepository.getApiKey() == null) {
+      await _replaceImageFromFile(type);
+      return;
+    }
+    if (!mounted) return;
+
+    const fromFile = 'file';
+    const fromSteamGridDb = 'steamgriddb';
+    final choice = await showDialog<String>(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (_) => OptionPickerOverlay(
+        anchorOffset: _rowAnchor(navIndex),
+        // No current value: neither source is "selected", so no checkmark.
+        // The cursor starts on the first option, SteamGridDB.
+        currentValue: '',
+        options: [
+          OptionPickerItem(
+            value: fromSteamGridDb,
+            label: AppLocale.artworkFromSteamGridDb.getString(context),
+          ),
+          OptionPickerItem(
+            value: fromFile,
+            label: AppLocale.artworkFromFile.getString(context),
+          ),
+        ],
+      ),
+    );
+    if (choice == fromFile) {
+      await _replaceImageFromFile(type);
+    } else if (choice == fromSteamGridDb) {
+      await _replaceImageFromSteamGridDb(type, steamGridType);
+    }
+  }
+
+  /// Right-middle of the artwork row, where the source picker opens.
+  Offset _rowAnchor(int navIndex) {
+    final box =
+        _itemKey(navIndex).currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return MediaQuery.of(context).size.center(Offset.zero);
+    return box.localToGlobal(Offset(box.size.width, box.size.height / 2));
+  }
+
+  Future<void> _replaceImageFromFile(String type) async {
     final result = await FilePicker.pickFile(type: FileType.image);
     final srcPath = result?.path;
     if (srcPath == null || !mounted) return;
+    await _installImage(type, (target) => File(srcPath).copy(target.path));
+  }
 
+  Future<void> _replaceImageFromSteamGridDb(
+    String type,
+    SteamGridDbArtworkType steamGridType,
+  ) async {
+    final service = await SteamGridDbService.fromStoredKey();
+    if (service == null || !mounted) return;
+    try {
+      final picked = await SteamGridDbPickerDialog.show(
+        context,
+        service: service,
+        type: steamGridType,
+        gameTitle: widget.game.name,
+        // Steam games carry their app ID, which skips the title search.
+        steamAppId: _folder == 'steam' ? widget.game.titleId : null,
+      );
+      if (picked == null || !mounted) return;
+
+      final Uint8List bytes;
+      try {
+        bytes = await service.downloadImage(picked.url);
+      } on SteamGridDbException catch (e) {
+        _log.e('SteamGridDB download failed: $e');
+        if (mounted) {
+          AppNotification.showNotification(
+            context,
+            AppLocale.steamGridDbUnreachable.getString(context),
+            type: NotificationType.error,
+          );
+        }
+        return;
+      }
+      if (!mounted) return;
+      await _installImage(type, (target) => target.writeAsBytes(bytes));
+    } finally {
+      service.close();
+    }
+  }
+
+  /// Writes new art for [type] with [write] and refreshes every cached copy.
+  Future<void> _installImage(
+    String type,
+    Future<void> Function(File target) write,
+  ) async {
     try {
       // Write into NeoStation's own media folder, never over the path the
       // thumbnail happens to be read from: for an ES-DE imported library that
@@ -340,7 +441,7 @@ class GameSettingsScrappingTabState extends State<GameSettingsScrappingTab> {
         widget.fileProvider,
       );
       await File(targetPath).parent.create(recursive: true);
-      await File(srcPath).copy(targetPath);
+      await write(File(targetPath));
       await evictScrapedArtwork([targetPath]);
       GamesGrid.evictArtworkCaches([targetPath]);
       GamesCarousel.evictArtworkCaches([targetPath]);
@@ -446,7 +547,7 @@ class GameSettingsScrappingTabState extends State<GameSettingsScrappingTab> {
       }
     } else {
       if (idx >= _idxImageStart && idx < _totalMediaItems) {
-        _replaceImage(_imageTypes[idx]);
+        _changeImage(idx);
       }
     }
   }
@@ -687,7 +788,7 @@ class GameSettingsScrappingTabState extends State<GameSettingsScrappingTab> {
               onTap: () {
                 SfxService().playNavSound();
                 setState(() => _selectedIndex = _idxImageStart + i);
-                _replaceImage(_imageTypes[i]);
+                _changeImage(_idxImageStart + i);
               },
             ),
         ],

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/providers/scraping_provider.dart';
 import 'package:neostation/repositories/scraper_repository.dart';
+import 'package:neostation/repositories/steamgriddb_repository.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/screenscraper_service.dart';
 import 'package:neostation/services/sfx_service.dart';
@@ -21,6 +22,7 @@ import 'scrape_session.dart';
 import 'scraping_progress_panel.dart';
 import 'screenscraper_account_card.dart';
 import 'screenscraper_login_dialog.dart';
+import 'steamgriddb_key_dialog.dart';
 
 /// The ScreenScraper settings category: account, scraping, and every scraper
 /// option on one scrolling page.
@@ -29,7 +31,9 @@ import 'screenscraper_login_dialog.dart';
 /// [ScreenScraperLoginDialog]. Signed in, it owns one gamepad cursor over the
 /// account and scraping rows (start/stop, scrape mode, language), the
 /// enable-all row and a grid of system tiles, then the media type and region
-/// priority rows. The settings screen delegates D-pad, A and B here, like the Themes and System
+/// priority rows. The SteamGridDB API key row closes the page in both
+/// states, since that key does not depend on a ScreenScraper account. The
+/// settings screen delegates D-pad, A and B here, like the Themes and System
 /// Art categories.
 class ScreenScraperSettingsContent extends StatefulWidget {
   final bool isContentFocused;
@@ -91,6 +95,7 @@ class ScreenScraperSettingsContentState
 
   bool _isLoading = true;
   bool _signedIn = false;
+  bool _hasSteamGridDbKey = false;
   Map<String, String>? _userInfo;
   String _scrapeMode = 'new_only';
   String _language = 'en';
@@ -107,7 +112,7 @@ class ScreenScraperSettingsContentState
 
   // Slot layout when signed in, in page order: account, the scraping rows,
   // enable-all, the systems grid, then the media and region rows. Signed out
-  // there is a single slot: the sign-in row.
+  // there is the sign-in row. Both states end with the SteamGridDB key row.
   static const int _accountSlot = 0;
   static const int _scrapeSlot = 1;
   static const int _scrapeModeSlot = 2;
@@ -117,6 +122,8 @@ class ScreenScraperSettingsContentState
   int get _gridEnd => _gridStart + _systems.length;
   int get _mediaStart => _gridEnd;
   int get _regionStart => _mediaStart + _mediaTypes.length;
+
+  int get _steamGridDbSlot => _signedIn ? _regionStart + _regions.length : 1;
 
   bool _isRegionSlot(int slot) =>
       slot >= _regionStart && slot < _regionStart + _regions.length;
@@ -148,6 +155,8 @@ class ScreenScraperSettingsContentState
 
   Future<void> _load() async {
     final signedIn = await ScreenScraperService.hasSavedCredentials();
+    final steamGridDbKey = await SteamGridDbRepository.getApiKey();
+    _hasSteamGridDbKey = steamGridDbKey != null;
     if (!signedIn) {
       if (mounted) {
         setState(() {
@@ -201,8 +210,7 @@ class ScreenScraperSettingsContentState
 
   int getItemCount() {
     if (_isLoading) return 0;
-    if (!_signedIn) return 1;
-    return _regionStart + _regions.length;
+    return _steamGridDbSlot + 1;
   }
 
   /// Returns whether the cursor moved (drives the nav sound).
@@ -276,11 +284,15 @@ class ScreenScraperSettingsContentState
 
   void selectItem() {
     if (_isLoading) return;
+    final slot = _cursor;
+    if (slot == _steamGridDbSlot) {
+      _editSteamGridDbKey();
+      return;
+    }
     if (!_signedIn) {
       _signIn();
       return;
     }
-    final slot = _cursor;
     if (slot == _accountSlot) {
       _logout();
     } else if (slot == _scrapeSlot) {
@@ -351,6 +363,16 @@ class ScreenScraperSettingsContentState
       _cursor = 0;
     });
     await _load();
+  }
+
+  Future<void> _editSteamGridDbKey() async {
+    final changed = await SteamGridDbKeyDialog.show(
+      context,
+      hasKey: _hasSteamGridDbKey,
+    );
+    if (!changed || !mounted) return;
+    final key = await SteamGridDbRepository.getApiKey();
+    if (mounted) setState(() => _hasSteamGridDbKey = key != null);
   }
 
   Future<void> _logout() async {
@@ -575,6 +597,35 @@ class ScreenScraperSettingsContentState
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
+        SizedBox(height: 16.r),
+        _buildSteamGridDbSection(context),
+      ],
+    );
+  }
+
+  Widget _buildSteamGridDbSection(BuildContext context) {
+    final slot = _steamGridDbSlot;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SettingsSectionHeader(
+          label: AppLocale.steamGridDbTitle.getString(context),
+        ),
+        SettingRow(
+          key: _keyFor(slot),
+          title: AppLocale.steamGridDbApiKey.getString(context),
+          subtitle: AppLocale.steamGridDbApiKeyDesc.getString(context),
+          focused: _focused(slot),
+          onTap: () {
+            _cursor = slot;
+            selectItem();
+          },
+          trailing: SettingValueChip(
+            text: _hasSteamGridDbKey
+                ? AppLocale.steamGridDbKeySet.getString(context)
+                : AppLocale.steamGridDbKeyNotSet.getString(context),
+          ),
+        ),
       ],
     );
   }
@@ -661,6 +712,8 @@ class ScreenScraperSettingsContentState
         ),
         _buildHint(context, AppLocale.regionPrioritySub.getString(context)),
         _buildRegionList(context),
+        SizedBox(height: 16.r),
+        _buildSteamGridDbSection(context),
       ],
     );
   }

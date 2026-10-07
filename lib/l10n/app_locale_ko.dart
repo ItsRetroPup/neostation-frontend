@@ -1307,4 +1307,26 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.rommUnlinkFailed: 'RomM 연결을 해제할 수 없습니다',
   // Link action on search results
   AppLocale.searchLinkToRomm: 'RomM에 연결',
+  // SteamGridDB (manual artwork source)
+  AppLocale.steamGridDbTitle: 'SteamGridDB',
+  AppLocale.steamGridDbApiKey: 'SteamGridDB API 키',
+  AppLocale.steamGridDbApiKeyDesc:
+      '선택 사항. 게임 설정에서 SteamGridDB의 박스 아트, 팬아트, 휠을 고를 수 있습니다.',
+  AppLocale.steamGridDbKeySet: '설정됨',
+  AppLocale.steamGridDbKeyNotSet: '설정 안 됨',
+  AppLocale.steamGridDbKeyHint: 'API 키를 붙여넣으세요',
+  AppLocale.steamGridDbKeyHelp:
+      'steamgriddb.com의 Preferences > API에서 무료 API 키를 받을 수 있습니다.',
+  AppLocale.steamGridDbKeySaved: 'SteamGridDB API 키를 저장했습니다',
+  AppLocale.steamGridDbKeyInvalid: 'SteamGridDB가 이 API 키를 거부했습니다',
+  AppLocale.steamGridDbKeyRemoved: 'SteamGridDB API 키를 삭제했습니다',
+  AppLocale.steamGridDbRemoveKey: '키 삭제',
+  AppLocale.steamGridDbUnreachable: 'SteamGridDB에 연결할 수 없습니다',
+  AppLocale.artworkFromFile: '파일에서',
+  AppLocale.artworkFromSteamGridDb: 'SteamGridDB에서',
+  AppLocale.steamGridDbSearchHint: 'SteamGridDB 검색',
+  AppLocale.steamGridDbChooseGame: '게임 선택',
+  AppLocale.steamGridDbChooseArtwork: '{game}의 아트워크 선택',
+  AppLocale.steamGridDbNoGames: '일치하는 게임이 없습니다',
+  AppLocale.steamGridDbNoArtwork: '이 게임에는 이 유형의 아트워크가 없습니다',
 };

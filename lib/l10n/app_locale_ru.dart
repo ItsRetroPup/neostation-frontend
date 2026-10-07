@@ -1429,4 +1429,26 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.rommUnlinkFailed: 'Не удалось отвязать от RomM',
   // Link action on search results
   AppLocale.searchLinkToRomm: 'Связать с RomM',
+  // SteamGridDB (manual artwork source)
+  AppLocale.steamGridDbTitle: 'SteamGridDB',
+  AppLocale.steamGridDbApiKey: 'API-ключ SteamGridDB',
+  AppLocale.steamGridDbApiKeyDesc:
+      'Необязательно. Позволяет выбирать обложки, фан-арт и логотипы из SteamGridDB в настройках игры.',
+  AppLocale.steamGridDbKeySet: 'Задан',
+  AppLocale.steamGridDbKeyNotSet: 'Не задан',
+  AppLocale.steamGridDbKeyHint: 'Вставьте API-ключ',
+  AppLocale.steamGridDbKeyHelp:
+      'Бесплатный API-ключ можно получить на steamgriddb.com в разделе Preferences > API.',
+  AppLocale.steamGridDbKeySaved: 'API-ключ SteamGridDB сохранён',
+  AppLocale.steamGridDbKeyInvalid: 'SteamGridDB отклонил этот API-ключ',
+  AppLocale.steamGridDbKeyRemoved: 'API-ключ SteamGridDB удалён',
+  AppLocale.steamGridDbRemoveKey: 'Удалить ключ',
+  AppLocale.steamGridDbUnreachable: 'Не удалось подключиться к SteamGridDB',
+  AppLocale.artworkFromFile: 'Из файла',
+  AppLocale.artworkFromSteamGridDb: 'Из SteamGridDB',
+  AppLocale.steamGridDbSearchHint: 'Поиск в SteamGridDB',
+  AppLocale.steamGridDbChooseGame: 'Выберите игру',
+  AppLocale.steamGridDbChooseArtwork: 'Выберите оформление для {game}',
+  AppLocale.steamGridDbNoGames: 'Подходящие игры не найдены',
+  AppLocale.steamGridDbNoArtwork: 'Для этой игры нет оформления такого типа',
 };

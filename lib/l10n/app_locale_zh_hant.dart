@@ -1263,4 +1263,25 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.rommUnlinkFailed: '無法取消與 RomM 的連結',
   // Link action on search results
   AppLocale.searchLinkToRomm: '連結至 RomM',
+  // SteamGridDB (manual artwork source)
+  AppLocale.steamGridDbTitle: 'SteamGridDB',
+  AppLocale.steamGridDbApiKey: 'SteamGridDB API 金鑰',
+  AppLocale.steamGridDbApiKeyDesc: '選用。可在遊戲設定中從 SteamGridDB 選擇封面、背景圖與標誌。',
+  AppLocale.steamGridDbKeySet: '已設定',
+  AppLocale.steamGridDbKeyNotSet: '未設定',
+  AppLocale.steamGridDbKeyHint: '貼上你的 API 金鑰',
+  AppLocale.steamGridDbKeyHelp:
+      '在 steamgriddb.com 的 Preferences > API 免費取得 API 金鑰。',
+  AppLocale.steamGridDbKeySaved: '已儲存 SteamGridDB API 金鑰',
+  AppLocale.steamGridDbKeyInvalid: 'SteamGridDB 拒絕了此 API 金鑰',
+  AppLocale.steamGridDbKeyRemoved: '已移除 SteamGridDB API 金鑰',
+  AppLocale.steamGridDbRemoveKey: '移除金鑰',
+  AppLocale.steamGridDbUnreachable: '無法連線到 SteamGridDB',
+  AppLocale.artworkFromFile: '從檔案',
+  AppLocale.artworkFromSteamGridDb: '從 SteamGridDB',
+  AppLocale.steamGridDbSearchHint: '搜尋 SteamGridDB',
+  AppLocale.steamGridDbChooseGame: '選擇遊戲',
+  AppLocale.steamGridDbChooseArtwork: '為 {game} 選擇圖片',
+  AppLocale.steamGridDbNoGames: '找不到相符的遊戲',
+  AppLocale.steamGridDbNoArtwork: '此遊戲沒有此類圖片',
 };
