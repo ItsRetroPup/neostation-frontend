@@ -309,6 +309,19 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.cleanOrphanedMetadataFailed:
       'Gagal membersihkan metadata yatim: {error}',
   AppLocale.rematchAchievements: 'Cocokkan Game RetroAchievements',
+  AppLocale.rommLinkLibrary: 'Tautkan pustaka ke RomM',
+  AppLocale.rommLinkLibrarySubtitle:
+      'Cocokkan ROM lokal dengan server RomM Anda lalu tautkan',
+  AppLocale.rommLinkLibraryWarning:
+      'Ini menelusuri setiap platform di server RomM Anda dan menautkan ROM lokal yang dikenali.\n\nGim yang tertaut menjadi memenuhi syarat untuk sinkronisasi simpanan, sehingga data simpanannya akan diunggah ke RomM. Pada pustaka besar ini bisa memakan waktu beberapa menit.',
+  AppLocale.rommLinkLibraryPreparing: 'Menyiapkan…',
+  AppLocale.rommLinkLibraryProgress: '{done} dari {total} — {system}',
+  AppLocale.rommLinkLibraryDone: '{count} gim tertaut',
+  AppLocale.rommLinkLibraryNothingToDo: 'Tidak ada yang baru untuk ditautkan',
+  AppLocale.rommLinkLibraryFailed: 'Gagal menautkan',
+  AppLocale.rommLinkLibraryUnavailable: 'Tidak tersedia saat ini',
+  AppLocale.rommLinkLibraryStoppedEarly:
+      'Berhenti lebih awal — {count} gim tertaut sejauh ini',
   AppLocale.rematchAchievementsSubtitle:
       'Memeriksa seluruh pustaka untuk set prestasi, bukan satu game per satu',
   AppLocale.rematchAchievementsWarning:
@@ -355,7 +368,6 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.exportLogsFailed: 'Gagal mengekspor log',
   AppLocale.specialThanks: 'Terima Kasih Khusus',
   AppLocale.forInvaluableContributions: 'atas kontribusi yang sangat berharga',
-  AppLocale.supportOnKofi: 'Dukung kami di Ko-fi',
   AppLocale.supportOnPatreon: 'Dukung kami di Patreon',
   AppLocale.openSourceLicense: 'Proyek Sumber Terbuka',
   AppLocale.openSourceLicenseDesc: 'Dilisensikan di bawah GPLv3',
@@ -594,6 +606,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.stoppingScraping: 'Menghentikan proses scraping...',
   AppLocale.syncError: 'Kesalahan saat menyinkronkan ID sistem',
   AppLocale.metadataError: 'Kesalahan selama proses scraping',
+  AppLocale.identifyGame: 'Identifikasi…',
+  AppLocale.identifySearchHint: 'Cari di ScreenScraper berdasarkan nama',
+  AppLocale.identifySearchFailed: 'Pencarian gagal. Silakan coba lagi nanti.',
   AppLocale.scrapeQuotaExceeded:
       'Kuota harian scraping ScreenScraper terlampaui',
   AppLocale.start: 'Mulai',
@@ -1124,6 +1139,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.rommSearchClear: 'Hapus pencarian',
   AppLocale.rommDownloading: 'Mengunduh...',
   AppLocale.rommDownloaded: 'Terunduh',
+  AppLocale.rommLinked: 'Tertaut ke RomM',
   AppLocale.rommDownloadComplete: 'Unduhan selesai',
   AppLocale.rommDownloadFailed: 'Unduhan gagal',
   AppLocale.rommDownloadCancelled: 'Unduhan dibatalkan',
@@ -1142,6 +1158,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.rommSyncConfirmPlan:
       'Mengunduh {count} gim ({size}). Ini bisa memakan waktu lama.',
   AppLocale.rommSyncConfirmSkipped: '{count} sudah ada di perangkat ini.',
+  AppLocale.rommSyncConfirmLinked: '{count} akan ditautkan ke RomM.',
   AppLocale.rommSyncConfirmFree: '{free} tersedia.',
   AppLocale.rommSyncConfirmNoSpace:
       'Penyimpanan tidak cukup: perlu {size}, hanya {free} tersedia.',
@@ -1156,6 +1173,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.rommSyncComplete: '{count} gim disinkronkan',
   AppLocale.rommSyncCancelled: 'Sinkronisasi dibatalkan',
   AppLocale.rommSyncNothingToDo: 'Semuanya sudah diunduh',
+  AppLocale.rommSyncLinkedCount: '{count} gim tertaut ke RomM',
   AppLocale.rommSyncFailedCount: '{count} gagal',
   AppLocale.searchTitle: 'Cari',
   AppLocale.searchNameHint: 'Cari...',
@@ -1396,4 +1414,31 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.noHiddenGames: 'Tidak ada game tersembunyi',
   AppLocale.noHiddenGamesSubtitle:
       'Sembunyikan game dari pengaturannya dan game itu akan muncul di sini.',
+  AppLocale.rommLinkRow: 'Tautkan ke RomM',
+  AppLocale.rommLinkRowSubtitle:
+      'Cari di pustaka RomM dan pilih ROM yang sesuai dengan game ini',
+  AppLocale.rommLinkAction: 'Tautkan',
+  AppLocale.rommUnlinkRow: 'Lepas tautan dari RomM',
+  AppLocale.rommUnlinkRowSubtitle:
+      'Hapus tautan; koneksi berikutnya dapat menautkannya lagi berdasarkan nama file',
+  AppLocale.rommUnlinkAction: 'Lepas',
+  AppLocale.rommUnlinkConfirmTitle: 'Lepas tautan dari RomM?',
+  AppLocale.rommUnlinkConfirmBody:
+      'Save game ini berhenti disinkronkan dengan {name}.',
+  AppLocale.rommLinkStateNotLinked: 'Tidak tertaut ke RomM',
+  AppLocale.rommLinkStateAuto: 'Tertaut otomatis ke {name}',
+  AppLocale.rommLinkStateManual: 'Tertaut manual ke {name}',
+  AppLocale.rommLinkPickerTitle: 'Tautkan ke ROM RomM',
+  AppLocale.rommLinkPickerSearchHint: 'Cari di pustaka RomM',
+  AppLocale.rommLinkPickerLoading: 'Mencari…',
+  AppLocale.rommLinkPickerNoResults: 'Tidak ada ROM yang cocok.',
+  AppLocale.rommLinkPickerError: 'Pencarian gagal. Pilih untuk mencoba lagi.',
+  AppLocale.rommLinkPickerUnscoped:
+      'Tidak ada platform RomM yang cocok dengan sistem ini, jadi tidak ada yang bisa ditautkan.',
+  AppLocale.rommLinkSaved: 'Tertaut ke {name}',
+  AppLocale.rommLinkFailed: 'Gagal menautkan ke RomM',
+  AppLocale.rommUnlinked: 'Tautan ke RomM dilepas',
+  AppLocale.rommUnlinkFailed: 'Tidak dapat memutus tautan dari RomM',
+  // Link action on search results
+  AppLocale.searchLinkToRomm: 'Tautkan ke RomM',
 };

@@ -4,13 +4,13 @@ import 'package:neostation/data/datasources/sqlite_migrations.dart';
 
 void main() {
   test(
-    'v164 defaults existing users off and preserves preferences when rerun',
+    'v166 backfills databases past v164, defaults existing users off and preserves preferences when rerun',
     () async {
       final db = sqlite3.openInMemory();
       addTearDown(db.close);
       db.execute('CREATE TABLE user_config (id INTEGER PRIMARY KEY)');
       db.execute('INSERT INTO user_config (id) VALUES (1)');
-      await SqliteMigrations.migrateToVersion(db, 164);
+      await SqliteMigrations.migrateToVersion(db, 166);
       expect(
         db
             .select('SELECT ignore_articles_in_game_sort FROM user_config')
@@ -20,7 +20,7 @@ void main() {
         0,
       );
       db.execute('UPDATE user_config SET ignore_articles_in_game_sort = 1');
-      await SqliteMigrations.migrateToVersion(db, 164);
+      await SqliteMigrations.migrateToVersion(db, 166);
       expect(
         db
             .select('SELECT ignore_articles_in_game_sort FROM user_config')
