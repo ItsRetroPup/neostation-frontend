@@ -1,6 +1,9 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleJa = {
+  AppLocale.ignoreArticlesInGameSort: "ゲームの並び替えで冠詞を無視",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "タイトル先頭の The、A、An を無視します。例：The Legend of Zelda は L に分類されます。",
   AppLocale.raEvents: 'イベント',
   AppLocale.raAotwYearTitle: '今週のアチーブメント（{year}）',
   AppLocale.raAotw: 'AOTW',

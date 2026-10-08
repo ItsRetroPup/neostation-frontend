@@ -1,6 +1,10 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleIt = {
+  AppLocale.ignoreArticlesInGameSort:
+      "Ignora gli articoli nel riordino dei giochi",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Ignora The, A e An a inizio titolo. Ad esempio, The Legend of Zelda viene ordinato sotto L.",
   AppLocale.raEvents: 'Eventi',
   AppLocale.raAotwYearTitle: 'Achievement della settimana ({year})',
   AppLocale.raAotw: 'AOTW',

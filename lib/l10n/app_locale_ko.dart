@@ -1,6 +1,9 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleKo = {
+  AppLocale.ignoreArticlesInGameSort: "게임 정렬 시 관사 무시",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "제목 앞의 The, A, An을 무시합니다. 예: The Legend of Zelda는 L로 정렬됩니다.",
   AppLocale.raEvents: '이벤트',
   AppLocale.raAotwYearTitle: '이번 주 업적 ({year})',
   AppLocale.raAotw: 'AOTW',

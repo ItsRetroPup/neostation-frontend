@@ -18,6 +18,9 @@ part 'app_locale_ja.dart';
 part 'app_locale_ko.dart';
 
 mixin AppLocale {
+  static const String ignoreArticlesInGameSort = 'ignoreArticlesInGameSort';
+  static const String ignoreArticlesInGameSortSubtitle =
+      'ignoreArticlesInGameSortSubtitle';
   // ---------------------------------------------------------------------------
   // Navigation / Controls
   // ---------------------------------------------------------------------------
