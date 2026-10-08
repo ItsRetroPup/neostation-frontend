@@ -41,6 +41,9 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.smartDays: '{count} дней',
   AppLocale.smartRulesOnly: 'Игры добавляются автоматически по этим правилам.',
 
+  AppLocale.ignoreArticlesInGameSort: "Игнорировать артикли при сортировке игр",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Пропускать The, A и An в начале названия. Например, The Legend of Zelda сортируется под буквой L.",
   AppLocale.raEvents: 'События',
   AppLocale.raAotwYearTitle: 'Достижение недели ({year})',
   AppLocale.raAotw: 'AOTW',
@@ -412,7 +415,6 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.exportLogsFailed: 'Не удалось экспортировать журналы',
   AppLocale.specialThanks: 'Особая благодарность',
   AppLocale.forInvaluableContributions: 'За неоценимый вклад',
-  AppLocale.supportOnKofi: 'Поддержите нас на Ko-fi',
   AppLocale.supportOnPatreon: 'Поддержите нас на Patreon',
   AppLocale.openSourceLicense: 'Проект с открытым исходным кодом',
   AppLocale.openSourceLicenseDesc: 'Лицензия GPLv3',
@@ -654,6 +656,10 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.stoppingScraping: 'Остановка процесса скрапинга...',
   AppLocale.syncError: 'Ошибка синхронизации ID систем',
   AppLocale.metadataError: 'Ошибка при скрапинге метаданных',
+  AppLocale.identifyGame: 'Определить игру…',
+  AppLocale.identifySearchHint: 'Поиск в ScreenScraper по названию',
+  AppLocale.identifySearchFailed:
+      'Не удалось выполнить поиск. Повторите попытку позже.',
   AppLocale.scrapeQuotaExceeded:
       'Превышена дневная квота скрейпинга ScreenScraper',
   AppLocale.start: 'Старт',

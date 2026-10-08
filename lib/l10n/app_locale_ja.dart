@@ -39,6 +39,9 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.smartDays: '{count}日間',
   AppLocale.smartRulesOnly: 'これらのルールに従ってゲームが自動的に追加されます。',
 
+  AppLocale.ignoreArticlesInGameSort: "ゲームの並び替えで冠詞を無視",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "タイトル先頭の The、A、An を無視します。例：The Legend of Zelda は L に分類されます。",
   AppLocale.raEvents: 'イベント',
   AppLocale.raAotwYearTitle: '今週のアチーブメント（{year}）',
   AppLocale.raAotw: 'AOTW',
@@ -358,7 +361,6 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.exportLogsFailed: 'ログをエクスポートできませんでした',
   AppLocale.specialThanks: '特別な感謝',
   AppLocale.forInvaluableContributions: '貴重な貢献に感謝します',
-  AppLocale.supportOnKofi: 'Ko-fiでサポート',
   AppLocale.supportOnPatreon: 'Patreonでサポート',
   AppLocale.openSourceLicense: 'オープンソースプロジェクト',
   AppLocale.openSourceLicenseDesc: 'GPLv3ライセンス',
@@ -577,6 +579,9 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.stoppingScraping: 'スクレイピングプロセスを停止中...',
   AppLocale.syncError: 'システムIDの同期中にエラーが発生しました',
   AppLocale.metadataError: 'スクレイピングプロセス中にエラーが発生しました',
+  AppLocale.identifyGame: 'ゲームを特定…',
+  AppLocale.identifySearchHint: 'ScreenScraperで名前を検索',
+  AppLocale.identifySearchFailed: '検索に失敗しました。しばらくしてから再試行してください。',
   AppLocale.scrapeQuotaExceeded: 'ScreenScraperの1日のスクレイピングクォータを超えました',
   AppLocale.start: '開始',
   AppLocale.systemsSub: 'スクレイピングするシステムを選択',

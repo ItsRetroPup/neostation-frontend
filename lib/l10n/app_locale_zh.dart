@@ -39,6 +39,9 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.smartDays: '{count} 天',
   AppLocale.smartRulesOnly: '游戏会按照这些规则自动加入。',
 
+  AppLocale.ignoreArticlesInGameSort: "排序游戏时忽略冠词",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "忽略标题开头的 The、A 或 An。例如，The Legend of Zelda 排在 L 下。",
   AppLocale.raEvents: '活动',
   AppLocale.raAotwYearTitle: '本周成就（{year}）',
   AppLocale.raAotw: 'AOTW',
@@ -347,7 +350,6 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.exportLogsFailed: '无法导出日志',
   AppLocale.specialThanks: '特别鸣谢',
   AppLocale.forInvaluableContributions: '感谢其宝贵的贡献',
-  AppLocale.supportOnKofi: '在 Ko-fi 上支持我们',
   AppLocale.supportOnPatreon: '在 Patreon 上支持我们',
   AppLocale.openSourceLicense: '开源项目',
   AppLocale.openSourceLicenseDesc: '基于 GPLv3 许可',
@@ -565,6 +567,9 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.stoppingScraping: '正在停止抓取过程...',
   AppLocale.syncError: '同步系统 ID 时出错',
   AppLocale.metadataError: '元数据抓取过程中出错',
+  AppLocale.identifyGame: '识别游戏…',
+  AppLocale.identifySearchHint: '按名称搜索 ScreenScraper',
+  AppLocale.identifySearchFailed: '搜索失败，请稍后重试。',
   AppLocale.scrapeQuotaExceeded: 'ScreenScraper 每日刮削配额已超出',
   AppLocale.start: '开始',
   AppLocale.systemsSub: '选择要抓取的系统',

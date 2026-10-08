@@ -56,6 +56,9 @@ mixin AppLocale {
   static const String smartDays = 'smartDays';
   static const String smartRulesOnly = 'smartRulesOnly';
 
+  static const String ignoreArticlesInGameSort = 'ignoreArticlesInGameSort';
+  static const String ignoreArticlesInGameSortSubtitle =
+      'ignoreArticlesInGameSortSubtitle';
   // ---------------------------------------------------------------------------
   // Navigation / Controls
   // ---------------------------------------------------------------------------
@@ -421,7 +424,6 @@ mixin AppLocale {
   static const String specialThanks = 'special_thanks';
   static const String forInvaluableContributions =
       'for_invaluable_contributions';
-  static const String supportOnKofi = 'support_on_kofi';
   static const String supportOnPatreon = 'support_on_patreon';
   static const String openSourceLicense = 'open_source_license';
   static const String openSourceLicenseDesc = 'open_source_license_desc';
@@ -1118,6 +1120,9 @@ mixin AppLocale {
   static const String scrapeSuccessful = 'scrape_successful';
   static const String scrapeErrorGame = 'scrape_error_game';
   static const String scrapeQuotaExceeded = 'scrape_quota_exceeded';
+  static const String identifyGame = 'identify_game';
+  static const String identifySearchHint = 'identify_search_hint';
+  static const String identifySearchFailed = 'identify_search_failed';
 
   // ---------------------------------------------------------------------------
   // User data location

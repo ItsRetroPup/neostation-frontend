@@ -41,6 +41,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.smartRulesOnly:
       'Game dimasukkan secara otomatis berdasarkan aturan ini.',
 
+  AppLocale.ignoreArticlesInGameSort: "Abaikan artikel saat mengurutkan game",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Abaikan The, A, atau An di awal judul. Misalnya, The Legend of Zelda diurutkan di huruf L.",
   AppLocale.raEvents: 'Acara',
   AppLocale.raAotwYearTitle: 'Pencapaian Minggu Ini ({year})',
   AppLocale.raAotw: 'AOTW',
@@ -405,7 +408,6 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.exportLogsFailed: 'Gagal mengekspor log',
   AppLocale.specialThanks: 'Terima Kasih Khusus',
   AppLocale.forInvaluableContributions: 'atas kontribusi yang sangat berharga',
-  AppLocale.supportOnKofi: 'Dukung kami di Ko-fi',
   AppLocale.supportOnPatreon: 'Dukung kami di Patreon',
   AppLocale.openSourceLicense: 'Proyek Sumber Terbuka',
   AppLocale.openSourceLicenseDesc: 'Dilisensikan di bawah GPLv3',
@@ -644,6 +646,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.stoppingScraping: 'Menghentikan proses scraping...',
   AppLocale.syncError: 'Kesalahan saat menyinkronkan ID sistem',
   AppLocale.metadataError: 'Kesalahan selama proses scraping',
+  AppLocale.identifyGame: 'Identifikasi…',
+  AppLocale.identifySearchHint: 'Cari di ScreenScraper berdasarkan nama',
+  AppLocale.identifySearchFailed: 'Pencarian gagal. Silakan coba lagi nanti.',
   AppLocale.scrapeQuotaExceeded:
       'Kuota harian scraping ScreenScraper terlampaui',
   AppLocale.start: 'Mulai',

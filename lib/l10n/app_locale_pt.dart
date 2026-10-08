@@ -42,6 +42,9 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.smartRulesOnly:
       'Os jogos são incluídos automaticamente segundo estas regras.',
 
+  AppLocale.ignoreArticlesInGameSort: "Ignorar artigos ao ordenar jogos",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Ignorar The, A e An no início do título. Por exemplo, The Legend of Zelda fica na letra L.",
   AppLocale.raEvents: 'Eventos',
   AppLocale.raAotwYearTitle: 'Conquista da Semana ({year})',
   AppLocale.raAotw: 'AOTW',
@@ -416,7 +419,6 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.exportLogsFailed: 'Não foi possível exportar os registros',
   AppLocale.specialThanks: 'Agradecimentos Especiais',
   AppLocale.forInvaluableContributions: 'por contribuições inestimáveis',
-  AppLocale.supportOnKofi: 'Apoie-nos no Ko-fi',
   AppLocale.supportOnPatreon: 'Apoie-nos no Patreon',
   AppLocale.openSourceLicense: 'Projeto de Código Aberto',
   AppLocale.openSourceLicenseDesc: 'Licenciado sob GPLv3',
@@ -657,6 +659,10 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.stoppingScraping: 'Parando processo de scraping...',
   AppLocale.syncError: 'Erro ao sincronizar IDs do sistema',
   AppLocale.metadataError: 'Erro durante o processo de scraping',
+  AppLocale.identifyGame: 'Identificar…',
+  AppLocale.identifySearchHint: 'Pesquisar no ScreenScraper por nome',
+  AppLocale.identifySearchFailed:
+      'A pesquisa falhou. Tente novamente mais tarde.',
   AppLocale.scrapeQuotaExceeded:
       'Cota diária de scraping do ScreenScraper excedida',
   AppLocale.start: 'Iniciar',

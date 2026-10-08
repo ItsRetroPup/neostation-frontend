@@ -42,6 +42,10 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.smartRulesOnly:
       'Spiele werden automatisch nach diesen Regeln aufgenommen.',
 
+  AppLocale.ignoreArticlesInGameSort:
+      "Artikel beim Sortieren von Spielen ignorieren",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Führende The, A und An ignorieren. The Legend of Zelda wird zum Beispiel unter L einsortiert.",
   AppLocale.raEvents: 'Events',
   AppLocale.raAotwYearTitle: 'Achievement der Woche ({year})',
   AppLocale.raAotw: 'AOTW',
@@ -419,7 +423,6 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.exportLogsFailed: 'Protokolle konnten nicht exportiert werden',
   AppLocale.specialThanks: 'Besonderer Dank',
   AppLocale.forInvaluableContributions: 'für unschätzbare Beiträge',
-  AppLocale.supportOnKofi: 'Unterstütze uns auf Ko-fi',
   AppLocale.supportOnPatreon: 'Unterstütze uns auf Patreon',
   AppLocale.openSourceLicense: 'Open-Source-Projekt',
   AppLocale.openSourceLicenseDesc: 'Lizenziert unter GPLv3',
@@ -667,6 +670,10 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.stoppingScraping: 'Scraping-Prozess wird gestoppt...',
   AppLocale.syncError: 'Fehler beim Synchronisieren der System-IDs',
   AppLocale.metadataError: 'Fehler während des Scraping-Prozesses',
+  AppLocale.identifyGame: 'Identifizieren…',
+  AppLocale.identifySearchHint: 'ScreenScraper nach Namen durchsuchen',
+  AppLocale.identifySearchFailed:
+      'Die Suche ist fehlgeschlagen. Bitte später erneut versuchen.',
   AppLocale.scrapeQuotaExceeded:
       'ScreenScraper Tages-Scraping-Kontingent überschritten',
   AppLocale.start: 'Start',
