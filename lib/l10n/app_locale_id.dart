@@ -21,6 +21,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.customSoundsSaveError:
       "Suara tidak dapat diimpor atau disimpan. Suara sebelumnya tetap digunakan.",
 
+  AppLocale.ignoreArticlesInGameSort: "Abaikan artikel saat mengurutkan game",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Abaikan The, A, atau An di awal judul. Misalnya, The Legend of Zelda diurutkan di huruf L.",
   AppLocale.raEvents: 'Acara',
   AppLocale.raAotwYearTitle: 'Pencapaian Minggu Ini ({year})',
   AppLocale.raAotw: 'AOTW',
@@ -356,6 +359,7 @@ const Map<String, dynamic> appLocaleId = {
       'Dijeda: {matched} gim cocok sejauh ini. Jalankan lagi untuk melanjutkan.',
   AppLocale.rematchAchievementsFailed:
       'Gagal mencocokkan game RetroAchievements: {error}',
+  AppLocale.raOpenPage: 'Buka halaman',
   AppLocale.raFixMatch: 'Perbaiki kecocokan',
   AppLocale.raFixMatchTitle: 'Pilih game yang benar',
   AppLocale.raFixMatchSearchHint: 'Cari judul RetroAchievements',
@@ -385,7 +389,6 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.exportLogsFailed: 'Gagal mengekspor log',
   AppLocale.specialThanks: 'Terima Kasih Khusus',
   AppLocale.forInvaluableContributions: 'atas kontribusi yang sangat berharga',
-  AppLocale.supportOnKofi: 'Dukung kami di Ko-fi',
   AppLocale.supportOnPatreon: 'Dukung kami di Patreon',
   AppLocale.openSourceLicense: 'Proyek Sumber Terbuka',
   AppLocale.openSourceLicenseDesc: 'Dilisensikan di bawah GPLv3',
@@ -624,6 +627,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.stoppingScraping: 'Menghentikan proses scraping...',
   AppLocale.syncError: 'Kesalahan saat menyinkronkan ID sistem',
   AppLocale.metadataError: 'Kesalahan selama proses scraping',
+  AppLocale.identifyGame: 'Identifikasi…',
+  AppLocale.identifySearchHint: 'Cari di ScreenScraper berdasarkan nama',
+  AppLocale.identifySearchFailed: 'Pencarian gagal. Silakan coba lagi nanti.',
   AppLocale.scrapeQuotaExceeded:
       'Kuota harian scraping ScreenScraper terlampaui',
   AppLocale.start: 'Mulai',

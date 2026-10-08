@@ -21,6 +21,10 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.customSoundsSaveError:
       "Impossibile importare o salvare il suono. Il suono precedente resta invariato.",
 
+  AppLocale.ignoreArticlesInGameSort:
+      "Ignora gli articoli nel riordino dei giochi",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Ignora The, A e An a inizio titolo. Ad esempio, The Legend of Zelda viene ordinato sotto L.",
   AppLocale.raEvents: 'Eventi',
   AppLocale.raAotwYearTitle: 'Achievement della settimana ({year})',
   AppLocale.raAotw: 'AOTW',
@@ -367,6 +371,7 @@ const Map<String, dynamic> appLocaleIt = {
       'In pausa: {matched} gioco/giochi associati finora. Eseguilo di nuovo per continuare.',
   AppLocale.rematchAchievementsFailed:
       'Impossibile abbinare i giochi RetroAchievements: {error}',
+  AppLocale.raOpenPage: 'Apri pagina',
   AppLocale.raFixMatch: 'Correggi abbinamento',
   AppLocale.raFixMatchTitle: 'Scegli il gioco giusto',
   AppLocale.raFixMatchSearchHint: 'Cerca titoli RetroAchievements',
@@ -396,7 +401,6 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.exportLogsFailed: 'Impossibile esportare i log',
   AppLocale.specialThanks: 'Ringraziamenti Speciali',
   AppLocale.forInvaluableContributions: 'per i contributi inestimabili',
-  AppLocale.supportOnKofi: 'Sostienici su Ko-fi',
   AppLocale.supportOnPatreon: 'Sostienici su Patreon',
   AppLocale.openSourceLicense: 'Progetto Open Source',
   AppLocale.openSourceLicenseDesc: 'Concesso in licenza GPLv3',
@@ -642,6 +646,10 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.stoppingScraping: 'Arresto processo scraping...',
   AppLocale.syncError: 'Errore durante la sincronizzazione degli ID di sistema',
   AppLocale.metadataError: 'Errore durante il processo di scraping',
+  AppLocale.identifyGame: 'Identifica…',
+  AppLocale.identifySearchHint: 'Cerca su ScreenScraper per nome',
+  AppLocale.identifySearchFailed:
+      'La ricerca non è riuscita. Riprova più tardi.',
   AppLocale.scrapeQuotaExceeded:
       'Quota giornaliera di scraping di ScreenScraper superata',
   AppLocale.start: 'Inizia',

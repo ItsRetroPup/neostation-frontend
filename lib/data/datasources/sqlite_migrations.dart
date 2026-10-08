@@ -626,16 +626,30 @@ class SqliteMigrations {
       case 163:
         await _migrateToVersion163(db);
         break;
+      case 164:
+        await _migrateToVersion164(db);
+        break;
+      case 165:
+        await _migrateToVersion165(db);
+        break;
       case 166:
-        await _migrateToVersion166(db);
+        // Backfill for installs that reached v165 without this PR’s v164.
+        await _migrateToVersion164(db);
+        break;
+      case 168:
+        await _migrateToVersion168(db);
         break;
       default:
         _log.w('No migration defined for version $version');
     }
   }
 
-  /// Durable, action-specific custom sound assignments. Safe to rerun.
-  static Future<void> _migrateToVersion166(Database db) async {
+  /// Migration v168: durable custom sounds, renumbered from v166.
+  static Future<void> _migrateToVersion168(Database db) async {
+    // Devices on the former v166 build skipped main’s sorting and manual
+    // ScreenScraper migrations. Backfill both without changing preferences.
+    await _migrateToVersion164(db);
+    await _migrateToVersion165(db);
     final columns = db
         .select('PRAGMA table_info(user_config)')
         .map((row) => row['name']);
@@ -7132,6 +7146,19 @@ class SqliteMigrations {
     }
   }
 
+  /// Migration v164: persists optional article-insensitive game sorting.
+  static Future<void> _migrateToVersion164(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('ignore_articles_in_game_sort')) {
+      db.execute(
+        'ALTER TABLE user_config ADD COLUMN ignore_articles_in_game_sort INTEGER DEFAULT 0',
+      );
+    }
+  }
+
   /// Migration v163: Adds `app_romm_rom_map.link_source`, recording which
   /// writer produced a RomM link row (`download`, `auto`, or `manual`).
   ///
@@ -7166,6 +7193,41 @@ class SqliteMigrations {
       _log.i('Migration v163 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v163: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v165: adds `user_roms.ss_manual_game_id`, the ScreenScraper game
+  /// a user picked by hand for a ROM with Identify….
+  ///
+  /// Matching by dump hash or filename cannot reach every ROM: hacks,
+  /// translations and untidy names match the wrong game or none at all. Once
+  /// the user has pointed a ROM at the right game, every later scrape asks for
+  /// that game by id, so a bulk "all content" pass cannot put the wrong one
+  /// back. NULL means match automatically, which is every existing row.
+  ///
+  /// Numbered 165 rather than the 163 this branch first used: main took 163
+  /// for `app_romm_rom_map.link_source` (#516) and an open PR holds 164. A
+  /// device that ran this branch at 163 never runs main's 163, so main's
+  /// migration is re-run here first; both halves are idempotent.
+  static Future<void> _migrateToVersion165(Database db) async {
+    await _migrateToVersion163(db);
+    _log.i('Migration v165: Adding ss_manual_game_id to user_roms');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_roms)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('ss_manual_game_id')) {
+        db.execute(
+          'ALTER TABLE user_roms ADD COLUMN ss_manual_game_id INTEGER',
+        );
+        _log.i('Column ss_manual_game_id added via v165');
+      } else {
+        _log.i('Column ss_manual_game_id already exists');
+      }
+      _log.i('Migration v165 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v165: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

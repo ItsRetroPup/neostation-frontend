@@ -20,6 +20,9 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.customSoundsSaveError:
       "Не удалось импортировать или сохранить звук. Предыдущий звук сохранён.",
 
+  AppLocale.ignoreArticlesInGameSort: "Игнорировать артикли при сортировке игр",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "Пропускать The, A и An в начале названия. Например, The Legend of Zelda сортируется под буквой L.",
   AppLocale.raEvents: 'События',
   AppLocale.raAotwYearTitle: 'Достижение недели ({year})',
   AppLocale.raAotw: 'AOTW',
@@ -362,6 +365,7 @@ const Map<String, dynamic> appLocaleRu = {
       'Приостановлено: сопоставлено игр — {matched}. Запустите ещё раз, чтобы продолжить.',
   AppLocale.rematchAchievementsFailed:
       'Не удалось сопоставить игры RetroAchievements: {error}',
+  AppLocale.raOpenPage: 'Открыть страницу',
   AppLocale.raFixMatch: 'Исправить сопоставление',
   AppLocale.raFixMatchTitle: 'Выберите нужную игру',
   AppLocale.raFixMatchSearchHint: 'Поиск по названиям RetroAchievements',
@@ -391,7 +395,6 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.exportLogsFailed: 'Не удалось экспортировать журналы',
   AppLocale.specialThanks: 'Особая благодарность',
   AppLocale.forInvaluableContributions: 'За неоценимый вклад',
-  AppLocale.supportOnKofi: 'Поддержите нас на Ko-fi',
   AppLocale.supportOnPatreon: 'Поддержите нас на Patreon',
   AppLocale.openSourceLicense: 'Проект с открытым исходным кодом',
   AppLocale.openSourceLicenseDesc: 'Лицензия GPLv3',
@@ -633,6 +636,10 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.stoppingScraping: 'Остановка процесса скрапинга...',
   AppLocale.syncError: 'Ошибка синхронизации ID систем',
   AppLocale.metadataError: 'Ошибка при скрапинге метаданных',
+  AppLocale.identifyGame: 'Определить игру…',
+  AppLocale.identifySearchHint: 'Поиск в ScreenScraper по названию',
+  AppLocale.identifySearchFailed:
+      'Не удалось выполнить поиск. Повторите попытку позже.',
   AppLocale.scrapeQuotaExceeded:
       'Превышена дневная квота скрейпинга ScreenScraper',
   AppLocale.start: 'Старт',

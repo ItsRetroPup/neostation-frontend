@@ -152,8 +152,17 @@ void main() {
       'CREATE TABLE user_config (id INTEGER PRIMARY KEY, sfx_enabled INTEGER)',
     );
     db.execute('INSERT INTO user_config VALUES (1, 0)');
-    await SqliteMigrations.migrateToVersion(db, 166);
-    await SqliteMigrations.migrateToVersion(db, 166);
+    db.execute('CREATE TABLE user_roms (rom_path TEXT PRIMARY KEY)');
+    await SqliteMigrations.migrateToVersion(db, 168);
+    await SqliteMigrations.migrateToVersion(db, 168);
+    expect(
+      db.select('PRAGMA table_info(user_config)').map((row) => row['name']),
+      contains('ignore_articles_in_game_sort'),
+    );
+    expect(
+      db.select('PRAGMA table_info(user_roms)').map((row) => row['name']),
+      contains('ss_manual_game_id'),
+    );
     expect(
       db
           .select('SELECT custom_sfx, sfx_enabled FROM user_config')

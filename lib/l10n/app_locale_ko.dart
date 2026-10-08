@@ -17,6 +17,9 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.customSoundsInvalidError: "파일이 비어 있거나 지원되지 않거나 재생할 수 없습니다.",
   AppLocale.customSoundsSaveError: "효과음을 가져오거나 저장하지 못했습니다. 이전 효과음이 유지됩니다.",
 
+  AppLocale.ignoreArticlesInGameSort: "게임 정렬 시 관사 무시",
+  AppLocale.ignoreArticlesInGameSortSubtitle:
+      "제목 앞의 The, A, An을 무시합니다. 예: The Legend of Zelda는 L로 정렬됩니다.",
   AppLocale.raEvents: '이벤트',
   AppLocale.raAotwYearTitle: '이번 주 업적 ({year})',
   AppLocale.raAotw: 'AOTW',
@@ -307,6 +310,7 @@ const Map<String, dynamic> appLocaleKo = {
       '일시정지: 지금까지 {matched}개 일치. 다시 실행하면 이어서 진행합니다.',
   AppLocale.rematchAchievementsFailed:
       'RetroAchievements 게임을 매칭하지 못했습니다: {error}',
+  AppLocale.raOpenPage: '페이지 열기',
   AppLocale.raFixMatch: '매칭 수정',
   AppLocale.raFixMatchTitle: '올바른 게임 선택',
   AppLocale.raFixMatchSearchHint: 'RetroAchievements 제목 검색',
@@ -334,7 +338,6 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.exportLogsFailed: '로그를 내보낼 수 없습니다',
   AppLocale.specialThanks: '특별 감사',
   AppLocale.forInvaluableContributions: '소중한 기여에 감사드립니다',
-  AppLocale.supportOnKofi: 'Ko-fi에서 후원하기',
   AppLocale.supportOnPatreon: 'Patreon에서 후원하기',
   AppLocale.openSourceLicense: '오픈 소스 프로젝트',
   AppLocale.openSourceLicenseDesc: 'GPLv3 라이선스 적용',
@@ -560,6 +563,9 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.stoppingScraping: '게임 정보 가져오기를 중지하는 중...',
   AppLocale.syncError: '시스템 ID를 동기화하는 중 오류가 발생했습니다',
   AppLocale.metadataError: '게임 정보 가져오기 오류',
+  AppLocale.identifyGame: '게임 식별…',
+  AppLocale.identifySearchHint: '이름으로 ScreenScraper 검색',
+  AppLocale.identifySearchFailed: '검색에 실패했습니다. 나중에 다시 시도하세요.',
   AppLocale.scrapeQuotaExceeded: 'ScreenScraper 일일 스크래핑 할당량 초과',
   AppLocale.start: '시작',
   AppLocale.systemsSub: '게임 정보를 가져올 시스템을 선택합니다',
