@@ -340,6 +340,7 @@ const Map<String, dynamic> appLocaleEn = {
       'Paused: {matched} game(s) matched so far. Run it again to carry on.',
   AppLocale.rematchAchievementsFailed:
       'Failed to match RetroAchievements games: {error}',
+  AppLocale.raOpenPage: 'Open page',
   AppLocale.raFixMatch: 'Fix match',
   AppLocale.raFixMatchTitle: 'Choose the right game',
   AppLocale.raFixMatchSearchHint: 'Search RetroAchievements titles',
