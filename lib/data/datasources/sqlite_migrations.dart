@@ -636,6 +636,11 @@ class SqliteMigrations {
         // Backfill for installs that reached v165 without this PR’s v164.
         await _migrateToVersion164(db);
         break;
+      // 167 and 168 belong to open PRs (smart collections, custom navigation
+      // sounds); their slots stay empty here.
+      case 169:
+        await _migrateToVersion169(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
     }
@@ -7211,6 +7216,56 @@ class SqliteMigrations {
       _log.i('Migration v165 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v165: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v169: the "Android Games" virtual system.
+  ///
+  /// Adds the three `user_roms` columns that decide which installed apps are
+  /// games and what icon they show, and registers the `android_games` system.
+  /// The system owns no rows: its games are the `android` system's rows whose
+  /// effective flag, `COALESCE(android_game_override,
+  /// android_is_game_category, 0)`, is 1.
+  ///
+  /// Every step is guarded so a device that skipped a neighbouring slot, or
+  /// re-runs this, ends in the same state.
+  static Future<void> _migrateToVersion169(Database db) async {
+    _log.i('Migration v169: Adding Android Games system');
+    try {
+      final columns = db
+          .select('PRAGMA table_info(user_roms)')
+          .map((c) => c['name'].toString())
+          .toSet();
+      if (columns.isNotEmpty) {
+        for (final column in const [
+          ('android_game_override', 'INTEGER'),
+          ('android_is_game_category', 'INTEGER'),
+          ('icon_path', 'TEXT'),
+        ]) {
+          if (!columns.contains(column.$1)) {
+            db.execute(
+              'ALTER TABLE user_roms ADD COLUMN ${column.$1} ${column.$2}',
+            );
+          }
+        }
+      }
+
+      final tables = db
+          .select("SELECT name FROM sqlite_master WHERE type = 'table'")
+          .map((r) => r['name'].toString())
+          .toSet();
+      if (tables.contains('app_systems')) {
+        db.execute('''
+          INSERT OR IGNORE INTO app_systems (id, screenscraper_id, ra_id, real_name, folder_name, launch_date, description)
+          VALUES ('android_games', 135, 0, 'Android Games', 'android_games', '2008-09-23',
+                  'Installed Android games, launched directly.')
+        ''');
+      }
+      _log.i('Migration v169 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v169: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }
