@@ -237,7 +237,11 @@ class CollectionsService {
     final romPath = game.romPath;
     if (romPath == null || romPath.isEmpty) return <String>{};
     try {
-      return await SmartCollectionsService.collectionIdsFor(romPath);
+      return await SmartCollectionsService.collectionIdsFor(
+        romPath,
+        systemId: game.systemId,
+        filename: game.romname,
+      );
     } catch (e) {
       _log.e('Error reading collections for ${game.romname}: $e');
       return <String>{};

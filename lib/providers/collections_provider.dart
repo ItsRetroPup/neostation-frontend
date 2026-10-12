@@ -21,15 +21,25 @@ import '../services/collections/collections_service.dart';
 /// shares the SQLite file and nothing in memory, so a process-wide cache would
 /// go stale the moment either engine wrote (CLAUDE.md, dual-display devices).
 class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
-  CollectionsProvider({List<ChangeNotifier> sources = const []})
-    : _sources = sources {
+  /// [isBusy] reports a long-running writer (a scrape) whose notifications
+  /// would otherwise each trigger a library re-evaluation; while it is true
+  /// refreshes are throttled to [_busyRefreshInterval] instead of 300 ms.
+  CollectionsProvider({
+    List<ChangeNotifier> sources = const [],
+    bool Function()? isBusy,
+  }) : _sources = sources,
+       _isBusy = isBusy {
     WidgetsBinding.instance.addObserver(this);
     for (final source in _sources) {
       source.addListener(_scheduleRefresh);
     }
   }
 
+  static const _busyRefreshInterval = Duration(seconds: 10);
+
   final List<ChangeNotifier> _sources;
+  final bool Function()? _isBusy;
+  bool _wasBusy = false;
   Timer? _debounce;
   Timer? _boundaryTimer;
   bool _disposed = false;
@@ -39,8 +49,17 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   int get revision => _revision;
 
   void _scheduleRefresh() {
+    final busy = _isBusy?.call() ?? false;
+    // Leave a pending throttled refresh alone so a steady stream of
+    // notifications cannot keep pushing it back; the busy->idle edge below
+    // still refreshes promptly once the work finishes.
+    if (busy && _wasBusy && (_debounce?.isActive ?? false)) return;
+    _wasBusy = busy;
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () => load());
+    _debounce = Timer(
+      busy ? _busyRefreshInterval : const Duration(milliseconds: 300),
+      () => load(),
+    );
   }
 
   @override

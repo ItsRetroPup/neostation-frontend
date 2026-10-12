@@ -79,7 +79,13 @@ class SmartCollectionsService {
     );
   }
 
-  static Future<Set<String>> collectionIdsFor(String romPath) async {
+  /// [systemId] and [filename] let a single-row lookup stand in for loading the
+  /// whole library; without them the library is scanned.
+  static Future<Set<String>> collectionIdsFor(
+    String romPath, {
+    String? systemId,
+    String? filename,
+  }) async {
     final ids = (await CollectionRepository.getCollectionIdsForRom(
       romPath,
     )).toSet();
@@ -89,8 +95,17 @@ class SmartCollectionsService {
         .toList();
     ids.removeAll(collections.map((c) => c.id));
     if (collections.isEmpty) return ids;
-    final games = await library();
-    final candidates = games.where((g) => g.romPath == romPath);
+    Iterable<DatabaseGameModel> candidates;
+    final single = systemId == null || filename == null
+        ? null
+        : await GameRepository.getSingleGame(systemId, filename);
+    if (single != null && single.romPath == romPath) {
+      candidates = SmartCollectionEvaluator.isEligible(single)
+          ? [single]
+          : const [];
+    } else {
+      candidates = (await library()).where((g) => g.romPath == romPath);
+    }
     final evaluator = SmartCollectionEvaluator(DateTime.now());
     for (final c in collections) {
       if (c.rules != null &&
