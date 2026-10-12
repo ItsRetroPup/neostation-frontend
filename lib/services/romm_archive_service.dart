@@ -145,7 +145,13 @@ class RommArchiveService {
       });
 
       // Verify/decompress the whole download before replacing library files.
-      staging = await Directory.systemTemp.createTemp('romm_archive_');
+      // Stage beside the archive (the download destination), not in the system
+      // temp dir: on Android that is internal storage, which can't hold a
+      // multi-GB extraction when the ROMs live on an SD card. A hidden folder
+      // on the same volume also lets the final step rename instead of copy.
+      staging = await Directory(
+        p.dirname(archivePath),
+      ).createTemp('.romm_archive_');
       for (final entry in files) {
         final output = File(safeJoin(staging.path, entry.path)!);
         await output.parent.create(recursive: true);
@@ -240,7 +246,12 @@ class RommArchiveService {
       for (final entry in files) {
         final target = File(outputs[entry]!);
         await target.parent.create(recursive: true);
-        await File(safeJoin(staging.path, entry.path)!).copy(target.path);
+        final staged = File(safeJoin(staging.path, entry.path)!);
+        try {
+          await staged.rename(target.path);
+        } on FileSystemException {
+          await staged.copy(target.path);
+        }
       }
       if (playlistPath != null) {
         await Directory(destDir).create(recursive: true);
