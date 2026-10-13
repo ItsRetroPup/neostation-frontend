@@ -40,6 +40,25 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.smartDays: '{count} giorni',
   AppLocale.smartRulesOnly:
       'I giochi vengono inclusi automaticamente secondo queste regole.',
+  AppLocale.customSounds: "Suoni personalizzati",
+  AppLocale.customSoundsSubtitle:
+      "Scegli i suoni per navigazione, conferma e ritorno",
+  AppLocale.customSoundsHint:
+      "WAV, MP3, OGG o FLAC · Massimo 5 secondi e 5 MiB",
+  AppLocale.customSoundsMovement: "Navigazione",
+  AppLocale.customSoundsConfirm: "Conferma",
+  AppLocale.customSoundsBack: "Indietro",
+  AppLocale.customSoundsDefault: "Predefinito",
+  AppLocale.customSoundsImport: "Importa / Sostituisci",
+  AppLocale.customSoundsPreview: "Ascolta",
+  AppLocale.customSoundsReset: "Ripristina predefinito",
+  AppLocale.customSoundsClose: "Chiudi",
+  AppLocale.customSoundsSizeError: "Scegli un file di massimo 5 MiB.",
+  AppLocale.customSoundsDurationError: "Scegli un suono di massimo 5 secondi.",
+  AppLocale.customSoundsInvalidError:
+      "Il file è vuoto, non supportato o non riproducibile.",
+  AppLocale.customSoundsSaveError:
+      "Impossibile importare o salvare il suono. Il suono precedente resta invariato.",
 
   AppLocale.rommSavesAutoDownload:
       'I salvataggi cloud più recenti vengono scaricati quando avvii un gioco collegato.',

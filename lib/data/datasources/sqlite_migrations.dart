@@ -638,11 +638,28 @@ class SqliteMigrations {
         // Backfill for installs that reached v165 without this PR’s v164.
         await _migrateToVersion164(db);
         break;
-      case 167:
-        await _migrateToVersion167(db);
+      case 168:
+        await _migrateToVersion168(db);
+        break;
+      case 170:
+        await _migrateToVersion170(db);
         break;
       default:
         _log.w('No migration defined for version $version');
+    }
+  }
+
+  /// Migration v168: durable custom sounds, renumbered from v166.
+  static Future<void> _migrateToVersion168(Database db) async {
+    // Devices on the former v166 build skipped main’s sorting and manual
+    // ScreenScraper migrations. Backfill both without changing preferences.
+    await _migrateToVersion164(db);
+    await _migrateToVersion165(db);
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name']);
+    if (!columns.contains('custom_sfx')) {
+      db.execute('ALTER TABLE user_config ADD COLUMN custom_sfx TEXT');
     }
   }
 
@@ -7186,9 +7203,10 @@ class SqliteMigrations {
     }
   }
 
-  /// Migration v167: adds smart definitions without changing manual memberships.
-  /// Renumbered from v164, which main uses for article-insensitive sorting.
-  static Future<void> _migrateToVersion167(Database db) async {
+  /// Migration v170: adds smart definitions without changing manual memberships.
+  /// Above main’s v168 and the Android Games PR’s v169; devices already on
+  /// main must still run this migration to install smart definitions.
+  static Future<void> _migrateToVersion170(Database db) async {
     // Test devices on the smart collections branch already ran its former
     // v163 and therefore skipped upstream's RomM migration at that version.
     await _migrateToVersion163(db);

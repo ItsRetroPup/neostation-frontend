@@ -55,6 +55,21 @@ mixin AppLocale {
   static const String smartNotWithinDays = 'smartNotWithinDays';
   static const String smartDays = 'smartDays';
   static const String smartRulesOnly = 'smartRulesOnly';
+  static const String customSounds = 'customSounds';
+  static const String customSoundsSubtitle = 'customSoundsSubtitle';
+  static const String customSoundsHint = 'customSoundsHint';
+  static const String customSoundsMovement = 'customSoundsMovement';
+  static const String customSoundsConfirm = 'customSoundsConfirm';
+  static const String customSoundsBack = 'customSoundsBack';
+  static const String customSoundsDefault = 'customSoundsDefault';
+  static const String customSoundsImport = 'customSoundsImport';
+  static const String customSoundsPreview = 'customSoundsPreview';
+  static const String customSoundsReset = 'customSoundsReset';
+  static const String customSoundsClose = 'customSoundsClose';
+  static const String customSoundsSizeError = 'customSoundsSizeError';
+  static const String customSoundsDurationError = 'customSoundsDurationError';
+  static const String customSoundsInvalidError = 'customSoundsInvalidError';
+  static const String customSoundsSaveError = 'customSoundsSaveError';
 
   static const String ignoreArticlesInGameSort = 'ignoreArticlesInGameSort';
   static const String ignoreArticlesInGameSortSubtitle =
