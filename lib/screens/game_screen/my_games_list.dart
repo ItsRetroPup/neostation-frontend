@@ -1059,12 +1059,9 @@ class _SystemGamesListState extends State<SystemGamesList> {
     final isAggregateView = SystemFolderNames.isAggregate(
       widget.system.folderName,
     );
-    final collectionId =
-        SystemFolderNames.isCollection(widget.system.folderName)
-        ? widget.system.folderName.substring(
-            SystemFolderNames.collectionPrefix.length,
-          )
-        : null;
+    final collectionId = SystemFolderNames.collectionIdOf(
+      widget.system.folderName,
+    );
     final collection = collectionId == null
         ? null
         : _collectionsProvider.byId(collectionId);

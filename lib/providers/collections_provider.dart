@@ -46,7 +46,6 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   final Map<String, int> _collectionRevisions = {};
   Map<String, Set<String>> _collectionPaths = const {};
   Map<String, String> _gameContent = const {};
-  Object? _libraryRevision;
   int collectionRevision(String id) => _collectionRevisions[id] ?? 0;
 
   final List<ChangeNotifier> _sources;
@@ -91,23 +90,23 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
     super.dispose();
   }
 
-  Future<void> _readSnapshot() async {
+  Future<bool> _readSnapshot() async {
     final snapshot = await (_snapshotReader ?? _libraryCache.snapshot)();
-    if (_disposed) return;
+    if (_disposed) return false;
+    var changed = false;
     for (final collection in snapshot.collections) {
       final old = byId(collection.id);
       final paths = snapshot.collectionPaths[collection.id] ?? const <String>{};
-      final contentChanged = snapshot.gameContent.isEmpty
-          ? snapshot.libraryRevision != _libraryRevision
-          : paths.any(
-              (path) => snapshot.gameContent[path] != _gameContent[path],
-            );
+      final contentChanged =
+          collection.isSmart &&
+          paths.any((path) => snapshot.gameContent[path] != _gameContent[path]);
       if (old != collection ||
           contentChanged ||
           !setEquals(
             _collectionPaths[collection.id],
             snapshot.collectionPaths[collection.id],
           )) {
+        changed = true;
         _collectionRevisions.update(
           collection.id,
           (value) => value + 1,
@@ -117,6 +116,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
     for (final old in _collections) {
       if (!snapshot.collections.any((c) => c.id == old.id)) {
+        changed = true;
         _collectionRevisions.update(
           old.id,
           (value) => value + 1,
@@ -131,13 +131,13 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
           (entry) =>
               !setEquals(entry.value, snapshot.collectionPaths[entry.key]),
         )) {
-      _revision++;
+      changed = true;
     }
+    if (changed) _revision++;
     _collections = snapshot.collections;
     _memberRomPaths = snapshot.memberPaths;
     _collectionPaths = snapshot.collectionPaths;
     _gameContent = snapshot.gameContent;
-    _libraryRevision = snapshot.libraryRevision;
     _boundaryTimer?.cancel();
     if (snapshot.nextBoundary != null) {
       final delay = snapshot.nextBoundary!.difference(DateTime.now());
@@ -146,13 +146,14 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
         () => load(),
       );
     }
+    return changed;
   }
 
   List<CollectionModel> _collections = const [];
   bool _isLoading = false;
   bool _hasLoaded = false;
 
-  /// Every `rom_path` that belongs to at least one collection.
+  /// Every `rom_path` that was filed in at least one manual collection.
   ///
   /// Held here so the games views can badge a row without a query per card.
   /// Refreshed with the list itself, which is exactly when membership can have
@@ -165,6 +166,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// value that does change to force a repaint — the same reason
   /// `SystemInfo.imageVersion` exists.
   int _imageVersion = 0;
+  int _publishedImageVersion = 0;
 
   /// The collections, ordered by `sort_order` then name.
   List<CollectionModel> get collections => List.unmodifiable(_collections);
@@ -175,29 +177,11 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// True once the first [load] has completed, successfully or not.
   bool get hasLoaded => _hasLoaded;
 
-  /// Total games across all collections, **counting a game once per
-  /// collection it is filed in**. This is what the Collections card shows.
-  ///
-  /// Deliberately not a distinct count, at the maintainer's call, and it was
-  /// distinct for a day before being changed — so the reasoning is worth
-  /// keeping. The browser lists every collection with its own count directly
-  /// under the card, and a reader adds those up. A card reading 6 over
-  /// collections of 1, 4 and 4 looks broken, and nothing on screen explains
-  /// the overlap that accounts for it; the arithmetic working is worth more
-  /// here than the stricter number, because the per-collection counts are the
-  /// visible source of truth.
-  ///
-  /// Known consequence, accepted: with enough overlap this can exceed the
-  /// number of games in the library. If that ever needs fixing, do it by
-  /// showing the overlap rather than by silently switching the number back —
-  /// the distinct count is `_memberRomPaths.length`, already loaded for the
-  /// games views' badge.
-  ///
-  /// Note the question only exists *across* collections. Within one,
-  /// [CollectionModel.gameCount] is already distinct and needs no `DISTINCT`:
-  /// `user_collection_items` is keyed on `(collection_id, rom_path)`, so the
-  /// same game cannot be filed in one collection twice.
-  int get totalGameCount => _collections.fold(0, (sum, c) => sum + c.gameCount);
+  /// Games filed manually, counting a game once per manual collection.
+  /// Smart matches retain per-card counts but do not inflate the home total.
+  int get totalGameCount => _collections
+      .where((c) => !c.isSmart)
+      .fold(0, (sum, c) => sum + c.gameCount);
 
   /// Seeds [collections] without a database, so a test can pin what the counts
   /// derived from them mean. Not a general setter: nothing in the app may
@@ -248,12 +232,14 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _load() async {
     if (_disposed) return;
+    final initialLoad = !_hasLoaded;
+    var changed = false;
     _isLoading = true;
-    notifyListeners();
+    if (initialLoad) notifyListeners();
     try {
       do {
         _pending = false;
-        await _readSnapshot();
+        changed = await _readSnapshot() || changed;
       } while (_pending && !_disposed);
     } catch (error) {
       // Preserve the last successful snapshot on transient database failure.
@@ -262,7 +248,11 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
       _loadFuture = null;
       _isLoading = false;
       _hasLoaded = true;
-      if (!_disposed) notifyListeners();
+      if (!_disposed &&
+          (initialLoad || changed || _publishedImageVersion != _imageVersion)) {
+        _publishedImageVersion = _imageVersion;
+        notifyListeners();
+      }
     }
   }
 

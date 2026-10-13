@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import '../../models/collection_model.dart';
 import '../../models/database_game_model.dart';
@@ -29,7 +30,7 @@ class CollectionsSnapshot {
 /// Stateless reads: separate Flutter engines always derive from persisted data.
 class SmartCollectionsService {
   static Future<List<DatabaseGameModel>> library() async =>
-      (await GameRepository.getAllGames())
+      (await GameRepository.getAllGamesInBackground())
           .where(SmartCollectionEvaluator.isEligible)
           .toList();
 
@@ -68,8 +69,11 @@ class SmartCollectionsService {
     final collections = (await CollectionRepository.getCollections())
         .map(CollectionModel.fromJson)
         .toList();
-    final manualByCollection =
-        await CollectionRepository.getMemberPathsByCollection();
+    final storedPaths = await CollectionRepository.getMemberPathsByCollection();
+    final manualByCollection = {
+      for (final collection in collections.where((c) => !c.isSmart))
+        collection.id: storedPaths[collection.id] ?? <String>{},
+    };
     final members = manualByCollection.values.expand((paths) => paths).toSet();
     if (previous != null &&
         libraryUnchanged &&
@@ -112,67 +116,75 @@ class SmartCollectionsService {
       );
     }
     final games = await (readLibrary ?? library)();
+    final evaluated = await _evaluateInBackground(
+      collections,
+      manualByCollection,
+      games,
+    );
+    return CollectionsSnapshot(
+      evaluated.collections,
+      evaluated.memberPaths,
+      evaluated.nextBoundary,
+      evaluated.collectionPaths,
+      evaluated.manualPaths,
+      evaluated.gameContent,
+      libraryRevision,
+    );
+  }
+
+  // Kept in a separate frame so the worker closure cannot capture the
+  // connection-local library revision, which contains a native SQLite handle.
+  static Future<CollectionsSnapshot> _evaluateInBackground(
+    List<CollectionModel> collections,
+    Map<String, Set<String>> manualByCollection,
+    List<DatabaseGameModel> games,
+  ) => Isolate.run(() {
+    final smart = collections
+        .where((c) => c.isSmart && c.rules != null)
+        .toList();
+    final manualPaths = manualByCollection.values
+        .expand((paths) => paths)
+        .toSet();
     final evaluator = SmartCollectionEvaluator(DateTime.now());
     final pathsByCollection = {...manualByCollection};
     final computed = <String, int>{};
+    final smartPaths = <String>{};
     for (final collection in smart) {
-      final matches = games.where(
-        (g) => evaluator.matches(g, collection.rules!),
-      );
-      final paths = matches.map((g) => g.romPath).toSet();
+      final paths = games
+          .where((g) => evaluator.matches(g, collection.rules!))
+          .map((g) => g.romPath)
+          .toSet();
       pathsByCollection[collection.id] = paths;
       computed[collection.id] = paths.length;
-      members.addAll(paths);
+      smartPaths.addAll(paths);
     }
     return CollectionsSnapshot(
       [
         for (final c in collections)
           c.isSmart ? c.copyWith(gameCount: computed[c.id] ?? 0) : c,
       ],
-      members,
+      manualPaths,
       evaluator.nextBoundary(games, smart.map((c) => c.rules!)),
       pathsByCollection,
       manualPaths,
-      {for (final game in games) game.romPath: jsonEncode(game.toJson())},
-      libraryRevision,
+      {
+        for (final game in games)
+          if (smartPaths.contains(game.romPath))
+            game.romPath: jsonEncode(game.toJson()),
+      },
     );
-  }
+  });
 
-  /// [systemId] and [filename] let a single-row lookup stand in for loading the
-  /// whole library; without them the library is scanned.
-  static Future<Set<String>> collectionIdsFor(
-    String romPath, {
-    String? systemId,
-    String? filename,
-  }) async {
-    final ids = (await CollectionRepository.getCollectionIdsForRom(
-      romPath,
-    )).toSet();
+  /// Manual memberships for the game context menu; rule matches are read-only.
+  static Future<Set<String>> collectionIdsFor(String romPath) async {
     final collections = (await CollectionRepository.getCollections())
         .map(CollectionModel.fromJson)
-        .where((c) => c.isSmart)
-        .toList();
-    ids.removeAll(collections.map((c) => c.id));
-    if (collections.isEmpty) return ids;
-    Iterable<DatabaseGameModel> candidates;
-    final single = systemId == null || filename == null
-        ? null
-        : await GameRepository.getSingleGame(systemId, filename);
-    if (single != null && single.romPath == romPath) {
-      candidates = SmartCollectionEvaluator.isEligible(single)
-          ? [single]
-          : const [];
-    } else {
-      candidates = (await library()).where((g) => g.romPath == romPath);
-    }
-    final evaluator = SmartCollectionEvaluator(DateTime.now());
-    for (final c in collections) {
-      if (c.rules != null &&
-          candidates.any((g) => evaluator.matches(g, c.rules!))) {
-        ids.add(c.id);
-      }
-    }
-    return ids;
+        .where((c) => !c.isSmart)
+        .map((c) => c.id)
+        .toSet();
+    return (await CollectionRepository.getCollectionIdsForRom(
+      romPath,
+    )).where(collections.contains).toSet();
   }
 }
 

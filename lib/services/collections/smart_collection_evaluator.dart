@@ -2,7 +2,7 @@ import '../../utils/game_rating.dart';
 import '../../models/database_game_model.dart';
 import '../../models/smart_collection_rules.dart';
 
-/// One evaluator is shared by previews, counts, badges and collection loading.
+/// One evaluator is shared by previews, smart counts and collection loading.
 /// The caller captures [now] once so rolling windows agree within a snapshot.
 class SmartCollectionEvaluator {
   const SmartCollectionEvaluator(this.now);

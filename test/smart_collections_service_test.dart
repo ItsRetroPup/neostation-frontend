@@ -65,7 +65,7 @@ void main() {
   tearDown(helper.tearDown);
 
   test(
-    'preview, count, badges, membership and display loader agree without membership writes',
+    'smart counts and games agree without creating manual memberships',
     () async {
       final collection = await CollectionsService.createCollection(
         'Unplayed SNES',
@@ -79,8 +79,9 @@ void main() {
       final snapshot = await SmartCollectionsService.snapshot();
       expect(preview.map((g) => g.romPath), [romPath]);
       expect(snapshot.collections.single.gameCount, 1);
-      expect(snapshot.memberPaths, {romPath});
-      expect(await CollectionsService.collectionIdsFor(game), {collection.id});
+      expect(snapshot.memberPaths, isEmpty);
+      expect(snapshot.collectionPaths[collection.id], {romPath});
+      expect(await CollectionsService.collectionIdsFor(game), isEmpty);
       final loaded = await CollectionsService.loadGamesForCollection(
         collection.id,
       );
@@ -226,8 +227,9 @@ void main() {
       final provider = CollectionsProvider();
       addTearDown(provider.dispose);
       await provider.load();
-      expect(provider.totalGameCount, 1);
-      expect(provider.isInAnyCollection(romPath), isTrue);
+      expect(provider.totalGameCount, 0);
+      expect(provider.byId(provider.collections.single.id)!.gameCount, 1);
+      expect(provider.isInAnyCollection(romPath), isFalse);
       await db.execute(
         'UPDATE user_roms SET play_time = 60 WHERE rom_path = ?',
         [romPath],
@@ -413,4 +415,127 @@ void main() {
       }
     },
   );
+  test('manual-only snapshots never read the rule library', () async {
+    final manual = await CollectionsService.createCollection('Manual');
+    await CollectionsService.addGame(manual.id, game);
+    final snapshot = await SmartCollectionsService.snapshot(
+      readLibrary: () => throw StateError('Must not read the library'),
+    );
+    expect(snapshot.memberPaths, {romPath});
+    expect(snapshot.gameContent, isEmpty);
+  });
+
+  test(
+    'smart matches do not inflate manual badges, menu selections or totals',
+    () async {
+      final manual = await CollectionsService.createCollection('Manual');
+      await CollectionsService.addGame(manual.id, game);
+      final smart = await CollectionsService.createCollection(
+        'Smart',
+        rules: rules,
+      );
+      await db.execute(
+        "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('Other.sfc', '/other.sfc', 'snes')",
+      );
+      final provider = CollectionsProvider();
+      addTearDown(provider.dispose);
+      await provider.load();
+      expect(provider.byId(smart.id)!.gameCount, 2);
+      expect(provider.totalGameCount, 1);
+      expect(provider.isInAnyCollection(romPath), isTrue);
+      expect(provider.isInAnyCollection('/other.sfc'), isFalse);
+      expect(await CollectionsService.collectionIdsFor(game), {manual.id});
+    },
+  );
+
+  test(
+    'manual-only library writes do not bump revisions or notify views',
+    () async {
+      final manual = await CollectionsService.createCollection('Manual');
+      await CollectionsService.addGame(manual.id, game);
+      final provider = CollectionsProvider();
+      addTearDown(provider.dispose);
+      await provider.load();
+      final revision = provider.revision;
+      final collectionRevision = provider.collectionRevision(manual.id);
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+      await db.execute(
+        'UPDATE user_roms SET play_time = 120 WHERE rom_path = ?',
+        [romPath],
+      );
+      await provider.load();
+      expect(provider.revision, revision);
+      expect(provider.collectionRevision(manual.id), collectionRevision);
+      expect(notifications, 0);
+      await CollectionsService.removeGame(manual.id, game);
+      await provider.load();
+      expect(
+        provider.collectionRevision(manual.id),
+        greaterThan(collectionRevision),
+      );
+      expect(notifications, 1);
+    },
+  );
+
+  testWidgets('unchanged source ticks do not notify collections consumers', (
+    tester,
+  ) async {
+    final source = ChangeNotifier();
+    addTearDown(source.dispose);
+    var reads = 0;
+    final provider = CollectionsProvider(
+      sources: [source],
+      readSnapshot: () async {
+        reads++;
+        return const CollectionsSnapshot(
+          [CollectionModel(id: 'manual', name: 'Manual')],
+          {},
+          null,
+        );
+      },
+    );
+    addTearDown(provider.dispose);
+    await provider.load();
+    var notifications = 0;
+    provider.addListener(() => notifications++);
+    source.notifyListeners();
+    await tester.pump(const Duration(milliseconds: 301));
+    expect(reads, 2);
+    expect(notifications, 0);
+  });
+
+  test('file-backed library reads leave the UI isolate responsive', () async {
+    final folder = await Directory.systemTemp.createTemp('smart-worker');
+    final path = '${folder.path}/library.sqlite';
+    await db.execute('VACUUM INTO ?', [path]);
+    final primary = sqlite.sqlite3.open(path);
+    final blocker = sqlite.sqlite3.open(path);
+    SqliteService.setTestingDatabase(DatabaseAdapter(primary));
+    try {
+      final expected = await GameRepository.getAllGames();
+      blocker.execute('BEGIN EXCLUSIVE');
+      final watch = Stopwatch()..start();
+      final pending = GameRepository.getAllGamesInBackground();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(
+        watch.elapsed,
+        lessThan(const Duration(seconds: 1)),
+        reason: 'A locked SQLite read must not block UI timers',
+      );
+      blocker.execute('COMMIT');
+      final games = await pending;
+      expect(games.map((g) => g.toJson()), expected.map((g) => g.toJson()));
+    } finally {
+      try {
+        blocker.execute('ROLLBACK');
+      } on sqlite.SqliteException {
+        /* Already committed. */
+      }
+      primary.close();
+      blocker.close();
+      SqliteService.setTestingDatabase(db);
+      await folder.delete(recursive: true);
+    }
+  });
 }

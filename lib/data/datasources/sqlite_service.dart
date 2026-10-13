@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart'; // Required for rootBundle
 import 'package:path/path.dart' as path; // Required for path operations
@@ -4556,7 +4557,40 @@ class SqliteService {
   /// Retrieves all games across all registered systems.
   static Future<List<DatabaseGameModel>> getAllGames() async {
     final db = await instance.database;
-    final results = await db.rawQuery('''
+    final results = await db.rawQuery(_allGamesQuery);
+    return results.map((row) => DatabaseGameModel.fromJson(row)).toList();
+  }
+
+  /// Opens a separate read-only connection for the expensive joined library
+  /// query. Only the filename crosses isolates, never a native SQLite handle.
+  static Future<List<DatabaseGameModel>> getAllGamesInBackground() async {
+    final db = await instance.database;
+    final databases = await db.rawQuery('PRAGMA database_list');
+    final filename =
+        databases.firstWhere((row) => row['name'] == 'main')['file'] as String;
+    if (filename.isEmpty) {
+      // In-memory test databases cannot be reopened by another connection.
+      return getAllGames();
+    }
+    return _readAllGamesInBackground(filename);
+  }
+
+  static Future<List<DatabaseGameModel>> _readAllGamesInBackground(
+    String filename,
+  ) => Isolate.run(() {
+    final db = sqlite.sqlite3.open(filename, mode: sqlite.OpenMode.readOnly);
+    try {
+      db.execute('PRAGMA busy_timeout = 5000');
+      return db
+          .select(_allGamesQuery)
+          .map((row) => DatabaseGameModel.fromJson(row))
+          .toList();
+    } finally {
+      db.close();
+    }
+  });
+
+  static const _allGamesQuery = '''
       SELECT
         ur.filename, ur.rom_path, ur.is_favorite, ur.is_hidden, ur.play_time, ur.last_played,
         ur.cloud_sync_enabled, ur.title_id, ur.title_name,
@@ -4584,9 +4618,7 @@ class SqliteService {
       JOIN app_systems s ON ur.app_system_id = s.id
       LEFT JOIN user_screenscraper_metadata usm ON ur.app_system_id = usm.app_system_id AND ur.filename = usm.filename
       ORDER BY ur.is_favorite DESC, LOWER(game_display_name) ASC
-    ''');
-    return results.map((row) => DatabaseGameModel.fromJson(row)).toList();
-  }
+      ''';
 
   /// Every scanned game as `(filename, romname, system folder)` — the columns
   /// the RomM link pass matches on, and nothing else.

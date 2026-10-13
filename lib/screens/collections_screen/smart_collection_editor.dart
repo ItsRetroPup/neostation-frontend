@@ -213,6 +213,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       }
       return;
     }
+    _selected = _selected.clamp(0, _actionRows.length - 1);
     final row = _actionRows[_selected];
     if (vertical &&
         _previewGames.isNotEmpty &&
@@ -262,6 +263,8 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   }
 
   void _revealAction() {
+    if (_actionKeys.isEmpty) return;
+    _selected = _selected.clamp(0, _actionKeys.length - 1);
     final target = _actionKeys[_selected].currentContext;
     if (target != null) {
       Scrollable.ensureVisible(
@@ -404,7 +407,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       };
       final entries = systems.entries.toList()
         ..sort((a, b) => a.value.compareTo(b.value));
-      await showAnchoredContextMenu(
+      final choice = await showAnchoredContextMenu(
         context: context,
         items: [
           for (final e in entries)
@@ -431,6 +434,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
           return true;
         },
       );
+      if (choice != '__done__') return;
       value = selected.toList();
     } else if (row.field == SmartField.favorite ||
         row.field == SmartField.played) {
@@ -706,6 +710,11 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
 
   @override
   Widget build(BuildContext context) {
+    // Retry is transient; clamp before building so Save stays highlighted when
+    // a successful retry removes that row from the action table.
+    final actionCount =
+        5 + _rules.length * 4 + (!_loading && _loadError ? 1 : 0);
+    _selected = _selected.clamp(0, actionCount - 1);
     _actions.clear();
     _actionKeys.clear();
     _actionRows.clear();

@@ -245,6 +245,9 @@ class GameRepository {
   static Future<List<DatabaseGameModel>> getAllGames() =>
       SqliteService.getAllGames();
 
+  static Future<List<DatabaseGameModel>> getAllGamesInBackground() =>
+      SqliteService.getAllGamesInBackground();
+
   static Future<List<DatabaseGameModel>> getFavoriteGames() =>
       SqliteService.getFavoriteGames();
 

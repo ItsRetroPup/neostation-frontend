@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -48,6 +49,17 @@ class _LibraryProvider extends CollectionsProvider {
       systemRealName: 'Nintendo Entertainment System',
     ),
   ];
+}
+
+class _RetryLibraryProvider extends _LibraryProvider {
+  var calls = 0;
+  final retry = Completer<void>();
+  @override
+  Future<List<DatabaseGameModel>> ruleLibrary() async {
+    if (calls++ == 0) throw StateError('Library unavailable');
+    await retry.future;
+    return super.ruleLibrary();
+  }
 }
 
 class _ArtworkProvider extends FileProvider {
@@ -131,7 +143,11 @@ void main() {
     rules: rules,
   );
 
-  Future<BuildContext> host(WidgetTester tester, Size size) async {
+  Future<BuildContext> host(
+    WidgetTester tester,
+    Size size, {
+    CollectionsProvider? libraryProvider,
+  }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
     addTearDown(tester.view.resetPhysicalSize);
@@ -141,7 +157,7 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<CollectionsProvider>(
-            create: (_) => _LibraryProvider(),
+            create: (_) => libraryProvider ?? _LibraryProvider(),
           ),
           ChangeNotifierProvider<FileProvider>(
             create: (_) => _ArtworkProvider(artworkPath),
@@ -351,7 +367,7 @@ void main() {
       expect(find.text('Enter a valid value for this rule.'), findsOneWidget);
       await tester.tap(find.text('Choose a value'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Super Nintendo'));
+      await tester.tap(find.text('Super Nintendo').first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nintendo Entertainment System'));
       await tester.pumpAndSettle();
@@ -366,15 +382,17 @@ void main() {
     },
   );
 
-  testWidgets('B keeps selected systems without scrolling to Done', (
+  testWidgets('B cancels system checklist edits and preserves the saved rule', (
     tester,
   ) async {
     final ctx = await host(tester, const Size(1280, 720));
-    final result = SmartCollectionEditor.show(ctx, initialName: 'New smart');
+    final result = SmartCollectionEditor.show(
+      ctx,
+      collection: collection,
+      initialName: collection.name,
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Choose a value'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Super Nintendo'));
+    await tester.tap(find.text('Super Nintendo').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Nintendo Entertainment System'));
     await tester.pumpAndSettle();
@@ -383,13 +401,58 @@ void main() {
     );
     await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
     await tester.pumpAndSettle();
-    expect(find.text('2 matching games'), findsOneWidget);
+    expect(find.text('1 matching game'), findsOneWidget);
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     final draft = await result;
-    expect(draft!.rules.rules.single.value, containsAll(['snes', 'nes']));
+    expect(draft!.rules.rules.first.value, ['snes']);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets(
+    'removing Retry while Save is selected keeps D-pad navigation valid',
+    (tester) async {
+      final library = _RetryLibraryProvider();
+      final ctx = await host(
+        tester,
+        const Size(1280, 720),
+        libraryProvider: library,
+      );
+      final result = SmartCollectionEditor.show(
+        ctx,
+        collection: collection,
+        initialName: collection.name,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Retry'), findsOneWidget);
+      Future<void> key(LogicalKeyboardKey value) async {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 180)),
+        );
+        await tester.sendKeyEvent(value);
+        await tester.pumpAndSettle();
+      }
+
+      // Name -> match mode -> two rules -> Add -> Retry -> footer, then Save.
+      for (var i = 0; i < 6; i++) {
+        await key(LogicalKeyboardKey.arrowDown);
+      }
+      await key(LogicalKeyboardKey.arrowRight);
+      await tester.ensureVisible(find.text('Retry'));
+      await tester.tap(find.text('Retry'));
+      await tester.pump();
+      library.retry.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Retry'), findsNothing);
+      await key(LogicalKeyboardKey.arrowLeft);
+      expect(tester.takeException(), isNull);
+      await key(LogicalKeyboardKey.arrowUp);
+      expect(tester.takeException(), isNull);
+      await key(LogicalKeyboardKey.backspace);
+      expect(await result, isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets(
     'unsupported rules are explained and cancelling preserves the source',

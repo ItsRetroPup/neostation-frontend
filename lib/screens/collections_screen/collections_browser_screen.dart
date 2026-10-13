@@ -27,7 +27,6 @@ import 'package:neostation/widgets/confirm_action_dialog.dart';
 import 'package:neostation/widgets/context_menu/anchored_context_menu.dart';
 import 'package:neostation/widgets/custom_notification.dart';
 import 'package:neostation/widgets/header_sort_dropdown.dart';
-import 'package:neostation/widgets/systems_grid_footer.dart';
 import 'package:neostation/widgets/tv_directory_picker.dart';
 
 import '../game_screen/my_games_list.dart';
@@ -759,6 +758,7 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
       },
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
+        // No footer: each card already shows its name and game count.
         // No header at all. It floated over the cards so they kept the full
         // height, which made it cheap to keep — but it only ever held the View
         // Mode pill and the collection count, and the screen says both without
@@ -775,16 +775,6 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
                   ? _buildCarousel(items)
                   : _buildGrid(items, cols),
             ),
-            if (!showSpinner)
-              SafeArea(
-                top: false,
-                child: SystemsGridFooter(
-                  system: items[_selectedIndex],
-                  onEnter: _activateSelection,
-                  onOptions: _openContextMenu,
-                  enterLabel: AppLocale.hintSelect.getString(context),
-                ),
-              ),
           ],
         ),
       ),
