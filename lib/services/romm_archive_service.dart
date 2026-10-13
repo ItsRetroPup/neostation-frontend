@@ -8,12 +8,27 @@ import 'package:path/path.dart' as p;
 import '../utils/safe_path.dart';
 import 'logger_service.dart';
 
-/// Installs downloaded 7z/RAR game archives while retaining companion files.
+/// Installs downloaded ZIP/7z/RAR game archives while retaining companion files.
 class RommArchiveService {
   /// RomM can stream a folder as ZIP while its list entry has neither an
   /// archive extension nor the multi-file flag. Identify the actual payload
   /// using only its header, so extraction does not depend on that metadata.
-  static Future<String> ensureArchiveExtension(String downloadPath) async {
+  static Future<String> ensureArchiveExtension(
+    String downloadPath, {
+    Set<String> extensions = const {},
+    bool isMultiFile = false,
+  }) async {
+    final current = p
+        .extension(downloadPath)
+        .toLowerCase()
+        .replaceFirst('.', '');
+    if (!isMultiFile &&
+        extensions.any(
+          (ext) =>
+              ext.toLowerCase().replaceFirst(RegExp(r'^\.'), '') == current,
+        )) {
+      return downloadPath;
+    }
     final input = await File(downloadPath).open();
     final List<int> header;
     try {
@@ -54,6 +69,11 @@ class RommArchiveService {
   static Future<bool> containsSingleGameFile(
     String archivePath,
     Set<String> extensions,
+  ) => Isolate.run(() => _containsSingleGameFile(archivePath, extensions));
+
+  static Future<bool> _containsSingleGameFile(
+    String archivePath,
+    Set<String> extensions,
   ) async {
     final archive = await openArchiveFile(archivePath);
     try {
@@ -70,22 +90,129 @@ class RommArchiveService {
     }
   }
 
+  static String gameFolderName(String name) =>
+      {'.zip', '.7z', '.rar'}.contains(p.extension(name).toLowerCase())
+      ? p.basenameWithoutExtension(name)
+      : name;
+
+  static Future<String?> prepareGameDownload(
+    String archivePath,
+    String systemDir,
+    String gameName,
+    Set<String> extensions, {
+    bool isMultiFile = false,
+    bool scummVm = false,
+    bool reuseExistingDirectory = false,
+    String? playlistName,
+  }) async {
+    final ext = p.extension(archivePath).toLowerCase();
+    if (scummVm) {
+      return prepareScummVmDownload(
+        archivePath,
+        systemDir,
+        reuseExistingDirectory: reuseExistingDirectory,
+      );
+    }
+    final folderName = gameFolderName(gameName);
+    if (!isSafeFileName(folderName)) return null;
+    final exts = extensions
+        .map((ext) => ext.toLowerCase().replaceFirst(RegExp(r'^\.'), ''))
+        .toSet();
+    final forceExtract = ext == '.zip' && isMultiFile && exts.contains('m3u');
+    if (exts.contains(ext.replaceFirst('.', '')) && !forceExtract) {
+      await File(
+        archivePath,
+      ).rename(p.join(systemDir, p.basename(archivePath)));
+      return p.basename(archivePath);
+    }
+    try {
+      final single = await containsSingleGameFile(archivePath, exts);
+      return await prepareDownload(
+        archivePath,
+        reuseExistingDirectory || single
+            ? systemDir
+            : p.join(systemDir, folderName),
+        exts,
+        flattenSingleFile: single,
+        forceExtract: forceExtract,
+        playlistBaseName:
+            playlistName != null && p.extension(playlistName) == '.m3u'
+            ? p.basenameWithoutExtension(playlistName)
+            : folderName,
+      );
+    } catch (e, st) {
+      LoggerService.instance.e(
+        'RomM archive inspection failed',
+        error: e,
+        stackTrace: st,
+      );
+      return null;
+    }
+  }
+
+  static Future<String?> prepareScummVmDownload(
+    String downloadPath,
+    String destDir, {
+    bool reuseExistingDirectory = false,
+  }) async {
+    final ext = p.extension(downloadPath).toLowerCase();
+    if ({'.zip', '.7z', '.rar'}.contains(ext)) {
+      // A known target folder must not become target/target on re-download.
+      final result = await prepareDownload(
+        downloadPath,
+        reuseExistingDirectory ? p.dirname(destDir) : destDir,
+        {'scummvm'},
+        scummVm: true,
+      );
+      if (result != null) return result;
+    } else if (ext == '.scummvm') {
+      final id = (await File(
+        downloadPath,
+      ).readAsString()).replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+      if (RegExp(r'^[A-Za-z0-9_][A-Za-z0-9_-]*$').hasMatch(id)) {
+        final root = reuseExistingDirectory ? p.dirname(destDir) : destDir;
+        final target = p.join(root, id, p.basename(downloadPath));
+        await _checkTarget(root, target, downloadPath);
+        await File(target).parent.create(recursive: true);
+        await File(downloadPath).rename(target);
+        return p.basename(target);
+      }
+    }
+    // Descriptor-less ScummVM downloads historically remain usable as-is.
+    final target = p.join(destDir, p.basename(downloadPath));
+    if (!p.equals(target, downloadPath)) {
+      await File(downloadPath).rename(target);
+    }
+    return p.basename(downloadPath);
+  }
+
   static Future<String?> prepareDownload(
     String archivePath,
     String destDir,
     Set<String> extensions, {
     bool scummVm = false,
     bool flattenSingleFile = false,
+    bool forceExtract = false,
+    String? playlistBaseName,
   }) async {
     final exts = extensions
         .map((ext) => ext.toLowerCase().replaceFirst(RegExp(r'^\.'), ''))
         .toSet();
     final format = p.extension(archivePath).toLowerCase().substring(1);
-    if (!scummVm && exts.contains(format)) return p.basename(archivePath);
+    if (!scummVm && !forceExtract && exts.contains(format)) {
+      return p.basename(archivePath);
+    }
     try {
       // Decoding large/solid archives must not block gamepad input or progress UI.
       return await Isolate.run(
-        () => _extract(archivePath, destDir, exts, scummVm, flattenSingleFile),
+        () => _extract(
+          archivePath,
+          destDir,
+          exts,
+          scummVm,
+          flattenSingleFile,
+          playlistBaseName,
+        ),
       );
     } catch (e, st) {
       LoggerService.instance.e(
@@ -103,6 +230,7 @@ class RommArchiveService {
     Set<String> exts,
     bool scummVm,
     bool flattenSingleFile,
+    String? playlistBaseName,
   ) async {
     final archive = await openArchiveFile(
       archivePath,
@@ -115,6 +243,7 @@ class RommArchiveService {
     Directory? staging;
     f7z.SZArchive? nativeSevenZ;
     Map<String, int>? nativeIndices;
+    var closed = false;
     try {
       final entries = archive.entries;
       // Inspect the raw index: the VFS view hides duplicate paths.
@@ -132,12 +261,18 @@ class RommArchiveService {
         final ext = p.extension(entry.path).toLowerCase().replaceFirst('.', '');
         return scummVm ? ext == 'scummvm' : exts.contains(ext);
       }).toList();
-      if (playable.isEmpty) return null;
+      if (playable.isEmpty ||
+          (!scummVm &&
+              playable.every(
+                (entry) => p.extension(entry.path).toLowerCase() == '.m3u',
+              ))) {
+        return null;
+      }
       playable.sort((a, b) {
         int priority(ArchiveEntry entry) =>
             switch (p.extension(entry.path).toLowerCase()) {
               '.m3u' => 0,
-              '.cue' => 1,
+              '.cue' || '.ccd' || '.mds' || '.toc' => 1,
               _ => 2,
             };
         final order = priority(a).compareTo(priority(b));
@@ -226,44 +361,120 @@ class RommArchiveService {
           !flattenSingleFile &&
           exts.contains('m3u') &&
           p.extension(playable.first.path).toLowerCase() != '.m3u') {
-        indexedName = '${p.basenameWithoutExtension(archivePath)}.m3u';
+        indexedName =
+            '${playlistBaseName ?? p.basenameWithoutExtension(archivePath)}.m3u';
         playlistPath = p.join(destDir, indexedName);
         await _checkTarget(destDir, playlistPath, archivePath);
         if (outputs.values.any((target) => p.equals(target, playlistPath!))) {
           return null;
         }
-        // Cue sheets already reference their binary tracks. Keep those tracks
-        // as companion files rather than adding them as extra playlist discs.
-        final hasCue = playable.any(
-          (entry) => p.extension(entry.path).toLowerCase() == '.cue',
-        );
+        // Remove only each descriptor's own referenced data files. An ISO
+        // belonging to another disc must stay in a mixed-format playlist.
+        final companions = <String>{};
+        for (final entry in playable) {
+          final extension = p.extension(entry.path).toLowerCase();
+          final stem = p.posix.withoutExtension(entry.path).toLowerCase();
+          if (extension == '.ccd') {
+            companions.addAll({'$stem.img', '$stem.sub'});
+          } else if (extension == '.mds') {
+            companions.add('$stem.mdf');
+          } else if (extension == '.cue' || extension == '.toc') {
+            final descriptor = await File(
+              safeJoin(staging.path, entry.path)!,
+            ).readAsString();
+            final references = RegExp(
+              r'^\s*(?:FILE|DATAFILE|AUDIOFILE)\s+(?:"([^"]+)"|([^\s]+))',
+              caseSensitive: false,
+              multiLine: true,
+            ).allMatches(descriptor);
+            for (final reference in references) {
+              final name = (reference.group(1) ?? reference.group(2)!)
+                  .replaceAll('\\', '/');
+              companions.add(
+                p.posix
+                    .normalize(p.posix.join(p.posix.dirname(entry.path), name))
+                    .toLowerCase(),
+              );
+            }
+          }
+        }
         final discs = playable.where(
-          (entry) => !hasCue || p.extension(entry.path).toLowerCase() != '.bin',
+          (entry) => !companions.contains(entry.path.toLowerCase()),
         );
         playlist =
             '${discs.map((entry) => p.relative(outputs[entry]!, from: destDir).replaceAll('\\', '/')).join('\n')}\n';
       }
-      for (final entry in files) {
-        final target = File(outputs[entry]!);
-        await target.parent.create(recursive: true);
-        final staged = File(safeJoin(staging.path, entry.path)!);
-        try {
-          await staged.rename(target.path);
-        } on FileSystemException {
-          await staged.copy(target.path);
-        }
-      }
-      if (playlistPath != null) {
-        await Directory(destDir).create(recursive: true);
-        await File(playlistPath).writeAsString(playlist!, flush: true);
-      }
+      // Close once before committing, so reader failures cannot leave a
+      // successfully installed game reported as failed.
+      closed = true;
       await archive.close();
-      await File(archivePath).delete();
+      final stagedOutputs = <String, String>{
+        for (final entry in files)
+          outputs[entry]!: safeJoin(staging.path, entry.path)!,
+      };
+      if (playlistPath != null) {
+        final generated = await Directory(
+          staging.path,
+        ).createTemp('.playlist_');
+        final stagedPlaylist = p.join(generated.path, 'playlist');
+        await File(stagedPlaylist).writeAsString(playlist!, flush: true);
+        stagedOutputs[playlistPath] = stagedPlaylist;
+      }
+      await _install(stagedOutputs, staging.path, destDir, archivePath);
       return indexedName;
     } finally {
       nativeSevenZ?.dispose();
-      await archive.close();
+      if (!closed) await archive.close();
       await staging?.delete(recursive: true);
+    }
+  }
+
+  /// Roll back replacements if any install operation fails. The archive is
+  /// consumed only after every output has been installed successfully.
+  static Future<void> _install(
+    Map<String, String> outputs,
+    String staging,
+    String root,
+    String archivePath,
+  ) async {
+    final backups = <String, String>{};
+    final installed = <String>[];
+    final createdDirs = <String>[];
+    final backupDir = await Directory(staging).createTemp('.backups_');
+    try {
+      for (final output in outputs.entries) {
+        await _checkTarget(root, output.key, archivePath);
+        final target = File(output.key);
+        var parent = target.parent;
+        final missing = <String>[];
+        while (!await parent.exists()) {
+          missing.add(parent.path);
+          parent = parent.parent;
+        }
+        for (final path in missing.reversed) {
+          await Directory(path).create();
+          createdDirs.add(path);
+        }
+        if (await target.exists()) {
+          final backup = p.join(backupDir.path, '${backups.length}');
+          await target.rename(backup);
+          backups[output.key] = backup;
+        }
+        await File(output.value).rename(output.key);
+        installed.add(output.key);
+      }
+      await File(archivePath).delete();
+    } catch (_) {
+      for (final path in installed.reversed) {
+        await File(path).delete();
+      }
+      for (final backup in backups.entries) {
+        await File(backup.value).rename(backup.key);
+      }
+      for (final path in createdDirs.reversed) {
+        await Directory(path).delete();
+      }
+      rethrow;
     }
   }
 
@@ -275,8 +486,12 @@ class RommArchiveService {
     if (p.equals(target, archivePath)) {
       throw const FormatException('Archive would overwrite itself');
     }
+    if (await FileSystemEntity.type(target, followLinks: false) ==
+        FileSystemEntityType.directory) {
+      throw const FormatException('Archive target is a directory');
+    }
     var current = target;
-    while (p.isWithin(root, current)) {
+    while (p.isWithin(root, current) || p.equals(root, current)) {
       if (await FileSystemEntity.type(current, followLinks: false) ==
           FileSystemEntityType.link) {
         throw const FormatException('Archive target contains a symlink');
