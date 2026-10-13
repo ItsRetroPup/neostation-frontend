@@ -41,6 +41,39 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.smartRulesOnly:
       'Les jeux sont inclus automatiquement selon ces règles.',
 
+  AppLocale.rommSavesAutoDownload:
+      'Les sauvegardes cloud plus récentes sont téléchargées au lancement d’un jeu lié.',
+  AppLocale.rommSaveFile: 'Fichier de sauvegarde',
+  AppLocale.rommSaveState: 'État sauvegardé',
+  AppLocale.rommRetryUploads: 'Réessayer les envois',
+  AppLocale.rommUploadsFailed:
+      'Certains envois ont échoué. Vérifiez la connexion et les autorisations RomM, puis réessayez.',
+  AppLocale.rommUploadsFailedFor:
+      "Les sauvegardes de {games} n'ont pas été envoyées. Vérifiez la connexion et les autorisations RomM, puis réessayez.",
+  AppLocale.rommGameListSeparator: ', ',
+  AppLocale.rommGameListMore: '{games} et {count} autres',
+  AppLocale.rommSavesHelp:
+      'Consultez vos sauvegardes et états RomM. Réessayer les envois vérifie les jeux locaux liés à RomM dont la synchronisation est activée. Les sauvegardes distantes plus récentes sont téléchargées au lancement du jeu.',
+  AppLocale.rommDeleteTitle: 'Supprimer de RomM',
+  AppLocale.rommDeleteConfirm:
+      '{file} sera définitivement supprimé de votre serveur RomM. Les copies sur vos appareils sont conservées, et tout appareil qui synchronise encore ce jeu enverra de nouveau sa copie.',
+  AppLocale.rommDeleted: 'Supprimé de RomM.',
+  AppLocale.rommDeleteFailed:
+      'Impossible de supprimer de RomM. Vérifiez la connexion et les autorisations RomM, puis réessayez.',
+  AppLocale.rommDeleteNotSent:
+      "Suppression annulée avant d'atteindre RomM. Rien n'a été supprimé.",
+  AppLocale.rommSaveFileCount: '{count} fichier de sauvegarde',
+  AppLocale.rommSaveFilesCount: '{count} fichiers de sauvegarde',
+  AppLocale.rommSaveStateCount: '{count} état sauvegardé',
+  AppLocale.rommSaveStatesCount: '{count} états sauvegardés',
+  AppLocale.rommDeleteGameBothConfirm:
+      'Cette action supprimera définitivement de votre serveur RomM {saves} et {states} du jeu {game}. Les copies sur vos appareils sont conservées, et tout appareil qui synchronise encore ce jeu enverra de nouveau ses copies.',
+  AppLocale.rommDeleteGameConfirm:
+      'Cette action supprimera définitivement de votre serveur RomM {files} du jeu {game}. Les copies sur vos appareils sont conservées, et tout appareil qui synchronise encore ce jeu enverra de nouveau ses copies.',
+  AppLocale.rommDeleteKeepsSaves:
+      'Les fichiers de sauvegarde de ce jeu restent sur RomM.',
+  AppLocale.rommDeleteKeepsStates:
+      'Les états sauvegardés de ce jeu restent sur RomM.',
   AppLocale.ignoreArticlesInGameSort:
       "Ignorer les articles dans le tri des jeux",
   AppLocale.ignoreArticlesInGameSortSubtitle:
@@ -303,9 +336,9 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.bartopShutdownSubtitle:
       'Éteint l’ordinateur à la fermeture de l’application',
 
-  AppLocale.showSyncTab: 'Afficher l’onglet NeoSync',
+  AppLocale.showSyncTab: 'Afficher l’onglet Sauvegardes',
   AppLocale.showSyncTabSubtitle:
-      'Affiche l’onglet NeoSync dans la barre de navigation',
+      'Afficher l’onglet Sauvegardes dans la barre de navigation',
   AppLocale.showAchievementsTab: 'Afficher l’onglet Succès',
   AppLocale.showAchievementsTabSubtitle:
       'Affiche l’onglet RetroAchievements dans la barre de navigation',
@@ -398,6 +431,7 @@ const Map<String, dynamic> appLocaleFr = {
       'En pause : {matched} jeu(x) associé(s) jusqu’ici. Relancez-le pour continuer.',
   AppLocale.rematchAchievementsFailed:
       'Échec de l\'association des jeux RetroAchievements : {error}',
+  AppLocale.raOpenPage: 'Ouvrir la page',
   AppLocale.raFixMatch: 'Corriger l’association',
   AppLocale.raFixMatchTitle: 'Choisir le bon jeu',
   AppLocale.raFixMatchSearchHint: 'Rechercher des titres RetroAchievements',
@@ -450,7 +484,6 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.scrapingUnavailableAndroid: 'Scraping indisponible sur Android.',
   AppLocale.achievements: 'Succès',
 
-  AppLocale.neoSync: 'NeoSync',
   AppLocale.neoSyncLogin: 'Connexion NeoSync',
   AppLocale.neoSyncSynchronizing: 'NeoSync : Synchronisation...',
   AppLocale.neoSyncNotConnected: 'NeoSync : Non connecté',
@@ -778,7 +811,7 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.sortByGroup: 'Trier par',
   AppLocale.orderGroup: 'Ordre',
   AppLocale.synced: 'Synchronisé',
-  AppLocale.syncing: 'Synchronisation',
+  AppLocale.syncing: 'Synchronisation...',
   AppLocale.conflict: 'Conflit',
   AppLocale.ready: 'Prêt',
   AppLocale.quota: 'Quota',
