@@ -208,6 +208,40 @@ class GameRepository {
     String filename,
   ) => SqliteService.getSingleGame(systemId, filename);
 
+  static Object? _revisionDatabase;
+
+  /// Tracks local library writes without invalidating on settings notifications.
+  /// TEMP objects belong to this connection and leave the persisted schema alone.
+  /// data_version also detects commits made by the secondary Flutter engine.
+  static Future<Object> smartLibraryRevision() async {
+    final db = await SqliteService.getDatabase();
+    if (!identical(_revisionDatabase, db)) {
+      await db.execute(
+        'CREATE TEMP TABLE IF NOT EXISTS smart_library_revision (value INTEGER NOT NULL)',
+      );
+      await db.execute(
+        'INSERT INTO smart_library_revision SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM smart_library_revision)',
+      );
+      for (final table in [
+        'user_roms',
+        'user_screenscraper_metadata',
+        'app_systems',
+      ]) {
+        for (final operation in ['INSERT', 'UPDATE', 'DELETE']) {
+          await db.execute(
+            'CREATE TEMP TRIGGER IF NOT EXISTS smart_revision_${table}_$operation '
+            'AFTER $operation ON main.$table BEGIN '
+            'UPDATE smart_library_revision SET value = value + 1; END',
+          );
+        }
+      }
+      _revisionDatabase = db;
+    }
+    final local = await db.rawQuery('SELECT value FROM smart_library_revision');
+    final external = await db.rawQuery('PRAGMA data_version');
+    return (db, local.single['value'], external.single.values.single);
+  }
+
   static Future<List<DatabaseGameModel>> getAllGames() =>
       SqliteService.getAllGames();
 

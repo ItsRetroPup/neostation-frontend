@@ -1,4 +1,9 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'package:flutter/widgets.dart';
+import 'package:neostation/models/collection_model.dart';
+import 'package:neostation/repositories/game_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neostation/data/datasources/sqlite_migrations.dart';
 import 'package:neostation/data/datasources/sqlite_service.dart';
@@ -66,7 +71,10 @@ void main() {
         'Unplayed SNES',
         rules: rules,
       );
-      expect(collection.gameCount, 1);
+      expect(
+        collection.gameCount,
+        0,
+      ); // Creation reads metadata; snapshot derives counts.
       final preview = await SmartCollectionsService.preview(rules);
       final snapshot = await SmartCollectionsService.snapshot();
       expect(preview.map((g) => g.romPath), [romPath]);
@@ -228,6 +236,181 @@ void main() {
       await provider.load();
       expect(provider.totalGameCount, 0);
       expect(provider.isInAnyCollection(romPath), isFalse);
+    },
+  );
+  test(
+    'library cache ignores settings but invalidates metadata and history writes',
+    () async {
+      final cache = SmartCollectionLibraryCache();
+      final first = await cache.library();
+      final revision = await GameRepository.smartLibraryRevision();
+      await db.execute('CREATE TABLE unrelated_settings (value TEXT)');
+      await db.execute("INSERT INTO unrelated_settings VALUES ('setting')");
+      expect(await GameRepository.smartLibraryRevision(), revision);
+      expect(identical(await cache.library(), first), isTrue);
+      await db.execute(
+        "UPDATE user_roms SET play_time = 120 WHERE rom_path = ?",
+        [romPath],
+      );
+      final played = await cache.library();
+      expect(identical(played, first), isFalse);
+      expect(played.single.playTime, 120);
+      await db.execute(
+        "INSERT INTO user_screenscraper_metadata (app_system_id, filename, genre) VALUES ('snes', 'Chrono.sfc', 'RPG')",
+      );
+      expect((await cache.library()).single.genre, 'RPG');
+    },
+  );
+
+  test(
+    'unchanged snapshots are reused and do not bump collection revisions',
+    () async {
+      final collection = await CollectionsService.createCollection(
+        'Smart',
+        rules: rules,
+      );
+      final cache = SmartCollectionLibraryCache();
+      final first = await cache.snapshot();
+      expect(identical(await cache.snapshot(), first), isTrue);
+      final provider = CollectionsProvider();
+      addTearDown(provider.dispose);
+      await provider.load();
+      final revision = provider.revision;
+      final collectionRevision = provider.collectionRevision(collection.id);
+      await provider.load();
+      expect(provider.revision, revision);
+      expect(provider.collectionRevision(collection.id), collectionRevision);
+    },
+  );
+
+  test(
+    'same-count membership swaps invalidate only the affected collection',
+    () async {
+      final smart = await CollectionsService.createCollection(
+        'Smart',
+        rules: rules,
+      );
+      final manual = await CollectionsService.createCollection('Manual');
+      final provider = CollectionsProvider();
+      addTearDown(provider.dispose);
+      await provider.load();
+      final smartRevision = provider.collectionRevision(smart.id);
+      final manualRevision = provider.collectionRevision(manual.id);
+      await db.execute(
+        "UPDATE user_roms SET play_time = 60 WHERE rom_path = ?",
+        [romPath],
+      );
+      await db.execute(
+        "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('Other.sfc', '/other.sfc', 'snes')",
+      );
+      await provider.load();
+      expect(provider.byId(smart.id)!.gameCount, 1);
+      expect(provider.collectionRevision(smart.id), greaterThan(smartRevision));
+      expect(provider.collectionRevision(manual.id), manualRevision);
+    },
+  );
+
+  test(
+    'load requested by completion notification reads the new snapshot',
+    () async {
+      var reads = 0;
+      final provider = CollectionsProvider(
+        readSnapshot: () async {
+          reads++;
+          return CollectionsSnapshot(
+            [CollectionModel(id: '$reads', name: 'Read $reads')],
+            {},
+            null,
+          );
+        },
+      );
+      addTearDown(provider.dispose);
+      Future<void>? second;
+      provider.addListener(() {
+        if (!provider.isLoading && reads == 1) second = provider.load();
+      });
+      await provider.load();
+      await second;
+      expect(reads, 2);
+      expect(provider.collections.single.id, '2');
+    },
+  );
+
+  test(
+    'mutation queued during a snapshot gets a read after the write',
+    () async {
+      final blocked = Completer<CollectionsSnapshot>();
+      var reads = 0;
+      final provider = CollectionsProvider(
+        readSnapshot: () {
+          reads++;
+          return reads == 1
+              ? blocked.future
+              : Future.value(
+                  const CollectionsSnapshot(
+                    [CollectionModel(id: 'new', name: 'New')],
+                    {},
+                    null,
+                  ),
+                );
+        },
+      );
+      addTearDown(provider.dispose);
+      final first = provider.load();
+      await Future<void>.delayed(Duration.zero);
+      final afterMutation = provider.load();
+      blocked.complete(const CollectionsSnapshot([], {}, null));
+      await Future.wait([first, afterMutation]);
+      expect(reads, 2);
+      expect(provider.byId('new'), isNotNull);
+    },
+  );
+  test(
+    'member metadata changes refresh an open collection without membership changes',
+    () async {
+      final collection = await CollectionsService.createCollection(
+        'Smart',
+        rules: rules,
+      );
+      final provider = CollectionsProvider();
+      addTearDown(provider.dispose);
+      await provider.load();
+      final revision = provider.collectionRevision(collection.id);
+      await db.execute(
+        "INSERT INTO user_screenscraper_metadata (app_system_id, filename, real_name) VALUES ('snes', 'Chrono.sfc', 'New title')",
+      );
+      await provider.load();
+      expect(provider.byId(collection.id)!.gameCount, 1);
+      expect(provider.collectionRevision(collection.id), greaterThan(revision));
+    },
+  );
+  test(
+    'another engine connection invalidates the library on its next read',
+    () async {
+      final folder = await Directory.systemTemp.createTemp(
+        'smart-library-revision',
+      );
+      final path = '${folder.path}/library.sqlite';
+      await db.execute('VACUUM INTO ?', [path]);
+      final primary = sqlite.sqlite3.open(path);
+      final secondary = sqlite.sqlite3.open(path);
+      SqliteService.setTestingDatabase(DatabaseAdapter(primary));
+      try {
+        final cache = SmartCollectionLibraryCache();
+        final first = await cache.library();
+        secondary.execute(
+          'UPDATE user_roms SET play_time = 180 WHERE rom_path = ?',
+          [romPath],
+        );
+        final updated = await cache.library();
+        expect(identical(first, updated), isFalse);
+        expect(updated.single.playTime, 180);
+      } finally {
+        primary.close();
+        secondary.close();
+        SqliteService.setTestingDatabase(db);
+        await folder.delete(recursive: true);
+      }
     },
   );
 }

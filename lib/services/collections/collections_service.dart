@@ -42,24 +42,16 @@ class CollectionsService {
 
   // ── Collections ────────────────────────────────────────────────────────────
 
-  /// Returns every collection, ordered by `sort_order` then name, each with its
-  /// game count already filled in by the listing query.
-  static Future<List<CollectionModel>> getCollections() async {
-    try {
-      return (await SmartCollectionsService.snapshot()).collections;
-    } catch (e) {
-      _log.e('Error loading collections: $e');
-      return [];
-    }
-  }
-
   /// Returns a single collection, or null when it no longer exists.
-  static Future<CollectionModel?> getCollection(String id) async {
+  static Future<CollectionModel?> getCollection(
+    String id, {
+    bool includeGameCount = true,
+  }) async {
     try {
       final row = await CollectionRepository.getCollectionById(id);
       if (row == null) return null;
       final collection = CollectionModel.fromJson(row);
-      if (collection.isSmart) {
+      if (includeGameCount && collection.isSmart) {
         final count = collection.rules == null
             ? 0
             : (await SmartCollectionsService.preview(collection.rules!)).length;
@@ -97,7 +89,7 @@ class CollectionsService {
       imagePath = await setCollectionImage(id, imageSourcePath);
     }
 
-    final created = await getCollection(id);
+    final created = await getCollection(id, includeGameCount: false);
     return created ??
         CollectionModel(
           id: id,
@@ -120,7 +112,7 @@ class CollectionsService {
   /// The file delete is best effort: an unreadable or already-missing image
   /// must not stop the collection going away.
   static Future<void> deleteCollection(String id) async {
-    final existing = await getCollection(id);
+    final existing = await getCollection(id, includeGameCount: false);
     await CollectionRepository.deleteCollection(id);
     await _deleteImageFile(existing?.imagePath);
   }
@@ -160,7 +152,10 @@ class CollectionsService {
 
       // A previous image may have a different extension; drop it so the
       // collection is never left with two artwork files.
-      final previous = (await getCollection(id))?.imagePath;
+      final previous = (await getCollection(
+        id,
+        includeGameCount: false,
+      ))?.imagePath;
 
       final extension = path.extension(source.path);
       final target = path.join(targetDir.path, '$id$extension');
@@ -181,7 +176,7 @@ class CollectionsService {
 
   /// Clears a collection's artwork, deleting the file (best effort).
   static Future<void> clearCollectionImage(String id) async {
-    final existing = await getCollection(id);
+    final existing = await getCollection(id, includeGameCount: false);
     await CollectionRepository.updateCollection(id, clearImagePath: true);
     await _deleteImageFile(existing?.imagePath);
     await _evictImageCache(existing?.imagePath);
@@ -248,19 +243,6 @@ class CollectionsService {
     }
   }
 
-  /// Every `rom_path` filed in at least one collection.
-  ///
-  /// Read whole rather than per game: the games views badge every visible row,
-  /// and one query beats one per card.
-  static Future<Set<String>> memberRomPaths() async {
-    try {
-      return (await SmartCollectionsService.snapshot()).memberPaths;
-    } catch (e) {
-      _log.e('Error reading collection membership: $e');
-      return <String>{};
-    }
-  }
-
   /// Loads a collection's games as display-ready [GameModel]s.
   ///
   /// Delegates to the games loader so per-system naming preferences
@@ -270,7 +252,7 @@ class CollectionsService {
       GameListService.loadGamesForCollection(collectionId);
 
   static Future<void> updateRules(String id, SmartCollectionRules rules) async {
-    final collection = await getCollection(id);
+    final collection = await getCollection(id, includeGameCount: false);
     if (collection == null || !collection.isSmart) {
       throw StateError('Only smart collections have rules');
     }
@@ -278,7 +260,7 @@ class CollectionsService {
   }
 
   static Future<void> _requireManual(String id) async {
-    final collection = await getCollection(id);
+    final collection = await getCollection(id, includeGameCount: false);
     if (collection == null || collection.isSmart) {
       throw StateError('Membership is editable only for manual collections');
     }

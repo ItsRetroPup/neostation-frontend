@@ -20,6 +20,16 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _LibraryProvider extends CollectionsProvider {
+  static int previewEvaluations = 0;
+  @override
+  List<DatabaseGameModel> previewRules(
+    List<DatabaseGameModel> library,
+    SmartCollectionRules? rules,
+  ) {
+    previewEvaluations++;
+    return super.previewRules(library, rules);
+  }
+
   @override
   Future<List<DatabaseGameModel>> ruleLibrary() async => [
     DatabaseGameModel(
@@ -46,6 +56,9 @@ class _ArtworkProvider extends FileProvider {
 
   @override
   bool get isInitialized => true;
+
+  @override
+  Future<bool> fileExists(String path) async => path == artworkPath;
 
   @override
   String getMediaPath(
@@ -270,6 +283,7 @@ void main() {
       }
 
       expect(selected('System'), isTrue);
+      final evaluations = _LibraryProvider.previewEvaluations;
       await key(LogicalKeyboardKey.arrowRight);
       await key(LogicalKeyboardKey.arrowRight);
       expect(selected('Super Nintendo'), isTrue);
@@ -318,6 +332,7 @@ void main() {
       expect(selected('Cancel'), isTrue);
       await key(LogicalKeyboardKey.arrowRight);
       expect(selected('Save'), isTrue);
+      expect(_LibraryProvider.previewEvaluations, evaluations);
       await key(LogicalKeyboardKey.backspace);
       expect(await result, isNull);
       expect(GamepadNavigationManager.stackDepth, depth);

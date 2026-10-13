@@ -128,6 +128,7 @@ const double _kViewportMargin = 8;
 Future<String?> showAnchoredContextMenu({
   required BuildContext context,
   required List<ContextMenuItem> items,
+  String? title,
   GlobalKey? anchorKey,
   int initialIndex = 0,
   int? openSubmenuAtIndex,
@@ -153,6 +154,7 @@ Future<String?> showAnchoredContextMenu({
         opacity: animation,
         child: AnchoredContextMenu(
           items: items,
+          title: title,
           anchorRect: anchor,
           initialIndex: initialIndex,
           openSubmenuAtIndex: openSubmenuAtIndex,
@@ -223,6 +225,7 @@ ScrollPositionAlignmentPolicy contextMenuRevealPolicy({
 /// test), but the normal entry point is [showAnchoredContextMenu].
 class AnchoredContextMenu extends StatefulWidget {
   final List<ContextMenuItem> items;
+  final String? title;
 
   /// Global bounds of the widget the menu hangs off.
   final Rect anchorRect;
@@ -250,6 +253,7 @@ class AnchoredContextMenu extends StatefulWidget {
   const AnchoredContextMenu({
     super.key,
     required this.items,
+    this.title,
     required this.anchorRect,
     this.initialIndex = 0,
     this.openSubmenuAtIndex,
@@ -519,7 +523,7 @@ class _AnchoredContextMenuState extends State<AnchoredContextMenu> {
   /// while it renders at the capped one is what put the rows off the bottom of
   /// the screen in the first place.
   double get _panelHeight {
-    double height = _kVerticalPadding.r * 2;
+    double height = _kVerticalPadding.r * 2 + (widget.title == null ? 0 : 40.r);
     for (final item in widget.items) {
       if (item.separatorBefore) height += _kSeparatorHeight.r;
       height += _kItemHeight.r;
@@ -671,7 +675,27 @@ class _AnchoredContextMenuState extends State<AnchoredContextMenu> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _buildRows(theme),
+                      children: [
+                        if (widget.title != null)
+                          SizedBox(
+                            height: 40.r,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12.r),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  widget.title!,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontSize: 13.r,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ..._buildRows(theme),
+                      ],
                     ),
                   ),
                 ),

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+import '../services/collections/smart_collection_evaluator.dart';
 import '../models/smart_collection_rules.dart';
 import '../models/database_game_model.dart';
 import '../services/collections/smart_collections_service.dart';
@@ -27,8 +29,10 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   CollectionsProvider({
     List<ChangeNotifier> sources = const [],
     bool Function()? isBusy,
+    Future<CollectionsSnapshot> Function()? readSnapshot,
   }) : _sources = sources,
-       _isBusy = isBusy {
+       _isBusy = isBusy,
+       _snapshotReader = readSnapshot {
     WidgetsBinding.instance.addObserver(this);
     for (final source in _sources) {
       source.addListener(_scheduleRefresh);
@@ -36,6 +40,14 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   static const _busyRefreshInterval = Duration(seconds: 10);
+
+  final _libraryCache = SmartCollectionLibraryCache();
+  final Future<CollectionsSnapshot> Function()? _snapshotReader;
+  final Map<String, int> _collectionRevisions = {};
+  Map<String, Set<String>> _collectionPaths = const {};
+  Map<String, String> _gameContent = const {};
+  Object? _libraryRevision;
+  int collectionRevision(String id) => _collectionRevisions[id] ?? 0;
 
   final List<ChangeNotifier> _sources;
   final bool Function()? _isBusy;
@@ -80,11 +92,52 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _readSnapshot() async {
-    final snapshot = await SmartCollectionsService.snapshot();
+    final snapshot = await (_snapshotReader ?? _libraryCache.snapshot)();
     if (_disposed) return;
+    for (final collection in snapshot.collections) {
+      final old = byId(collection.id);
+      final paths = snapshot.collectionPaths[collection.id] ?? const <String>{};
+      final contentChanged = snapshot.gameContent.isEmpty
+          ? snapshot.libraryRevision != _libraryRevision
+          : paths.any(
+              (path) => snapshot.gameContent[path] != _gameContent[path],
+            );
+      if (old != collection ||
+          contentChanged ||
+          !setEquals(
+            _collectionPaths[collection.id],
+            snapshot.collectionPaths[collection.id],
+          )) {
+        _collectionRevisions.update(
+          collection.id,
+          (value) => value + 1,
+          ifAbsent: () => 1,
+        );
+      }
+    }
+    for (final old in _collections) {
+      if (!snapshot.collections.any((c) => c.id == old.id)) {
+        _collectionRevisions.update(
+          old.id,
+          (value) => value + 1,
+          ifAbsent: () => 1,
+        );
+      }
+    }
+    if (!listEquals(_collections, snapshot.collections) ||
+        !setEquals(_memberRomPaths, snapshot.memberPaths) ||
+        _collectionPaths.length != snapshot.collectionPaths.length ||
+        _collectionPaths.entries.any(
+          (entry) =>
+              !setEquals(entry.value, snapshot.collectionPaths[entry.key]),
+        )) {
+      _revision++;
+    }
     _collections = snapshot.collections;
     _memberRomPaths = snapshot.memberPaths;
-    _revision++;
+    _collectionPaths = snapshot.collectionPaths;
+    _gameContent = snapshot.gameContent;
+    _libraryRevision = snapshot.libraryRevision;
     _boundaryTimer?.cancel();
     if (snapshot.nextBoundary != null) {
       final delay = snapshot.nextBoundary!.difference(DateTime.now());
@@ -176,7 +229,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Re-reads every collection (and its game count) from the database.
   ///
-  /// Safe to call repeatedly; concurrent calls collapse into the first.
+  /// Concurrent callers await the current read and a queued follow-up snapshot.
   Future<void> load() {
     if (_disposed) return Future.value();
     if (_loadFuture != null) {
@@ -184,10 +237,13 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
       return _loadFuture!;
     }
     // Defer the first read so the future is installed before notifications.
-    _loadFuture = Future<void>.microtask(
-      _load,
-    ).whenComplete(() => _loadFuture = null);
-    return _loadFuture!;
+    final completer = Completer<void>();
+    _loadFuture = completer.future;
+    scheduleMicrotask(() async {
+      await _load();
+      completer.complete();
+    });
+    return completer.future;
   }
 
   Future<void> _load() async {
@@ -203,6 +259,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
       // Preserve the last successful snapshot on transient database failure.
       debugPrint('Collection refresh failed: $error');
     } finally {
+      _loadFuture = null;
       _isLoading = false;
       _hasLoaded = true;
       if (!_disposed) notifyListeners();
@@ -221,7 +278,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
       rules: rules,
     );
     await _refresh();
-    return created;
+    return byId(created.id) ?? created;
   }
 
   Future<void> updateRules(String id, SmartCollectionRules rules) async {
@@ -229,8 +286,23 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
     await _refresh();
   }
 
-  Future<List<DatabaseGameModel>> ruleLibrary() =>
-      SmartCollectionsService.library();
+  Future<List<DatabaseGameModel>> ruleLibrary() => _libraryCache.library();
+
+  List<DatabaseGameModel> previewRules(
+    List<DatabaseGameModel> library,
+    SmartCollectionRules? rules,
+  ) {
+    if (rules == null) return [];
+    final evaluator = SmartCollectionEvaluator(DateTime.now());
+    return library.where((game) => evaluator.matches(game, rules)).toList();
+  }
+
+  DateTime? previewBoundary(
+    List<DatabaseGameModel> library,
+    SmartCollectionRules? rules,
+  ) => rules == null
+      ? null
+      : SmartCollectionEvaluator(DateTime.now()).nextBoundary(library, [rules]);
 
   /// Renames a collection and refreshes the list.
   Future<void> rename(String id, String name) async {
@@ -291,7 +363,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<Set<String>> collectionIdsFor(GameModel game) =>
       CollectionsService.collectionIdsFor(game);
 
-  /// Re-reads after a mutation, bypassing [load]'s in-flight guard.
+  /// Re-reads after a mutation, queuing a fresh snapshot if a read is in flight.
   Future<void> _refresh() async {
     await load();
   }

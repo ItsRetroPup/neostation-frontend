@@ -84,6 +84,20 @@ class CollectionRepository {
   static Future<Set<String>> getCollectionMemberRomPaths() =>
       SqliteService.getCollectionMemberRomPaths();
 
+  static Future<Map<String, Set<String>>> getMemberPathsByCollection() async {
+    final db = await SqliteService.getDatabase();
+    final rows = await db.rawQuery(
+      'SELECT collection_id, rom_path FROM user_collection_items',
+    );
+    final paths = <String, Set<String>>{};
+    for (final row in rows) {
+      paths
+          .putIfAbsent(row['collection_id'].toString(), () => {})
+          .add(row['rom_path'].toString());
+    }
+    return paths;
+  }
+
   /// Returns the games in a collection, in the same shape as the favourites
   /// query (systems joined, so `systemFolderName` is populated).
   static Future<List<DatabaseGameModel>> getGamesInCollection(

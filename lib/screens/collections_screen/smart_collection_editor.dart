@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -13,7 +14,6 @@ import '../../models/game_model.dart';
 import '../../models/smart_collection_rules.dart';
 import '../../providers/collections_provider.dart';
 import '../../providers/file_provider.dart';
-import '../../services/collections/smart_collection_evaluator.dart';
 import '../../services/gamepad/gamepad_navigation_manager.dart';
 import '../../utils/gamepad_nav.dart';
 import '../../widgets/context_menu/anchored_context_menu.dart';
@@ -95,6 +95,12 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   bool _previewFocused = false;
   int _previewSelected = 0;
   List<DatabaseGameModel> _previewGames = [];
+  String? _previewDefinition;
+  Timer? _previewBoundaryTimer;
+  final Map<String, Future<String?>> _previewArtwork = {};
+  List<DatabaseGameModel>? _previewLibrary;
+  Map<String, String> _systems = {};
+
   final _scrollController = ScrollController();
   final _rulesSectionKey = GlobalKey();
   final Map<String, GlobalKey> _keys = {};
@@ -156,6 +162,13 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       if (mounted) {
         setState(() {
           _library = games;
+          _previewArtwork.clear();
+          _systems = {
+            for (final game in games)
+              if (game.systemFolderName != null)
+                game.systemFolderName!:
+                    game.systemRealName ?? game.systemFolderName!,
+          };
           _loading = false;
         });
       }
@@ -174,6 +187,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     GamepadNavigationManager.popLayer(_layer);
     _nav.dispose();
     _scrollController.dispose();
+    _previewBoundaryTimer?.cancel();
     super.dispose();
   }
 
@@ -306,6 +320,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     if (!mounted) return null;
     return showAnchoredContextMenu(
       context: context,
+      title: title,
       items: [
         for (final entry in options.entries)
           ContextMenuItem(
@@ -377,12 +392,6 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       _error = null;
     });
   }
-
-  Map<String, String> get _systems => {
-    for (final game in _library)
-      if (game.systemFolderName != null)
-        game.systemFolderName!: game.systemRealName ?? game.systemFolderName!,
-  };
 
   Future<void> _editValue(_RuleDraft row) async {
     Object? value;
@@ -608,10 +617,15 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   }
 
   Widget _previewGame(DatabaseGameModel databaseGame, int index) {
-    final game = GameModel.fromDatabaseModel(databaseGame);
-    final folder = databaseGame.systemFolderName ?? '';
-    final fileProvider = context.read<FileProvider>();
-    final artPath = game.getImagePath(folder, 'box2d', fileProvider);
+    final art = _previewArtwork.putIfAbsent(
+      databaseGame.romPath,
+      () => GameModel.findExistingImagePath(
+        romname: databaseGame.filename,
+        systemFolderName: databaseGame.systemFolderName ?? '',
+        imageType: 'box2d',
+        fileProvider: context.read<FileProvider>(),
+      ),
+    );
     final theme = Theme.of(context);
     Widget placeholder() => ColoredBox(
       color: theme.colorScheme.surfaceContainerHighest,
@@ -643,17 +657,20 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
             height: 64.r,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4.r),
-              child: File(artPath).existsSync()
-                  ? Image.file(
-                      File(artPath),
-                      fit: BoxFit.contain,
-                      cacheWidth:
-                          (112.r * MediaQuery.devicePixelRatioOf(context))
-                              .round(),
-                      errorBuilder: (context, error, stackTrace) =>
-                          placeholder(),
-                    )
-                  : placeholder(),
+              child: FutureBuilder<String?>(
+                future: art,
+                builder: (context, snapshot) {
+                  final path = snapshot.data;
+                  if (path == null) return placeholder();
+                  return Image.file(
+                    File(path),
+                    fit: BoxFit.contain,
+                    cacheWidth: (112.r * MediaQuery.devicePixelRatioOf(context))
+                        .round(),
+                    errorBuilder: (context, error, stackTrace) => placeholder(),
+                  );
+                },
+              ),
             ),
           ),
           SizedBox(width: 12.r),
@@ -662,12 +679,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  (databaseGame.screenscraperRealName?.trim().isNotEmpty ??
-                          false)
-                      ? databaseGame.screenscraperRealName!
-                      : (databaseGame.realName?.trim().isNotEmpty ?? false)
-                      ? databaseGame.realName!
-                      : databaseGame.filename,
+                  databaseGame.displayTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13.r),
@@ -699,11 +711,31 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     _actionRows.clear();
     final theme = Theme.of(context);
     final definition = _definition;
-    final evaluator = SmartCollectionEvaluator(DateTime.now());
-    final matches = definition == null
-        ? <DatabaseGameModel>[]
-        : _library.where((g) => evaluator.matches(g, definition)).toList();
-    _previewGames = !_loading && !_loadError ? matches : [];
+    final encoded = definition?.encode();
+    if (_previewDefinition != encoded ||
+        !identical(_previewLibrary, _library)) {
+      _previewDefinition = encoded;
+      _previewLibrary = _library;
+      _previewGames = context.read<CollectionsProvider>().previewRules(
+        _library,
+        definition,
+      );
+      _previewBoundaryTimer?.cancel();
+      final boundary = context.read<CollectionsProvider>().previewBoundary(
+        _library,
+        definition,
+      );
+      if (boundary != null) {
+        final delay = boundary.difference(DateTime.now());
+        _previewBoundaryTimer = Timer(
+          delay.isNegative ? Duration.zero : delay,
+          () {
+            if (mounted) setState(() => _previewLibrary = null);
+          },
+        );
+      }
+    }
+    final matches = _previewGames;
     if (_previewGames.isEmpty) {
       _previewFocused = false;
       _previewSelected = 0;

@@ -135,7 +135,7 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final provider = context.read<CollectionsProvider>();
-      provider.load();
+      if (!provider.hasLoaded) provider.load();
     });
   }
 
@@ -624,7 +624,7 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
   /// card style between box art and fanart repaints rather than showing the
   /// other style's covers.
   String _previewKey(CollectionModel collection, String imageType) =>
-      '${collection.id}|$imageType|${collection.gameCount}|${collection.rules?.encode()}';
+      '${collection.id}|${context.read<CollectionsProvider>().collectionRevision(collection.id)}|$imageType|${collection.gameCount}|${collection.rules?.encode()}';
 
   /// The mosaic covers for [collection], resolving them in the background the
   /// first time they are asked for.

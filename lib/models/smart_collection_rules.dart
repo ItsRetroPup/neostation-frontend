@@ -40,6 +40,7 @@ List<SmartOperator> operatorsFor(SmartField field) => switch (field) {
     SmartOperator.isEqual,
     SmartOperator.isNot,
     SmartOperator.contains,
+    SmartOperator.notContains,
   ],
   SmartField.year => [
     SmartOperator.isEqual,

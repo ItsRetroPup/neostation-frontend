@@ -1,3 +1,4 @@
+import '../../utils/game_rating.dart';
 import '../../models/database_game_model.dart';
 import '../../models/smart_collection_rules.dart';
 
@@ -34,7 +35,7 @@ class SmartCollectionEvaluator {
     }
     if (rule.field == SmartField.lastPlayed) {
       final last = game.lastPlayed;
-      if (last == null) return false;
+      if (last == null) return rule.operator == SmartOperator.notWithinDays;
       final cutoff = now.subtract(Duration(days: (rule.value as num).toInt()));
       final within = !last.isBefore(cutoff) && !last.isAfter(now);
       return rule.operator == SmartOperator.withinDays
@@ -42,12 +43,7 @@ class SmartCollectionEvaluator {
           : last.isBefore(cutoff);
     }
     final text = switch (rule.field) {
-      SmartField.title =>
-        (game.screenscraperRealName?.trim().isNotEmpty ?? false)
-            ? game.screenscraperRealName
-            : (game.realName?.trim().isNotEmpty ?? false)
-            ? game.realName
-            : game.filename,
+      SmartField.title => game.displayTitle,
       SmartField.genre => game.genre,
       SmartField.developer => game.developer,
       SmartField.publisher => game.publisher,
@@ -59,7 +55,10 @@ class SmartCollectionEvaluator {
       SmartField.developer,
       SmartField.publisher,
     ].contains(rule.field)) {
-      if (text == null || text.trim().isEmpty) return false;
+      if (text == null || text.trim().isEmpty) {
+        return rule.operator == SmartOperator.isNot ||
+            rule.operator == SmartOperator.notContains;
+      }
       final actual = _normalizeText(text);
       final expected = _normalizeText(rule.value as String);
       return switch (rule.operator) {
@@ -80,7 +79,9 @@ class SmartCollectionEvaluator {
             '',
       ),
       SmartField.rating =>
-        game.rating != null && game.rating! > 0 ? game.rating! / 2 : null,
+        game.rating != null && game.rating! > 0
+            ? gameRatingScore(game.rating!)
+            : null,
       SmartField.playTime => (game.playTime ?? 0) / 60,
       _ => null,
     };

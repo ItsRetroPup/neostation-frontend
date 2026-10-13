@@ -88,6 +88,27 @@ void main() {
     return ctx;
   }
 
+  testWidgets('picker heading labels the choices without becoming selectable', (
+    tester,
+  ) async {
+    useViewport(tester, const Size(800, 450));
+    final ctx = await pumpHost(tester);
+    final result = showAnchoredContextMenu(
+      context: ctx,
+      title: 'Favourite',
+      items: const [
+        ContextMenuItem(id: 'yes', label: 'Yes'),
+        ContextMenuItem(id: 'no', label: 'No'),
+      ],
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Favourite'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Yes'));
+    await tester.pumpAndSettle();
+    expect(await result, 'yes');
+  });
+
   testWidgets(
     'standalone collection chooser is centred with a visible border',
     (tester) async {

@@ -213,12 +213,33 @@ void main() {
     );
     expect(
       matches(game(), SmartField.genre, SmartOperator.isNot, 'RPG'),
-      isFalse,
+      isTrue,
     );
     expect(
       matches(game(), SmartField.publisher, SmartOperator.contains, 'Nintendo'),
       isFalse,
     );
+  });
+
+  test('negative text rules include missing and blank metadata', () {
+    for (final field in [
+      SmartField.genre,
+      SmartField.developer,
+      SmartField.publisher,
+    ]) {
+      for (final op in [SmartOperator.isNot, SmartOperator.notContains]) {
+        expect(matches(game(), field, op, 'Nintendo'), isTrue);
+        expect(
+          matches(
+            game(genre: ' ', developer: ' ', publisher: ' '),
+            field,
+            op,
+            'Nintendo',
+          ),
+          isTrue,
+        );
+      }
+    }
   });
 
   test('numeric operators include bounds and use display rating scale', () {
@@ -336,7 +357,7 @@ void main() {
   });
 
   test(
-    'rolling days use exact elapsed boundaries and exclude missing timestamps',
+    'rolling days use exact elapsed boundaries and negative rules include never played',
     () {
       final cutoff = now.subtract(const Duration(days: 7));
       expect(
@@ -379,7 +400,10 @@ void main() {
         SmartOperator.withinDays,
         SmartOperator.notWithinDays,
       ]) {
-        expect(matches(game(), SmartField.lastPlayed, op, 7), isFalse);
+        expect(
+          matches(game(), SmartField.lastPlayed, op, 7),
+          op == SmartOperator.notWithinDays,
+        );
       }
       final definition = SmartCollectionRules(
         rules: [

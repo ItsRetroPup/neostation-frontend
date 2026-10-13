@@ -395,9 +395,13 @@ class _SystemGamesListState extends State<SystemGamesList> {
   int _lastCollectionRevision = 0;
   bool _pendingCollectionRefresh = false;
 
+  int get _currentCollectionRevision => _collectionsProvider.collectionRevision(
+    SystemFolderNames.collectionIdOf(widget.system.folderName) ?? '',
+  );
+
   void _onCollectionsUpdated() {
-    if (_lastCollectionRevision == _collectionsProvider.revision) return;
-    _lastCollectionRevision = _collectionsProvider.revision;
+    if (_lastCollectionRevision == _currentCollectionRevision) return;
+    _lastCollectionRevision = _currentCollectionRevision;
     if (SystemFolderNames.isCollection(widget.system.folderName) &&
         mounted &&
         !_isNavigatingBack) {
@@ -425,7 +429,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
 
     // Attach persistent listeners to global providers.
     _collectionsProvider = context.read<CollectionsProvider>();
-    _lastCollectionRevision = _collectionsProvider.revision;
+    _lastCollectionRevision = _currentCollectionRevision;
     _collectionsProvider.addListener(_onCollectionsUpdated);
     if (SystemFolderNames.isCollection(widget.system.folderName)) {
       _collectionsProvider.load();
