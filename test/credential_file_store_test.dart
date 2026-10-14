@@ -3,9 +3,14 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neostation/services/credential_file_store.dart';
+import 'package:neostation/services/credential_store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'fake_credential_backends.dart';
 import 'package:path/path.dart' as path;
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Directory directory;
   late CredentialFileStore store;
 
@@ -15,6 +20,7 @@ void main() {
   });
 
   tearDown(() async {
+    CredentialStore.debugReset();
     if (await directory.exists()) {
       await directory.delete(recursive: true);
     }
@@ -32,6 +38,33 @@ void main() {
       'super-secret',
     );
   });
+
+  test(
+    'SteamOS migration survives a new session with the same encryption key',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final secure = MemoryBackend()
+        ..values['romm_password'] = 'legacy-password';
+      CredentialStore.debugUseBackends(
+        secure: secure,
+        file: store,
+        preferEncryptedFile: true,
+      );
+      expect(await CredentialStore.read('romm_password'), 'legacy-password');
+      final keyFile = File(path.join(directory.path, 'credentials.key'));
+      final key = await keyFile.readAsBytes();
+      expect(secure.values, isEmpty);
+      CredentialStore.debugUseBackends(
+        secure: BrokenBackend(),
+        file: CredentialFileStore(directory.path),
+        preferEncryptedFile: true,
+      );
+      expect(await CredentialStore.read('romm_password'), 'legacy-password');
+      await CredentialStore.write('auth_token', 'new-token');
+      expect(await keyFile.readAsBytes(), key);
+      expect(await store.read('romm_password'), 'legacy-password');
+    },
+  );
 
   test('returns null for a key that was never stored', () async {
     expect(await store.read('auth_token'), isNull);
@@ -58,57 +91,48 @@ void main() {
     expect(onDisk.contains('ra_api_key'), isFalse);
   });
 
-  test('reads as empty when the key material no longer matches', () async {
+  test('preserves encrypted data and key when decryption fails', () async {
     await store.write('ra_api_key', 'super-secret');
+    final keyFile = File(path.join(directory.path, 'credentials.key'));
+    await keyFile.writeAsBytes(List.filled(32, 0));
+    final encrypted = await credentialFile().readAsString();
+    final key = await keyFile.readAsBytes();
 
-    // Losing the device key is what a reinstalled OS looks like. The user has
-    // to sign in again, but the app must not get stuck on an undecryptable
-    // file: reporting "nothing stored" lets the next write replace it.
-    await File(path.join(directory.path, 'credentials.key')).delete();
-
-    expect(
-      await CredentialFileStore(directory.path).read('ra_api_key'),
-      isNull,
-    );
-
-    await store.write('ra_api_key', 'new-secret');
-    expect(
-      await CredentialFileStore(directory.path).read('ra_api_key'),
-      'new-secret',
-    );
+    await expectLater(store.read('ra_api_key'), throwsA(anything));
+    await expectLater(store.write('auth_token', 'new'), throwsA(anything));
+    expect(await credentialFile().readAsString(), encrypted);
+    expect(await keyFile.readAsBytes(), key);
   });
 
-  test('rejects a tampered payload rather than trusting it', () async {
+  test('does not regenerate a missing key for existing credentials', () async {
     await store.write('ra_api_key', 'super-secret');
+    final keyFile = File(path.join(directory.path, 'credentials.key'));
+    await keyFile.delete();
+    final encrypted = await credentialFile().readAsString();
+    await expectLater(store.write('auth_token', 'new'), throwsA(anything));
+    expect(await keyFile.exists(), isFalse);
+    expect(await credentialFile().readAsString(), encrypted);
+  });
 
+  test('preserves a future credential format on write', () async {
+    await credentialFile().writeAsString(jsonEncode({'v': 99}));
+    await expectLater(store.write('auth_token', 'new'), throwsA(anything));
+    expect(await credentialFile().readAsString(), jsonEncode({'v': 99}));
+  });
+
+  test('rejects a tampered payload and preserves it on write', () async {
+    await store.write('ra_api_key', 'super-secret');
     final envelope =
         jsonDecode(await credentialFile().readAsString())
             as Map<String, dynamic>;
     final payload = base64Decode(envelope['data'] as String);
     payload[0] ^= 0xFF;
     envelope['data'] = base64Encode(payload);
-    await credentialFile().writeAsString(jsonEncode(envelope));
-
-    // AES-GCM authentication fails, so the entry is gone rather than forged.
-    expect(
-      await CredentialFileStore(directory.path).read('ra_api_key'),
-      isNull,
-    );
-  });
-
-  test('ignores a credential file from a future format version', () async {
-    await store.write('ra_api_key', 'super-secret');
-
-    final envelope =
-        jsonDecode(await credentialFile().readAsString())
-            as Map<String, dynamic>;
-    envelope['v'] = 99;
-    await credentialFile().writeAsString(jsonEncode(envelope));
-
-    expect(
-      await CredentialFileStore(directory.path).read('ra_api_key'),
-      isNull,
-    );
+    final tampered = jsonEncode(envelope);
+    await credentialFile().writeAsString(tampered);
+    await expectLater(store.read('ra_api_key'), throwsA(anything));
+    await expectLater(store.write('auth_token', 'new'), throwsA(anything));
+    expect(await credentialFile().readAsString(), tampered);
   });
 
   test('restricts the credential files to the owner', () async {

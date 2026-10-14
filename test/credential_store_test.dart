@@ -127,6 +127,96 @@ void main() {
     },
   );
 
+  group('SteamOS file-first storage', () {
+    test(
+      'survives switching from a working to an unavailable keyring',
+      () async {
+        final secure = _MemoryBackend();
+        final file = _MemoryBackend();
+        CredentialStore.debugUseBackends(
+          secure: secure,
+          file: file,
+          preferEncryptedFile: true,
+        );
+        expect(
+          await CredentialStore.write('token', 'fresh'),
+          CredentialWriteOutcome.encryptedFile,
+        );
+        expect(secure.values, isEmpty);
+        // Reset drops all process state, modelling a restart in Gaming Mode.
+        CredentialStore.debugUseBackends(
+          secure: _BrokenBackend(),
+          file: file,
+          preferEncryptedFile: true,
+        );
+        expect(await CredentialStore.read('token'), 'fresh');
+      },
+    );
+
+    test('migrates a keyring credential before removing the source', () async {
+      final secure = _MemoryBackend()..values['token'] = 'legacy';
+      final file = _MemoryBackend();
+      CredentialStore.debugUseBackends(
+        secure: secure,
+        file: file,
+        preferEncryptedFile: true,
+      );
+      expect(await CredentialStore.read('token'), 'legacy');
+      expect(file.values['token'], 'legacy');
+      expect(secure.values, isEmpty);
+    });
+
+    test('an existing file takes precedence over stale keyring data', () async {
+      final secure = _MemoryBackend()..values['token'] = 'stale';
+      final file = _MemoryBackend()..values['token'] = 'fresh';
+      CredentialStore.debugUseBackends(
+        secure: secure,
+        file: file,
+        preferEncryptedFile: true,
+      );
+      expect(await CredentialStore.read('token'), 'fresh');
+      expect(file.values['token'], 'fresh');
+    });
+
+    test('does not migrate when the encrypted file cannot be read', () async {
+      final secure = _MemoryBackend()..values['token'] = 'legacy';
+      SharedPreferences.setMockInitialValues({'token': 'preference'});
+      CredentialStore.debugUseBackends(
+        secure: secure,
+        file: _BrokenBackend(),
+        preferEncryptedFile: true,
+      );
+      await expectLater(
+        CredentialStore.read('token'),
+        throwsA(isA<CredentialStoreException>()),
+      );
+      expect(secure.values['token'], 'legacy');
+      expect(
+        (await SharedPreferences.getInstance()).getString('token'),
+        'preference',
+      );
+    });
+
+    test(
+      'preserves sources when the file cannot persist a migration',
+      () async {
+        final secure = _MemoryBackend()..values['token'] = 'legacy';
+        SharedPreferences.setMockInitialValues({'token': 'legacy'});
+        CredentialStore.debugUseBackends(
+          secure: secure,
+          file: _ReadOnlyBackend(),
+          preferEncryptedFile: true,
+        );
+        expect(await CredentialStore.read('token'), 'legacy');
+        expect(secure.values['token'], 'legacy');
+        expect(
+          (await SharedPreferences.getInstance()).getString('token'),
+          'legacy',
+        );
+      },
+    );
+  });
+
   test('delete clears every store, including a failing one', () async {
     final file = _MemoryBackend()..values['token'] = 'abc123';
     CredentialStore.debugUseBackends(secure: _BrokenBackend(), file: file);
@@ -137,4 +227,11 @@ void main() {
     // The keyring throwing must not stop the other stores being cleared.
     expect(file.values, isEmpty);
   });
+}
+
+class _ReadOnlyBackend extends _MemoryBackend {
+  @override
+  Future<void> write(String key, String value) async {
+    throw StateError('Read-only file');
+  }
 }

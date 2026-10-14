@@ -23,8 +23,8 @@ import 'logger_service.dart';
 /// of a backup, a synced folder, or a user-data directory copied to another
 /// machine — not from someone who already has the user's account. That is still
 /// strictly better than the plaintext SharedPreferences fallback the macOS
-/// build has always used, and it is only ever reached once the real keychain
-/// has failed.
+/// build has always used. SteamOS uses this store by default; other desktops
+/// use it when the real keychain fails.
 class CredentialFileStore implements CredentialBackend {
   CredentialFileStore(this.directory);
 
@@ -87,8 +87,7 @@ class CredentialFileStore implements CredentialBackend {
 
     final envelope = jsonDecode(await file.readAsString());
     if (envelope is! Map || envelope['v'] != _formatVersion) {
-      _log.w('CredentialFileStore: unrecognised credential file, ignoring it');
-      return <String, dynamic>{};
+      throw const FormatException('Unrecognised credential file format');
     }
 
     final salt = base64Decode(envelope['salt'] as String);
@@ -102,17 +101,13 @@ class CredentialFileStore implements CredentialBackend {
         nonce: nonce,
       ).process(payload);
       final decoded = jsonDecode(utf8.decode(plaintext));
-      return decoded is Map
-          ? Map<String, dynamic>.from(decoded)
-          : <String, dynamic>{};
+      if (decoded is! Map) {
+        throw const FormatException('Invalid credential payload');
+      }
+      return Map<String, dynamic>.from(decoded);
     } catch (e) {
-      // Undecryptable is indistinguishable from tampered, and both mean the
-      // key material this file was written with is gone (a reinstalled OS
-      // changes /etc/machine-id). Report "nothing stored" rather than an
-      // unreadable store: the user signs in again and the next write replaces
-      // the file, whereas a throw here would retry forever with no way out.
       _log.w('CredentialFileStore: credential file could not be decrypted: $e');
-      return <String, dynamic>{};
+      rethrow;
     }
   }
 
@@ -184,9 +179,12 @@ class CredentialFileStore implements CredentialBackend {
     if (await file.exists()) {
       final existing = await file.readAsBytes();
       if (existing.length == _deviceKeyLength) return existing;
-      _log.w('CredentialFileStore: device key is malformed, regenerating it');
+      throw const FormatException('Credential device key is malformed');
     }
 
+    if (await _file.exists()) {
+      throw StateError('Device key missing for existing encrypted credentials');
+    }
     final secret = _randomBytes(_deviceKeyLength);
     await Directory(directory).create(recursive: true);
     await file.writeAsBytes(secret, flush: true);

@@ -39,7 +39,8 @@ class CredentialStoreException implements Exception {
 
 /// The single place the app keeps user credentials.
 ///
-/// Every platform prefers its own secure storage. What differs is what happens
+/// SteamOS prefers the encrypted file in both desktop and gaming sessions.
+/// Other platforms prefer their own secure storage. What differs is what happens
 /// when that fails, which on Linux is routine rather than exceptional: SteamOS
 /// has no Secret Service at all, so libsecret cannot store anything and both
 /// the NeoSync token and the RetroAchievements key vanished on every restart
@@ -75,6 +76,30 @@ class CredentialStore {
   static CredentialBackend? _fileOverride;
   static bool _fileOverrideSet = false;
   static Future<CredentialBackend?>? _fileStore;
+  static bool? _preferFileOverride;
+
+  // OS identity is independent of Desktop/Game Mode and its D-Bus session.
+  static final bool _steamOS = Platform.isLinux && _detectSteamOS();
+  static bool get _preferFile => _preferFileOverride ?? _steamOS;
+
+  static bool _detectSteamOS() {
+    try {
+      return File('/etc/os-release').readAsLinesSync().any((line) {
+        final parts = line.split('=');
+        if (parts.length != 2 ||
+            (parts.first != 'ID' && parts.first != 'ID_LIKE')) {
+          return false;
+        }
+        return parts.last
+            .replaceAll('"', '')
+            .replaceAll("'", '')
+            .split(' ')
+            .contains('steamos');
+      });
+    } catch (_) {
+      return false;
+    }
+  }
 
   static CredentialBackend get _secure =>
       _secureOverride ?? const _SecureStorageBackend(_secureStorage);
@@ -85,7 +110,9 @@ class CredentialStore {
   static void debugUseBackends({
     CredentialBackend? secure,
     CredentialBackend? file,
+    bool preferEncryptedFile = false,
   }) {
+    _preferFileOverride = preferEncryptedFile;
     _secureOverride = secure;
     _fileOverride = file;
     _fileOverrideSet = true;
@@ -103,6 +130,7 @@ class CredentialStore {
 
   @visibleForTesting
   static void debugReset() {
+    _preferFileOverride = null;
     _secureOverride = null;
     _fileOverride = null;
     _fileOverrideSet = false;
@@ -119,6 +147,8 @@ class CredentialStore {
     // freshest value by definition.
     final session = _session[key];
     if (session != null) return session;
+
+    if (_preferFile) return _readFileFirst(key);
 
     var secureFailed = false;
     var fallbackFailed = false;
@@ -166,10 +196,60 @@ class CredentialStore {
     return null;
   }
 
+  /// Existing encrypted entries win over a possibly stale desktop keyring.
+  /// Only migrate after a successful file read; failed decryption must never
+  /// cause a legacy value to overwrite the encrypted store.
+  static Future<String?> _readFileFirst(String key) async {
+    final file = await _fileBackend();
+    if (file == null) {
+      throw CredentialStoreException('Encrypted credential store unavailable');
+    }
+    try {
+      final value = await file.read(key);
+      if (value != null && value.isNotEmpty) return value;
+    } catch (_) {
+      throw CredentialStoreException('Encrypted credential store unreadable');
+    }
+
+    String? legacy;
+    try {
+      legacy = await _secure.read(key);
+    } catch (e) {
+      _log.w('CredentialStore: legacy keyring unreadable for "$key": $e');
+    }
+    legacy ??= await _readLegacyPreference(key);
+    if (legacy == null || legacy.isEmpty) return null;
+
+    // Keep the original keyring/preference until persistence has succeeded.
+    // write() also retains the credential for this session if storage fails.
+    await write(key, legacy);
+    return legacy;
+  }
+
   /// Persists [value], reporting where it landed so the caller can warn the
   /// user when the credential will not survive a restart.
   static Future<CredentialWriteOutcome> write(String key, String value) async {
     _session.remove(key);
+
+    if (_preferFile) {
+      final file = await _fileBackend();
+      try {
+        if (file == null) throw StateError('Encrypted store unavailable');
+        await file.write(key, value);
+        await _clearLegacyPreference(key);
+        try {
+          await _secure.delete(key);
+        } catch (_) {
+          // The keyring may only be reachable in Desktop Mode. File reads
+          // take precedence, so a remaining legacy copy cannot supersede it.
+        }
+        return CredentialWriteOutcome.encryptedFile;
+      } catch (e) {
+        _log.e('CredentialStore: encrypted storage rejected "$key": $e');
+        _session[key] = value;
+        return CredentialWriteOutcome.sessionOnly;
+      }
+    }
 
     try {
       await _secure.write(key, value);

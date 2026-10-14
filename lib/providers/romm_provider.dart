@@ -443,7 +443,7 @@ class RommProvider extends ChangeNotifier {
   // ── Lifecycle / connection ──────────────────────────────────────────────────
 
   /// Loads any persisted credentials/tokens and configures the service.
-  /// Does not hit the network; status becomes [connected] when a config exists.
+  /// Verifies the saved credential before reporting a connected account.
   Future<void> initialize() async {
     try {
       final config = await RommRepository.getConfig();
@@ -468,12 +468,14 @@ class RommProvider extends ChangeNotifier {
       // first browse call doesn't re-write an identical row. An API-key
       // connection has no tokens at all, so there is never anything to persist.
       _lastPersistedAccessToken = config['access_token'] as String?;
+      await _service.verifyStoredConnection();
       _status = RommConnectionStatus.connected;
       notifyListeners();
       _flushQueuedPlaytime();
     } catch (e) {
       _log.e('RomM initialize failed: $e');
-      _status = RommConnectionStatus.disconnected;
+      _status = RommConnectionStatus.error;
+      _lastError = e is RommException ? e.message : 'Connection failed: $e';
       notifyListeners();
     }
   }
@@ -528,7 +530,7 @@ class RommProvider extends ChangeNotifier {
       apiKey: apiKey,
     );
     try {
-      await _service.authenticate();
+      await _service.verifyConnection();
     } on RommException catch (e) {
       _status = RommConnectionStatus.error;
       _lastError = e.message;

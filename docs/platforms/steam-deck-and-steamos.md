@@ -22,6 +22,23 @@ In Desktop Mode:
 
 Outside Steam, the Deck may use lizard mode: it presents controls as keyboard and mouse input. This can leave a mouse cursor visible, make A/B behave as Enter/Escape, and leave the bumpers without input. Launching through Steam gives NeoStation a virtual gamepad instead.
 
+## Saved Credentials
+
+On SteamOS, NeoStation uses its encrypted credential file in both Desktop Mode
+and Gaming Mode, without requiring GNOME Keyring. The file and its installation
+key stay together in the configured user-data directory (by default,
+`~/.neostation/user-data` for the AppImage). Use the same user-data directory in
+both modes.
+
+Existing keyring credentials migrate when they are readable, usually in Desktop
+Mode. The original is removed only after the encrypted file is saved successfully.
+If a keyring-only credential is unavailable in Gaming Mode, launch once in Desktop
+Mode to migrate it. Unreadable encrypted files and their keys are preserved.
+
+RomM verifies authentication before reporting a successful connection, including
+when restoring a saved account. A failed check leaves the saved configuration
+available for retry.
+
 ## Related Pages
 
 - [Getting Started](/getting-started/getting-started/)
