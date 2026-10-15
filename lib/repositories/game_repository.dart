@@ -5,6 +5,7 @@ import '../models/database_game_model.dart';
 import '../models/romm_link_row.dart';
 import '../data/datasources/sqlite_database_service.dart';
 import '../data/datasources/sqlite_service.dart';
+export '../data/datasources/sqlite_service.dart' show RuleLibraryRows;
 import '../providers/file_provider.dart';
 import '../services/saf_directory_service.dart';
 
@@ -226,6 +227,9 @@ class GameRepository {
         'user_roms',
         'user_screenscraper_metadata',
         'app_systems',
+        // Naming settings decide the title a rule matches against.
+        'user_system_settings',
+        'app_system_extensions',
       ]) {
         for (final operation in ['INSERT', 'UPDATE', 'DELETE']) {
           await db.execute(
@@ -245,8 +249,14 @@ class GameRepository {
   static Future<List<DatabaseGameModel>> getAllGames() =>
       SqliteService.getAllGames();
 
-  static Future<List<DatabaseGameModel>> getAllGamesInBackground() =>
-      SqliteService.getAllGamesInBackground();
+  /// Runs [compute] over the slim smart-rule rows off the UI isolate.
+  static Future<T> readRuleLibrary<T>(
+    T Function(RuleLibraryRows rows) compute,
+  ) => SqliteService.readRuleLibrary(compute);
+
+  static Future<List<DatabaseGameModel>> getGamesByRomPaths(
+    Iterable<String> romPaths,
+  ) => SqliteService.getGamesByRomPaths(romPaths);
 
   static Future<List<DatabaseGameModel>> getFavoriteGames() =>
       SqliteService.getFavoriteGames();

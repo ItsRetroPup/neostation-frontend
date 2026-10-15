@@ -37,9 +37,6 @@ mixin AppLocale {
   static const String smartDone = 'smartDone';
   static const String smartLower = 'smartLower';
   static const String smartUpper = 'smartUpper';
-  static const String smartSystem = 'smartSystem';
-  static const String smartTitle = 'smartTitle';
-  static const String smartYear = 'smartYear';
   static const String smartRating = 'smartRating';
   static const String smartPlayed = 'smartPlayed';
   static const String smartIs = 'smartIs';
@@ -54,6 +51,9 @@ mixin AppLocale {
   static const String smartWithinDays = 'smartWithinDays';
   static const String smartNotWithinDays = 'smartNotWithinDays';
   static const String smartDays = 'smartDays';
+  static const String smartDaysOne = 'smartDaysOne';
+  static const String smartDaysFew = 'smartDaysFew';
+  static const String collectionLoadError = 'collectionLoadError';
   static const String smartRulesOnly = 'smartRulesOnly';
   static const String customSounds = 'customSounds';
   static const String customSoundsSubtitle = 'customSoundsSubtitle';

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
-import '../services/collections/smart_collection_evaluator.dart';
 import '../models/smart_collection_rules.dart';
 import '../models/database_game_model.dart';
 import '../services/collections/smart_collections_service.dart';
@@ -15,9 +14,11 @@ import '../services/collections/collections_service.dart';
 /// Two consumers depend on being notified: the systems carousel/grid (the
 /// Collections card's game count) and the collections browser screen.
 ///
-/// Every mutation writes through [CollectionsService] and then re-reads the
-/// list, so the game counts stay honest without a second query per collection —
-/// the listing query already computes them in one `GROUP BY`.
+/// Every mutation writes through [CollectionsService] and then re-reads a
+/// [CollectionsSnapshot]: manual counts come from the stored memberships and
+/// smart counts from evaluating each collection's rules off the UI isolate.
+/// The evaluated paths are kept so an open smart collection loads only its
+/// matched rows instead of re-evaluating the library.
 ///
 /// Nothing here is static. `subDisplay()` runs a second Flutter engine that
 /// shares the SQLite file and nothing in memory, so a process-wide cache would
@@ -41,18 +42,27 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   static const _busyRefreshInterval = Duration(seconds: 10);
 
-  final _libraryCache = SmartCollectionLibraryCache();
+  final _snapshotCache = SmartCollectionSnapshotCache();
   final Future<CollectionsSnapshot> Function()? _snapshotReader;
   final Map<String, int> _collectionRevisions = {};
   Map<String, Set<String>> _collectionPaths = const {};
-  Map<String, String> _gameContent = const {};
+  Map<String, int> _gameHashes = const {};
   int collectionRevision(String id) => _collectionRevisions[id] ?? 0;
+
+  /// The evaluated matches of smart collection [id], or null when they are
+  /// not known yet (or [id] is manual), in which case the caller evaluates.
+  Set<String>? smartPathsFor(String id) {
+    final collection = byId(id);
+    if (!_hasLoaded || collection == null || !collection.isSmart) return null;
+    return _collectionPaths[id] ?? const {};
+  }
 
   final List<ChangeNotifier> _sources;
   final bool Function()? _isBusy;
   bool _wasBusy = false;
   Timer? _debounce;
   Timer? _boundaryTimer;
+  Timer? _retryTimer;
   bool _disposed = false;
   bool _pending = false;
   Future<void>? _loadFuture;
@@ -83,6 +93,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
     _disposed = true;
     _debounce?.cancel();
     _boundaryTimer?.cancel();
+    _retryTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     for (final source in _sources) {
       source.removeListener(_scheduleRefresh);
@@ -91,7 +102,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<bool> _readSnapshot() async {
-    final snapshot = await (_snapshotReader ?? _libraryCache.snapshot)();
+    final snapshot = await (_snapshotReader ?? _snapshotCache.snapshot)();
     if (_disposed) return false;
     var changed = false;
     for (final collection in snapshot.collections) {
@@ -99,7 +110,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
       final paths = snapshot.collectionPaths[collection.id] ?? const <String>{};
       final contentChanged =
           collection.isSmart &&
-          paths.any((path) => snapshot.gameContent[path] != _gameContent[path]);
+          paths.any((path) => snapshot.gameHashes[path] != _gameHashes[path]);
       if (old != collection ||
           contentChanged ||
           !setEquals(
@@ -137,7 +148,7 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
     _collections = snapshot.collections;
     _memberRomPaths = snapshot.memberPaths;
     _collectionPaths = snapshot.collectionPaths;
-    _gameContent = snapshot.gameContent;
+    _gameHashes = snapshot.gameHashes;
     _boundaryTimer?.cancel();
     if (snapshot.nextBoundary != null) {
       final delay = snapshot.nextBoundary!.difference(DateTime.now());
@@ -242,8 +253,15 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
         changed = await _readSnapshot() || changed;
       } while (_pending && !_disposed);
     } catch (error) {
-      // Preserve the last successful snapshot on transient database failure.
+      // Preserve the last successful snapshot on transient database failure
+      // (e.g. the busy timeout during a long write). A refresh queued behind
+      // this one, or a rolling-window boundary whose timer just fired, would
+      // otherwise be lost until some unrelated trigger, so try again later.
       debugPrint('Collection refresh failed: $error');
+      if (!_disposed && (_pending || _boundaryTimer != null)) {
+        _retryTimer?.cancel();
+        _retryTimer = Timer(_busyRefreshInterval, () => load());
+      }
     } finally {
       _loadFuture = null;
       _isLoading = false;
@@ -276,23 +294,26 @@ class CollectionsProvider extends ChangeNotifier with WidgetsBindingObserver {
     await _refresh();
   }
 
-  Future<List<DatabaseGameModel>> ruleLibrary() => _libraryCache.library();
+  /// The slim library the editor previews rules against.
+  Future<SmartRuleLibrary> ruleLibrary() => SmartCollectionsService.library();
 
   List<DatabaseGameModel> previewRules(
-    List<DatabaseGameModel> library,
+    SmartRuleLibrary library,
     SmartCollectionRules? rules,
   ) {
     if (rules == null) return [];
-    final evaluator = SmartCollectionEvaluator(DateTime.now());
-    return library.where((game) => evaluator.matches(game, rules)).toList();
+    final evaluator = library.evaluator(DateTime.now());
+    return library.games
+        .where((game) => evaluator.matches(game, rules))
+        .toList();
   }
 
   DateTime? previewBoundary(
-    List<DatabaseGameModel> library,
+    SmartRuleLibrary library,
     SmartCollectionRules? rules,
   ) => rules == null
       ? null
-      : SmartCollectionEvaluator(DateTime.now()).nextBoundary(library, [rules]);
+      : library.evaluator(DateTime.now()).nextBoundary(library.games, [rules]);
 
   /// Renames a collection and refreshes the list.
   Future<void> rename(String id, String name) async {

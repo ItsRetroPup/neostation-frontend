@@ -80,10 +80,6 @@ class CollectionRepository {
   static Future<List<String>> getCollectionIdsForRom(String romPath) =>
       SqliteService.getCollectionIdsForRom(romPath);
 
-  /// Returns every `rom_path` that belongs to at least one collection.
-  static Future<Set<String>> getCollectionMemberRomPaths() =>
-      SqliteService.getCollectionMemberRomPaths();
-
   static Future<Map<String, Set<String>>> getMemberPathsByCollection() async {
     final db = await SqliteService.getDatabase();
     final rows = await db.rawQuery(

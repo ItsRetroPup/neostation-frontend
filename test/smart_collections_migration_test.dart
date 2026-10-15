@@ -113,4 +113,28 @@ void main() {
       expect(collection['rules_json'], 'keep-rules');
     },
   );
+
+  test(
+    'v170 on a database without collections creates all three objects',
+    () async {
+      final db = sqlite3.openInMemory();
+      addTearDown(db.close);
+      db.execute('CREATE TABLE user_roms (rom_path TEXT PRIMARY KEY)');
+      await SqliteMigrations.migrateToVersion(db, 170);
+      final names = db
+          .select(
+            "SELECT name FROM sqlite_master WHERE name LIKE '%collection%'",
+          )
+          .map((r) => r['name'])
+          .toSet();
+      expect(
+        names,
+        containsAll([
+          'user_collections',
+          'user_collection_items',
+          'idx_collection_items_rom',
+        ]),
+      );
+    },
+  );
 }

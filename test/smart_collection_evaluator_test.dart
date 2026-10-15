@@ -553,4 +553,20 @@ void main() {
       expect(watch.elapsed, lessThan(const Duration(seconds: 5)));
     },
   );
+
+  test('text matching folds ligatures, widths, quotes and NFD scripts', () {
+    String fold(String text) => SmartCollectionEvaluator.normalizeText(text);
+    expect(fold('\u00C6on Flux'), fold('aeon flux'));
+    expect(fold('\u0152uvre'), fold('oeuvre'));
+    expect(fold('Stra\u00DFe'), fold('strasse'));
+    expect(fold('\uFF34\uFF25\uFF34\uFF32\uFF29\uFF33'), fold('tetris'));
+    expect(fold('Assassin\u2019s Creed'), fold("assassin's creed"));
+    // Decomposed (NFD) kana and Hangul, as macOS filenames store them.
+    expect(
+      fold('\u30C9\u30E9\u30B4\u30F3'),
+      fold('\u30C8\u3099\u30E9\u30B3\u3099\u30F3'),
+    );
+    expect(fold('\uD55C\uAE00'), fold('\u1112\u1161\u11AB\u1100\u1173\u11AF'));
+    expect(fold('Pok\u00E9mon'), fold('Poke\u0301mon'));
+  });
 }

@@ -20,14 +20,12 @@ class SystemsGridFooter extends CoreFooter {
   /// settings dialog directly; the hint points at the menu because that is
   /// what the button beside it does.
   final VoidCallback onOptions;
-  final String? enterLabel;
 
   const SystemsGridFooter({
     super.key,
     required this.system,
     required this.onEnter,
     required this.onOptions,
-    this.enterLabel,
   });
 
   @override
@@ -70,11 +68,9 @@ class SystemsGridFooter extends CoreFooter {
       SizedBox(width: 8.r),
       // Enter/Play button
       GamepadControl(
-        label:
-            enterLabel ??
-            (system.isGame
-                ? AppLocale.play.getString(context)
-                : AppLocale.enter.getString(context)),
+        label: system.isGame
+            ? AppLocale.play.getString(context)
+            : AppLocale.enter.getString(context),
         iconPath: 'assets/images/gamepad/Xbox_A_button.png',
         onTap: onEnter,
         textColor: theme.colorScheme.onTertiary,

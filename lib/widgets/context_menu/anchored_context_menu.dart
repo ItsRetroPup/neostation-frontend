@@ -412,14 +412,28 @@ class _AnchoredContextMenuState extends State<AnchoredContextMenu> {
     return true;
   }
 
+  /// Set once this level has asked to close. Its layer is only popped in
+  /// `dispose`, after the fade-out, so a second press inside that window
+  /// would otherwise pop the route underneath as well.
+  bool _closing = false;
+
+  void _pop([String? result]) {
+    if (_closing || !mounted) return;
+    _closing = true;
+    _gamepadNav.deactivate();
+    Navigator.of(context).pop(result);
+  }
+
   void _close() {
+    if (_closing) return;
     SfxService().playBackSound();
-    Navigator.of(context).pop();
+    _pop();
   }
 
   void _dismissAll() {
+    if (_closing) return;
     SfxService().playBackSound();
-    Navigator.of(context).pop(_dismissAllResult);
+    _pop(_dismissAllResult);
   }
 
   void _openSubmenuIfAny() {
@@ -429,6 +443,7 @@ class _AnchoredContextMenuState extends State<AnchoredContextMenu> {
   }
 
   void _activate() {
+    if (_closing) return;
     final item = widget.items[_selectedIndex];
     if (item.hasSubmenu) {
       _openSubmenu(_selectedIndex);
@@ -442,7 +457,7 @@ class _AnchoredContextMenuState extends State<AnchoredContextMenu> {
       return;
     }
     SfxService().playEnterSound();
-    Navigator.of(context).pop(item.id);
+    _pop(item.id);
   }
 
   /// Flips [item]'s checkbox and reports it, reverting if the write did not
@@ -509,9 +524,7 @@ class _AnchoredContextMenuState extends State<AnchoredContextMenu> {
 
     if (!mounted) return;
     setState(() => _submenuOpen = false);
-    if (result != null) {
-      Navigator.of(context).pop(result);
-    }
+    if (result != null) _pop(result);
   }
 
   /// Height the panel would occupy if nothing constrained it. Computed from the

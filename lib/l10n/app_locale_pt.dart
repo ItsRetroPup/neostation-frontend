@@ -9,11 +9,11 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.smartMatchAny: 'Cumprir qualquer regra',
   AppLocale.smartAddRule: 'Adicionar regra',
   AppLocale.smartChooseValue: 'Escolher um valor',
-  AppLocale.smartCustomValue: 'Introduzir um valor',
+  AppLocale.smartCustomValue: 'Digite um valor',
   AppLocale.smartMatches: '{count} jogos correspondentes',
   AppLocale.smartInvalidRules:
       'Não é possível ler estas regras. Edite-as para restaurar a coleção.',
-  AppLocale.smartInvalidValue: 'Introduza um valor válido para esta regra.',
+  AppLocale.smartInvalidValue: 'Digite um valor válido para esta regra.',
   AppLocale.smartNoMatches: 'Ainda nenhum jogo corresponde a estas regras.',
   AppLocale.smartPreviewError:
       'Não foi possível carregar a prévia. Tente novamente.',
@@ -22,9 +22,6 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.smartDone: 'Concluído',
   AppLocale.smartLower: 'Mínimo',
   AppLocale.smartUpper: 'Máximo',
-  AppLocale.smartSystem: 'Sistema',
-  AppLocale.smartTitle: 'Título',
-  AppLocale.smartYear: 'Ano de lançamento',
   AppLocale.smartRating: 'Avaliação (0–10)',
   AppLocale.smartPlayed: 'Jogado',
   AppLocale.smartIs: 'É',
@@ -39,6 +36,10 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.smartWithinDays: 'Nos últimos',
   AppLocale.smartNotWithinDays: 'Não nos últimos',
   AppLocale.smartDays: '{count} dias',
+  AppLocale.smartDaysOne: '{count} dia',
+  AppLocale.smartDaysFew: '{count} dias',
+  AppLocale.collectionLoadError:
+      'Não foi possível carregar os jogos desta coleção.',
   AppLocale.smartRulesOnly:
       'Os jogos são incluídos automaticamente segundo estas regras.',
   AppLocale.customSounds: "Sons personalizados",

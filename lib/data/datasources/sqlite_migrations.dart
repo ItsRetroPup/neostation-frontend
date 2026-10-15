@@ -7210,7 +7210,9 @@ class SqliteMigrations {
     // Test devices on the smart collections branch already ran its former
     // v163 and therefore skipped upstream's RomM migration at that version.
     await _migrateToVersion163(db);
-    db.execute(createUserCollectionsTableSql);
+    // All three collection objects, not just the table: a database that
+    // skipped v139 would otherwise lack the items table and its index.
+    await _migrateToVersion139(db);
     final columns = db
         .select('PRAGMA table_info(user_collections)')
         .map((row) => row['name'].toString())

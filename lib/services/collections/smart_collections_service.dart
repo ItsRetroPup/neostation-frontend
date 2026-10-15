@@ -1,11 +1,9 @@
-import 'dart:convert';
-import 'dart:isolate';
-import 'package:flutter/foundation.dart';
 import '../../models/collection_model.dart';
 import '../../models/database_game_model.dart';
 import '../../models/smart_collection_rules.dart';
 import '../../repositories/collection_repository.dart';
 import '../../repositories/game_repository.dart';
+import '../game/game_list_service.dart';
 import 'smart_collection_evaluator.dart';
 
 class CollectionsSnapshot {
@@ -14,7 +12,13 @@ class CollectionsSnapshot {
   final DateTime? nextBoundary;
   final Map<String, Set<String>> collectionPaths;
   final Set<String> manualPaths;
-  final Map<String, String> gameContent;
+
+  /// Per smart-matched game, a hash of the fields a rule or a list row shows,
+  /// so an open collection refreshes when a member changes in place.
+  final Map<String, int> gameHashes;
+
+  /// Library revision the smart results were evaluated at; null when there
+  /// are no smart collections.
   final Object? libraryRevision;
   const CollectionsSnapshot(
     this.collections,
@@ -22,35 +26,84 @@ class CollectionsSnapshot {
     this.nextBoundary, [
     this.collectionPaths = const {},
     this.manualPaths = const {},
-    this.gameContent = const {},
+    this.gameHashes = const {},
     this.libraryRevision,
   ]);
 }
 
+/// The eligible slim library, with each game's displayed title by `rom_path`.
+class SmartRuleLibrary {
+  final List<DatabaseGameModel> games;
+  final Map<String, String> titles;
+  const SmartRuleLibrary(this.games, [this.titles = const {}]);
+
+  String titleOf(DatabaseGameModel game) =>
+      titles[game.romPath] ?? game.displayTitle;
+
+  SmartCollectionEvaluator evaluator(DateTime now) =>
+      SmartCollectionEvaluator(now, titleOf: titleOf);
+}
+
+typedef _Evaluation = ({
+  Map<String, Set<String>> paths,
+  DateTime? nextBoundary,
+  Map<String, int> hashes,
+});
+
 /// Stateless reads: separate Flutter engines always derive from persisted data.
 class SmartCollectionsService {
-  static Future<List<DatabaseGameModel>> library() async =>
-      (await GameRepository.getAllGamesInBackground())
-          .where(SmartCollectionEvaluator.isEligible)
-          .toList();
+  /// The rule library, read and shaped off the UI isolate.
+  static Future<SmartRuleLibrary> library() =>
+      GameRepository.readRuleLibrary(_buildLibrary);
+
+  static SmartRuleLibrary _buildLibrary(RuleLibraryRows rows) {
+    final games = <DatabaseGameModel>[];
+    final titles = <String, String>{};
+    for (final row in rows.games) {
+      final game = DatabaseGameModel.fromJson(row);
+      if (!SmartCollectionEvaluator.isEligible(game)) continue;
+      games.add(game);
+      final system = game.appSystemId ?? '';
+      titles[game.romPath] = GameListService.listDisplayName(
+        game,
+        rows.settings[system] ?? const {},
+        rows.extensions[system] ?? const {},
+      );
+    }
+    return SmartRuleLibrary(games, titles);
+  }
 
   static Future<List<DatabaseGameModel>> preview(
     SmartCollectionRules rules,
   ) async {
-    final games = await library();
-    final evaluator = SmartCollectionEvaluator(DateTime.now());
-    return games.where((g) => evaluator.matches(g, rules)).toList();
+    final library = await SmartCollectionsService.library();
+    final evaluator = library.evaluator(DateTime.now());
+    return library.games.where((g) => evaluator.matches(g, rules)).toList();
   }
 
-  static Future<List<DatabaseGameModel>> gamesFor(String id) async {
+  /// Games of collection [id]. For a smart collection, [smartPaths] are the
+  /// matches the provider already evaluated; without them the rules are
+  /// evaluated off the UI isolate. Either way only matched rows are read in
+  /// full.
+  static Future<List<DatabaseGameModel>> gamesFor(
+    String id, {
+    Set<String>? smartPaths,
+  }) async {
     final row = await CollectionRepository.getCollectionById(id);
     if (row == null) return [];
     final collection = CollectionModel.fromJson(row);
     if (!collection.isSmart) {
       return CollectionRepository.getGamesInCollection(id);
     }
-    if (collection.rules == null) return [];
-    final games = await preview(collection.rules!);
+    final rules = collection.rules;
+    if (rules == null) return [];
+    final paths =
+        smartPaths ??
+        (await _evaluate([collection], DateTime.now())).paths[id] ??
+        const <String>{};
+    final games = (await GameRepository.getGamesByRomPaths(
+      paths,
+    )).where(SmartCollectionEvaluator.isEligible).toList();
     games.sort((a, b) {
       if (a.isFavorite != b.isFavorite) return a.isFavorite ? -1 : 1;
       return a.displayTitle.toLowerCase().compareTo(
@@ -60,11 +113,11 @@ class SmartCollectionsService {
     return games;
   }
 
+  /// Reads collections and evaluates smart rules. When [previous] was taken
+  /// at the same library revision with the same definitions, its smart
+  /// results are reused and only manual memberships are re-read.
   static Future<CollectionsSnapshot> snapshot({
-    Future<List<DatabaseGameModel>> Function()? readLibrary,
     CollectionsSnapshot? previous,
-    bool libraryUnchanged = false,
-    Object? libraryRevision,
   }) async {
     final collections = (await CollectionRepository.getCollections())
         .map(CollectionModel.fromJson)
@@ -75,32 +128,6 @@ class SmartCollectionsService {
         collection.id: storedPaths[collection.id] ?? <String>{},
     };
     final members = manualByCollection.values.expand((paths) => paths).toSet();
-    if (previous != null &&
-        libraryUnchanged &&
-        (previous.nextBoundary == null ||
-            previous.nextBoundary!.isAfter(DateTime.now())) &&
-        setEquals(members, previous.manualPaths) &&
-        previous.collections
-            .where((c) => !c.isSmart)
-            .every(
-              (c) => setEquals(
-                manualByCollection[c.id] ?? const {},
-                previous.collectionPaths[c.id] ?? const {},
-              ),
-            ) &&
-        listEquals(
-          [
-            for (final c in previous.collections)
-              c.isSmart ? c.copyWith(gameCount: 0) : c,
-          ],
-          [
-            for (final c in collections)
-              c.isSmart ? c.copyWith(gameCount: 0) : c,
-          ],
-        )) {
-      return previous;
-    }
-    final manualPaths = Set<String>.of(members);
     final smart = collections
         .where((c) => c.isSmart && c.rules != null)
         .toList();
@@ -110,67 +137,95 @@ class SmartCollectionsService {
         members,
         null,
         manualByCollection,
-        manualPaths,
-        const {},
-        libraryRevision,
+        Set.of(members),
       );
     }
-    final games = await (readLibrary ?? library)();
-    final evaluated = await _evaluateInBackground(
-      collections,
-      manualByCollection,
-      games,
-    );
-    return CollectionsSnapshot(
-      evaluated.collections,
-      evaluated.memberPaths,
-      evaluated.nextBoundary,
-      evaluated.collectionPaths,
-      evaluated.manualPaths,
-      evaluated.gameContent,
-      libraryRevision,
-    );
-  }
-
-  // Kept in a separate frame so the worker closure cannot capture the
-  // connection-local library revision, which contains a native SQLite handle.
-  static Future<CollectionsSnapshot> _evaluateInBackground(
-    List<CollectionModel> collections,
-    Map<String, Set<String>> manualByCollection,
-    List<DatabaseGameModel> games,
-  ) => Isolate.run(() {
-    final smart = collections
-        .where((c) => c.isSmart && c.rules != null)
-        .toList();
-    final manualPaths = manualByCollection.values
-        .expand((paths) => paths)
-        .toSet();
-    final evaluator = SmartCollectionEvaluator(DateTime.now());
-    final pathsByCollection = {...manualByCollection};
-    final computed = <String, int>{};
-    final smartPaths = <String>{};
-    for (final collection in smart) {
-      final paths = games
-          .where((g) => evaluator.matches(g, collection.rules!))
-          .map((g) => g.romPath)
-          .toSet();
-      pathsByCollection[collection.id] = paths;
-      computed[collection.id] = paths.length;
-      smartPaths.addAll(paths);
+    // Only now: the revision installs connection-local triggers, which a
+    // manual-only library has no use for.
+    final revision = await GameRepository.smartLibraryRevision();
+    final _Evaluation evaluation;
+    if (previous != null &&
+        previous.libraryRevision == revision &&
+        (previous.nextBoundary == null ||
+            previous.nextBoundary!.isAfter(DateTime.now())) &&
+        _sameDefinitions(previous.collections, smart)) {
+      evaluation = (
+        paths: {
+          for (final c in smart) c.id: previous.collectionPaths[c.id] ?? {},
+        },
+        nextBoundary: previous.nextBoundary,
+        hashes: previous.gameHashes,
+      );
+    } else {
+      evaluation = await _evaluate(smart, DateTime.now());
     }
     return CollectionsSnapshot(
       [
         for (final c in collections)
-          c.isSmart ? c.copyWith(gameCount: computed[c.id] ?? 0) : c,
+          c.isSmart
+              ? c.copyWith(gameCount: evaluation.paths[c.id]?.length ?? 0)
+              : c,
       ],
-      manualPaths,
-      evaluator.nextBoundary(games, smart.map((c) => c.rules!)),
-      pathsByCollection,
-      manualPaths,
-      {
-        for (final game in games)
-          if (smartPaths.contains(game.romPath))
-            game.romPath: jsonEncode(game.toJson()),
+      members,
+      evaluation.nextBoundary,
+      {...manualByCollection, ...evaluation.paths},
+      Set.of(members),
+      evaluation.hashes,
+      revision,
+    );
+  }
+
+  static bool _sameDefinitions(
+    List<CollectionModel> previous,
+    List<CollectionModel> smart,
+  ) {
+    final before = {
+      for (final c in previous)
+        if (c.isSmart && c.rules != null) c.id: c.rules!.encode(),
+    };
+    return before.length == smart.length &&
+        smart.every((c) => before[c.id] == c.rules!.encode());
+  }
+
+  // Kept in a separate frame so the worker closure captures only the rule
+  // definitions, never the connection-local library revision.
+  static Future<_Evaluation> _evaluate(
+    List<CollectionModel> smart,
+    DateTime now,
+  ) => GameRepository.readRuleLibrary((rows) {
+    final library = _buildLibrary(rows);
+    final evaluator = library.evaluator(now);
+    final paths = <String, Set<String>>{};
+    final matched = <String>{};
+    for (final collection in smart) {
+      final ids = library.games
+          .where((g) => evaluator.matches(g, collection.rules!))
+          .map((g) => g.romPath)
+          .toSet();
+      paths[collection.id] = ids;
+      matched.addAll(ids);
+    }
+    return (
+      paths: paths,
+      nextBoundary: evaluator.nextBoundary(
+        library.games,
+        smart.map((c) => c.rules!),
+      ),
+      hashes: {
+        for (final game in library.games)
+          if (matched.contains(game.romPath))
+            game.romPath: Object.hash(
+              library.titleOf(game),
+              game.isFavorite,
+              game.playTime,
+              game.lastPlayed,
+              game.genre,
+              game.developer,
+              game.publisher,
+              game.year,
+              game.rating,
+              game.systemRealName,
+            ),
       },
     );
   });
@@ -188,33 +243,11 @@ class SmartCollectionsService {
   }
 }
 
-/// Provider-owned cache; every access checks the shared database for changes.
-class SmartCollectionLibraryCache {
-  Object? _revision;
-  List<DatabaseGameModel>? _games;
+/// Provider-owned snapshot memo; every access checks the shared database for
+/// changes, so the second engine's writes are still seen.
+class SmartCollectionSnapshotCache {
   CollectionsSnapshot? _snapshot;
-  Object? _snapshotRevision;
 
-  Future<CollectionsSnapshot> snapshot() async {
-    final revision = await GameRepository.smartLibraryRevision();
-    final snapshot = await SmartCollectionsService.snapshot(
-      readLibrary: library,
-      previous: _snapshot,
-      libraryUnchanged: revision == _snapshotRevision,
-      libraryRevision: revision,
-    );
-    _snapshot = snapshot;
-    _snapshotRevision = revision;
-    return snapshot;
-  }
-
-  Future<List<DatabaseGameModel>> library() async {
-    final revision = await GameRepository.smartLibraryRevision();
-    if (_games != null && revision == _revision) return _games!;
-    final games = await SmartCollectionsService.library();
-    // Capture before the read: a concurrent write causes the next access to retry.
-    _revision = revision;
-    _games = games;
-    return games;
-  }
+  Future<CollectionsSnapshot> snapshot() async =>
+      _snapshot = await SmartCollectionsService.snapshot(previous: _snapshot);
 }

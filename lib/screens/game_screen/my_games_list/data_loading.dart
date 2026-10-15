@@ -74,7 +74,18 @@ extension _DataLoading on _SystemGamesListState {
     }
 
     try {
-      final games = await GameService.loadGamesForSystem(widget.system);
+      final List<GameModel> games;
+      try {
+        games = await GameService.loadGamesForSystem(
+          widget.system,
+          smartPaths: _smartCollectionPaths,
+        );
+      } catch (_) {
+        // Only collections throw; keep what is shown and say why it is stale.
+        if (mounted) rebuild(() => _collectionLoadFailed = true);
+        rethrow;
+      }
+      _collectionLoadFailed = false;
       if (!mounted) return;
 
       // Resolve the per-system "Show Subfolders" setting (fresh source of truth).

@@ -670,6 +670,9 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
     try {
       final games = await CollectionsService.loadGamesForCollection(
         collection.id,
+        smartPaths: context.read<CollectionsProvider>().smartPathsFor(
+          collection.id,
+        ),
       );
       if (!mounted) return;
       final fileProvider = context.read<FileProvider>();
@@ -828,7 +831,7 @@ class _CollectionsBrowserScreenState extends State<CollectionsBrowserScreen> {
       child: MySystemsCarousel(
         items: items,
         selectedIndex: _selectedIndex,
-        // Keep counts visible on the cards as well as in the selected footer.
+        // There is no footer, so the cards carry the counts themselves.
         showCardCounts: true,
         // "New collection" is an action, not a place, so it is left out of the
         // strip of collections you can jump to.

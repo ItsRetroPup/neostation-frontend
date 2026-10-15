@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'package:flutter/widgets.dart';
 import 'package:neostation/models/collection_model.dart';
@@ -140,6 +141,14 @@ void main() {
         [romPath],
       );
       expect((await SmartCollectionsService.gamesFor(collection.id)).length, 1);
+      // Already-evaluated paths are read as given, still minus hidden ROMs.
+      expect(
+        (await SmartCollectionsService.gamesFor(
+          collection.id,
+          smartPaths: {romPath, '/hidden.sfc'},
+        )).map((g) => g.romPath),
+        [romPath],
+      );
       await db.execute('DELETE FROM user_roms WHERE rom_path = ?', [romPath]);
       expect((await SmartCollectionsService.snapshot()).memberPaths, isEmpty);
     },
@@ -223,46 +232,100 @@ void main() {
   test(
     'provider re-reads persisted state on resume and updates badges',
     () async {
-      await CollectionsService.createCollection('Unplayed', rules: rules);
+      final smart = await CollectionsService.createCollection(
+        'Unplayed',
+        rules: rules,
+      );
+      final manual = await CollectionsService.createCollection('Manual');
       final provider = CollectionsProvider();
       addTearDown(provider.dispose);
       await provider.load();
       expect(provider.totalGameCount, 0);
-      expect(provider.byId(provider.collections.single.id)!.gameCount, 1);
+      expect(provider.byId(smart.id)!.gameCount, 1);
       expect(provider.isInAnyCollection(romPath), isFalse);
+      // Written behind the provider's back, as the second engine would.
       await db.execute(
         'UPDATE user_roms SET play_time = 60 WHERE rom_path = ?',
         [romPath],
       );
+      await db.execute(
+        'INSERT INTO user_collection_items (collection_id, rom_path) VALUES (?, ?)',
+        [manual.id, romPath],
+      );
+      final refreshed = Completer<void>();
+      provider.addListener(() {
+        if (!provider.isLoading && !refreshed.isCompleted) {
+          refreshed.complete();
+        }
+      });
+      // Only the lifecycle event may trigger the read.
       provider.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await provider.load();
-      expect(provider.totalGameCount, 0);
-      expect(provider.isInAnyCollection(romPath), isFalse);
+      await refreshed.future.timeout(const Duration(seconds: 5));
+      expect(provider.byId(smart.id)!.gameCount, 0);
+      expect(provider.totalGameCount, 1);
+      expect(provider.isInAnyCollection(romPath), isTrue);
     },
   );
   test(
-    'library cache ignores settings but invalidates metadata and history writes',
+    'rule library reflects metadata and history writes; unrelated tables keep the revision',
     () async {
-      final cache = SmartCollectionLibraryCache();
-      final first = await cache.library();
       final revision = await GameRepository.smartLibraryRevision();
       await db.execute('CREATE TABLE unrelated_settings (value TEXT)');
       await db.execute("INSERT INTO unrelated_settings VALUES ('setting')");
       expect(await GameRepository.smartLibraryRevision(), revision);
-      expect(identical(await cache.library(), first), isTrue);
       await db.execute(
         "UPDATE user_roms SET play_time = 120 WHERE rom_path = ?",
         [romPath],
       );
-      final played = await cache.library();
-      expect(identical(played, first), isFalse);
-      expect(played.single.playTime, 120);
+      expect(await GameRepository.smartLibraryRevision(), isNot(revision));
+      expect(
+        (await SmartCollectionsService.library()).games.single.playTime,
+        120,
+      );
       await db.execute(
         "INSERT INTO user_screenscraper_metadata (app_system_id, filename, genre) VALUES ('snes', 'Chrono.sfc', 'RPG')",
       );
-      expect((await cache.library()).single.genre, 'RPG');
+      expect(
+        (await SmartCollectionsService.library()).games.single.genre,
+        'RPG',
+      );
+      // Naming settings decide the displayed title a rule matches.
+      final beforeSettings = await GameRepository.smartLibraryRevision();
+      await db.execute(
+        "INSERT INTO user_system_settings (app_system_id, prefer_file_name) VALUES ('snes', 1)",
+      );
+      expect(
+        await GameRepository.smartLibraryRevision(),
+        isNot(beforeSettings),
+      );
     },
   );
+
+  test('title rules match the displayed name, not the raw filename', () async {
+    await db.execute(
+      "INSERT INTO app_system_extensions (system_id, extension) VALUES ('snes', 'sfc')",
+    );
+    await db.execute(
+      "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('Super Mario World (USA).sfc', '/smw.sfc', 'snes')",
+    );
+    final titleRules = SmartCollectionRules(
+      rules: [
+        SmartRule(
+          field: SmartField.title,
+          operator: SmartOperator.isEqual,
+          value: 'Super Mario World',
+        ),
+      ],
+    );
+    expect(
+      (await SmartCollectionsService.preview(titleRules)).map((g) => g.romPath),
+      ['/smw.sfc'],
+    );
+    await db.execute(
+      "INSERT INTO user_system_settings (app_system_id, hide_parentheses) VALUES ('snes', 0)",
+    );
+    expect(await SmartCollectionsService.preview(titleRules), isEmpty);
+  });
 
   test(
     'unchanged snapshots are reused and do not bump collection revisions',
@@ -271,9 +334,13 @@ void main() {
         'Smart',
         rules: rules,
       );
-      final cache = SmartCollectionLibraryCache();
+      final cache = SmartCollectionSnapshotCache();
       final first = await cache.snapshot();
-      expect(identical(await cache.snapshot(), first), isTrue);
+      // Same revision and definitions: the evaluation is reused, not re-run.
+      expect(
+        identical((await cache.snapshot()).gameHashes, first.gameHashes),
+        isTrue,
+      );
       final provider = CollectionsProvider();
       addTearDown(provider.dispose);
       await provider.load();
@@ -387,8 +454,12 @@ void main() {
     },
   );
   test(
-    'another engine connection invalidates the library on its next read',
+    'another engine connection invalidates the snapshot on its next read',
     () async {
+      final collection = await CollectionsService.createCollection(
+        'Smart',
+        rules: rules,
+      );
       final folder = await Directory.systemTemp.createTemp(
         'smart-library-revision',
       );
@@ -398,15 +469,16 @@ void main() {
       final secondary = sqlite.sqlite3.open(path);
       SqliteService.setTestingDatabase(DatabaseAdapter(primary));
       try {
-        final cache = SmartCollectionLibraryCache();
-        final first = await cache.library();
+        final cache = SmartCollectionSnapshotCache();
+        final first = await cache.snapshot();
+        expect(first.collectionPaths[collection.id], {romPath});
         secondary.execute(
           'UPDATE user_roms SET play_time = 180 WHERE rom_path = ?',
           [romPath],
         );
-        final updated = await cache.library();
-        expect(identical(first, updated), isFalse);
-        expect(updated.single.playTime, 180);
+        final updated = await cache.snapshot();
+        expect(updated.libraryRevision, isNot(first.libraryRevision));
+        expect(updated.collectionPaths[collection.id], isEmpty);
       } finally {
         primary.close();
         secondary.close();
@@ -418,11 +490,17 @@ void main() {
   test('manual-only snapshots never read the rule library', () async {
     final manual = await CollectionsService.createCollection('Manual');
     await CollectionsService.addGame(manual.id, game);
-    final snapshot = await SmartCollectionsService.snapshot(
-      readLibrary: () => throw StateError('Must not read the library'),
-    );
+    final snapshot = await SmartCollectionsService.snapshot();
     expect(snapshot.memberPaths, {romPath});
-    expect(snapshot.gameContent, isEmpty);
+    expect(snapshot.gameHashes, isEmpty);
+    expect(snapshot.libraryRevision, isNull);
+    // Nor install the revision triggers, which fire on every ROM write.
+    expect(
+      await db.rawQuery(
+        "SELECT name FROM sqlite_temp_master WHERE name = 'smart_library_revision'",
+      ),
+      isEmpty,
+    );
   });
 
   test(
@@ -505,37 +583,64 @@ void main() {
     expect(notifications, 0);
   });
 
-  test('file-backed library reads leave the UI isolate responsive', () async {
-    final folder = await Directory.systemTemp.createTemp('smart-worker');
-    final path = '${folder.path}/library.sqlite';
-    await db.execute('VACUUM INTO ?', [path]);
-    final primary = sqlite.sqlite3.open(path);
-    final blocker = sqlite.sqlite3.open(path);
-    SqliteService.setTestingDatabase(DatabaseAdapter(primary));
-    try {
-      final expected = await GameRepository.getAllGames();
-      blocker.execute('BEGIN EXCLUSIVE');
-      final watch = Stopwatch()..start();
-      final pending = GameRepository.getAllGamesInBackground();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      expect(
-        watch.elapsed,
-        lessThan(const Duration(seconds: 1)),
-        reason: 'A locked SQLite read must not block UI timers',
-      );
-      blocker.execute('COMMIT');
-      final games = await pending;
-      expect(games.map((g) => g.toJson()), expected.map((g) => g.toJson()));
-    } finally {
-      try {
-        blocker.execute('ROLLBACK');
-      } on sqlite.SqliteException {
-        /* Already committed. */
-      }
-      primary.close();
-      blocker.close();
-      SqliteService.setTestingDatabase(db);
-      await folder.delete(recursive: true);
-    }
+  for (final journal in ['wal', 'delete']) {
+    test(
+      'rule library evaluates off the UI isolate ($journal journal)',
+      () async {
+        final folder = await Directory.systemTemp.createTemp('smart-worker');
+        final path = '${folder.path}/library.sqlite';
+        await db.execute('VACUUM INTO ?', [path]);
+        final primary = sqlite.sqlite3.open(path);
+        primary.execute('PRAGMA journal_mode = $journal');
+        SqliteService.setTestingDatabase(DatabaseAdapter(primary));
+        try {
+          final main = Isolate.current.debugName;
+          final worker = await GameRepository.readRuleLibrary(
+            (rows) => (Isolate.current.debugName, rows.games.length),
+          );
+          expect(worker.$1, isNot(main));
+          expect(worker.$2, 2);
+          final library = await SmartCollectionsService.library();
+          // The hidden ROM is not eligible for any rule.
+          expect(library.games.map((g) => g.romPath), [romPath]);
+        } finally {
+          primary.close();
+          SqliteService.setTestingDatabase(db);
+          await folder.delete(recursive: true);
+        }
+      },
+    );
+  }
+
+  testWidgets('a failed refresh retries instead of dropping a queued one', (
+    tester,
+  ) async {
+    final blocked = Completer<void>();
+    var reads = 0;
+    final provider = CollectionsProvider(
+      readSnapshot: () async {
+        reads++;
+        if (reads == 1) {
+          await blocked.future;
+          throw StateError('database is locked');
+        }
+        return const CollectionsSnapshot(
+          [CollectionModel(id: 'new', name: 'New')],
+          {},
+          null,
+        );
+      },
+    );
+    addTearDown(provider.dispose);
+    unawaited(provider.load());
+    await tester.pump();
+    unawaited(provider.load()); // Queued behind the read that will fail.
+    blocked.complete();
+    await tester.pump();
+    expect(reads, 1);
+    await tester.pump(const Duration(seconds: 11));
+    await tester.pump();
+    expect(reads, 2);
+    expect(provider.byId('new'), isNotNull);
   });
 }

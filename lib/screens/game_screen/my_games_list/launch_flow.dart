@@ -96,7 +96,10 @@ extension _LaunchFlow on _SystemGamesListState {
 
     // Reload games list (was cleared to free RAM during gameplay).
     try {
-      final updatedGames = await GameService.loadGamesForSystem(widget.system);
+      final updatedGames = await GameService.loadGamesForSystem(
+        widget.system,
+        smartPaths: _smartCollectionPaths,
+      );
       if (!mounted) return;
 
       final previousRomPath = _selectedGame?.romPath;
@@ -552,8 +555,12 @@ extension _LaunchFlow on _SystemGamesListState {
           systemRealName: widget.system.realName,
           fileProvider: _fileProvider,
           onPlayGame: (selectedGame) {
+            // romPath, not romname: an aggregate view (a cross-system smart
+            // collection) can hold two "Tetris (USA)" from different systems.
             final gameIndex = _games.indexWhere(
-              (game) => game.romname == selectedGame.romname,
+              (game) => selectedGame.romPath != null
+                  ? game.romPath == selectedGame.romPath
+                  : game.romname == selectedGame.romname,
             );
             if (gameIndex != -1) {
               rebuild(() {

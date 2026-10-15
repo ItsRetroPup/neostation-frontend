@@ -21,9 +21,6 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.smartDone: 'Done',
   AppLocale.smartLower: 'Minimum',
   AppLocale.smartUpper: 'Maximum',
-  AppLocale.smartSystem: 'System',
-  AppLocale.smartTitle: 'Title',
-  AppLocale.smartYear: 'Release year',
   AppLocale.smartRating: 'Rating (0–10)',
   AppLocale.smartPlayed: 'Played',
   AppLocale.smartIs: 'Is',
@@ -38,6 +35,10 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.smartWithinDays: 'Within the last',
   AppLocale.smartNotWithinDays: 'Not within the last',
   AppLocale.smartDays: '{count} days',
+  AppLocale.smartDaysOne: '{count} day',
+  AppLocale.smartDaysFew: '{count} days',
+  AppLocale.collectionLoadError:
+      "Could not load this collection's games. Try again.",
   AppLocale.smartRulesOnly: 'Games are included automatically by these rules.',
   AppLocale.customSounds: "Custom sounds",
   AppLocale.customSoundsSubtitle:

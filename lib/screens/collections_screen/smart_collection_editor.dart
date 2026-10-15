@@ -14,6 +14,7 @@ import '../../models/game_model.dart';
 import '../../models/smart_collection_rules.dart';
 import '../../providers/collections_provider.dart';
 import '../../providers/file_provider.dart';
+import '../../services/collections/smart_collections_service.dart';
 import '../../services/gamepad/gamepad_navigation_manager.dart';
 import '../../utils/gamepad_nav.dart';
 import '../../widgets/context_menu/anchored_context_menu.dart';
@@ -86,19 +87,38 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   late String _name;
   late bool _matchAll;
   late final List<_RuleDraft> _rules;
-  List<DatabaseGameModel> _library = [];
+  SmartRuleLibrary _library = const SmartRuleLibrary([]);
   bool _loading = true;
   bool _loadError = false;
   bool _busy = false;
+
+  /// Set once the editor has asked to close. The navigation layer is only
+  /// popped in [dispose], after the exit animation, so without this a second
+  /// A or B inside that window would reach the editor again and pop the
+  /// screen underneath it as well.
+  bool _closing = false;
   String? _error;
-  int _selected = 0;
+
+  /// Selection is held by action id, not index, so a row appearing or
+  /// disappearing (Retry) cannot move the highlight onto a different button.
+  String _selectedId = 'name';
+  int get _selected {
+    final index = _actionIds.indexOf(_selectedId);
+    return index < 0 ? 0 : index;
+  }
+
+  set _selected(int index) {
+    if (_actionIds.isEmpty) return;
+    _selectedId = _actionIds[index.clamp(0, _actionIds.length - 1)];
+  }
+
   bool _previewFocused = false;
   int _previewSelected = 0;
   List<DatabaseGameModel> _previewGames = [];
   String? _previewDefinition;
   Timer? _previewBoundaryTimer;
   final Map<String, Future<String?>> _previewArtwork = {};
-  List<DatabaseGameModel>? _previewLibrary;
+  SmartRuleLibrary? _previewLibrary;
   Map<String, String> _systems = {};
 
   final _scrollController = ScrollController();
@@ -107,6 +127,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   final List<VoidCallback> _actions = [];
   final List<GlobalKey> _actionKeys = [];
   final List<String> _actionRows = [];
+  final List<String> _actionIds = [];
 
   String _text(String key) => key.getString(context);
 
@@ -129,12 +150,15 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
         [_RuleDraft()];
     _nav = GamepadNavigation(
       allowRepeat: true,
-      onNavigateUp: () => _move(-1, vertical: true),
-      onNavigateDown: () => _move(1, vertical: true),
-      onNavigateLeft: () => _move(-1),
-      onNavigateRight: () => _move(1),
+      onNavigateUp: (bool repeat) => _move(-1, vertical: true, repeat: repeat),
+      onNavigateDown: (bool repeat) => _move(1, vertical: true, repeat: repeat),
+      onNavigateLeft: (bool repeat) => _move(-1, repeat: repeat),
+      onNavigateRight: (bool repeat) => _move(1, repeat: repeat),
       onSelectItem: () {
-        if (!_busy && !_previewFocused && _selected < _actions.length) {
+        if (!_busy &&
+            !_closing &&
+            !_previewFocused &&
+            _selected < _actions.length) {
           _actions[_selected]();
         }
       },
@@ -158,13 +182,13 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       _loadError = false;
     });
     try {
-      final games = await context.read<CollectionsProvider>().ruleLibrary();
+      final library = await context.read<CollectionsProvider>().ruleLibrary();
       if (mounted) {
         setState(() {
-          _library = games;
+          _library = library;
           _previewArtwork.clear();
           _systems = {
-            for (final game in games)
+            for (final game in library.games)
               if (game.systemFolderName != null)
                 game.systemFolderName!:
                     game.systemRealName ?? game.systemFolderName!,
@@ -191,17 +215,23 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     super.dispose();
   }
 
-  void _move(int delta, {bool vertical = false}) {
-    if (_busy || _actions.isEmpty) return;
+  /// Moves the selection; returns whether it moved, so a held direction can
+  /// stop at a section's end. Repeats never leave the preview and never step
+  /// into or out of the footer: one press too many there would discard the
+  /// editor.
+  bool _move(int delta, {bool vertical = false, bool repeat = false}) {
+    if (_busy || _closing || _actions.isEmpty) return false;
     if (_previewFocused) {
       if (!vertical ||
           (delta > 0 && _previewSelected == _previewGames.length - 1)) {
+        if (repeat) return false;
         setState(() {
           _previewFocused = false;
           _selected =
               _actionRows.indexOf('footer') + (!vertical && delta > 0 ? 1 : 0);
         });
       } else if (delta < 0 && _previewSelected == 0) {
+        if (repeat) return false;
         setState(() {
           _previewFocused = false;
           _selected = _actionRows.indexOf('add');
@@ -211,19 +241,19 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
         setState(() => _previewSelected += delta);
         _revealPreview();
       }
-      return;
+      return true;
     }
-    _selected = _selected.clamp(0, _actionRows.length - 1);
     final row = _actionRows[_selected];
     if (vertical &&
         _previewGames.isNotEmpty &&
         ((row == 'add' && delta > 0) || (row == 'footer' && delta < 0))) {
+      if (repeat && row == 'footer') return false;
       setState(() {
         _previewFocused = true;
         if (row == 'add') _previewSelected = 0;
       });
       _revealPreview();
-      return;
+      return true;
     }
     final columns = [
       for (var i = 0; i < _actionRows.length; i++)
@@ -235,6 +265,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       final rows = _actionRows.toSet().toList();
       final nextRow =
           rows[(rows.indexOf(row) + delta).clamp(0, rows.length - 1)];
+      if (repeat && (row == 'footer' || nextRow == 'footer')) return false;
       final targets = [
         for (var i = 0; i < _actionRows.length; i++)
           if (_actionRows[i] == nextRow) i,
@@ -243,8 +274,10 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     } else {
       next = columns[(column + delta).clamp(0, columns.length - 1)];
     }
+    if (next == _selected) return false;
     setState(() => _selected = next);
     _revealAction();
+    return true;
   }
 
   void _revealPreview() {
@@ -264,7 +297,6 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
 
   void _revealAction() {
     if (_actionKeys.isEmpty) return;
-    _selected = _selected.clamp(0, _actionKeys.length - 1);
     final target = _actionKeys[_selected].currentContext;
     if (target != null) {
       Scrollable.ensureVisible(
@@ -275,8 +307,15 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     }
   }
 
+  void _close([SmartCollectionDraft? draft]) {
+    if (_closing || !mounted) return;
+    _closing = true;
+    _nav.deactivate();
+    Navigator.of(context).pop(draft);
+  }
+
   void _cancel() {
-    if (!_busy && mounted) Navigator.of(context).pop();
+    if (!_busy) _close();
   }
 
   SmartCollectionRules? get _definition {
@@ -294,7 +333,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       setState(() => _error = _text(AppLocale.smartInvalidValue));
       return;
     }
-    Navigator.of(context).pop(SmartCollectionDraft(_name.trim(), definition));
+    _close(SmartCollectionDraft(_name.trim(), definition));
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -311,13 +350,42 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     }
   }
 
-  Future<String?> _prompt(String title, String initial) =>
-      CollectionNameDialog.show(
-        context,
-        title: title,
-        initialValue: initial,
-        confirmLabel: _text(AppLocale.save),
-      );
+  Future<String?> _prompt(
+    String title,
+    String initial, {
+    NumberStepper? stepper,
+  }) => CollectionNameDialog.show(
+    context,
+    title: title,
+    initialValue: initial,
+    confirmLabel: _text(AppLocale.save),
+    hintText: title,
+    stepper: stepper,
+  );
+
+  /// D-pad stepping for the numeric rules, so they need no keyboard.
+  static NumberStepper _stepperFor(SmartField field) => switch (field) {
+    SmartField.year => NumberStepper(
+      step: 1,
+      min: 1,
+      max: 9999,
+      start: DateTime.now().year,
+    ),
+    SmartField.rating => const NumberStepper(
+      step: .5,
+      min: 0,
+      max: 10,
+      start: 5,
+      decimal: true,
+    ),
+    SmartField.playTime => const NumberStepper(
+      step: 15,
+      min: 0,
+      start: 60,
+      decimal: true,
+    ),
+    _ => const NumberStepper(step: 1, min: 1, start: 30),
+  };
 
   Future<String?> _pick(String title, Map<String, String> options) async {
     if (!mounted) return null;
@@ -339,12 +407,12 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
   }
 
   String _fieldLabel(SmartField field) => _text(switch (field) {
-    SmartField.system => AppLocale.smartSystem,
-    SmartField.title => AppLocale.smartTitle,
+    SmartField.system => AppLocale.filterSystem,
+    SmartField.title => AppLocale.gameTitle,
     SmartField.genre => AppLocale.genre,
     SmartField.developer => AppLocale.developer,
     SmartField.publisher => AppLocale.publisher,
-    SmartField.year => AppLocale.smartYear,
+    SmartField.year => AppLocale.releaseYear,
     SmartField.rating => AppLocale.smartRating,
     SmartField.favorite => AppLocale.favorite,
     SmartField.played => AppLocale.smartPlayed,
@@ -389,11 +457,19 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       for (final op in operatorsFor(row.field)) op.name: _operatorLabel(op),
     });
     if (choice == null || !mounted) return;
+    final operator = SmartOperator.values.byName(choice);
+    if (operator == row.operator) return;
     setState(() {
-      row.operator = SmartOperator.values.byName(choice);
+      row.operator = operator;
       row.upper = null;
       _error = null;
     });
+    // A range needs its upper bound now; keeping only the old value would
+    // leave a label that looks set on a rule that matches nothing.
+    if (operator == SmartOperator.between) {
+      await _editValue(row);
+      if (mounted && row.rule == null) setState(() => row.value = null);
+    }
   }
 
   Future<void> _editValue(_RuleDraft row) async {
@@ -451,7 +527,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       SmartField.publisher,
     ].contains(row.field)) {
       final values =
-          _library
+          _library.games
               .map(
                 (g) => switch (row.field) {
                   SmartField.genre => g.genre,
@@ -488,16 +564,21 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
       final suffix = row.field == SmartField.playTime
           ? ' (${_text(AppLocale.minutes)})'
           : '';
+      final label = '${_fieldLabel(row.field)}$suffix';
+      final between = row.operator == SmartOperator.between;
+      final stepper = _stepperFor(row.field);
       final input = await _prompt(
-        '${_fieldLabel(row.field)}$suffix',
-        row.value?.toString() ?? '',
+        between ? '$label: ${_text(AppLocale.smartLower)}' : label,
+        row.value is num ? '${row.value}' : '',
+        stepper: stepper,
       );
       if (input == null || !mounted) return;
       value = num.tryParse(input.replaceAll(',', '.'));
-      if (row.operator == SmartOperator.between) {
+      if (between) {
         final second = await _prompt(
-          _text(AppLocale.smartUpper),
+          '$label: ${_text(AppLocale.smartUpper)}',
           row.upper?.toString() ?? '',
+          stepper: stepper,
         );
         if (second == null || !mounted) return;
         upper = num.tryParse(second.replaceAll(',', '.'));
@@ -546,7 +627,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
           .join(', ');
     }
     if (row.field == SmartField.lastPlayed) {
-      return _text(AppLocale.smartDays).replaceFirst('{count}', '${row.value}');
+      return _daysLabel((row.value as num).toInt());
     }
     final text = row.upper == null
         ? '${row.value}'
@@ -554,6 +635,24 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     return row.field == SmartField.playTime
         ? '$text ${_text(AppLocale.minutes)}'
         : text;
+  }
+
+  /// "{count} days" with the plural form the language needs: Russian has a
+  /// separate form for 2–4 (and 22–24, …); the others need only one vs many.
+  String _daysLabel(int count) {
+    final language = FlutterLocalization.instance.currentLocale?.languageCode;
+    final ones = count % 10;
+    final tens = count % 100;
+    final key = language == 'ru'
+        ? ones == 1 && tens != 11
+              ? AppLocale.smartDaysOne
+              : ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)
+              ? AppLocale.smartDaysFew
+              : AppLocale.smartDays
+        : count == 1
+        ? AppLocale.smartDaysOne
+        : AppLocale.smartDays;
+    return _text(key).replaceFirst('{count}', '$count');
   }
 
   Widget _button(
@@ -568,7 +667,8 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     _actions.add(action);
     _actionKeys.add(key);
     _actionRows.add(navigationRow ?? id);
-    final selected = !_previewFocused && _selected == index;
+    _actionIds.add(id);
+    final selected = !_previewFocused && _selectedId == id;
     final theme = Theme.of(context);
     return ExcludeFocus(
       child: Padding(
@@ -683,7 +783,7 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  databaseGame.displayTitle,
+                  _library.titleOf(databaseGame),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13.r),
@@ -710,14 +810,15 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
 
   @override
   Widget build(BuildContext context) {
-    // Retry is transient; clamp before building so Save stays highlighted when
-    // a successful retry removes that row from the action table.
-    final actionCount =
-        5 + _rules.length * 4 + (!_loading && _loadError ? 1 : 0);
-    _selected = _selected.clamp(0, actionCount - 1);
+    // Retry is transient: once a retry removes it, land on Save rather than
+    // leaving no button highlighted.
+    if (_selectedId == 'retry' && !(!_loading && _loadError)) {
+      _selectedId = 'save';
+    }
     _actions.clear();
     _actionKeys.clear();
     _actionRows.clear();
+    _actionIds.clear();
     final theme = Theme.of(context);
     final definition = _definition;
     final encoded = definition?.encode();
@@ -751,6 +852,20 @@ class _SmartCollectionEditorState extends State<SmartCollectionEditor> {
     } else {
       _previewSelected = _previewSelected.clamp(0, _previewGames.length - 1);
     }
+    // Any other id that vanished (a removed rule) falls back to the first
+    // button on the next frame.
+    final page = _buildPage(theme, matches);
+    if (!_actionIds.contains(_selectedId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_actionIds.contains(_selectedId)) {
+          setState(() => _selectedId = _actionIds.first);
+        }
+      });
+    }
+    return page;
+  }
+
+  Widget _buildPage(ThemeData theme, List<DatabaseGameModel> matches) {
     return PopScope(
       canPop: !_busy,
       child: Scaffold(

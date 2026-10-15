@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,6 +13,7 @@ import 'package:neostation/models/smart_collection_rules.dart';
 import 'package:neostation/providers/collections_provider.dart';
 import 'package:neostation/providers/file_provider.dart';
 import 'package:neostation/screens/collections_screen/smart_collection_editor.dart';
+import 'package:neostation/services/collections/smart_collections_service.dart';
 import 'package:neostation/services/gamepad/gamepad_navigation_manager.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +23,7 @@ class _LibraryProvider extends CollectionsProvider {
   static int previewEvaluations = 0;
   @override
   List<DatabaseGameModel> previewRules(
-    List<DatabaseGameModel> library,
+    SmartRuleLibrary library,
     SmartCollectionRules? rules,
   ) {
     previewEvaluations++;
@@ -32,7 +31,7 @@ class _LibraryProvider extends CollectionsProvider {
   }
 
   @override
-  Future<List<DatabaseGameModel>> ruleLibrary() async => [
+  Future<SmartRuleLibrary> ruleLibrary() async => SmartRuleLibrary([
     DatabaseGameModel(
       filename: 'Chrono.sfc',
       romPath: '/snes/Chrono.sfc',
@@ -48,16 +47,19 @@ class _LibraryProvider extends CollectionsProvider {
       systemFolderName: 'nes',
       systemRealName: 'Nintendo Entertainment System',
     ),
-  ];
+  ]);
 }
 
+/// The first read waits for [fail] and then fails; later reads succeed.
 class _RetryLibraryProvider extends _LibraryProvider {
   var calls = 0;
-  final retry = Completer<void>();
+  final fail = Completer<void>();
   @override
-  Future<List<DatabaseGameModel>> ruleLibrary() async {
-    if (calls++ == 0) throw StateError('Library unavailable');
-    await retry.future;
+  Future<SmartRuleLibrary> ruleLibrary() async {
+    if (calls++ == 0) {
+      await fail.future;
+      throw StateError('Library unavailable');
+    }
     return super.ruleLibrary();
   }
 }
@@ -104,21 +106,6 @@ void main() {
       initLanguageCode: 'en',
     );
     SfxService().setEnabled(false);
-    const fontPath = String.fromEnvironment('SMART_COLLECTION_FONT');
-    if (fontPath.isNotEmpty) {
-      final loader = FontLoader('Roboto');
-      loader.addFont(File(fontPath).readAsBytes().then(ByteData.sublistView));
-      await loader.load();
-      final icons = FontLoader(
-        'packages/material_symbols_icons/MaterialSymbolsRounded',
-      );
-      icons.addFont(
-        rootBundle.load(
-          'packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf',
-        ),
-      );
-      await icons.load();
-    }
   });
   tearDownAll(() async => artworkDirectory.delete(recursive: true));
 
@@ -190,19 +177,33 @@ void main() {
     return ctx;
   }
 
-  Future<void> capture(WidgetTester tester, String name) async {
-    if (!const bool.fromEnvironment('SMART_COLLECTION_CAPTURE')) return;
-    await tester.runAsync(() async {
-      final boundary = tester.firstRenderObject<RenderRepaintBoundary>(
-        find.byType(RepaintBoundary),
-      );
-      final image = await boundary.toImage();
-      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
-      await File(
-        '/tmp/smart-collection-$name.png',
-      ).writeAsBytes(bytes.buffer.asUint8List());
-      image.dispose();
-    });
+  bool selected(WidgetTester tester, String label) {
+    final button = tester.widget<OutlinedButton>(
+      find.ancestor(
+        of: find.text(label),
+        matching: find.byType(OutlinedButton),
+      ),
+    );
+    return button.style?.backgroundColor?.resolve({}) != null;
+  }
+
+  // The navigation translator deliberately ignores input just after
+  // activation and debounces repeats, so each press waits in real time.
+  // [settle] is off while a spinner is animating, which never settles.
+  Future<void> press(
+    WidgetTester tester,
+    LogicalKeyboardKey key, {
+    bool settle = true,
+  }) async {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+    await tester.sendKeyEvent(key);
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump(const Duration(milliseconds: 300));
+    }
   }
 
   for (final size in [const Size(1280, 720), const Size(800, 450)]) {
@@ -219,7 +220,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(GamepadNavigationManager.stackDepth, depth + 1);
       expect(find.text('1 matching game'), findsOneWidget);
-      await capture(tester, '${size.width.toInt()}');
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -180));
       await tester.pumpAndSettle();
       expect(find.text('Chrono Trigger'), findsOneWidget);
@@ -241,7 +241,6 @@ void main() {
         greaterThan(tester.getBottomLeft(find.text('Add rule')).dy),
       );
       expect(tester.takeException(), isNull);
-      await capture(tester, '${size.width.toInt()}-games');
       await tester.ensureVisible(find.text('Match all rules'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Match all rules'));
@@ -409,50 +408,137 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets(
-    'removing Retry while Save is selected keeps D-pad navigation valid',
-    (tester) async {
-      final library = _RetryLibraryProvider();
-      final ctx = await host(
-        tester,
-        const Size(1280, 720),
-        libraryProvider: library,
-      );
-      final result = SmartCollectionEditor.show(
-        ctx,
-        collection: collection,
-        initialName: collection.name,
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Retry'), findsOneWidget);
-      Future<void> key(LogicalKeyboardKey value) async {
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 180)),
-        );
-        await tester.sendKeyEvent(value);
-        await tester.pumpAndSettle();
-      }
+  testWidgets('Save stays selected while Retry appears and disappears', (
+    tester,
+  ) async {
+    final library = _RetryLibraryProvider();
+    final ctx = await host(
+      tester,
+      const Size(1280, 720),
+      libraryProvider: library,
+    );
+    final result = SmartCollectionEditor.show(
+      ctx,
+      collection: collection,
+      initialName: collection.name,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    // Still loading: name, mode, two rules, Add, then the footer.
+    for (var i = 0; i < 6; i++) {
+      await press(tester, LogicalKeyboardKey.arrowDown, settle: false);
+    }
+    await press(tester, LogicalKeyboardKey.arrowRight, settle: false);
+    expect(selected(tester, 'Save'), isTrue);
+    library.fail.complete();
+    await tester.pumpAndSettle();
+    // Retry is inserted before the footer; the highlight must not shift.
+    expect(find.text('Retry'), findsOneWidget);
+    expect(selected(tester, 'Save'), isTrue);
+    expect(selected(tester, 'Cancel'), isFalse);
+    await press(tester, LogicalKeyboardKey.arrowUp);
+    expect(selected(tester, 'Retry'), isTrue);
+    await press(tester, LogicalKeyboardKey.enter);
+    // The retry succeeded and removed its own row: land on Save.
+    expect(find.text('Retry'), findsNothing);
+    expect(selected(tester, 'Save'), isTrue);
+    await press(tester, LogicalKeyboardKey.arrowLeft);
+    expect(selected(tester, 'Cancel'), isTrue);
+    expect(tester.takeException(), isNull);
+    await press(tester, LogicalKeyboardKey.backspace);
+    expect(await result, isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
-      // Name -> match mode -> two rules -> Add -> Retry -> footer, then Save.
-      for (var i = 0; i < 6; i++) {
-        await key(LogicalKeyboardKey.arrowDown);
-      }
-      await key(LogicalKeyboardKey.arrowRight);
-      await tester.ensureVisible(find.text('Retry'));
-      await tester.tap(find.text('Retry'));
-      await tester.pump();
-      library.retry.complete();
-      await tester.pumpAndSettle();
-      expect(find.text('Retry'), findsNothing);
-      await key(LogicalKeyboardKey.arrowLeft);
-      expect(tester.takeException(), isNull);
-      await key(LogicalKeyboardKey.arrowUp);
-      expect(tester.takeException(), isNull);
-      await key(LogicalKeyboardKey.backspace);
-      expect(await result, isNull);
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
+  for (final save in [false, true]) {
+    testWidgets(
+      'a second ${save ? 'A on Save' : 'B'} during the exit animation does not pop the screen underneath',
+      (tester) async {
+        final ctx = await host(tester, const Size(1280, 720));
+        late BuildContext browser;
+        Navigator.of(ctx).push(
+          MaterialPageRoute<void>(
+            builder: (context) {
+              browser = context;
+              return const Scaffold(body: Text('Browser'));
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+        final result = SmartCollectionEditor.show(
+          browser,
+          collection: collection,
+          initialName: collection.name,
+        );
+        await tester.pumpAndSettle();
+        if (save) {
+          await tester.tap(find.text('Save'));
+        } else {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 250)),
+          );
+          await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+        }
+        await tester.pump(const Duration(milliseconds: 20));
+        // Inside the ~300 ms exit animation, past the 128 ms debounce.
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 150)),
+        );
+        await tester.sendKeyEvent(
+          save ? LogicalKeyboardKey.enter : LogicalKeyboardKey.backspace,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Browser'), findsOneWidget);
+        final draft = await result;
+        expect(draft != null, save);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('a held direction stops at the end of the preview', (
+    tester,
+  ) async {
+    final ctx = await host(tester, const Size(1280, 720));
+    final result = SmartCollectionEditor.show(
+      ctx,
+      collection: collection,
+      initialName: collection.name,
+    );
+    await tester.pumpAndSettle();
+    // Name -> mode -> two rules -> Add rule.
+    for (var i = 0; i < 4; i++) {
+      await press(tester, LogicalKeyboardKey.arrowDown);
+    }
+    expect(selected(tester, 'Add rule'), isTrue);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    // The single match is focused; the hold never reached the footer.
+    expect(
+      (tester
+                  .widget<Container>(
+                    find.byKey(const ValueKey('preview:/snes/Chrono.sfc')),
+                  )
+                  .decoration!
+              as BoxDecoration)
+          .border,
+      isNotNull,
+    );
+    expect(selected(tester, 'Cancel'), isFalse);
+    // A single press still leaves the preview.
+    await press(tester, LogicalKeyboardKey.arrowDown);
+    expect(selected(tester, 'Cancel'), isTrue);
+    await press(tester, LogicalKeyboardKey.backspace);
+    expect(await result, isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets(
     'unsupported rules are explained and cancelling preserves the source',

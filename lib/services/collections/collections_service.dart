@@ -43,21 +43,14 @@ class CollectionsService {
   // ── Collections ────────────────────────────────────────────────────────────
 
   /// Returns a single collection, or null when it no longer exists.
-  static Future<CollectionModel?> getCollection(
-    String id, {
-    bool includeGameCount = true,
-  }) async {
+  ///
+  /// A smart collection's count here is always 0: its matches are evaluated
+  /// by [SmartCollectionsService.snapshot], not stored.
+  static Future<CollectionModel?> getCollection(String id) async {
     try {
       final row = await CollectionRepository.getCollectionById(id);
       if (row == null) return null;
-      final collection = CollectionModel.fromJson(row);
-      if (includeGameCount && collection.isSmart) {
-        final count = collection.rules == null
-            ? 0
-            : (await SmartCollectionsService.preview(collection.rules!)).length;
-        return collection.copyWith(gameCount: count);
-      }
-      return collection;
+      return CollectionModel.fromJson(row);
     } catch (e) {
       _log.e('Error loading collection $id: $e');
       return null;
@@ -89,7 +82,7 @@ class CollectionsService {
       imagePath = await setCollectionImage(id, imageSourcePath);
     }
 
-    final created = await getCollection(id, includeGameCount: false);
+    final created = await getCollection(id);
     return created ??
         CollectionModel(
           id: id,
@@ -112,7 +105,7 @@ class CollectionsService {
   /// The file delete is best effort: an unreadable or already-missing image
   /// must not stop the collection going away.
   static Future<void> deleteCollection(String id) async {
-    final existing = await getCollection(id, includeGameCount: false);
+    final existing = await getCollection(id);
     await CollectionRepository.deleteCollection(id);
     await _deleteImageFile(existing?.imagePath);
   }
@@ -152,10 +145,7 @@ class CollectionsService {
 
       // A previous image may have a different extension; drop it so the
       // collection is never left with two artwork files.
-      final previous = (await getCollection(
-        id,
-        includeGameCount: false,
-      ))?.imagePath;
+      final previous = (await getCollection(id))?.imagePath;
 
       final extension = path.extension(source.path);
       final target = path.join(targetDir.path, '$id$extension');
@@ -176,7 +166,7 @@ class CollectionsService {
 
   /// Clears a collection's artwork, deleting the file (best effort).
   static Future<void> clearCollectionImage(String id) async {
-    final existing = await getCollection(id, includeGameCount: false);
+    final existing = await getCollection(id);
     await CollectionRepository.updateCollection(id, clearImagePath: true);
     await _deleteImageFile(existing?.imagePath);
     await _evictImageCache(existing?.imagePath);
@@ -244,11 +234,16 @@ class CollectionsService {
   /// Delegates to the games loader so per-system naming preferences
   /// (extension/tag stripping, scraped-title coalescing) and hidden-ROM
   /// filtering are applied exactly as they are for favourites.
-  static Future<List<GameModel>> loadGamesForCollection(String collectionId) =>
-      GameListService.loadGamesForCollection(collectionId);
+  static Future<List<GameModel>> loadGamesForCollection(
+    String collectionId, {
+    Set<String>? smartPaths,
+  }) => GameListService.loadGamesForCollection(
+    collectionId,
+    smartPaths: smartPaths,
+  );
 
   static Future<void> updateRules(String id, SmartCollectionRules rules) async {
-    final collection = await getCollection(id, includeGameCount: false);
+    final collection = await getCollection(id);
     if (collection == null || !collection.isSmart) {
       throw StateError('Only smart collections have rules');
     }
@@ -256,7 +251,7 @@ class CollectionsService {
   }
 
   static Future<void> _requireManual(String id) async {
-    final collection = await getCollection(id, includeGameCount: false);
+    final collection = await getCollection(id);
     if (collection == null || collection.isSmart) {
       throw StateError('Membership is editable only for manual collections');
     }

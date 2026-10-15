@@ -395,16 +395,28 @@ class _SystemGamesListState extends State<SystemGamesList> {
   int _lastCollectionRevision = 0;
   bool _pendingCollectionRefresh = false;
 
+  bool _collectionLoadFailed = false;
+
   int get _currentCollectionRevision => _collectionsProvider.collectionRevision(
     SystemFolderNames.collectionIdOf(widget.system.folderName) ?? '',
   );
 
+  /// The provider's evaluated matches when this list is a smart collection,
+  /// so opening or reloading it skips re-evaluating the whole library.
+  Set<String>? get _smartCollectionPaths {
+    final id = SystemFolderNames.collectionIdOf(widget.system.folderName);
+    return id == null ? null : _collectionsProvider.smartPathsFor(id);
+  }
+
   void _onCollectionsUpdated() {
     if (_lastCollectionRevision == _currentCollectionRevision) return;
     _lastCollectionRevision = _currentCollectionRevision;
+    // The list is emptied to free RAM during gameplay and reloaded on return;
+    // refilling it now would undo that.
     if (SystemFolderNames.isCollection(widget.system.folderName) &&
         mounted &&
-        !_isNavigatingBack) {
+        !_isNavigatingBack &&
+        !_isGameLaunching) {
       if (_deferFavoriteReseat) {
         _pendingCollectionRefresh = true;
       } else {
@@ -1124,7 +1136,9 @@ class _SystemGamesListState extends State<SystemGamesList> {
             ),
             SizedBox(height: 4.r),
             Text(
-              (collection?.rulesInvalid == true
+              (_collectionLoadFailed
+                      ? AppLocale.collectionLoadError
+                      : collection?.rulesInvalid == true
                       ? AppLocale.smartInvalidRules
                       : collection?.isSmart == true
                       ? AppLocale.smartNoMatches

@@ -158,6 +158,39 @@ void main() {
     expect(find.text('Shooters'), findsNothing);
   });
 
+  testWidgets('a second B while the menu fades out leaves the route below', (
+    tester,
+  ) async {
+    useViewport(tester, const Size(1920, 1080));
+    final ctx = await pumpHost(tester);
+    late BuildContext screen;
+    Navigator.of(ctx).push(
+      MaterialPageRoute<void>(
+        builder: (context) {
+          screen = context;
+          return const Scaffold(body: Text('Screen'));
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+    // ignore: unawaited_futures
+    showAnchoredContextMenu(context: screen, items: items);
+    await tester.pumpAndSettle();
+    await settleNavGrace(tester);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await tester.pump(const Duration(milliseconds: 10));
+    // Past the action debounce, but the fade-out has not finished.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 150)),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settings'), findsNothing);
+    expect(find.text('Screen'), findsOneWidget);
+  });
+
   testWidgets('activating a leaf resolves with its id', (tester) async {
     useViewport(tester, const Size(1920, 1080));
     final ctx = await pumpHost(tester);

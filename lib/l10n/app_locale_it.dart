@@ -2,8 +2,8 @@ part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleIt = {
   AppLocale.smartMatchesOne: '1 gioco corrispondente',
-  AppLocale.smartCollection: 'Collezione intelligente',
-  AppLocale.manualCollection: 'Collezione manuale',
+  AppLocale.smartCollection: 'Raccolta intelligente',
+  AppLocale.manualCollection: 'Raccolta manuale',
   AppLocale.smartEditRules: 'Modifica regole',
   AppLocale.smartMatchAll: 'Soddisfa tutte le regole',
   AppLocale.smartMatchAny: 'Soddisfa una regola',
@@ -12,7 +12,7 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.smartCustomValue: 'Inserisci un valore',
   AppLocale.smartMatches: '{count} giochi corrispondenti',
   AppLocale.smartInvalidRules:
-      'Impossibile leggere queste regole. Modificale per ripristinare la collezione.',
+      'Impossibile leggere queste regole. Modificale per ripristinare la raccolta.',
   AppLocale.smartInvalidValue: 'Inserisci un valore valido per questa regola.',
   AppLocale.smartNoMatches: 'Nessun gioco soddisfa ancora queste regole.',
   AppLocale.smartPreviewError: 'Impossibile caricare l’anteprima. Riprova.',
@@ -21,9 +21,6 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.smartDone: 'Fine',
   AppLocale.smartLower: 'Minimo',
   AppLocale.smartUpper: 'Massimo',
-  AppLocale.smartSystem: 'Sistema',
-  AppLocale.smartTitle: 'Titolo',
-  AppLocale.smartYear: 'Anno di uscita',
   AppLocale.smartRating: 'Valutazione (0–10)',
   AppLocale.smartPlayed: 'Giocato',
   AppLocale.smartIs: 'È',
@@ -38,6 +35,10 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.smartWithinDays: 'Negli ultimi',
   AppLocale.smartNotWithinDays: 'Non negli ultimi',
   AppLocale.smartDays: '{count} giorni',
+  AppLocale.smartDaysOne: '{count} giorno',
+  AppLocale.smartDaysFew: '{count} giorni',
+  AppLocale.collectionLoadError:
+      'Impossibile caricare i giochi di questa raccolta.',
   AppLocale.smartRulesOnly:
       'I giochi vengono inclusi automaticamente secondo queste regole.',
   AppLocale.customSounds: "Suoni personalizzati",

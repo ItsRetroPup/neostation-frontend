@@ -88,6 +88,14 @@ abstract class DatabaseExecutorAdapter {
 }
 
 /// Concrete implementation of [DatabaseExecutorAdapter] using `package:sqlite3`.
+/// Inputs for evaluating smart-collection rules: slim game rows, naming
+/// settings keyed by `app_system_id`, and lower-case extensions by system id.
+typedef RuleLibraryRows = ({
+  List<Map<String, Object?>> games,
+  Map<String, Map<String, Object?>> settings,
+  Map<String, Set<String>> extensions,
+});
+
 class DatabaseAdapter implements DatabaseExecutorAdapter {
   final sqlite.Database _db;
   DatabaseAdapter(this._db);
@@ -4564,36 +4572,143 @@ class SqliteService {
     return results.map((row) => DatabaseGameModel.fromJson(row)).toList();
   }
 
-  /// Opens a separate read-only connection for the expensive joined library
-  /// query. Only the filename crosses isolates, never a native SQLite handle.
-  static Future<List<DatabaseGameModel>> getAllGamesInBackground() async {
+  /// Retrieves full rows for exactly [romPaths], in no particular order.
+  ///
+  /// Smart collections open from paths the rule evaluation already produced,
+  /// so only the matched games are decoded on the UI isolate. Chunked to stay
+  /// far below SQLite's bound-parameter limit on large matches.
+  static Future<List<DatabaseGameModel>> getGamesByRomPaths(
+    Iterable<String> romPaths,
+  ) async {
+    final paths = romPaths.toList();
+    if (paths.isEmpty) return [];
+    final db = await instance.database;
+    final games = <DatabaseGameModel>[];
+    const chunk = 500;
+    for (var i = 0; i < paths.length; i += chunk) {
+      final part = paths.sublist(i, (i + chunk).clamp(0, paths.length));
+      final rows = await db.rawQuery(
+        '$_allGamesSelect WHERE ur.rom_path IN '
+        '(${List.filled(part.length, '?').join(',')})',
+        part,
+      );
+      games.addAll(rows.map(DatabaseGameModel.fromJson));
+    }
+    return games;
+  }
+
+  /// Reads [RuleLibraryRows] and runs [compute] on them off the UI isolate.
+  ///
+  /// With WAL, a separate read-only connection in the worker isolate reads
+  /// and [compute] runs there too, so the rows never cross back; only the
+  /// filename crosses in, never a native SQLite handle. Without WAL (it is
+  /// best-effort and fails on some SD/exFAT setups) a second connection's
+  /// SHARED lock could make a UI-isolate commit spin in its busy handler, and
+  /// an in-memory test database cannot be reopened at all, so those cases
+  /// read on the main connection and only [compute] moves to the worker.
+  static Future<T> readRuleLibrary<T>(
+    T Function(RuleLibraryRows rows) compute,
+  ) async {
     final db = await instance.database;
     final databases = await db.rawQuery('PRAGMA database_list');
     final filename =
         databases.firstWhere((row) => row['name'] == 'main')['file'] as String;
-    if (filename.isEmpty) {
-      // In-memory test databases cannot be reopened by another connection.
-      return getAllGames();
+    final journal = filename.isEmpty
+        ? null
+        : (await db.rawQuery('PRAGMA journal_mode')).single.values.single;
+    if (journal.toString().toLowerCase() == 'wal') {
+      return _readRuleLibraryInBackground(filename, compute);
     }
-    return _readAllGamesInBackground(filename);
+    final rows = _ruleLibraryRows(
+      await db.rawQuery(_ruleLibraryQuery),
+      await db.rawQuery(_ruleLibrarySettingsQuery),
+      await db.rawQuery(_ruleLibraryExtensionsQuery),
+    );
+    return _computeInBackground(rows, compute);
   }
 
-  static Future<List<DatabaseGameModel>> _readAllGamesInBackground(
+  // A separate frame so the worker closure captures only sendable values.
+  static Future<T> _computeInBackground<T>(
+    RuleLibraryRows rows,
+    T Function(RuleLibraryRows rows) compute,
+  ) => Isolate.run(() => compute(rows));
+
+  static Future<T> _readRuleLibraryInBackground<T>(
     String filename,
+    T Function(RuleLibraryRows rows) compute,
   ) => Isolate.run(() {
     final db = sqlite.sqlite3.open(filename, mode: sqlite.OpenMode.readOnly);
     try {
       db.execute('PRAGMA busy_timeout = 5000');
-      return db
-          .select(_allGamesQuery)
-          .map((row) => DatabaseGameModel.fromJson(row))
-          .toList();
+      // One read transaction, so games and naming settings agree.
+      db.execute('BEGIN');
+      try {
+        return compute(
+          _ruleLibraryRows(
+            db.select(_ruleLibraryQuery),
+            db.select(_ruleLibrarySettingsQuery),
+            db.select(_ruleLibraryExtensionsQuery),
+          ),
+        );
+      } finally {
+        db.execute('COMMIT');
+      }
     } finally {
       db.close();
     }
   });
 
-  static const _allGamesQuery = '''
+  static RuleLibraryRows _ruleLibraryRows(
+    List<Map<String, Object?>> games,
+    List<Map<String, Object?>> settings,
+    List<Map<String, Object?>> extensions,
+  ) {
+    final extensionsBySystem = <String, Set<String>>{};
+    for (final row in extensions) {
+      extensionsBySystem
+          .putIfAbsent(row['system_id'].toString(), () => {})
+          .add(row['extension'].toString().toLowerCase());
+    }
+    return (
+      games: games,
+      settings: {
+        for (final row in settings) row['app_system_id'].toString(): row,
+      },
+      extensions: extensionsBySystem,
+    );
+  }
+
+  /// The columns a smart rule can test, plus what the editor preview shows.
+  /// Descriptions and media stay behind so a broad rule never moves the whole
+  /// library's text between isolates.
+  static const _ruleLibraryQuery = '''
+      SELECT
+        ur.filename, ur.rom_path, ur.is_favorite, ur.is_hidden, ur.play_time,
+        ur.last_played, ur.title_name,
+        s.id as system_id, s.real_name as system_real_name,
+        s.folder_name as system_folder_name,
+        COALESCE(usm.real_name, CASE WHEN s.folder_name IN ('android') THEN ur.title_name END, ur.filename) as game_display_name,
+        usm.real_name as ss_real_name,
+        usm.rating,
+        COALESCE(usm.release_date, CASE WHEN s.folder_name IN ('android') THEN ur.year END) as year,
+        COALESCE(usm.developer, CASE WHEN s.folder_name IN ('android') THEN ur.developer END) as developer,
+        COALESCE(usm.publisher, CASE WHEN s.folder_name IN ('android') THEN ur.publisher END) as publisher,
+        COALESCE(usm.genre, CASE WHEN s.folder_name IN ('android') THEN ur.genre END) as genre
+      FROM user_roms ur
+      JOIN app_systems s ON ur.app_system_id = s.id
+      LEFT JOIN user_screenscraper_metadata usm ON ur.app_system_id = usm.app_system_id AND ur.filename = usm.filename
+      ''';
+
+  /// Per-system naming settings, so title rules see the displayed name.
+  static const _ruleLibrarySettingsQuery = 'SELECT * FROM user_system_settings';
+
+  static const _ruleLibraryExtensionsQuery =
+      'SELECT system_id, extension FROM app_system_extensions';
+
+  static const _allGamesQuery =
+      '$_allGamesSelect ORDER BY ur.is_favorite DESC, LOWER(game_display_name) ASC';
+
+  static const _allGamesSelect = '''
       SELECT
         ur.filename, ur.rom_path, ur.is_favorite, ur.is_hidden, ur.play_time, ur.last_played,
         ur.cloud_sync_enabled, ur.title_id, ur.title_name,
@@ -4620,7 +4735,6 @@ class SqliteService {
       FROM user_roms ur
       JOIN app_systems s ON ur.app_system_id = s.id
       LEFT JOIN user_screenscraper_metadata usm ON ur.app_system_id = usm.app_system_id AND ur.filename = usm.filename
-      ORDER BY ur.is_favorite DESC, LOWER(game_display_name) ASC
       ''';
 
   /// Every scanned game as `(filename, romname, system folder)` — the columns
@@ -4877,20 +4991,6 @@ class SqliteService {
       [romPath],
     );
     return rows.map((r) => r['collection_id'].toString()).toList();
-  }
-
-  /// Returns every `rom_path` that belongs to at least one collection.
-  ///
-  /// One query for the whole library, so the games views can badge their rows
-  /// without asking per game: `user_collection_items` holds only what the user
-  /// actually filed, so the set is bounded by their collections, not by the
-  /// ROM count.
-  static Future<Set<String>> getCollectionMemberRomPaths() async {
-    final db = await instance.database;
-    final rows = await db.rawQuery(
-      'SELECT DISTINCT rom_path FROM user_collection_items',
-    );
-    return {for (final row in rows) row['rom_path'].toString()};
   }
 
   /// Retrieves the games in a collection, in the same shape as
