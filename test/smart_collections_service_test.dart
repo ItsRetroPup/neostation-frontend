@@ -301,6 +301,40 @@ void main() {
     },
   );
 
+  test('smart collections sort by the displayed name', () async {
+    // Scraped titles sort Alpha < Zulu; the filenames sort the other way.
+    await db.execute(
+      "INSERT INTO user_roms (filename, rom_path, app_system_id) VALUES ('B.sfc', '/b.sfc', 'snes'), ('A.sfc', '/a.sfc', 'snes')",
+    );
+    await db.execute(
+      "INSERT INTO user_screenscraper_metadata (app_system_id, filename, real_name) VALUES ('snes', 'B.sfc', 'Alpha'), ('snes', 'A.sfc', 'Zulu')",
+    );
+    final collection = await CollectionsService.createCollection(
+      'Everything',
+      rules: SmartCollectionRules(
+        rules: [
+          SmartRule(
+            field: SmartField.system,
+            operator: SmartOperator.isEqual,
+            value: ['snes'],
+          ),
+        ],
+      ),
+    );
+    const paths = {'/a.sfc', '/b.sfc'};
+    Future<List<String>> order() async =>
+        (await SmartCollectionsService.gamesFor(
+          collection.id,
+          smartPaths: paths,
+        )).map((g) => g.romPath).toList();
+
+    expect(await order(), ['/b.sfc', '/a.sfc']);
+    await db.execute(
+      "INSERT INTO user_system_settings (app_system_id, prefer_file_name) VALUES ('snes', 1)",
+    );
+    expect(await order(), ['/a.sfc', '/b.sfc']);
+  });
+
   test('title rules match the displayed name, not the raw filename', () async {
     await db.execute(
       "INSERT INTO app_system_extensions (system_id, extension) VALUES ('snes', 'sfc')",

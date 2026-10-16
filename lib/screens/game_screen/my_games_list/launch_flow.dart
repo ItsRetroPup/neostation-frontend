@@ -96,10 +96,19 @@ extension _LaunchFlow on _SystemGamesListState {
 
     // Reload games list (was cleared to free RAM during gameplay).
     try {
-      final updatedGames = await GameService.loadGamesForSystem(
-        widget.system,
-        smartPaths: _smartCollectionPaths,
-      );
+      final List<GameModel> updatedGames;
+      try {
+        updatedGames = await GameService.loadGamesForSystem(
+          widget.system,
+          smartPaths: _smartCollectionPaths,
+        );
+      } catch (_) {
+        // Only collections throw. The list was cleared for gameplay, so show
+        // the load error rather than an empty-collection message.
+        if (mounted) rebuild(() => _collectionLoadFailed = true);
+        rethrow;
+      }
+      _collectionLoadFailed = false;
       if (!mounted) return;
 
       final previousRomPath = _selectedGame?.romPath;

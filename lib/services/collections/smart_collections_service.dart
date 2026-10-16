@@ -104,11 +104,14 @@ class SmartCollectionsService {
     final games = (await GameRepository.getGamesByRomPaths(
       paths,
     )).where(SmartCollectionEvaluator.isEligible).toList();
+    // Order by the name the list shows, which honours "prefer file name".
+    final names = {
+      for (final e in (await GameListService.listDisplayNames(games)).entries)
+        e.key: e.value.toLowerCase(),
+    };
     games.sort((a, b) {
       if (a.isFavorite != b.isFavorite) return a.isFavorite ? -1 : 1;
-      return a.displayTitle.toLowerCase().compareTo(
-        b.displayTitle.toLowerCase(),
-      );
+      return names[a.romPath]!.compareTo(names[b.romPath]!);
     });
     return games;
   }

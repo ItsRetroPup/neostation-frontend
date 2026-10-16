@@ -387,13 +387,14 @@ void main() {
         ),
         isTrue,
       );
+      // A future date (clock skew) counts as played now: within, not outside.
+      final future = game(last: now.add(const Duration(days: 1)));
       expect(
-        matches(
-          game(last: now.add(const Duration(days: 1))),
-          SmartField.lastPlayed,
-          SmartOperator.withinDays,
-          7,
-        ),
+        matches(future, SmartField.lastPlayed, SmartOperator.withinDays, 7),
+        isTrue,
+      );
+      expect(
+        matches(future, SmartField.lastPlayed, SmartOperator.notWithinDays, 7),
         isFalse,
       );
       for (final op in [
@@ -417,6 +418,10 @@ void main() {
       expect(
         evaluator.nextBoundary([game(last: cutoff)], [definition]),
         now.add(const Duration(milliseconds: 1)),
+      );
+      expect(
+        evaluator.nextBoundary([future], [definition]),
+        now.add(const Duration(days: 7, milliseconds: 1)),
       );
     },
   );

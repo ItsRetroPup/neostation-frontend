@@ -49,13 +49,14 @@ class SmartCollectionEvaluator {
       return value == rule.value;
     }
     if (rule.field == SmartField.lastPlayed) {
-      final last = game.lastPlayed;
-      if (last == null) return rule.operator == SmartOperator.notWithinDays;
+      final played = game.lastPlayed;
+      if (played == null) return rule.operator == SmartOperator.notWithinDays;
+      // A future date (clock skew, a sync from a device running ahead) counts
+      // as played now, so the game lands in exactly one of the two rules.
+      final last = played.isAfter(now) ? now : played;
       final cutoff = now.subtract(Duration(days: (rule.value as num).toInt()));
-      final within = !last.isBefore(cutoff) && !last.isAfter(now);
-      return rule.operator == SmartOperator.withinDays
-          ? within
-          : last.isBefore(cutoff);
+      final within = !last.isBefore(cutoff);
+      return rule.operator == SmartOperator.withinDays ? within : !within;
     }
     final text = switch (rule.field) {
       SmartField.title => titleOf?.call(game) ?? game.displayTitle,
@@ -244,8 +245,9 @@ class SmartCollectionEvaluator {
         .map((r) => (r.value as num).toInt())
         .toSet();
     for (final game in games) {
-      final last = game.lastPlayed;
-      if (last == null) continue;
+      final played = game.lastPlayed;
+      if (played == null) continue;
+      final last = played.isAfter(now) ? now : played;
       for (final day in days) {
         final boundary = last
             .add(Duration(days: day))

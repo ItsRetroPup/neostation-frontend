@@ -286,18 +286,9 @@ class GameListService {
   static Future<List<GameModel>> _mapAggregateGames(
     List<DatabaseGameModel> databaseGames,
   ) async {
-    final systemIds = databaseGames
-        .map((g) => g.appSystemId)
-        .whereType<String>()
-        .toSet();
-
-    final settingsBySystem = <String, Map<String, dynamic>>{};
-    final extensionsBySystem = <String, Set<String>>{};
-    for (final sid in systemIds) {
-      settingsBySystem[sid] = await SystemRepository.getSystemSettings(sid);
-      final exts = await SystemRepository.getExtensionsForSystem(sid);
-      extensionsBySystem[sid] = exts.map((e) => e.toLowerCase()).toSet();
-    }
+    final (:settingsBySystem, :extensionsBySystem) = await _namingBySystem(
+      databaseGames,
+    );
 
     return databaseGames.map((dbGame) {
       final sid = dbGame.appSystemId ?? '';
@@ -347,6 +338,51 @@ class GameListService {
         titleName: dbGame.titleName,
       );
     }).toList();
+  }
+
+  /// The name each of [databaseGames] shows in a list, by `rom_path`, under
+  /// its own system's naming settings.
+  static Future<Map<String, String>> listDisplayNames(
+    List<DatabaseGameModel> databaseGames,
+  ) async {
+    final (:settingsBySystem, :extensionsBySystem) = await _namingBySystem(
+      databaseGames,
+    );
+    return {
+      for (final dbGame in databaseGames)
+        dbGame.romPath: listDisplayName(
+          dbGame,
+          settingsBySystem[dbGame.appSystemId ?? ''] ?? const {},
+          extensionsBySystem[dbGame.appSystemId ?? ''] ?? const {},
+        ),
+    };
+  }
+
+  /// Naming settings and lower-cased valid extensions, read once per distinct
+  /// system among [databaseGames].
+  static Future<
+    ({
+      Map<String, Map<String, dynamic>> settingsBySystem,
+      Map<String, Set<String>> extensionsBySystem,
+    })
+  >
+  _namingBySystem(List<DatabaseGameModel> databaseGames) async {
+    final systemIds = databaseGames
+        .map((g) => g.appSystemId)
+        .whereType<String>()
+        .toSet();
+
+    final settingsBySystem = <String, Map<String, dynamic>>{};
+    final extensionsBySystem = <String, Set<String>>{};
+    for (final sid in systemIds) {
+      settingsBySystem[sid] = await SystemRepository.getSystemSettings(sid);
+      final exts = await SystemRepository.getExtensionsForSystem(sid);
+      extensionsBySystem[sid] = exts.map((e) => e.toLowerCase()).toSet();
+    }
+    return (
+      settingsBySystem: settingsBySystem,
+      extensionsBySystem: extensionsBySystem,
+    );
   }
 
   /// Fetches detailed metadata for a specific game instance.
