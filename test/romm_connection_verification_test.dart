@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -94,8 +96,15 @@ void main() {
     expect(await RommRepository.getConfig(), isNotNull);
   });
 
+  /// Waits for the background check [RommProvider.initialize] starts.
+  Future<void> settle(bool Function() done) async {
+    for (var i = 0; i < 200 && !done(); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+  }
+
   test(
-    'restored credentials are verified and preserved on auth failure',
+    'a rejected saved account opens connected, then reports the error',
     () async {
       await RommRepository.saveConfig(
         serverUrl: 'https://romm.local',
@@ -103,6 +112,9 @@ void main() {
       );
       serve(401);
       await provider.initialize();
+      // Optimistic: the cached library is usable while the check runs.
+      expect(provider.status, RommConnectionStatus.connected);
+      await settle(() => provider.status == RommConnectionStatus.error);
       expect(provider.status, RommConnectionStatus.error);
       expect(provider.lastError, isNotNull);
       expect(requests, ['/api/users/me']);
@@ -124,8 +136,80 @@ void main() {
     );
     serve(403);
     await provider.initialize();
+    await settle(() => provider.status == RommConnectionStatus.error);
     expect(provider.status, RommConnectionStatus.error);
     expect(requests.first, '/api/users/me');
     expect((await RommRepository.getConfig())!['password'], 'password');
+  });
+
+  test('an unreachable server keeps the saved account connected', () async {
+    await RommRepository.saveConfig(
+      serverUrl: 'https://romm.local',
+      apiKey: 'test-key',
+    );
+    RommService.debugUseHttpClient(
+      MockClient((request) async {
+        requests.add(request.url.path);
+        throw const SocketException('Network is unreachable');
+      }),
+    );
+    await provider.initialize();
+    await settle(() => requests.isNotEmpty);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(requests, ['/api/users/me']);
+    expect(provider.status, RommConnectionStatus.connected);
+  });
+
+  test('a token refreshed by the check is persisted', () async {
+    await RommRepository.saveConfig(
+      serverUrl: 'https://romm.local',
+      username: 'testuser',
+      password: 'password',
+    );
+    await RommRepository.saveTokens(
+      accessToken: 'expired-token',
+      refreshToken: 'old-refresh',
+      tokenExpires: DateTime.now()
+          .subtract(const Duration(hours: 1))
+          .millisecondsSinceEpoch,
+    );
+    serve(200);
+    await provider.initialize();
+    Map<String, dynamic>? config;
+    for (var i = 0; i < 200; i++) {
+      config = await RommRepository.getConfig();
+      if (config!['access_token'] == 'test-token') break;
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(config!['access_token'], 'test-token');
+    expect(config['refresh_token'], 'test-refresh');
+    expect(provider.status, RommConnectionStatus.connected);
+  });
+
+  test('a manual connect during the check is not overwritten', () async {
+    await RommRepository.saveConfig(
+      serverUrl: 'https://romm.local',
+      apiKey: 'old-key',
+    );
+    final held = Completer<void>();
+    RommService.debugUseHttpClient(
+      MockClient((request) async {
+        requests.add(request.url.path);
+        if (request.headers['Authorization'] == 'Bearer old-key') {
+          await held.future;
+          return http.Response('{}', 401);
+        }
+        return http.Response(jsonEncode({'username': 'testuser'}), 200);
+      }),
+    );
+    await provider.initialize();
+    await settle(() => requests.isNotEmpty);
+    expect(
+      await provider.connect(serverUrl: 'https://romm.local', apiKey: 'new'),
+      isNull,
+    );
+    held.complete();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(provider.status, RommConnectionStatus.connected);
   });
 }

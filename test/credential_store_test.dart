@@ -198,6 +198,46 @@ void main() {
     });
 
     test(
+      'a delete in Gaming Mode is not undone by the Desktop Mode keyring',
+      () async {
+        final file = _MemoryBackend();
+        // Gaming Mode: the keyring is out of reach, so its copy survives.
+        CredentialStore.debugUseBackends(
+          secure: _BrokenBackend(),
+          file: file,
+          preferEncryptedFile: true,
+        );
+        await CredentialStore.write('token', 'fresh');
+        await CredentialStore.delete('token');
+        // Desktop Mode: the keyring still holds an old copy.
+        final keyring = _MemoryBackend()..values['token'] = 'old';
+        CredentialStore.debugUseBackends(
+          secure: keyring,
+          file: file,
+          preferEncryptedFile: true,
+        );
+        expect(await CredentialStore.read('token'), isNull);
+        expect(file.values['token'], isNull);
+      },
+    );
+
+    test(
+      'a never-seen key still migrates after other keys are owned',
+      () async {
+        final file = _MemoryBackend();
+        final keyring = _MemoryBackend()..values['ra_key'] = 'legacy';
+        CredentialStore.debugUseBackends(
+          secure: keyring,
+          file: file,
+          preferEncryptedFile: true,
+        );
+        await CredentialStore.write('token', 'fresh');
+        expect(await CredentialStore.read('ra_key'), 'legacy');
+        expect(file.values['ra_key'], 'legacy');
+      },
+    );
+
+    test(
       'preserves sources when the file cannot persist a migration',
       () async {
         final secure = _MemoryBackend()..values['token'] = 'legacy';
@@ -215,6 +255,26 @@ void main() {
         );
       },
     );
+  });
+
+  group('gaming distribution detection', () {
+    for (final (name, release, expected) in [
+      ('SteamOS', 'NAME="SteamOS"\nID=steamos\nID_LIKE=arch\n', true),
+      ('Bazzite', 'NAME="Bazzite"\nID=bazzite\nID_LIKE="fedora"\n', true),
+      ('ChimeraOS', 'ID=chimeraos\nID_LIKE=arch\n', true),
+      ('a SteamOS derivative', "ID=holo\nID_LIKE='steamos arch'\n", true),
+      ('Arch', 'NAME="Arch Linux"\nID=arch\n', false),
+      ('Fedora', 'ID=fedora\nVARIANT_ID=steamos-like\n', false),
+      (
+        'Ubuntu with = in a value',
+        'ID=ubuntu\nHOME_URL="https://a.b/?x=1"\n',
+        false,
+      ),
+    ]) {
+      test(name, () {
+        expect(CredentialStore.isGamingDistro(release), expected);
+      });
+    }
   });
 
   test('delete clears every store, including a failing one', () async {
