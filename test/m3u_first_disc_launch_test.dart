@@ -92,6 +92,70 @@ void main() {
     expect(command['data'], 'neostation-realpath:${playlist.path}');
   });
 
+  group('SAF content:// playlists', () {
+    // A real Android SAF document URI: the whole path is one component, so
+    // every separator is a literal `%2F`.
+    const root =
+        'content://com.android.externalstorage.documents/tree/primary%3Aroms'
+        '/document/primary%3Aroms%2Fgc%2F';
+    const saf = '${root}Tales%20of%20Symphonia.m3u';
+    const disc1 = '${root}Tales%20of%20Symphonia%20(Disc%201).rvz';
+
+    test('the first disc resolves as a %2F-encoded sibling', () {
+      expect(
+        LauncherService.m3uFirstDisc(
+          saf,
+          '#EXTM3U\nTales of Symphonia (Disc 1).rvz\n'
+          'Tales of Symphonia (Disc 2).rvz\n',
+        ),
+        disc1,
+      );
+    });
+
+    test('a disc in a subfolder joins with %2F, not a slash', () {
+      expect(
+        LauncherService.m3uFirstDisc(saf, '.hidden/Game (Disc 1).chd\n'),
+        '$root.hidden%2FGame%20(Disc%201).chd',
+      );
+    });
+
+    test('a playlist naming no disc yields null', () {
+      expect(LauncherService.m3uFirstDisc(saf, '#EXTM3U\n\n'), isNull);
+    });
+
+    test('swaps a raw and a marker-wrapped content:// value', () {
+      expect(LauncherService.swapPlaylistForDisc(saf, saf, disc1), disc1);
+      expect(
+        LauncherService.swapPlaylistForDisc(
+          'neostation-localuri:$saf',
+          saf,
+          disc1,
+        ),
+        'neostation-localuri:$disc1',
+      );
+    });
+
+    test('leaves values without the playlist untouched', () {
+      expect(
+        LauncherService.swapPlaylistForDisc('com.dolphinemu', saf, disc1),
+        'com.dolphinemu',
+      );
+    });
+  });
+
+  test('a bare path is swapped in its file:// form too', () {
+    const playlist = '/storage/emulated/0/roms/gc/Tales of Symphonia.m3u';
+    const disc = '/storage/emulated/0/roms/gc/Tales of Symphonia (Disc 1).rvz';
+    expect(
+      LauncherService.swapPlaylistForDisc(
+        Uri.file(playlist).toString(),
+        playlist,
+        disc,
+      ),
+      Uri.file(disc).toString(),
+    );
+  });
+
   group('shipped ps2.json', () {
     final ps2 = SystemModel(
       id: 'ps2',

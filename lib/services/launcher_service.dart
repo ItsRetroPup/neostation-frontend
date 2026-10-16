@@ -467,39 +467,71 @@ class LauncherService {
     final playlist = game.romPath;
     if (playlist == null || !playlist.toLowerCase().endsWith('.m3u')) return;
 
-    final List<String> entries;
+    final String contents;
     try {
-      entries = parseM3uEntries(
-        await GameRepository.readLaunchDescriptor(playlist),
-      );
+      contents = await GameRepository.readLaunchDescriptor(playlist);
     } catch (e) {
       LoggerService.instance.w(
         'm3u first disc: cannot read $playlist ($e); launching the playlist',
       );
       return;
     }
-    if (entries.isEmpty) {
+    final disc = m3uFirstDisc(playlist, contents);
+    if (disc == null) {
       LoggerService.instance.w('m3u first disc: empty playlist $playlist');
       return;
     }
-    final disc = resolveDiscSibling(playlist, entries.first);
-
-    // The placeholders have already embedded the playlist, either verbatim
-    // ({file.path}/{file.localuri} markers, content:// {file.uri}) or as a
-    // file:// URI for a bare path. Swap the URI form first so an encoded path
-    // is not half-replaced by the verbatim pass.
-    String swap(String value) => value
-        .replaceAll(Uri.file(playlist).toString(), Uri.file(disc).toString())
-        .replaceAll(playlist, disc);
 
     final data = command['data'];
-    if (data is String) command['data'] = swap(data);
+    if (data is String) {
+      command['data'] = swapPlaylistForDisc(data, playlist, disc);
+    }
     final extras = (command['extras'] as List?) ?? const [];
     for (final extra in extras) {
       final value = extra['value'];
-      if (value is String) extra['value'] = swap(value);
+      if (value is String) {
+        extra['value'] = swapPlaylistForDisc(value, playlist, disc);
+      }
     }
     LoggerService.instance.i('m3u first disc: launching $disc');
+  }
+
+  /// The first disc of the playlist at [playlistPath] with [contents],
+  /// resolved beside the playlist (a `%2F`-encoded SAF sibling on Android), or
+  /// null when the playlist names no disc.
+  @visibleForTesting
+  static String? m3uFirstDisc(String playlistPath, String contents) {
+    final entries = parseM3uEntries(contents);
+    if (entries.isEmpty) return null;
+    return resolveDiscSibling(playlistPath, entries.first);
+  }
+
+  /// [value], a built launch value, with the playlist swapped for [disc].
+  ///
+  /// The placeholders embed the playlist verbatim (`{file.path}` and
+  /// `{file.localuri}` markers, a `content://` `{file.uri}`) or, for a bare
+  /// path, as a `file://` URI. The `file://` form is swapped first, so its
+  /// encoded path is not half-replaced by the verbatim pass; a `content://`
+  /// playlist has no `file://` form, so that pass is skipped.
+  ///
+  /// This replaces every occurrence. That is right for the shipped templates,
+  /// which carry the playlist as a whole value or a whole marker payload. A
+  /// template embedding it inside a longer string would have that occurrence
+  /// rewritten too.
+  @visibleForTesting
+  static String swapPlaylistForDisc(
+    String value,
+    String playlist,
+    String disc,
+  ) {
+    var swapped = value;
+    if (!playlist.startsWith('content://')) {
+      swapped = swapped.replaceAll(
+        Uri.file(playlist).toString(),
+        Uri.file(disc).toString(),
+      );
+    }
+    return swapped.replaceAll(playlist, disc);
   }
 
   /// Standalone ScummVM expects a registered target ID, not the descriptor URI.
