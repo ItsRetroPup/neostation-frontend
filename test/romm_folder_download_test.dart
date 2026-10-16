@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:neostation/models/romm_rom.dart';
-import 'package:neostation/providers/romm_provider.dart';
 import 'package:neostation/services/romm_archive_service.dart';
 import 'package:neostation/services/romm_service.dart';
 import 'package:path/path.dart' as p;
@@ -93,7 +92,7 @@ void main() {
           downloadedPath,
         );
         expect(archivePath, '$downloadedPath.zip');
-        final indexedName = await RommProvider.prepareArchiveDownload(
+        final indexedName = await RommArchiveService.prepareGameDownload(
           archivePath,
           dir.path,
           rom.fsName,

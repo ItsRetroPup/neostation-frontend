@@ -90,7 +90,7 @@ void main() {
         'Disc 2.chd': [2],
       });
       expect(
-        await RommProvider.prepareArchiveDownload(
+        await RommArchiveService.prepareGameDownload(
           path,
           dir.path,
           'Game',
@@ -116,10 +116,13 @@ void main() {
         'Game/Disc 2.chd': [2],
       });
       expect(
-        await RommProvider.prepareArchiveDownload(path, gameDir.path, 'Game', {
-          'm3u',
-          'chd',
-        }, reuseExistingDirectory: true),
+        await RommArchiveService.prepareGameDownload(
+          path,
+          gameDir.path,
+          'Game',
+          {'m3u', 'chd'},
+          reuseExistingDirectory: true,
+        ),
         'Game.m3u',
       );
       expect(File(p.join(gameDir.path, 'Disc 1.chd')).existsSync(), isTrue);
@@ -158,6 +161,104 @@ void main() {
       expect(File(p.join(dir.path, 'Disc.$dataExt')).existsSync(), isTrue);
     });
   }
+
+  test('gdi track files are not extra playlist discs', () async {
+    final path = zip({
+      'Game.gdi':
+          '3\n1 0 4 2352 track01.bin 0\n2 600 0 2352 "track 02.raw" 0\n3 45000 4 2352 track03.bin 0\n'
+              .codeUnits,
+      'track01.bin': [1],
+      'track 02.raw': [2],
+      'track03.bin': [3],
+    });
+    expect(
+      await RommArchiveService.prepareDownload(path, dir.path, {
+        'm3u',
+        'gdi',
+        'bin',
+      }),
+      'Game.m3u',
+    );
+    expect(File(p.join(dir.path, 'Game.m3u')).readAsLinesSync(), ['Game.gdi']);
+  });
+
+  test('a bundle launches its base game, not an update or DLC', () async {
+    final path = zip({
+      'Game/DLC/x.nsp': [1],
+      'Game/Game [v0].nsp': [2],
+      'Game/Updates/u.nsp': [3],
+      'Game/Game [v65536].nsp': [4],
+    });
+    expect(
+      await RommArchiveService.prepareGameDownload(path, dir.path, 'Game', {
+        'nsp',
+        'xci',
+      }),
+      'Game [v0].nsp',
+    );
+    expect(File(p.join(dir.path, 'Game', 'DLC', 'x.nsp')).existsSync(), isTrue);
+  });
+
+  test('a bundled playlist with wrapper-prefixed lines is rewritten', () async {
+    final path = zip({
+      'Game/Game.m3u': 'Game/Disc 1.chd\r\nGame/Disc 2.chd\r\n'.codeUnits,
+      'Game/Disc 1.chd': [1],
+      'Game/Disc 2.chd': [2],
+    });
+    expect(
+      await RommArchiveService.prepareGameDownload(path, dir.path, 'Game', {
+        'm3u',
+        'chd',
+      }),
+      'Game.m3u',
+    );
+    expect(File(p.join(dir.path, 'Game', 'Game.m3u')).readAsLinesSync(), [
+      'Disc 1.chd',
+      'Disc 2.chd',
+    ]);
+  });
+
+  test(
+    'a bundled playlist naming missing files is regenerated from the discs',
+    () async {
+      final path = zip({
+        'Game.m3u': 'Missing.chd\n'.codeUnits,
+        'Disc 2.chd': [2],
+        'Disc 1.chd': [1],
+      });
+      expect(
+        await RommArchiveService.prepareGameDownload(path, dir.path, 'Game', {
+          'm3u',
+          'chd',
+        }),
+        'Game.m3u',
+      );
+      expect(File(p.join(dir.path, 'Game', 'Game.m3u')).readAsLinesSync(), [
+        'Disc 1.chd',
+        'Disc 2.chd',
+      ]);
+    },
+  );
+
+  test(
+    'a symlinked system folder still installs (EmuDeck gc -> gamecube)',
+    () async {
+      final real = await Directory(p.join(dir.path, 'gamecube')).create();
+      final link = await Link(p.join(dir.path, 'gc')).create(real.path);
+      // A lone ROM installs straight into the linked system folder.
+      final path = zip({
+        'Game/Game.iso': [1],
+      });
+      expect(
+        await RommArchiveService.prepareGameDownload(path, link.path, 'Game', {
+          'iso',
+        }),
+        'Game.iso',
+      );
+      expect(File(p.join(real.path, 'Game.iso')).existsSync(), isTrue);
+    },
+    skip: Platform.isWindows ? 'Symlinks need elevation on Windows' : false,
+  );
 
   test('unsafe ZIP cannot replace an existing good ROM', () async {
     final existing = File(p.join(dir.path, 'Game.iso'))..writeAsBytesSync([9]);
@@ -226,7 +327,7 @@ void main() {
         'LOOM.000': [1],
       });
       expect(
-        await RommProvider.prepareArchiveDownload(path, dir.path, 'Game', {
+        await RommArchiveService.prepareGameDownload(path, dir.path, 'Game', {
           'scummvm',
         }, scummVm: true),
         'Game.zip',
@@ -275,7 +376,7 @@ void main() {
     }
 
     test(
-      'failed retries clean downloads and preserve the old library',
+      'failed retries keep one archive copy and preserve the old library',
       () async {
         final systemDir = await Directory(p.join(dir.path, 'psx')).create();
         final existing = File(p.join(systemDir.path, 'Game.m3u'))
@@ -296,11 +397,79 @@ void main() {
           expect(File(p.join(systemDir.path, 'Old.chd')).readAsBytesSync(), [
             9,
           ]);
+          // The download is kept beside the library rather than thrown away,
+          // retries do not pile up copies, and no staging folder is left.
           expect(
             systemDir.listSync().map((entry) => p.basename(entry.path)).toSet(),
-            {'Game.m3u', 'Old.chd'},
+            {'Game.m3u', 'Old.chd', 'Game.zip'},
           );
         }
+      },
+    );
+
+    test(
+      'a stale raw root download is replaced by the bundle folder',
+      () async {
+        final systemDir = await Directory(p.join(dir.path, 'psx')).create();
+        // Left by older builds: the folder ZIP saved without an extension,
+        // and a crashed download's staging folder.
+        File(p.join(systemDir.path, 'Game')).writeAsBytesSync([9]);
+        File(p.join(systemDir.path, '.romm_download_7', 'part'))
+          ..createSync(recursive: true)
+          ..writeAsBytesSync([8]);
+        serve({
+          'Game/Disc 1.chd': [1],
+          'Game/Disc 2.chd': [2],
+        });
+        final result = await provider.downloadRom(rom, romFolders: [dir.path]);
+        expect(result.status, RommDownloadStatus.completed);
+        expect(
+          systemDir.listSync().map((entry) => p.basename(entry.path)).toSet(),
+          {'Game'},
+        );
+        final gameDir = Directory(p.join(systemDir.path, 'Game'));
+        expect(
+          gameDir.listSync().map((entry) => p.basename(entry.path)).toSet(),
+          {'Game.m3u', 'Disc 1.chd', 'Disc 2.chd'},
+        );
+      },
+    );
+
+    test('a failed install puts a stale raw download back', () async {
+      final systemDir = await Directory(p.join(dir.path, 'psx')).create();
+      File(p.join(systemDir.path, 'Game')).writeAsBytesSync([9]);
+      serve({
+        'Disc 1.chd': [1],
+        '../escape.chd': [2],
+      });
+      final result = await provider.downloadRom(rom, romFolders: [dir.path]);
+      expect(result.status, RommDownloadStatus.failed);
+      expect(File(p.join(systemDir.path, 'Game')).readAsBytesSync(), [9]);
+      expect(
+        systemDir.listSync().map((entry) => p.basename(entry.path)).toSet(),
+        {'Game', 'Game.zip'},
+      );
+    });
+
+    test(
+      'a recorded download is found in its bundle but not in staging',
+      () async {
+        await RommSaveMapRepository.putMapping(
+          romname: 'Custom.m3u',
+          systemFolder: 'psx',
+          rommRomId: 42,
+          source: RommLinkSource.download,
+          fsName: 'Game',
+        );
+        final staged = File(
+          p.join(dir.path, 'psx', 'Game', '.romm_download_1', 'Custom.m3u'),
+        )..createSync(recursive: true);
+        expect(await provider.isDownloaded(rom, [dir.path]), isFalse);
+        staged.deleteSync();
+        File(
+          p.join(dir.path, 'psx', 'Game', 'Discs', 'Custom.m3u'),
+        ).createSync(recursive: true);
+        expect(await provider.isDownloaded(rom, [dir.path]), isTrue);
       },
     );
 

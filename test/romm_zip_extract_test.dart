@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neostation/providers/romm_provider.dart';
+import 'package:neostation/services/romm_archive_service.dart';
 import 'package:path/path.dart' as p;
 
 void main() {
@@ -27,10 +27,10 @@ void main() {
       'Game.nes': [1, 2],
     });
     expect(
-      await RommProvider.prepareZipDownload(zip, dir.path, 'Game.zip', {
+      await RommArchiveService.prepareDownload(zip, dir.path, {
         '.ZIP',
         'nes',
-      }),
+      }, playlistBaseName: 'Game.zip'),
       'Game.zip',
     );
     expect(File(zip).existsSync(), isTrue);
@@ -43,10 +43,10 @@ void main() {
       'Game/data/extra.dat': [3],
     });
     expect(
-      await RommProvider.prepareZipDownload(zip, dir.path, 'Game.zip', {
+      await RommArchiveService.prepareDownload(zip, dir.path, {
         'iso',
         'chd',
-      }),
+      }, playlistBaseName: 'Game.zip'),
       'Game.iso',
     );
     expect(File(zip).existsSync(), isFalse);
@@ -62,10 +62,10 @@ void main() {
       'Game.cue': 'FILE "Game.bin" BINARY'.codeUnits,
     });
     expect(
-      await RommProvider.prepareZipDownload(zip, dir.path, 'Game.zip', {
+      await RommArchiveService.prepareDownload(zip, dir.path, {
         'bin',
         'cue',
-      }),
+      }, playlistBaseName: 'Game.zip'),
       'Game.cue',
     );
   });
@@ -76,12 +76,10 @@ void main() {
       writeZip({
         'Game.chd': [1],
       });
-      final name = await RommProvider.prepareZipDownload(
-        zip,
-        dir.path,
-        'Game.zip',
-        {'chd', 'm3u'},
-      );
+      final name = await RommArchiveService.prepareDownload(zip, dir.path, {
+        'chd',
+        'm3u',
+      }, playlistBaseName: 'Game.zip');
       expect(name, 'Game.zip.m3u');
       expect(File(p.join(dir.path, name!)).readAsStringSync(), 'Game.chd\n');
       expect(File(zip).existsSync(), isFalse);
@@ -95,9 +93,9 @@ void main() {
         'readme.txt': [1],
       });
       expect(
-        await RommProvider.prepareZipDownload(zip, dir.path, 'Game.zip', {
+        await RommArchiveService.prepareDownload(zip, dir.path, {
           'iso',
-        }),
+        }, playlistBaseName: 'Game.zip'),
         isNull,
       );
       expect(File(zip).existsSync(), isTrue);
@@ -111,7 +109,9 @@ void main() {
       '../escape.iso': [2],
     });
     expect(
-      await RommProvider.prepareZipDownload(zip, dir.path, 'Game.zip', {'iso'}),
+      await RommArchiveService.prepareDownload(zip, dir.path, {
+        'iso',
+      }, playlistBaseName: 'Game.zip'),
       isNull,
     );
     expect(File(zip).existsSync(), isTrue);

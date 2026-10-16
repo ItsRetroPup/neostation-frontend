@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neostation/providers/romm_provider.dart';
 import 'package:archive/archive.dart' as zip;
 import 'package:koni_archive/io.dart';
 import 'package:neostation/services/romm_archive_service.dart';
@@ -57,7 +56,7 @@ void main() {
             ).writeAsBytesSync(zip.ZipEncoder().encode(archive));
           }
           expect(
-            await RommProvider.prepareArchiveDownload(
+            await RommArchiveService.prepareGameDownload(
               archivePath,
               dir.path,
               'Game.$format',
@@ -84,7 +83,7 @@ void main() {
     final archivePath = p.join(dir.path, 'Game.rar');
     await File('test/fixtures/romm_archives/single_game.rar').copy(archivePath);
     expect(
-      await RommProvider.prepareArchiveDownload(
+      await RommArchiveService.prepareGameDownload(
         archivePath,
         dir.path,
         'Game.rar',
@@ -122,7 +121,7 @@ void main() {
             ).writeAsBytesSync(zip.ZipEncoder().encode(archive));
           }
           expect(
-            await RommProvider.prepareArchiveDownload(
+            await RommArchiveService.prepareGameDownload(
               archivePath,
               dir.path,
               'Game.$format',
@@ -152,7 +151,7 @@ void main() {
     final archivePath = p.join(dir.path, 'Game.rar');
     await File('test/fixtures/romm_archives/rar5.rar').copy(archivePath);
     expect(
-      await RommProvider.prepareArchiveDownload(
+      await RommArchiveService.prepareGameDownload(
         archivePath,
         dir.path,
         'Game.rar',
@@ -176,7 +175,7 @@ void main() {
         'Disc 2.chd': [2],
       });
       expect(
-        await RommProvider.prepareArchiveDownload(
+        await RommArchiveService.prepareGameDownload(
           archivePath,
           dir.path,
           'Game.7z',

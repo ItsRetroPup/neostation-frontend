@@ -1316,11 +1316,12 @@ class RommProvider extends ChangeNotifier {
             return RommLocalCopy(
               system: system,
               directory: dir,
+              systemDirectory: dir,
               filename: await _onDiskName(file, candidate),
             );
           }
         }
-        // Probe the predictable bundle folder before a legacy recursive search.
+        // Probe the predictable bundle folder before a recursive search.
         final bundleName = RommArchiveService.gameFolderName(rom.fsName);
         if (isSafeFileName(bundleName)) {
           for (final candidate in candidates) {
@@ -1336,12 +1337,30 @@ class RommProvider extends ChangeNotifier {
             }
           }
         }
-        if (system.folderName == 'scummvm' || recorded != null) {
+        // ScummVM data lives in an ID-named folder nothing else predicts, so
+        // its whole system folder is searched. Any other recorded download
+        // can only sit deeper inside its own bundle folder; searching just
+        // that keeps a moved or deleted download from costing a walk of the
+        // whole system folder on every badge probe.
+        if (system.folderName == 'scummvm') {
           final nested = await _findNamedFileRecursively(dir, candidates);
           if (nested != null) {
             return RommLocalCopy(
               system: system,
               directory: nested.parent.path,
+              systemDirectory: dir,
+              filename: p.basename(nested.path),
+            );
+          }
+        } else if (recorded != null && isSafeFileName(bundleName)) {
+          final bundleDir = p.join(dir, bundleName);
+          final nested = await _findNamedFileRecursively(bundleDir, candidates);
+          if (nested != null) {
+            return RommLocalCopy(
+              system: system,
+              // The bundle folder, not the nested parent: a re-download
+              // installs into the bundle, never into its DLC/ subfolder.
+              directory: bundleDir,
               systemDirectory: dir,
               filename: p.basename(nested.path),
             );
@@ -1361,17 +1380,25 @@ class RommProvider extends ChangeNotifier {
     List<String> names,
   ) async {
     final wanted = names.map((name) => name.toLowerCase()).toSet();
-    try {
-      await for (final entity in Directory(
-        dir,
-      ).list(recursive: true, followLinks: false)) {
-        if (entity is File &&
-            wanted.contains(p.basename(entity.path).toLowerCase())) {
-          return entity;
+    final pending = [Directory(dir)];
+    while (pending.isNotEmpty) {
+      try {
+        await for (final entity in pending.removeLast().list(
+          followLinks: false,
+        )) {
+          final name = p.basename(entity.path);
+          if (entity is File && wanted.contains(name.toLowerCase())) {
+            return entity;
+          }
+          // Hidden folders include in-flight `.romm_download_*` staging,
+          // whose half-written files are not downloaded copies.
+          if (entity is Directory && !name.startsWith('.')) {
+            pending.add(entity);
+          }
         }
+      } catch (_) {
+        // Missing or unreadable directories are simply not downloaded copies.
       }
-    } catch (_) {
-      // Missing or unreadable directories are simply not downloaded copies.
     }
     return null;
   }
@@ -1638,6 +1665,11 @@ class RommProvider extends ChangeNotifier {
     required List<String> romFolders,
     FileProvider? fileProvider,
   }) async {
+    // The download folder is per ROM, so one ROM downloads once at a time.
+    final active = _downloads[rom.id];
+    if (active != null && active.status == RommDownloadStatus.downloading) {
+      return active;
+    }
     final tracker = RommDownload(romId: rom.id);
     _downloads[rom.id] = tracker;
     _notifyDownloadState();
@@ -1691,13 +1723,50 @@ class RommProvider extends ChangeNotifier {
     final extensions = await SystemRepository.getExtensionsForSystem(
       system.id ?? '',
     );
+    final scummVm = system.folderName == 'scummvm';
+    final rootCopy =
+        existing != null &&
+        p.equals(
+          existing.directory,
+          existing.systemDirectory ?? existing.directory,
+        );
+    // Install into the existing copy's folder only when it is a game folder
+    // (a bundle) or the root playlist of an older multi-disc layout; anything
+    // else at the root would spread a bundle loose into the system folder.
+    final reuseExistingDirectory =
+        existing != null &&
+        !scummVm &&
+        (!rootCopy || p.extension(existing.filename).toLowerCase() == '.m3u');
+    // A root file no system extension claims is an unextracted download left
+    // by older builds (an extensionless `switch/Game Name`). It would block
+    // the `switch/Game Name/` folder, so it is replaced rather than reused.
+    final staleRaw =
+        existing != null &&
+            !scummVm &&
+            rootCopy &&
+            !reuseExistingDirectory &&
+            !extensions
+                .map((e) => e.toLowerCase().replaceFirst(RegExp(r'^\.'), ''))
+                .contains(
+                  p
+                      .extension(existing.filename)
+                      .toLowerCase()
+                      .replaceFirst('.', ''),
+                )
+        ? p.join(existing.directory, existing.filename)
+        : null;
     // Downloads never overwrite library files before extraction is verified.
-    final downloadDir = await Directory(destDir).createTemp('.romm_download_');
+    // The folder is named per ROM so a retry after a crash replaces the
+    // leftovers instead of leaving another multi-GB folder behind.
+    final downloadDir = Directory(p.join(destDir, '.romm_download_${rom.id}'));
+    await _sweepDownloadDirs(destDir, rom.id);
+    await downloadDir.create(recursive: true);
     var destPath = p.join(
       downloadDir.path,
       appendZipExt ? '${rom.fsName}.zip' : rom.fsName,
     );
     var indexedName = p.basename(destPath);
+    String? staleBackup;
     try {
       try {
         await _service.downloadRom(
@@ -1747,20 +1816,24 @@ class RommProvider extends ChangeNotifier {
       // key on this, so it must match what the scan records as GameModel.romname.
       indexedName = p.basename(destPath);
       final archiveExtension = p.extension(destPath).toLowerCase();
-      if (system.folderName == 'scummvm' ||
-          {'.zip', '.7z', '.rar'}.contains(archiveExtension)) {
-        final extractedName = await prepareArchiveDownload(
+      if (scummVm || {'.zip', '.7z', '.rar'}.contains(archiveExtension)) {
+        if (staleRaw != null) {
+          // Moved aside, not deleted, so a failed install can put it back.
+          staleBackup = p.join(downloadDir.path, '.stale');
+          await File(staleRaw).rename(staleBackup);
+        }
+        final extractedName = await RommArchiveService.prepareGameDownload(
           destPath,
           destDir,
           rom.fsName,
           extensions,
-          reuseExistingDirectory:
-              existing != null && system.folderName != 'scummvm',
+          reuseExistingDirectory: reuseExistingDirectory,
           playlistName: existing?.filename,
           isMultiFile: isArchive,
-          scummVm: system.folderName == 'scummvm',
+          scummVm: scummVm,
         );
         if (extractedName == null) {
+          await _keepFailedDownload(destPath, destDir, staleRaw, staleBackup);
           tracker
             ..status = RommDownloadStatus.failed
             ..error = RommDownloadError.extraction
@@ -1774,6 +1847,7 @@ class RommProvider extends ChangeNotifier {
         await File(destPath).rename(p.join(destDir, indexedName));
       }
     } catch (e) {
+      await _keepFailedDownload(destPath, destDir, staleRaw, staleBackup);
       tracker
         ..status = RommDownloadStatus.failed
         ..error = RommDownloadError.extraction
@@ -1781,7 +1855,13 @@ class RommProvider extends ChangeNotifier {
       _notifyDownloadState();
       return tracker;
     } finally {
-      await downloadDir.delete(recursive: true);
+      try {
+        await downloadDir.delete(recursive: true);
+      } catch (e) {
+        // A locked file (Windows AV) must not leave the tracker downloading;
+        // the next download's sweep retries the cleanup.
+        _log.w('RomM: could not remove ${downloadDir.path}: $e');
+      }
     }
 
     // Best-effort metadata + cover import from RomM (never fails the download).
@@ -2009,77 +2089,58 @@ class RommProvider extends ChangeNotifier {
   /// Mapping rows per transaction in [_writeBulkLinks].
   static const int _linkWriteChunk = 200;
 
-  /// Prepares downloads through the same staged worker for every archive format.
-  @visibleForTesting
-  static Future<String?> prepareArchiveDownload(
+  /// After a failed install, keeps the downloaded archive in the ROM folder
+  /// (so a multi-GB download is not lost and can be extracted by hand) and
+  /// puts back a stale raw download that was moved aside for the install.
+  /// Best effort: a failure here must not mask the install failure.
+  Future<void> _keepFailedDownload(
     String archivePath,
-    String systemDir,
-    String gameName,
-    Set<String> extensions, {
-    bool isMultiFile = false,
-    bool scummVm = false,
-    bool reuseExistingDirectory = false,
-    String? playlistName,
-  }) async {
-    return RommArchiveService.prepareGameDownload(
-      archivePath,
-      systemDir,
-      gameName,
-      extensions,
-      isMultiFile: isMultiFile,
-      scummVm: scummVm,
-      reuseExistingDirectory: reuseExistingDirectory,
-      playlistName: playlistName,
-    );
+    String destDir,
+    String? staleRaw,
+    String? staleBackup,
+  ) async {
+    try {
+      if (staleRaw != null &&
+          staleBackup != null &&
+          await File(staleBackup).exists() &&
+          !await File(staleRaw).exists()) {
+        await File(staleBackup).rename(staleRaw);
+      }
+      final kept = p.join(destDir, p.basename(archivePath));
+      if (await File(archivePath).exists() && !await File(kept).exists()) {
+        await File(archivePath).rename(kept);
+      }
+    } catch (e) {
+      _log.w('RomM: could not keep failed download $archivePath: $e');
+    }
   }
 
-  @visibleForTesting
-  static Future<String?> prepareZipDownload(
-    String zipPath,
-    String destDir,
-    String fallbackBaseName,
-    Set<String> extensions, {
-    bool isMultiFile = false,
-    bool flattenSingleFile = false,
-  }) => RommArchiveService.prepareDownload(
-    zipPath,
-    destDir,
-    extensions,
-    flattenSingleFile: flattenSingleFile,
-    forceExtract: isMultiFile && extensions.contains('m3u'),
-    playlistBaseName: fallbackBaseName,
-  );
-
-  @visibleForTesting
-  static Future<String?> extractMultiDiscZip(
-    String zipPath,
-    String destDir,
-    String fallbackBaseName,
-  ) => RommArchiveService.prepareDownload(
-    zipPath,
-    destDir,
-    {
-      'm3u',
-      'chd',
-      'cue',
-      'bin',
-      'iso',
-      'ccd',
-      'img',
-      'sub',
-      'mds',
-      'mdf',
-      'toc',
-    },
-    forceExtract: true,
-    playlistBaseName: fallbackBaseName,
-  );
-
-  @visibleForTesting
-  static Future<String?> extractScummVmDownload(
-    String downloadPath,
-    String destDir,
-  ) => RommArchiveService.prepareScummVmDownload(downloadPath, destDir);
+  /// Removes `.romm_download_*` folders in [destDir] left by a crash or a
+  /// killed app, including [romId]'s own, except those of other ROMs
+  /// downloading right now.
+  Future<void> _sweepDownloadDirs(String destDir, int romId) async {
+    try {
+      await for (final entity in Directory(destDir).list(followLinks: false)) {
+        final name = p.basename(entity.path);
+        if (entity is! Directory || !name.startsWith('.romm_download_')) {
+          continue;
+        }
+        final id = int.tryParse(name.substring('.romm_download_'.length));
+        if (id != null &&
+            id != romId &&
+            _downloads[id]?.status == RommDownloadStatus.downloading) {
+          continue;
+        }
+        try {
+          await entity.delete(recursive: true);
+        } catch (e) {
+          _log.w('RomM: could not remove stale ${entity.path}: $e');
+        }
+      }
+    } catch (_) {
+      // An unlistable folder fails the download itself, with a clearer error.
+    }
+  }
 
   /// Imports RomM's metadata + cover art for [rom] into the same tables/media
   /// folders the ScreenScraper integration uses, so the library shows game info
