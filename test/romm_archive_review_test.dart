@@ -260,6 +260,41 @@ void main() {
     skip: Platform.isWindows ? 'Symlinks need elevation on Windows' : false,
   );
 
+  test(
+    'duplicate ZIP entries are rejected before any file is written',
+    () async {
+      // Case-only duplicates collide on case-insensitive filesystems.
+      final folded = zip({
+        'Game.iso': [1],
+        'game.ISO': [2],
+      });
+      expect(
+        await RommArchiveService.prepareDownload(folded, dir.path, {'iso'}),
+        isNull,
+      );
+      // An exact duplicate: `archive` dedupes names, so patch them in place.
+      // Same bytes, so only the duplicate check (not a CRC) can reject it.
+      final exact = zip({
+        'Game.iso': [1],
+        'Gbme.iso': [1],
+      }, name: 'Exact.zip');
+      final bytes = File(exact).readAsBytesSync();
+      final from = 'Gbme.iso'.codeUnits;
+      for (var i = 0; i + from.length <= bytes.length; i++) {
+        if (List.generate(from.length, (k) => bytes[i + k]).join(',') ==
+            from.join(',')) {
+          bytes[i + 1] = 'a'.codeUnitAt(0);
+        }
+      }
+      File(exact).writeAsBytesSync(bytes);
+      expect(
+        await RommArchiveService.prepareDownload(exact, dir.path, {'iso'}),
+        isNull,
+      );
+      expect(File(p.join(dir.path, 'Game.iso')).existsSync(), isFalse);
+    },
+  );
+
   test('unsafe ZIP cannot replace an existing good ROM', () async {
     final existing = File(p.join(dir.path, 'Game.iso'))..writeAsBytesSync([9]);
     final path = zip({

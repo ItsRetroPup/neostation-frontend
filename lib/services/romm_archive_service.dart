@@ -1,14 +1,19 @@
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:koni_archive/io.dart';
+import 'package:archive/archive_io.dart';
 import 'package:flutter_7zip/flutter_7zip.dart' as f7z;
 import 'package:path/path.dart' as p;
 
 import '../utils/safe_path.dart';
 import 'logger_service.dart';
 
-/// Installs downloaded ZIP/7z/RAR game archives while retaining companion files.
+/// Installs downloaded ZIP/7z game archives while retaining companion files.
+///
+/// ZIP is read with `archive` and 7z with the vendored `flutter_7zip`, the
+/// same pair [ArchiveService] uses. RAR is recognised so the download keeps a
+/// meaningful name, but only systems that launch `.rar` directly can use one:
+/// neither library decodes it.
 class RommArchiveService {
   /// RomM can stream a folder as ZIP while its list entry has neither an
   /// archive extension nor the multi-file flag. Identify the actual payload
@@ -172,6 +177,12 @@ class RommArchiveService {
     if (!scummVm && !forceExtract && exts.contains(format)) {
       return p.basename(archivePath);
     }
+    if (!_Reader.formats.contains(format)) {
+      LoggerService.instance.w(
+        'RomM: cannot extract .$format downloads; kept $archivePath',
+      );
+      return null;
+    }
     try {
       // Decoding large/solid archives must not block gamepad input or progress UI.
       return await Isolate.run(
@@ -195,11 +206,6 @@ class RommArchiveService {
     }
   }
 
-  /// Solid 7z folders up to this size decode in Dart, which buffers the
-  /// folder in memory; larger ones go to the native SDK. Kept low because
-  /// handhelds have little RAM to spare next to a running frontend.
-  static const int _dartSevenZipLimit = 256 << 20;
-
   static Future<String?> _extract(
     String archivePath,
     String destDir,
@@ -209,31 +215,24 @@ class RommArchiveService {
     String? gameName,
     String? playlistBaseName,
   ) async {
-    final archive = await openArchiveFile(
-      archivePath,
-      // Make the 7z decoder's solid-folder cap a typed size-limit error, so
-      // the native fallback below can handle larger solid folders.
-      options: p.extension(archivePath).toLowerCase() == '.7z'
-          ? const ArchiveReadOptions(maxContainerDecodeSize: _dartSevenZipLimit)
-          : const ArchiveReadOptions(),
-    );
+    final archive = _Reader.open(archivePath);
     Directory? staging;
-    f7z.SZArchive? nativeSevenZ;
-    Map<String, int>? nativeIndices;
     var closed = false;
     try {
-      final entries = archive.entries;
-      // Inspect the raw index: the VFS view hides duplicate paths.
+      // Check the raw entry list: a later duplicate would overwrite an
+      // earlier file, and a link entry could point outside the game folder.
       final seen = <String>{};
-      for (final entry in entries) {
-        if (entry.pathEscapedRoot ||
-            (!entry.isFile && !entry.isDirectory) ||
-            safeJoin(destDir, entry.path) == null ||
-            !seen.add(entry.path.toLowerCase())) {
+      final files = <_Entry>[];
+      for (final (index, raw) in archive.entries.indexed) {
+        final path = _normalizeEntryPath(raw.name);
+        if (raw.isLink ||
+            path == null ||
+            safeJoin(destDir, path) == null ||
+            !seen.add(path.toLowerCase())) {
           throw const FormatException('Unsafe or duplicate archive entry');
         }
+        if (!raw.isDirectory) files.add(_Entry(path, index));
       }
-      final files = entries.where((entry) => entry.isFile).toList();
       final playable = files.where((entry) {
         final ext = _ext(entry.path);
         return scummVm ? ext == 'scummvm' : exts.contains(ext);
@@ -265,35 +264,7 @@ class RommArchiveService {
       for (final entry in files) {
         final output = File(safeJoin(staging.path, entry.path)!);
         await output.parent.create(recursive: true);
-        if (nativeSevenZ == null) {
-          try {
-            final sink = output.openWrite();
-            try {
-              await sink.addStream(archive.openRead(entry));
-              await sink.flush();
-            } finally {
-              await sink.close();
-            }
-            continue;
-          } on SizeLimitExceededException {
-            if (p.extension(archivePath).toLowerCase() != '.7z') rethrow;
-            // The Dart decoder caps a solid 7z folder. Use the existing native
-            // SDK for large DVD ROMs instead of rejecting them.
-            nativeSevenZ = f7z.SZArchive.open(archivePath);
-            nativeIndices = {};
-            for (var i = 0; i < nativeSevenZ.numFiles; i++) {
-              final file = nativeSevenZ.getFile(i);
-              if (!file.isDirectory) {
-                nativeIndices[normalizeEntryPath(file.name).path] = i;
-              }
-            }
-          }
-        }
-        final index = nativeIndices![entry.path];
-        if (index == null) {
-          throw const FormatException('7z entry missing from native index');
-        }
-        nativeSevenZ.extractToFile(index, output.path);
+        await archive.extract(entry.index, output.path);
       }
 
       var targetDir = destDir;
@@ -323,7 +294,7 @@ class RommArchiveService {
             firstSegments.length == 1 &&
             files.every((entry) => entry.path.contains('/'));
       }
-      final outputs = <ArchiveEntry, String>{};
+      final outputs = <_Entry, String>{};
       for (final entry in files) {
         final relative = flattenSingleFile
             ? p.posix.basename(entry.path)
@@ -381,7 +352,7 @@ class RommArchiveService {
       // Close once before committing, so reader failures cannot leave a
       // successfully installed game reported as failed.
       closed = true;
-      await archive.close();
+      archive.close();
       final stagedOutputs = <String, String>{
         for (final entry in files)
           outputs[entry]!: safeJoin(staging.path, entry.path)!,
@@ -397,8 +368,7 @@ class RommArchiveService {
       await _install(stagedOutputs, staging.path, destDir, archivePath);
       return indexedName;
     } finally {
-      nativeSevenZ?.dispose();
-      if (!closed) await archive.close();
+      if (!closed) archive.close();
       await staging?.delete(recursive: true);
     }
   }
@@ -456,11 +426,11 @@ class RommArchiveService {
   /// references, so they are not listed as discs of their own. An ISO
   /// belonging to another disc stays in a mixed-format playlist.
   static Future<Set<String>> _companions(
-    List<ArchiveEntry> playable,
+    List<_Entry> playable,
     String staging,
   ) async {
     final companions = <String>{};
-    void add(ArchiveEntry descriptor, String name) => companions.add(
+    void add(_Entry descriptor, String name) => companions.add(
       p.posix
           .normalize(
             p.posix.join(
@@ -625,4 +595,127 @@ class RommArchiveService {
       current = p.dirname(current);
     }
   }
+}
+
+/// [name] as a `/`-separated relative path without empty or `.` segments,
+/// or null when nothing is left. Containment is checked by `safeJoin`.
+String? _normalizeEntryPath(String name) {
+  final segments = name
+      .replaceAll('\\', '/')
+      .split('/')
+      .where((segment) => segment.isNotEmpty && segment != '.');
+  return segments.isEmpty ? null : segments.join('/');
+}
+
+/// A file entry, by its normalised path and its index in [_Reader.entries].
+class _Entry {
+  final String path;
+  final int index;
+  const _Entry(this.path, this.index);
+}
+
+/// An archive's raw entry list, duplicates included, and extraction by index.
+abstract class _Reader {
+  static const formats = {'zip', '7z'};
+
+  List<({String name, bool isDirectory, bool isLink})> get entries;
+
+  /// Writes entry [index] to [outputPath], failing on a checksum mismatch.
+  Future<void> extract(int index, String outputPath);
+
+  void close();
+
+  static _Reader open(String archivePath) =>
+      switch (p.extension(archivePath).toLowerCase()) {
+        '.zip' => _ZipReader(archivePath),
+        '.7z' => _SevenZipReader(archivePath),
+        final ext => throw UnsupportedError('No reader for $ext archives'),
+      };
+}
+
+class _ZipReader implements _Reader {
+  final InputFileStream _input;
+  final _files = <ArchiveFile>[];
+
+  /// Central-directory CRC per entry of [_files], in the same order.
+  final _centralCrcs = <int>[];
+
+  _ZipReader(String path) : _input = InputFileStream(path) {
+    try {
+      // The decoder's own list keeps one entry per name; its callback sees
+      // every header, so a duplicate shows up here twice.
+      final decoder = ZipDecoder();
+      decoder.decodeStream(_input, callback: _files.add);
+      _centralCrcs.addAll(
+        decoder.directory.fileHeaders.map((header) => header.crc32),
+      );
+      if (_centralCrcs.length != _files.length) {
+        throw const FormatException('ZIP index does not match its entries');
+      }
+    } catch (_) {
+      _input.closeSync();
+      rethrow;
+    }
+  }
+
+  @override
+  List<({String name, bool isDirectory, bool isLink})> get entries => [
+    for (final file in _files)
+      (
+        name: file.name,
+        isDirectory: !file.isFile && !file.isSymbolicLink,
+        isLink: file.isSymbolicLink,
+      ),
+  ];
+
+  @override
+  Future<void> extract(int index, String outputPath) async {
+    final file = _files[index];
+    final output = OutputFileStream(outputPath);
+    try {
+      // Streams the inflate straight to disk; a multi-GB disc never sits in
+      // memory whole.
+      file.writeContent(output);
+    } finally {
+      output.closeSync();
+    }
+    // `archive` does not check CRCs while streaming, so read the output back.
+    // The local and central headers must both agree: a mismatch between them
+    // is a damaged archive even when the data matches one.
+    var crc = 0;
+    await for (final chunk in File(outputPath).openRead()) {
+      crc = getCrc32(chunk, crc);
+    }
+    if (crc != (file.crc32 ?? crc) || crc != _centralCrcs[index]) {
+      throw FormatException('CRC mismatch for ${file.name}');
+    }
+  }
+
+  @override
+  void close() => _input.closeSync();
+}
+
+/// 7z through the native LZMA SDK, which checks each file's CRC itself. It
+/// decodes a whole solid folder into memory, as [ArchiveService] already
+/// does for 7z ROMs.
+class _SevenZipReader implements _Reader {
+  final f7z.SZArchive _archive;
+
+  _SevenZipReader(String path) : _archive = f7z.SZArchive.open(path);
+
+  @override
+  List<({String name, bool isDirectory, bool isLink})> get entries => [
+    for (var i = 0; i < _archive.numFiles; i++)
+      (() {
+        final file = _archive.getFile(i);
+        return (name: file.name, isDirectory: file.isDirectory, isLink: false);
+      })(),
+  ];
+
+  @override
+  Future<void> extract(int index, String outputPath) async =>
+      _archive.extractToFile(index, outputPath);
+
+  @override
+  void close() => _archive.dispose();
 }

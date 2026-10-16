@@ -1,9 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:archive/archive.dart' as zip;
-import 'package:koni_archive/io.dart';
 import 'package:neostation/services/romm_archive_service.dart';
 import 'package:path/path.dart' as p;
 
@@ -14,163 +12,73 @@ void main() {
   });
   tearDown(() async => dir.delete(recursive: true));
 
-  Future<String> sevenZ(Map<String, List<int>> files) async {
-    final name = p.join(dir.path, 'Game.7z');
-    final writer = await createArchiveFile(
-      name,
-      format: const SevenZWriteFormat(),
+  // Installation logic is format-independent, so it is exercised on ZIP.
+  // 7z goes through the native flutter_7zip library, which `flutter test`
+  // does not build for the host.
+  String archiveOf(Map<String, List<int>> files) {
+    final name = p.join(dir.path, 'Game.zip');
+    final archive = zip.Archive();
+    files.forEach(
+      (path, bytes) =>
+          archive.addFile(zip.ArchiveFile(path, bytes.length, bytes)),
     );
-    try {
-      for (final file in files.entries) {
-        await writer.addBytes(
-          ArchiveEntrySpec(path: file.key),
-          Uint8List.fromList(file.value),
-        );
-      }
-    } finally {
-      await writer.close();
-    }
+    File(name).writeAsBytesSync(zip.ZipEncoder().encode(archive));
     return name;
   }
 
   for (final wrapped in [false, true]) {
-    for (final format in ['zip', '7z']) {
-      test(
-        '$format single ROM extracts to system root (wrapped=$wrapped)',
-        () async {
-          final files = {
-            wrapped ? 'wrapper/Game.iso' : 'Game.iso': [1, 2, 3],
-          };
-          final String archivePath;
-          if (format == '7z') {
-            archivePath = await sevenZ(files);
-          } else {
-            archivePath = p.join(dir.path, 'Game.zip');
-            final archive = zip.Archive();
-            files.forEach(
-              (name, bytes) =>
-                  archive.addFile(zip.ArchiveFile(name, bytes.length, bytes)),
-            );
-            File(
-              archivePath,
-            ).writeAsBytesSync(zip.ZipEncoder().encode(archive));
-          }
-          expect(
-            await RommArchiveService.prepareGameDownload(
-              archivePath,
-              dir.path,
-              'Game.$format',
-              {'iso', 'm3u'},
-              isMultiFile: true,
-            ),
-            'Game.iso',
-          );
-          expect(File(p.join(dir.path, 'Game.iso')).readAsBytesSync(), [
-            1,
-            2,
-            3,
-          ]);
-          expect(Directory(p.join(dir.path, 'Game')).existsSync(), isFalse);
-          expect(Directory(p.join(dir.path, 'wrapper')).existsSync(), isFalse);
-          expect(File(p.join(dir.path, 'Game.m3u')).existsSync(), isFalse);
-          expect(File(archivePath).existsSync(), isFalse);
-        },
+    test('single ROM extracts to system root (wrapped=$wrapped)', () async {
+      final archivePath = archiveOf({
+        wrapped ? 'wrapper/Game.iso' : 'Game.iso': [1, 2, 3],
+      });
+      expect(
+        await RommArchiveService.prepareGameDownload(
+          archivePath,
+          dir.path,
+          'Game.zip',
+          {'iso', 'm3u'},
+          isMultiFile: true,
+        ),
+        'Game.iso',
       );
-    }
+      expect(File(p.join(dir.path, 'Game.iso')).readAsBytesSync(), [1, 2, 3]);
+      expect(Directory(p.join(dir.path, 'Game')).existsSync(), isFalse);
+      expect(Directory(p.join(dir.path, 'wrapper')).existsSync(), isFalse);
+      expect(File(p.join(dir.path, 'Game.m3u')).existsSync(), isFalse);
+      expect(File(archivePath).existsSync(), isFalse);
+    });
   }
-
-  test('RAR single ROM extracts to system root', () async {
-    final archivePath = p.join(dir.path, 'Game.rar');
-    await File('test/fixtures/romm_archives/single_game.rar').copy(archivePath);
-    expect(
-      await RommArchiveService.prepareGameDownload(
-        archivePath,
-        dir.path,
-        'Game.rar',
-        {'iso', 'm3u'},
-      ),
-      'Game.iso',
-    );
-    expect(File(p.join(dir.path, 'Game.iso')).readAsBytesSync(), [1, 2, 3]);
-    expect(Directory(p.join(dir.path, 'Game')).existsSync(), isFalse);
-    expect(Directory(p.join(dir.path, 'wrapper')).existsSync(), isFalse);
-  });
 
   for (final wrapped in [false, true]) {
-    for (final format in ['zip', '7z']) {
-      test(
-        '$format installs inside the game folder (wrapped=$wrapped)',
-        () async {
-          final prefix = wrapped ? 'Game/' : '';
-          final files = {
-            '${prefix}Game.iso': [1, 2],
-            '${prefix}updates/extra.dat': [3],
-          };
-          final String archivePath;
-          if (format == '7z') {
-            archivePath = await sevenZ(files);
-          } else {
-            archivePath = p.join(dir.path, 'Game.zip');
-            final archive = zip.Archive();
-            files.forEach(
-              (name, bytes) =>
-                  archive.addFile(zip.ArchiveFile(name, bytes.length, bytes)),
-            );
-            File(
-              archivePath,
-            ).writeAsBytesSync(zip.ZipEncoder().encode(archive));
-          }
-          expect(
-            await RommArchiveService.prepareGameDownload(
-              archivePath,
-              dir.path,
-              'Game.$format',
-              {'iso'},
-            ),
-            'Game.iso',
-          );
-          expect(File(p.join(dir.path, 'Game/Game.iso')).readAsBytesSync(), [
-            1,
-            2,
-          ]);
-          expect(
-            File(p.join(dir.path, 'Game/updates/extra.dat')).readAsBytesSync(),
-            [3],
-          );
-          expect(File(p.join(dir.path, 'Game.iso')).existsSync(), isFalse);
-          expect(
-            Directory(p.join(dir.path, 'Game/Game')).existsSync(),
-            isFalse,
-          );
-        },
+    test('installs inside the game folder (wrapped=$wrapped)', () async {
+      final prefix = wrapped ? 'Game/' : '';
+      archiveOf({
+        '${prefix}Game.iso': [1, 2],
+        '${prefix}updates/extra.dat': [3],
+      });
+      expect(
+        await RommArchiveService.prepareGameDownload(
+          p.join(dir.path, 'Game.zip'),
+          dir.path,
+          'Game.zip',
+          {'iso'},
+        ),
+        'Game.iso',
       );
-    }
+      expect(File(p.join(dir.path, 'Game/Game.iso')).readAsBytesSync(), [1, 2]);
+      expect(
+        File(p.join(dir.path, 'Game/updates/extra.dat')).readAsBytesSync(),
+        [3],
+      );
+      expect(File(p.join(dir.path, 'Game.iso')).existsSync(), isFalse);
+      expect(Directory(p.join(dir.path, 'Game/Game')).existsSync(), isFalse);
+    });
   }
-
-  test('RAR installs all files below the game folder', () async {
-    final archivePath = p.join(dir.path, 'Game.rar');
-    await File('test/fixtures/romm_archives/rar5.rar').copy(archivePath);
-    expect(
-      await RommArchiveService.prepareGameDownload(
-        archivePath,
-        dir.path,
-        'Game.rar',
-        {'bin'},
-      ),
-      'data.bin',
-    );
-    expect(
-      File(p.join(dir.path, 'Game/nested/deep/data.bin')).lengthSync(),
-      100000,
-    );
-    expect(File(p.join(dir.path, 'Game/hello.txt')).existsSync(), isTrue);
-    expect(Directory(p.join(dir.path, 'nested')).existsSync(), isFalse);
-  });
 
   test(
     'playlist and discs are installed together in the game folder',
     () async {
-      final archivePath = await sevenZ({
+      final archivePath = archiveOf({
         'Disc 1.chd': [1],
         'Disc 2.chd': [2],
       });
@@ -178,7 +86,7 @@ void main() {
         await RommArchiveService.prepareGameDownload(
           archivePath,
           dir.path,
-          'Game.7z',
+          'Game.zip',
           {'m3u', 'chd'},
         ),
         'Game.m3u',
@@ -192,8 +100,8 @@ void main() {
     },
   );
 
-  test('7z retains all nested game files and deletes the archive', () async {
-    final name = await sevenZ({
+  test('retains all nested game files and deletes the archive', () async {
+    final name = archiveOf({
       'Game/Game.iso': [1, 2, 3],
       'Game/data/extra.dat': [4, 5],
     });
@@ -227,8 +135,11 @@ void main() {
       );
       expect(File(name).readAsBytesSync(), [1, 2, 3]);
     });
+  }
+
+  for (final format in ['zip', '7z', 'rar']) {
     test(
-      'corrupt $format is retained and reports extraction failure',
+      'unreadable $format is retained and reports extraction failure',
       () async {
         final name = p.join(dir.path, 'Game.$format');
         File(name).writeAsBytesSync([1, 2, 3]);
@@ -241,41 +152,10 @@ void main() {
     );
   }
 
-  test('RAR5 extracts compressed content and its companion files', () async {
-    final name = p.join(dir.path, 'Game.rar');
-    await File('test/fixtures/romm_archives/rar5.rar').copy(name);
-    expect(
-      await RommArchiveService.prepareDownload(name, dir.path, {'bin'}),
-      'data.bin',
-    );
-    expect(File(name).existsSync(), isFalse);
-    expect(File(p.join(dir.path, 'nested/deep/data.bin')).lengthSync(), 100000);
-    expect(
-      File(p.join(dir.path, 'hello.txt')).readAsStringSync(),
-      'hello, rar!\n',
-    );
-  });
-
-  test('RAR4 extracts solid compressed entries', () async {
-    final name = p.join(dir.path, 'Game.rar');
-    await File('test/fixtures/romm_archives/rar4.rar').copy(name);
-    expect(
-      await RommArchiveService.prepareDownload(name, dir.path, {'txt'}),
-      'part0.txt',
-    );
-    expect(File(name).existsSync(), isFalse);
-    for (var i = 0; i < 5; i++) {
-      expect(
-        File(p.join(dir.path, 'solidbig/part$i.txt')).lengthSync(),
-        greaterThan(3000),
-      );
-    }
-  });
-
   test(
-    '7z cue/bin playlist lists cues, preserving nested relative paths',
+    'cue/bin playlist lists cues, preserving nested relative paths',
     () async {
-      final name = await sevenZ({
+      final name = archiveOf({
         'disc1/Game.cue': 'FILE "Game.bin" BINARY'.codeUnits,
         'disc1/Game.bin': [1],
         'disc2/Game.cue': 'FILE "Game.bin" BINARY'.codeUnits,
@@ -297,9 +177,9 @@ void main() {
     },
   );
 
-  test('7z keeps bundled playlist contents and order', () async {
+  test('keeps bundled playlist contents and order', () async {
     final playlist = 'two.chd\none.chd\n';
-    final name = await sevenZ({
+    final name = archiveOf({
       'Game.m3u': playlist.codeUnits,
       'one.chd': [1],
       'two.chd': [2],
@@ -311,15 +191,14 @@ void main() {
     expect(File(p.join(dir.path, 'Game.m3u')).readAsStringSync(), playlist);
   });
 
-  test('7z ScummVM uses descriptor ID and strips common wrapper', () async {
-    final name = await sevenZ({
+  test('ScummVM uses descriptor ID and strips common wrapper', () async {
+    final name = archiveOf({
       'wrapper/Game.scummvm': 'monkey\n'.codeUnits,
       'wrapper/data/game.dat': [1, 2],
     });
     expect(
       await RommArchiveService.prepareDownload(name, dir.path, {
         'scummvm',
-        '7z',
       }, scummVm: true),
       'Game.scummvm',
     );
@@ -333,7 +212,7 @@ void main() {
   test(
     'archive without playable files retains original without installing files',
     () async {
-      final name = await sevenZ({
+      final name = archiveOf({
         'readme.txt': [1],
       });
       expect(
@@ -349,7 +228,7 @@ void main() {
     final external = await Directory.systemTemp.createTemp('romm_outside_');
     try {
       await Link(p.join(dir.path, 'linked')).create(external.path);
-      final name = await sevenZ({
+      final name = archiveOf({
         'linked/Game.iso': [1],
       });
       expect(
