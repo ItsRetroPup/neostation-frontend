@@ -770,6 +770,18 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.cannotReadFolder: 'Cannot read this folder',
   AppLocale.noStorageFound: 'No storage found',
   AppLocale.lastPlayed: 'Last Played',
+  AppLocale.nowPlayingTitle: 'Now Playing',
+  AppLocale.nowPlayingSession: 'Session',
+  AppLocale.nowPlayingLastPlayed: 'Last played',
+  AppLocale.launchAnApp: 'Launch an app',
+  AppLocale.chooseAnApp: 'Choose an app',
+  AppLocale.noAppsFound: 'No apps found',
+  AppLocale.timeNever: 'Never',
+  AppLocale.timeYesterday: 'Yesterday',
+  AppLocale.timeDaysAgo: '{count} days ago',
+  AppLocale.timeHoursAgo: '{count}h ago',
+  AppLocale.timeMinutesAgo: '{count}m ago',
+  AppLocale.timeJustNow: 'Just now',
   AppLocale.apps: 'Apps',
   AppLocale.tracks: 'Tracks',
   AppLocale.games: 'Games',
@@ -917,6 +929,12 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.screenReturnAccessDesc:
       'Brings the Now Playing screen back when you close an app opened from the dock, and enables system screenshots. Only the foreground app name is read \u2014 no screen content is collected.',
   AppLocale.screenReturnAccessHint: 'Turn on NeoStation, then tap Allow',
+  AppLocale.screenReturnDialogTitle: 'Enable Screen Return',
+  AppLocale.screenReturnDialogBody:
+      'To launch apps from the dock, NeoStation needs the Screen Return accessibility service. It lets NeoStation bring you back here after you close the app you opened. Without it you could be left with no way back.',
+  AppLocale.screenReturnDialogSteps:
+      'On the next screen, find NeoStation in the list of services and switch it on.',
+  AppLocale.openSettings: 'Open settings',
   AppLocale.selectRomFolder: 'Select ROM Folder',
   AppLocale.romFolderSelected: 'ROM folder selected!',
   AppLocale.chooseRomFolderDesc:
@@ -1118,6 +1136,13 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.systemsUpdateDownloading: 'Downloading system configs...',
   AppLocale.systemsUpdateCancelling: 'Cancelling...',
   AppLocale.systemsUpdateSyncing: 'Syncing systems database...',
+  AppLocale.waitingForRomStorage:
+      'Waiting for ROM storage ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'Updating systems list...',
+  AppLocale.romsScanned: 'ROMs scanned',
+  AppLocale.errorScanningRoms: 'Error scanning ROMs',
+  AppLocale.romStorageNotReady:
+      'ROM storage is not ready; existing games were kept.',
   AppLocale.systemsUpdateComplete: 'Systems updated successfully!',
   AppLocale.systemsUpdateError:
       'Failed to update systems. Please try again later.',
@@ -1279,6 +1304,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.resetPlayTimeConfirm: 'Reset Play Time',
   AppLocale.resetPlayTimeConfirmBody:
       'This will permanently reset the recorded play time for this game to zero. This cannot be undone.',
+  AppLocale.playTimeResetDone: 'Play time reset',
   AppLocale.removeRomFolderConfirmBody:
       'This will remove this ROM folder from your library sources. Your files on disk are not deleted.',
   AppLocale.disconnectRaConfirm: 'Disconnect RetroAchievements',

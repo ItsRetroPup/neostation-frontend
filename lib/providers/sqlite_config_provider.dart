@@ -25,6 +25,7 @@ import '../models/secondary_display_state.dart';
 import 'package:flutter/services.dart';
 import '../widgets/tv_directory_picker.dart';
 import '../constants/system_folder_names.dart';
+import '../l10n/app_locale.dart';
 import '../utils/rom_folder_path.dart';
 import '../services/global_notification_service.dart';
 import '../services/game_session_persistence.dart';
@@ -65,6 +66,12 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// Flag to prevent concurrent ROM scanning operations.
   bool _isScanningRoms = false;
   bool _isSilentScanning = false;
+
+  /// Scans in progress (full scans and single-system rescans), and a future
+  /// that completes when the last of them ends. Removing a ROM folder waits on
+  /// it, so a running scan can't write the removed folder's games back.
+  int _activeScans = 0;
+  Completer<void>? _scansIdle;
   bool _pendingStartupScan = false;
   SystemModel? _silentScannedSystem;
   ScanSummary? _lastScanSummary;
@@ -233,7 +240,7 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
       // CRITICAL: Always reload and sync system JSONs with the database at startup
       // to ensure that new cores or systems modified in assets are reflected,
       // regardless of whether ROM scanning is enabled.
-      _scanStatus = 'Syncing system databases...';
+      _scanStatus = AppLocale.systemsUpdateSyncing.getStringForCurrentLocale();
       notifyListeners();
       await SqliteService.loadAndSyncSystems();
 
@@ -457,11 +464,29 @@ class SqliteConfigProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _setScanning(bool scanning) {
+    // Count the transition only: a scan's early exits and its `finally` can
+    // both clear the flag.
+    if (scanning && !_isScanning) _scanStarted();
+    if (!scanning && _isScanning) _scanEnded();
     _isScanning = scanning;
     if (scanning) {
       _scanCompleted = false;
     }
     notifyListeners();
+  }
+
+  void _scanStarted() {
+    _activeScans++;
+    _scansIdle ??= Completer<void>();
+  }
+
+  void _scanEnded() {
+    if (_activeScans == 0) return;
+    _activeScans--;
+    if (_activeScans == 0) {
+      _scansIdle?.complete();
+      _scansIdle = null;
+    }
   }
 
   void clearError() {

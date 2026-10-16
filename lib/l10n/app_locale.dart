@@ -705,6 +705,18 @@ mixin AppLocale {
   static const String member = 'member';
   static const String defaultLauncher = 'default_launcher';
   static const String lastPlayed = 'last_played';
+  static const String nowPlayingTitle = 'now_playing_title';
+  static const String nowPlayingSession = 'now_playing_session';
+  static const String nowPlayingLastPlayed = 'now_playing_last_played';
+  static const String launchAnApp = 'launch_an_app';
+  static const String chooseAnApp = 'choose_an_app';
+  static const String noAppsFound = 'no_apps_found';
+  static const String timeNever = 'time_never';
+  static const String timeYesterday = 'time_yesterday';
+  static const String timeDaysAgo = 'time_days_ago';
+  static const String timeHoursAgo = 'time_hours_ago';
+  static const String timeMinutesAgo = 'time_minutes_ago';
+  static const String timeJustNow = 'time_just_now';
   static const String apps = 'apps';
   static const String tracks = 'tracks';
   static const String games = 'games';
@@ -845,6 +857,10 @@ mixin AppLocale {
   static const String screenReturnAccess = 'screen_return_access';
   static const String screenReturnAccessDesc = 'screen_return_access_desc';
   static const String screenReturnAccessHint = 'screen_return_access_hint';
+  static const String screenReturnDialogTitle = 'screen_return_dialog_title';
+  static const String screenReturnDialogBody = 'screen_return_dialog_body';
+  static const String screenReturnDialogSteps = 'screen_return_dialog_steps';
+  static const String openSettings = 'open_settings';
   static const String selectRomFolder = 'select_rom_folder';
   static const String romFolderSelected = 'rom_folder_selected';
   static const String chooseRomFolderDesc = 'choose_rom_folder_desc';
@@ -1118,6 +1134,11 @@ mixin AppLocale {
   static const String systemsUpdateDownloading = 'systems_update_downloading';
   static const String systemsUpdateCancelling = 'systems_update_cancelling';
   static const String systemsUpdateSyncing = 'systems_update_syncing';
+  static const String waitingForRomStorage = 'waiting_for_rom_storage';
+  static const String updatingSystemsList = 'updating_systems_list';
+  static const String romsScanned = 'roms_scanned';
+  static const String errorScanningRoms = 'error_scanning_roms';
+  static const String romStorageNotReady = 'rom_storage_not_ready';
   static const String systemsUpdateComplete = 'systems_update_complete';
   static const String systemsUpdateError = 'systems_update_error';
 
@@ -1339,9 +1360,10 @@ mixin AppLocale {
   static const String sourceLocal = 'source_local';
   static const String searchRatingLocalOnly = 'search_rating_local_only';
   static const String searchNoRommEquivalent = 'search_no_romm_equivalent';
-  // Destructive-action confirmation prompts
+  // Destructive-action confirmation prompts and their results
   static const String resetPlayTimeConfirm = 'reset_play_time_confirm';
   static const String resetPlayTimeConfirmBody = 'reset_play_time_confirm_body';
+  static const String playTimeResetDone = 'play_time_reset_done';
   static const String removeRomFolderConfirmBody =
       'remove_rom_folder_confirm_body';
   static const String disconnectRaConfirm = 'disconnect_ra_confirm';

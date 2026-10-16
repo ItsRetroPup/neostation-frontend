@@ -254,9 +254,9 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.nowPlayingDimOff: 'オフ',
   AppLocale.secondarySectionNowPlaying: 'Now Playingパネル',
   AppLocale.secondarySectionDock: 'アプリドック',
-  AppLocale.screenshotAccess: 'Screen return & screenshots',
+  AppLocale.screenshotAccess: '画面復帰とスクリーンショット',
   AppLocale.screenshotAccessSubtitle:
-      'Restores the Now Playing screen when you close an app opened from the dock, and lets the screenshot button capture the screen (opens Android accessibility settings)',
+      'ドックから開いたアプリを閉じたときにNow Playing画面に戻し、スクリーンショットボタンで画面を撮影できるようにします（Androidのユーザー補助設定が開きます）',
   AppLocale.scanOnStartupSubtitle: 'アプリ起動時にROMフォルダを自動的にスキャン',
   AppLocale.ignoreHiddenFiles: '隠しアイテムを無視',
   AppLocale.ignoreHiddenFilesSubtitle: 'ROMスキャン中に隠しファイルとフォルダを非表示にする',
@@ -694,6 +694,18 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.cannotReadFolder: 'このフォルダを読み込めません',
   AppLocale.noStorageFound: 'ストレージが見つかりません',
   AppLocale.lastPlayed: '最後にプレイ',
+  AppLocale.nowPlayingTitle: 'Now Playing',
+  AppLocale.nowPlayingSession: 'セッション',
+  AppLocale.nowPlayingLastPlayed: '最後にプレイ',
+  AppLocale.launchAnApp: 'アプリを起動',
+  AppLocale.chooseAnApp: 'アプリを選択',
+  AppLocale.noAppsFound: 'アプリが見つかりません',
+  AppLocale.timeNever: '未プレイ',
+  AppLocale.timeYesterday: '昨日',
+  AppLocale.timeDaysAgo: '{count}日前',
+  AppLocale.timeHoursAgo: '{count}時間前',
+  AppLocale.timeMinutesAgo: '{count}分前',
+  AppLocale.timeJustNow: 'たった今',
   AppLocale.apps: 'アプリ',
   AppLocale.tracks: 'トラック',
   AppLocale.games: 'ゲーム',
@@ -832,10 +844,16 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.storagePermission: 'ストレージの許可',
   AppLocale.storagePermissionDesc:
       'NeoStationがRetroArchの設定を管理し、セーブデータを正しく同期するには「すべてのファイルへのアクセス」が必要です。\n\n次の画面でこの許可を与えてください。',
-  AppLocale.screenReturnAccess: 'Screen Return Access',
+  AppLocale.screenReturnAccess: '画面復帰のアクセス許可',
   AppLocale.screenReturnAccessDesc:
-      'Brings the Now Playing screen back when you close an app opened from the dock, and enables system screenshots. Only the foreground app name is read \u2014 no screen content is collected.',
-  AppLocale.screenReturnAccessHint: 'Turn on NeoStation, then tap Allow',
+      'ドックから開いたアプリを閉じるとNow Playing画面に戻り、システムのスクリーンショットが使えるようになります。読み取るのは前面に表示中のアプリ名だけで、画面の内容は収集しません。',
+  AppLocale.screenReturnAccessHint: 'NeoStationをオンにして、「許可」をタップしてください',
+  AppLocale.screenReturnDialogTitle: '画面復帰を有効にする',
+  AppLocale.screenReturnDialogBody:
+      'ドックからアプリを起動するには、画面復帰のユーザー補助サービスが必要です。開いたアプリを閉じたあと、この画面に戻れるようにします。これがないと、戻る手段がなくなることがあります。',
+  AppLocale.screenReturnDialogSteps:
+      '次の画面で、サービスの一覧から NeoStation を探してオンにしてください。',
+  AppLocale.openSettings: '設定を開く',
   AppLocale.selectRomFolder: 'ROMフォルダを選択',
   AppLocale.romFolderSelected: 'ROMフォルダが選択されました！',
   AppLocale.chooseRomFolderDesc:
@@ -1021,6 +1039,11 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.systemsUpdateDownloading: 'システム設定をダウンロード中...',
   AppLocale.systemsUpdateCancelling: 'キャンセル中...',
   AppLocale.systemsUpdateSyncing: 'システムデータベースを同期中...',
+  AppLocale.waitingForRomStorage: 'ROMストレージを待機中 ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'システムリストを更新中...',
+  AppLocale.romsScanned: 'ROMをスキャンしました',
+  AppLocale.errorScanningRoms: 'ROMのスキャン中にエラーが発生しました',
+  AppLocale.romStorageNotReady: 'ROMストレージの準備ができていません。既存のゲームは保持されました。',
   AppLocale.systemsUpdateComplete: 'システムが正常に更新されました！',
   AppLocale.systemsUpdateError: 'システムの更新に失敗しました。後でもう一度試してください。',
 
@@ -1170,6 +1193,7 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.resetPlayTimeConfirm: 'プレイ時間をリセット',
   AppLocale.resetPlayTimeConfirmBody:
       'このゲームの記録されたプレイ時間を完全にゼロにリセットします。この操作は元に戻せません。',
+  AppLocale.playTimeResetDone: 'プレイ時間をリセットしました',
   AppLocale.removeRomFolderConfirmBody:
       'このROMフォルダをライブラリのソースから削除します。ディスク上のファイルは削除されません。',
   AppLocale.disconnectRaConfirm: 'RetroAchievements の接続を解除',
@@ -1300,27 +1324,24 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.customSaveFoldersMigrate: 'クラウドセーブをNeoSync v2に移行',
 
   // ES-DE import
-  AppLocale.esdeImport: 'ES-DE Import',
-  AppLocale.esdeImportSubtitle: 'Import metadata and artwork from ES-DE',
-  AppLocale.esdeSelectFolder: 'Select ES-DE Folder',
+  AppLocale.esdeImport: 'ES-DE インポート',
+  AppLocale.esdeImportSubtitle: 'ES-DE からメタデータとアートワークをインポート',
+  AppLocale.esdeSelectFolder: 'ES-DE フォルダーを選択',
   AppLocale.esdeSelectFolderSubtitle:
-      'Choose the ES-DE folder containing gamelists and downloaded_media',
-  AppLocale.esdeRunImport: 'Import from ES-DE',
-  AppLocale.esdeRunImportSubtitle:
-      'Fill in missing metadata and use ES-DE artwork as fallback',
-  AppLocale.esdeImporting: 'Importing from ES-DE',
-  AppLocale.esdeImportComplete: 'ES-DE import complete',
-  AppLocale.esdeImportNoFolder: 'Select your ES-DE folder first',
-  AppLocale.esdeReset: 'Reset ES-DE Import',
-  AppLocale.esdeResetSubtitle:
-      'Remove imported metadata and media links so the import can be re-run',
-  AppLocale.esdeResetComplete: 'ES-DE import reset',
+      'gamelists と downloaded_media が含まれる ES-DE フォルダーを選択します',
+  AppLocale.esdeRunImport: 'ES-DE からインポート',
+  AppLocale.esdeRunImportSubtitle: '不足しているメタデータを補い、ES-DE のアートワークを代替として使用します',
+  AppLocale.esdeImporting: 'ES-DE からインポート中',
+  AppLocale.esdeImportComplete: 'ES-DE のインポート完了',
+  AppLocale.esdeImportNoFolder: '先に ES-DE フォルダーを選択してください',
+  AppLocale.esdeReset: 'ES-DE インポートをリセット',
+  AppLocale.esdeResetSubtitle: 'インポートしたメタデータとメディアのリンクを削除し、再度インポートできるようにします',
+  AppLocale.esdeResetComplete: 'ES-DE のインポートをリセットしました',
   AppLocale.esdeResetConfirmBody:
-      'This removes all imported ES-DE metadata and media links and clears the selected folder. Your games and ROM files are not affected.',
+      'ES-DE からインポートしたメタデータとメディアのリンクをすべて削除し、選択したフォルダーの設定を解除します。ゲームと ROM ファイルには影響しません。',
   AppLocale.esdeImportNotEsdeFolder:
-      'This folder is not an ES-DE installation (no gamelists found)',
-  AppLocale.esdeImportNothingFound:
-      'No matching systems or games were found to import',
+      'このフォルダーは ES-DE のインストール先ではありません（gamelists が見つかりません）',
+  AppLocale.esdeImportNothingFound: 'インポート対象となるシステムやゲームが見つかりませんでした',
   AppLocale.esdeSummarySystemsMatched: '一致したシステム',
   AppLocale.esdeSummaryUnmatched: '一致なし',
   AppLocale.esdeSummarySkipped: 'スキップ（読み取り不可）',

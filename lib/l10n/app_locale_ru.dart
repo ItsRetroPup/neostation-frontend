@@ -287,9 +287,9 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.nowPlayingDimOff: 'Выкл',
   AppLocale.secondarySectionNowPlaying: 'Панель Now Playing',
   AppLocale.secondarySectionDock: 'Док приложений',
-  AppLocale.screenshotAccess: 'Screen return & screenshots',
+  AppLocale.screenshotAccess: 'Возврат к экрану и скриншоты',
   AppLocale.screenshotAccessSubtitle:
-      'Restores the Now Playing screen when you close an app opened from the dock, and lets the screenshot button capture the screen (opens Android accessibility settings)',
+      'Возвращает экран Now Playing, когда вы закрываете приложение, открытое из дока, и позволяет кнопке скриншота делать скриншоты (открывает настройки специальных возможностей Android)',
   AppLocale.scanOnStartupSubtitle:
       'Автоматически сканировать папки ROM при запуске приложения',
   AppLocale.ignoreHiddenFiles: 'Игнорировать скрытые элементы',
@@ -783,6 +783,18 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.cannotReadFolder: 'Не удалось прочитать папку',
   AppLocale.noStorageFound: 'Хранилище не найдено',
   AppLocale.lastPlayed: 'Последний запуск',
+  AppLocale.nowPlayingTitle: 'Now Playing',
+  AppLocale.nowPlayingSession: 'Сеанс',
+  AppLocale.nowPlayingLastPlayed: 'Последний запуск',
+  AppLocale.launchAnApp: 'Запуск приложения',
+  AppLocale.chooseAnApp: 'Выбор приложения',
+  AppLocale.noAppsFound: 'Приложения не найдены',
+  AppLocale.timeNever: 'Никогда',
+  AppLocale.timeYesterday: 'Вчера',
+  AppLocale.timeDaysAgo: '{count} дн. назад',
+  AppLocale.timeHoursAgo: '{count} ч назад',
+  AppLocale.timeMinutesAgo: '{count} мин назад',
+  AppLocale.timeJustNow: 'Только что',
   AppLocale.apps: 'Приложения',
   AppLocale.tracks: 'Треки',
   AppLocale.games: 'Игры',
@@ -926,10 +938,17 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.storagePermission: 'Разрешение на доступ к памяти',
   AppLocale.storagePermissionDesc:
       'NeoStation нужен «Доступ ко всем файлам» для управления конфигурациями RetroArch.',
-  AppLocale.screenReturnAccess: 'Screen Return Access',
+  AppLocale.screenReturnAccess: 'Доступ для возврата к экрану',
   AppLocale.screenReturnAccessDesc:
-      'Brings the Now Playing screen back when you close an app opened from the dock, and enables system screenshots. Only the foreground app name is read \u2014 no screen content is collected.',
-  AppLocale.screenReturnAccessHint: 'Turn on NeoStation, then tap Allow',
+      'Возвращает экран Now Playing, когда вы закрываете приложение, открытое из дока, и включает системные скриншоты. Считывается только название приложения на переднем плане — содержимое экрана не собирается.',
+  AppLocale.screenReturnAccessHint:
+      'Включите NeoStation, затем нажмите «Разрешить»',
+  AppLocale.screenReturnDialogTitle: 'Включить возврат к экрану',
+  AppLocale.screenReturnDialogBody:
+      'Чтобы запускать приложения из дока, NeoStation нужна служба специальных возможностей для возврата к экрану. Она возвращает вас сюда после закрытия открытого приложения. Без неё вернуться сюда может быть невозможно.',
+  AppLocale.screenReturnDialogSteps:
+      'На следующем экране найдите NeoStation в списке служб и включите эту службу.',
+  AppLocale.openSettings: 'Открыть настройки',
   AppLocale.selectRomFolder: 'Выбрать папку ROM',
   AppLocale.romFolderSelected: 'Папка ROM выбрана!',
   AppLocale.chooseRomFolderDesc: 'Выберите папку, где хранятся ваши ROM.',
@@ -1123,6 +1142,12 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.systemsUpdateDownloading: 'Загрузка конфигураций систем...',
   AppLocale.systemsUpdateCancelling: 'Отмена...',
   AppLocale.systemsUpdateSyncing: 'Синхронизация базы данных систем...',
+  AppLocale.waitingForRomStorage: 'Ожидание хранилища ROM ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'Обновление списка систем...',
+  AppLocale.romsScanned: 'ROM просканированы',
+  AppLocale.errorScanningRoms: 'Ошибка при сканировании ROM',
+  AppLocale.romStorageNotReady:
+      'Хранилище ROM не готово; существующие игры сохранены.',
   AppLocale.systemsUpdateComplete: 'Системы успешно обновлены!',
   AppLocale.systemsUpdateError: 'Ошибка обновления систем. Попробуйте позже.',
 
@@ -1288,6 +1313,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.resetPlayTimeConfirm: 'Сбросить время игры',
   AppLocale.resetPlayTimeConfirmBody:
       'Записанное время игры для этой игры будет безвозвратно сброшено до нуля. Это действие нельзя отменить.',
+  AppLocale.playTimeResetDone: 'Время игры сброшено',
   AppLocale.removeRomFolderConfirmBody:
       'Эта папка ROM будет удалена из источников вашей библиотеки. Ваши файлы на диске не будут удалены.',
   AppLocale.disconnectRaConfirm: 'Отключить RetroAchievements',
@@ -1435,27 +1461,27 @@ const Map<String, dynamic> appLocaleRu = {
       'Мигрировать облачные сохранения на NeoSync v2',
 
   // ES-DE import
-  AppLocale.esdeImport: 'ES-DE Import',
-  AppLocale.esdeImportSubtitle: 'Import metadata and artwork from ES-DE',
-  AppLocale.esdeSelectFolder: 'Select ES-DE Folder',
+  AppLocale.esdeImport: 'Импорт из ES-DE',
+  AppLocale.esdeImportSubtitle: 'Импорт метаданных и обложек из ES-DE',
+  AppLocale.esdeSelectFolder: 'Выбрать папку ES-DE',
   AppLocale.esdeSelectFolderSubtitle:
-      'Choose the ES-DE folder containing gamelists and downloaded_media',
-  AppLocale.esdeRunImport: 'Import from ES-DE',
+      'Выберите папку ES-DE, содержащую папки gamelists и downloaded_media',
+  AppLocale.esdeRunImport: 'Импортировать из ES-DE',
   AppLocale.esdeRunImportSubtitle:
-      'Fill in missing metadata and use ES-DE artwork as fallback',
-  AppLocale.esdeImporting: 'Importing from ES-DE',
-  AppLocale.esdeImportComplete: 'ES-DE import complete',
-  AppLocale.esdeImportNoFolder: 'Select your ES-DE folder first',
-  AppLocale.esdeReset: 'Reset ES-DE Import',
+      'Дополнить недостающие метаданные и использовать обложки ES-DE как запасной вариант',
+  AppLocale.esdeImporting: 'Идёт импорт из ES-DE',
+  AppLocale.esdeImportComplete: 'Импорт из ES-DE завершён',
+  AppLocale.esdeImportNoFolder: 'Сначала выберите папку ES-DE',
+  AppLocale.esdeReset: 'Сбросить импорт из ES-DE',
   AppLocale.esdeResetSubtitle:
-      'Remove imported metadata and media links so the import can be re-run',
-  AppLocale.esdeResetComplete: 'ES-DE import reset',
+      'Удалить импортированные метаданные и ссылки на медиа, чтобы импорт можно было запустить заново',
+  AppLocale.esdeResetComplete: 'Импорт из ES-DE сброшен',
   AppLocale.esdeResetConfirmBody:
-      'This removes all imported ES-DE metadata and media links and clears the selected folder. Your games and ROM files are not affected.',
+      'Будут удалены все импортированные из ES-DE метаданные и ссылки на медиа, а выбор папки будет сброшен. Ваши игры и файлы ROM не будут затронуты.',
   AppLocale.esdeImportNotEsdeFolder:
-      'This folder is not an ES-DE installation (no gamelists found)',
+      'Эта папка не является установкой ES-DE (папка gamelists не найдена)',
   AppLocale.esdeImportNothingFound:
-      'No matching systems or games were found to import',
+      'Не найдено подходящих систем или игр для импорта',
   AppLocale.esdeSummarySystemsMatched: 'Сопоставлено систем',
   AppLocale.esdeSummaryUnmatched: 'без совпадений',
   AppLocale.esdeSummarySkipped: 'пропущено (не читается)',
