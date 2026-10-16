@@ -18,6 +18,22 @@ part 'app_locale_ja.dart';
 part 'app_locale_ko.dart';
 
 mixin AppLocale {
+  static const String customSounds = 'customSounds';
+  static const String customSoundsSubtitle = 'customSoundsSubtitle';
+  static const String customSoundsHint = 'customSoundsHint';
+  static const String customSoundsMovement = 'customSoundsMovement';
+  static const String customSoundsConfirm = 'customSoundsConfirm';
+  static const String customSoundsBack = 'customSoundsBack';
+  static const String customSoundsDefault = 'customSoundsDefault';
+  static const String customSoundsImport = 'customSoundsImport';
+  static const String customSoundsPreview = 'customSoundsPreview';
+  static const String customSoundsReset = 'customSoundsReset';
+  static const String customSoundsClose = 'customSoundsClose';
+  static const String customSoundsSizeError = 'customSoundsSizeError';
+  static const String customSoundsDurationError = 'customSoundsDurationError';
+  static const String customSoundsInvalidError = 'customSoundsInvalidError';
+  static const String customSoundsSaveError = 'customSoundsSaveError';
+
   static const String ignoreArticlesInGameSort = 'ignoreArticlesInGameSort';
   static const String ignoreArticlesInGameSortSubtitle =
       'ignoreArticlesInGameSortSubtitle';
@@ -419,7 +435,6 @@ mixin AppLocale {
   // ---------------------------------------------------------------------------
   // NeoSync
   // ---------------------------------------------------------------------------
-  static const String neoSync = 'neo_sync';
   static const String neoSyncLogin = 'neo_sync_login';
   static const String neoSyncSynchronizing = 'neo_sync_synchronizing';
   static const String neoSyncNotConnected = 'neo_sync_not_connected';
@@ -653,6 +668,18 @@ mixin AppLocale {
   static const String member = 'member';
   static const String defaultLauncher = 'default_launcher';
   static const String lastPlayed = 'last_played';
+  static const String nowPlayingTitle = 'now_playing_title';
+  static const String nowPlayingSession = 'now_playing_session';
+  static const String nowPlayingLastPlayed = 'now_playing_last_played';
+  static const String launchAnApp = 'launch_an_app';
+  static const String chooseAnApp = 'choose_an_app';
+  static const String noAppsFound = 'no_apps_found';
+  static const String timeNever = 'time_never';
+  static const String timeYesterday = 'time_yesterday';
+  static const String timeDaysAgo = 'time_days_ago';
+  static const String timeHoursAgo = 'time_hours_ago';
+  static const String timeMinutesAgo = 'time_minutes_ago';
+  static const String timeJustNow = 'time_just_now';
   static const String apps = 'apps';
   static const String tracks = 'tracks';
   static const String games = 'games';
@@ -793,6 +820,10 @@ mixin AppLocale {
   static const String screenReturnAccess = 'screen_return_access';
   static const String screenReturnAccessDesc = 'screen_return_access_desc';
   static const String screenReturnAccessHint = 'screen_return_access_hint';
+  static const String screenReturnDialogTitle = 'screen_return_dialog_title';
+  static const String screenReturnDialogBody = 'screen_return_dialog_body';
+  static const String screenReturnDialogSteps = 'screen_return_dialog_steps';
+  static const String openSettings = 'open_settings';
   static const String selectRomFolder = 'select_rom_folder';
   static const String romFolderSelected = 'rom_folder_selected';
   static const String chooseRomFolderDesc = 'choose_rom_folder_desc';
@@ -1068,6 +1099,11 @@ mixin AppLocale {
   static const String systemsUpdateDownloading = 'systems_update_downloading';
   static const String systemsUpdateCancelling = 'systems_update_cancelling';
   static const String systemsUpdateSyncing = 'systems_update_syncing';
+  static const String waitingForRomStorage = 'waiting_for_rom_storage';
+  static const String updatingSystemsList = 'updating_systems_list';
+  static const String romsScanned = 'roms_scanned';
+  static const String errorScanningRoms = 'error_scanning_roms';
+  static const String romStorageNotReady = 'rom_storage_not_ready';
   static const String systemsUpdateComplete = 'systems_update_complete';
   static const String systemsUpdateError = 'systems_update_error';
 
@@ -1289,9 +1325,10 @@ mixin AppLocale {
   static const String sourceLocal = 'source_local';
   static const String searchRatingLocalOnly = 'search_rating_local_only';
   static const String searchNoRommEquivalent = 'search_no_romm_equivalent';
-  // Destructive-action confirmation prompts
+  // Destructive-action confirmation prompts and their results
   static const String resetPlayTimeConfirm = 'reset_play_time_confirm';
   static const String resetPlayTimeConfirmBody = 'reset_play_time_confirm_body';
+  static const String playTimeResetDone = 'play_time_reset_done';
   static const String removeRomFolderConfirmBody =
       'remove_rom_folder_confirm_body';
   static const String disconnectRaConfirm = 'disconnect_ra_confirm';
@@ -1469,6 +1506,35 @@ mixin AppLocale {
   static const String rommLinkFailed = 'romm_link_failed';
   static const String rommUnlinked = 'romm_unlinked';
   static const String rommUnlinkFailed = 'romm_unlink_failed';
+
+  // RomM saves (Saves tab)
+  static const String rommSavesAutoDownload = 'romm_saves_auto_download';
+  static const String rommSaveFile = 'romm_save_file';
+  static const String rommSaveState = 'romm_save_state';
+  static const String rommRetryUploads = 'romm_retry_uploads';
+  static const String rommUploadsFailed = 'romm_uploads_failed';
+  static const String rommUploadsFailedFor = 'romm_uploads_failed_for';
+  // The {games} of rommUploadsFailedFor: names joined by the separator, and
+  // past four, "{games} and {count} more" ({count} is always 2 or more).
+  static const String rommGameListSeparator = 'romm_game_list_separator';
+  static const String rommGameListMore = 'romm_game_list_more';
+  static const String rommSavesHelp = 'romm_saves_help';
+  static const String rommDeleteTitle = 'romm_delete_title';
+  static const String rommDeleteConfirm = 'romm_delete_confirm';
+  static const String rommDeleted = 'romm_deleted';
+  static const String rommDeleteFailed = 'romm_delete_failed';
+  static const String rommDeleteNotSent = 'romm_delete_not_sent';
+  // Deleting a whole game from the game list. Counts follow the singular/plural
+  // pattern described at gamesCount; use lib/utils/count_label.dart.
+  static const String rommSaveFileCount = 'romm_save_file_count';
+  static const String rommSaveFilesCount = 'romm_save_files_count';
+  static const String rommSaveStateCount = 'romm_save_state_count';
+  static const String rommSaveStatesCount = 'romm_save_states_count';
+  static const String rommDeleteGameBothConfirm =
+      'romm_delete_game_both_confirm';
+  static const String rommDeleteGameConfirm = 'romm_delete_game_confirm';
+  static const String rommDeleteKeepsSaves = 'romm_delete_keeps_saves';
+  static const String rommDeleteKeepsStates = 'romm_delete_keeps_states';
 
   // Link action on search results
   static const String searchLinkToRomm = 'search_link_to_romm';

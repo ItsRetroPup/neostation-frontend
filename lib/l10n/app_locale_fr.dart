@@ -1,6 +1,60 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleFr = {
+  AppLocale.customSounds: "Sons personnalisés",
+  AppLocale.customSoundsSubtitle:
+      "Choisir les sons de navigation, de confirmation et de retour",
+  AppLocale.customSoundsHint:
+      "WAV, MP3, OGG ou FLAC · 5 secondes et 5 Mio maximum",
+  AppLocale.customSoundsMovement: "Navigation",
+  AppLocale.customSoundsConfirm: "Confirmation",
+  AppLocale.customSoundsBack: "Retour",
+  AppLocale.customSoundsDefault: "Par défaut",
+  AppLocale.customSoundsImport: "Importer / Remplacer",
+  AppLocale.customSoundsPreview: "Écouter",
+  AppLocale.customSoundsReset: "Rétablir le son par défaut",
+  AppLocale.customSoundsClose: "Fermer",
+  AppLocale.customSoundsSizeError: "Choisissez un fichier de 5 Mio maximum.",
+  AppLocale.customSoundsDurationError:
+      "Choisissez un son de 5 secondes maximum.",
+  AppLocale.customSoundsInvalidError:
+      "Ce fichier est vide, non pris en charge ou illisible.",
+  AppLocale.customSoundsSaveError:
+      "Impossible d’importer ou d’enregistrer le son. Le son précédent est conservé.",
+
+  AppLocale.rommSavesAutoDownload:
+      'Les sauvegardes cloud plus récentes sont téléchargées au lancement d’un jeu lié.',
+  AppLocale.rommSaveFile: 'Fichier de sauvegarde',
+  AppLocale.rommSaveState: 'État sauvegardé',
+  AppLocale.rommRetryUploads: 'Réessayer les envois',
+  AppLocale.rommUploadsFailed:
+      'Certains envois ont échoué. Vérifiez la connexion et les autorisations RomM, puis réessayez.',
+  AppLocale.rommUploadsFailedFor:
+      "Les sauvegardes de {games} n'ont pas été envoyées. Vérifiez la connexion et les autorisations RomM, puis réessayez.",
+  AppLocale.rommGameListSeparator: ', ',
+  AppLocale.rommGameListMore: '{games} et {count} autres',
+  AppLocale.rommSavesHelp:
+      'Consultez vos sauvegardes et états RomM. Réessayer les envois vérifie les jeux locaux liés à RomM dont la synchronisation est activée. Les sauvegardes distantes plus récentes sont téléchargées au lancement du jeu.',
+  AppLocale.rommDeleteTitle: 'Supprimer de RomM',
+  AppLocale.rommDeleteConfirm:
+      '{file} sera définitivement supprimé de votre serveur RomM. Les copies sur vos appareils sont conservées, et tout appareil qui synchronise encore ce jeu enverra de nouveau sa copie.',
+  AppLocale.rommDeleted: 'Supprimé de RomM.',
+  AppLocale.rommDeleteFailed:
+      'Impossible de supprimer de RomM. Vérifiez la connexion et les autorisations RomM, puis réessayez.',
+  AppLocale.rommDeleteNotSent:
+      "Suppression annulée avant d'atteindre RomM. Rien n'a été supprimé.",
+  AppLocale.rommSaveFileCount: '{count} fichier de sauvegarde',
+  AppLocale.rommSaveFilesCount: '{count} fichiers de sauvegarde',
+  AppLocale.rommSaveStateCount: '{count} état sauvegardé',
+  AppLocale.rommSaveStatesCount: '{count} états sauvegardés',
+  AppLocale.rommDeleteGameBothConfirm:
+      'Cette action supprimera définitivement de votre serveur RomM {saves} et {states} du jeu {game}. Les copies sur vos appareils sont conservées, et tout appareil qui synchronise encore ce jeu enverra de nouveau ses copies.',
+  AppLocale.rommDeleteGameConfirm:
+      'Cette action supprimera définitivement de votre serveur RomM {files} du jeu {game}. Les copies sur vos appareils sont conservées, et tout appareil qui synchronise encore ce jeu enverra de nouveau ses copies.',
+  AppLocale.rommDeleteKeepsSaves:
+      'Les fichiers de sauvegarde de ce jeu restent sur RomM.',
+  AppLocale.rommDeleteKeepsStates:
+      'Les états sauvegardés de ce jeu restent sur RomM.',
   AppLocale.ignoreArticlesInGameSort:
       "Ignorer les articles dans le tri des jeux",
   AppLocale.ignoreArticlesInGameSortSubtitle:
@@ -206,9 +260,9 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.nowPlayingDimOff: 'Désactivé',
   AppLocale.secondarySectionNowPlaying: 'Panneau Now Playing',
   AppLocale.secondarySectionDock: 'Dock d\'applications',
-  AppLocale.screenshotAccess: 'Screen return & screenshots',
+  AppLocale.screenshotAccess: 'Retour à l’écran et captures',
   AppLocale.screenshotAccessSubtitle:
-      'Restores the Now Playing screen when you close an app opened from the dock, and lets the screenshot button capture the screen (opens Android accessibility settings)',
+      'Rétablit l’écran Now Playing quand vous fermez une application ouverte depuis le dock, et permet au bouton de capture de faire des captures d’écran (ouvre les paramètres d’accessibilité d’Android)',
   AppLocale.scanOnStartupSubtitle:
       'Analyse automatiquement les dossiers de ROMs à l’ouverture de l’application',
   AppLocale.ignoreHiddenFiles: 'Ignorer les éléments cachés',
@@ -263,9 +317,9 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.bartopShutdownSubtitle:
       'Éteint l’ordinateur à la fermeture de l’application',
 
-  AppLocale.showSyncTab: 'Afficher l’onglet NeoSync',
+  AppLocale.showSyncTab: 'Afficher l’onglet Sauvegardes',
   AppLocale.showSyncTabSubtitle:
-      'Affiche l’onglet NeoSync dans la barre de navigation',
+      'Afficher l’onglet Sauvegardes dans la barre de navigation',
   AppLocale.showAchievementsTab: 'Afficher l’onglet Succès',
   AppLocale.showAchievementsTabSubtitle:
       'Affiche l’onglet RetroAchievements dans la barre de navigation',
@@ -411,7 +465,6 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.scrapingUnavailableAndroid: 'Scraping indisponible sur Android.',
   AppLocale.achievements: 'Succès',
 
-  AppLocale.neoSync: 'NeoSync',
   AppLocale.neoSyncLogin: 'Connexion NeoSync',
   AppLocale.neoSyncSynchronizing: 'NeoSync : Synchronisation...',
   AppLocale.neoSyncNotConnected: 'NeoSync : Non connecté',
@@ -716,6 +769,18 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.cannotReadFolder: 'Impossible de lire ce dossier',
   AppLocale.noStorageFound: 'Aucun stockage trouvé',
   AppLocale.lastPlayed: 'Dernier joué',
+  AppLocale.nowPlayingTitle: 'Now Playing',
+  AppLocale.nowPlayingSession: 'Session',
+  AppLocale.nowPlayingLastPlayed: 'Dernière partie',
+  AppLocale.launchAnApp: 'Lancer une application',
+  AppLocale.chooseAnApp: 'Choisir une application',
+  AppLocale.noAppsFound: 'Aucune application trouvée',
+  AppLocale.timeNever: 'Jamais',
+  AppLocale.timeYesterday: 'Hier',
+  AppLocale.timeDaysAgo: 'Il y a {count} jours',
+  AppLocale.timeHoursAgo: 'Il y a {count} h',
+  AppLocale.timeMinutesAgo: 'Il y a {count} min',
+  AppLocale.timeJustNow: 'À l’instant',
   AppLocale.apps: 'Apps',
   AppLocale.tracks: 'Pistes',
   AppLocale.games: 'Jeux',
@@ -741,7 +806,7 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.sortByGroup: 'Trier par',
   AppLocale.orderGroup: 'Ordre',
   AppLocale.synced: 'Synchronisé',
-  AppLocale.syncing: 'Synchronisation',
+  AppLocale.syncing: 'Synchronisation...',
   AppLocale.conflict: 'Conflit',
   AppLocale.ready: 'Prêt',
   AppLocale.quota: 'Quota',
@@ -860,10 +925,17 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.storagePermission: 'Autorisation de Stockage',
   AppLocale.storagePermissionDesc:
       'NeoStation a besoin de "l’Accès à Tous les Fichiers" pour gérer vos configurations RetroArch et synchroniser vos sauvegardes correctement.\n\nVeuillez accorder cette autorisation sur l’écran suivant.',
-  AppLocale.screenReturnAccess: 'Screen Return Access',
+  AppLocale.screenReturnAccess: 'Accès au retour à l’écran',
   AppLocale.screenReturnAccessDesc:
-      'Brings the Now Playing screen back when you close an app opened from the dock, and enables system screenshots. Only the foreground app name is read \u2014 no screen content is collected.',
-  AppLocale.screenReturnAccessHint: 'Turn on NeoStation, then tap Allow',
+      'Réaffiche l’écran Now Playing quand vous fermez une application ouverte depuis le dock, et active les captures d’écran système. Seul le nom de l’application au premier plan est lu — aucun contenu de l’écran n’est collecté.',
+  AppLocale.screenReturnAccessHint:
+      'Activez NeoStation, puis appuyez sur Autoriser',
+  AppLocale.screenReturnDialogTitle: 'Activer le retour à l’écran',
+  AppLocale.screenReturnDialogBody:
+      'Pour lancer des applications depuis le dock, NeoStation a besoin du service d’accessibilité de retour à l’écran. Il vous ramène ici après la fermeture de l’application ouverte. Sans lui, vous risquez de ne plus pouvoir revenir.',
+  AppLocale.screenReturnDialogSteps:
+      'Sur l’écran suivant, trouvez NeoStation dans la liste des services et activez-le.',
+  AppLocale.openSettings: 'Ouvrir les paramètres',
   AppLocale.selectRomFolder: 'Sélectionner le Dossier des ROMs',
   AppLocale.romFolderSelected: 'Dossier des ROMs sélectionné !',
   AppLocale.chooseRomFolderDesc:
@@ -1069,6 +1141,13 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.systemsUpdateDownloading: 'Téléchargement des configs systèmes...',
   AppLocale.systemsUpdateCancelling: 'Annulation...',
   AppLocale.systemsUpdateSyncing: 'Synchronisation de la base de données...',
+  AppLocale.waitingForRomStorage:
+      'En attente du stockage des ROMs ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'Mise à jour de la liste des systèmes...',
+  AppLocale.romsScanned: 'ROMs analysées',
+  AppLocale.errorScanningRoms: 'Erreur lors de l’analyse des ROMs',
+  AppLocale.romStorageNotReady:
+      'Le stockage des ROMs n’est pas prêt ; les jeux existants ont été conservés.',
   AppLocale.systemsUpdateComplete: 'Systèmes mis à jour avec succès !',
   AppLocale.systemsUpdateError:
       'Échec de la mise à jour des systèmes. Réessayez plus tard.',
@@ -1238,6 +1317,7 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.resetPlayTimeConfirm: 'Réinitialiser le temps de jeu',
   AppLocale.resetPlayTimeConfirmBody:
       'Cela réinitialisera définitivement à zéro le temps de jeu enregistré pour ce jeu. Cette action est irréversible.',
+  AppLocale.playTimeResetDone: 'Temps de jeu réinitialisé',
   AppLocale.removeRomFolderConfirmBody:
       'Cela supprimera ce dossier de ROM des sources de votre bibliothèque. Vos fichiers sur le disque ne sont pas supprimés.',
   AppLocale.disconnectRaConfirm: 'Déconnecter RetroAchievements',
@@ -1398,27 +1478,28 @@ const Map<String, dynamic> appLocaleFr = {
       'Migrer les sauvegardes cloud vers NeoSync v2',
 
   // ES-DE import
-  AppLocale.esdeImport: 'ES-DE Import',
-  AppLocale.esdeImportSubtitle: 'Import metadata and artwork from ES-DE',
-  AppLocale.esdeSelectFolder: 'Select ES-DE Folder',
+  AppLocale.esdeImport: 'Importation ES-DE',
+  AppLocale.esdeImportSubtitle:
+      'Importer les métadonnées et les visuels depuis ES-DE',
+  AppLocale.esdeSelectFolder: 'Sélectionner le dossier ES-DE',
   AppLocale.esdeSelectFolderSubtitle:
-      'Choose the ES-DE folder containing gamelists and downloaded_media',
-  AppLocale.esdeRunImport: 'Import from ES-DE',
+      'Choisissez le dossier ES-DE contenant les dossiers gamelists et downloaded_media',
+  AppLocale.esdeRunImport: 'Importer depuis ES-DE',
   AppLocale.esdeRunImportSubtitle:
-      'Fill in missing metadata and use ES-DE artwork as fallback',
-  AppLocale.esdeImporting: 'Importing from ES-DE',
-  AppLocale.esdeImportComplete: 'ES-DE import complete',
-  AppLocale.esdeImportNoFolder: 'Select your ES-DE folder first',
-  AppLocale.esdeReset: 'Reset ES-DE Import',
+      'Compléter les métadonnées manquantes et utiliser les visuels ES-DE comme solution de repli',
+  AppLocale.esdeImporting: 'Importation depuis ES-DE en cours',
+  AppLocale.esdeImportComplete: 'Importation ES-DE terminée',
+  AppLocale.esdeImportNoFolder: 'Sélectionnez d’abord votre dossier ES-DE',
+  AppLocale.esdeReset: 'Réinitialiser l’importation ES-DE',
   AppLocale.esdeResetSubtitle:
-      'Remove imported metadata and media links so the import can be re-run',
-  AppLocale.esdeResetComplete: 'ES-DE import reset',
+      'Supprimer les métadonnées importées et les liens vers les médias pour pouvoir relancer l’importation',
+  AppLocale.esdeResetComplete: 'Importation ES-DE réinitialisée',
   AppLocale.esdeResetConfirmBody:
-      'This removes all imported ES-DE metadata and media links and clears the selected folder. Your games and ROM files are not affected.',
+      'Cela supprime toutes les métadonnées et tous les liens vers les médias importés depuis ES-DE, et annule la sélection du dossier. Vos jeux et fichiers ROM ne sont pas affectés.',
   AppLocale.esdeImportNotEsdeFolder:
-      'This folder is not an ES-DE installation (no gamelists found)',
+      'Ce dossier n’est pas une installation ES-DE (aucun dossier gamelists trouvé)',
   AppLocale.esdeImportNothingFound:
-      'No matching systems or games were found to import',
+      'Aucun système ni jeu correspondant à importer n’a été trouvé',
   AppLocale.esdeSummarySystemsMatched: 'Systèmes associés',
   AppLocale.esdeSummaryUnmatched: 'non associés',
   AppLocale.esdeSummarySkipped: 'ignorés (illisibles)',

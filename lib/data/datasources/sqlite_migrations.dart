@@ -636,13 +636,45 @@ class SqliteMigrations {
         // Backfill for installs that reached v165 without this PR’s v164.
         await _migrateToVersion164(db);
         break;
-      // 167 and 168 belong to open PRs (smart collections, custom navigation
-      // sounds); their slots stay empty here.
+      // 167 was reserved for smart collections, which moved to 170; it stays
+      // empty. 168 is main's custom navigation sounds backfill.
+      case 168:
+        await _migrateToVersion168(db);
+        break;
       case 169:
         await _migrateToVersion169(db);
         break;
+      // 170 belongs to the open smart collections PR; its slot stays empty.
+      case 171:
+        await _migrateToVersion171(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
+    }
+  }
+
+  /// Migration v171: backfill for devices that ran the Android Games branch.
+  ///
+  /// That branch reached v169 without main's v168, so those databases skip
+  /// v168 here and lack `user_config.custom_sfx` (and the sorting and manual
+  /// ScreenScraper columns v168 itself backfills). v168 is fully guarded, so
+  /// re-running it is a no-op everywhere else.
+  static Future<void> _migrateToVersion171(Database db) async {
+    _log.i('Migration v171: Backfilling v168 for pre-merge v169 databases');
+    await _migrateToVersion168(db);
+  }
+
+  /// Migration v168: durable custom sounds, renumbered from v166.
+  static Future<void> _migrateToVersion168(Database db) async {
+    // Devices on the former v166 build skipped main’s sorting and manual
+    // ScreenScraper migrations. Backfill both without changing preferences.
+    await _migrateToVersion164(db);
+    await _migrateToVersion165(db);
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name']);
+    if (!columns.contains('custom_sfx')) {
+      db.execute('ALTER TABLE user_config ADD COLUMN custom_sfx TEXT');
     }
   }
 

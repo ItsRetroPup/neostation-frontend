@@ -2085,7 +2085,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
       if (!mounted) return;
       AppNotification.showNotification(
         context,
-        'Please log in to ScreenScraper in the Scraping tab first.',
+        AppLocale.loginToScrape.getString(context),
         type: NotificationType.info,
       );
       return;

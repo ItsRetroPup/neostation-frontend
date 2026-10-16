@@ -151,4 +151,34 @@ void main() {
       );
     });
   });
+
+  test(
+    'v171 backfills main\'s v168 for databases already at this branch\'s v169',
+    () async {
+      // A device that ran the pre-merge branch: at v169, but v168 never ran.
+      db.execute(
+        'CREATE TABLE user_config (id INTEGER PRIMARY KEY, sfx_enabled INTEGER)',
+      );
+      db.execute('INSERT INTO user_config VALUES (1, 0)');
+      await SqliteMigrations.migrateToVersion(db, 169);
+      Set<String> configColumns() => db
+          .select('PRAGMA table_info(user_config)')
+          .map((c) => c['name'].toString())
+          .toSet();
+      expect(configColumns(), isNot(contains('custom_sfx')));
+
+      await SqliteMigrations.migrateToVersion(db, 171);
+      await SqliteMigrations.migrateToVersion(db, 171);
+
+      expect(
+        configColumns(),
+        containsAll(['custom_sfx', 'ignore_articles_in_game_sort']),
+      );
+      expect(romColumns(), contains('ss_manual_game_id'));
+      expect(
+        db.select('SELECT sfx_enabled FROM user_config').single['sfx_enabled'],
+        0,
+      );
+    },
+  );
 }

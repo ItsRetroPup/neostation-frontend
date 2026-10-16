@@ -1,6 +1,58 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleEn = {
+  AppLocale.customSounds: "Custom sounds",
+  AppLocale.customSoundsSubtitle:
+      "Choose sounds for movement, confirm and back",
+  AppLocale.customSoundsHint:
+      "WAV, MP3, OGG or FLAC · Up to 5 seconds and 5 MiB",
+  AppLocale.customSoundsMovement: "Movement",
+  AppLocale.customSoundsConfirm: "Confirm",
+  AppLocale.customSoundsBack: "Back",
+  AppLocale.customSoundsDefault: "Default",
+  AppLocale.customSoundsImport: "Import / Replace",
+  AppLocale.customSoundsPreview: "Preview",
+  AppLocale.customSoundsReset: "Restore default",
+  AppLocale.customSoundsClose: "Close",
+  AppLocale.customSoundsSizeError: "Choose a file no larger than 5 MiB.",
+  AppLocale.customSoundsDurationError:
+      "Choose a clip no longer than 5 seconds.",
+  AppLocale.customSoundsInvalidError:
+      "This file is empty, unsupported or cannot be played.",
+  AppLocale.customSoundsSaveError:
+      "Could not import or save the sound. Your previous sound is unchanged.",
+
+  AppLocale.rommSavesAutoDownload:
+      'Newer cloud saves download when you launch a linked game.',
+  AppLocale.rommSaveFile: 'Save file',
+  AppLocale.rommSaveState: 'Save state',
+  AppLocale.rommRetryUploads: 'Retry uploads',
+  AppLocale.rommUploadsFailed:
+      'Some uploads failed. Check your connection and RomM permissions, then retry.',
+  AppLocale.rommUploadsFailedFor:
+      "Saves for {games} didn't upload. Check your connection and RomM permissions, then retry.",
+  AppLocale.rommGameListSeparator: ', ',
+  AppLocale.rommGameListMore: '{games} and {count} more',
+  AppLocale.rommSavesHelp:
+      'Browse your RomM saves and states. Retry uploads checks local games linked to RomM with save sync enabled. Newer remote saves download when you launch a game.',
+  AppLocale.rommDeleteTitle: 'Delete from RomM',
+  AppLocale.rommDeleteConfirm:
+      '{file} will be permanently deleted from your RomM server. Copies on your devices are kept, and any device that still syncs this game will upload its copy again.',
+  AppLocale.rommDeleted: 'Deleted from RomM.',
+  AppLocale.rommDeleteFailed:
+      "Couldn't delete from RomM. Check your connection and RomM permissions, then try again.",
+  AppLocale.rommDeleteNotSent:
+      'Delete cancelled before it reached RomM. Nothing was deleted.',
+  AppLocale.rommSaveFileCount: '{count} save file',
+  AppLocale.rommSaveFilesCount: '{count} save files',
+  AppLocale.rommSaveStateCount: '{count} save state',
+  AppLocale.rommSaveStatesCount: '{count} save states',
+  AppLocale.rommDeleteGameBothConfirm:
+      '{saves} and {states} for {game} will be permanently deleted from your RomM server. Copies on your devices are kept, and any device that still syncs this game will upload its copies again.',
+  AppLocale.rommDeleteGameConfirm:
+      '{files} for {game} will be permanently deleted from your RomM server. Copies on your devices are kept, and any device that still syncs this game will upload its copies again.',
+  AppLocale.rommDeleteKeepsSaves: "This game's save files stay on RomM.",
+  AppLocale.rommDeleteKeepsStates: "This game's save states stay on RomM.",
   AppLocale.ignoreArticlesInGameSort: "Ignore articles when sorting games",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Sort by title without leading The, A, or An. For example, The Legend of Zelda sorts under L.",
@@ -250,9 +302,8 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.bartopShutdownSubtitle:
       'Shut down the computer when exiting the application',
 
-  AppLocale.showSyncTab: 'Show NeoSync tab',
-  AppLocale.showSyncTabSubtitle:
-      'Display the NeoSync tab in the navigation bar',
+  AppLocale.showSyncTab: 'Show Saves tab',
+  AppLocale.showSyncTabSubtitle: 'Display the Saves tab in the navigation bar',
   AppLocale.showAchievementsTab: 'Show Achievements tab',
   AppLocale.showAchievementsTabSubtitle:
       'Display the RetroAchievements tab in the navigation bar',
@@ -392,7 +443,6 @@ const Map<String, dynamic> appLocaleEn = {
       'Scraping unavailable for Android apps.',
   AppLocale.achievements: 'Achievements',
 
-  AppLocale.neoSync: 'NeoSync',
   AppLocale.neoSyncLogin: 'NeoSync Login',
   AppLocale.neoSyncSynchronizing: 'NeoSync: Synchronizing...',
   AppLocale.neoSyncNotConnected: 'NeoSync: Not connected',
@@ -683,6 +733,18 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.cannotReadFolder: 'Cannot read this folder',
   AppLocale.noStorageFound: 'No storage found',
   AppLocale.lastPlayed: 'Last Played',
+  AppLocale.nowPlayingTitle: 'Now Playing',
+  AppLocale.nowPlayingSession: 'Session',
+  AppLocale.nowPlayingLastPlayed: 'Last played',
+  AppLocale.launchAnApp: 'Launch an app',
+  AppLocale.chooseAnApp: 'Choose an app',
+  AppLocale.noAppsFound: 'No apps found',
+  AppLocale.timeNever: 'Never',
+  AppLocale.timeYesterday: 'Yesterday',
+  AppLocale.timeDaysAgo: '{count} days ago',
+  AppLocale.timeHoursAgo: '{count}h ago',
+  AppLocale.timeMinutesAgo: '{count}m ago',
+  AppLocale.timeJustNow: 'Just now',
   AppLocale.apps: 'Apps',
   AppLocale.tracks: 'Tracks',
   AppLocale.games: 'Games',
@@ -708,7 +770,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.sortByGroup: 'SORT BY',
   AppLocale.orderGroup: 'ORDER',
   AppLocale.synced: 'Synced',
-  AppLocale.syncing: 'Syncing',
+  AppLocale.syncing: 'Syncing...',
   AppLocale.conflict: 'Conflict',
   AppLocale.ready: 'Ready',
   AppLocale.quota: 'Quota',
@@ -830,6 +892,12 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.screenReturnAccessDesc:
       'Brings the Now Playing screen back when you close an app opened from the dock, and enables system screenshots. Only the foreground app name is read \u2014 no screen content is collected.',
   AppLocale.screenReturnAccessHint: 'Turn on NeoStation, then tap Allow',
+  AppLocale.screenReturnDialogTitle: 'Enable Screen Return',
+  AppLocale.screenReturnDialogBody:
+      'To launch apps from the dock, NeoStation needs the Screen Return accessibility service. It lets NeoStation bring you back here after you close the app you opened. Without it you could be left with no way back.',
+  AppLocale.screenReturnDialogSteps:
+      'On the next screen, find NeoStation in the list of services and switch it on.',
+  AppLocale.openSettings: 'Open settings',
   AppLocale.selectRomFolder: 'Select ROM Folder',
   AppLocale.romFolderSelected: 'ROM folder selected!',
   AppLocale.chooseRomFolderDesc:
@@ -1031,6 +1099,13 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.systemsUpdateDownloading: 'Downloading system configs...',
   AppLocale.systemsUpdateCancelling: 'Cancelling...',
   AppLocale.systemsUpdateSyncing: 'Syncing systems database...',
+  AppLocale.waitingForRomStorage:
+      'Waiting for ROM storage ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: 'Updating systems list...',
+  AppLocale.romsScanned: 'ROMs scanned',
+  AppLocale.errorScanningRoms: 'Error scanning ROMs',
+  AppLocale.romStorageNotReady:
+      'ROM storage is not ready; existing games were kept.',
   AppLocale.systemsUpdateComplete: 'Systems updated successfully!',
   AppLocale.systemsUpdateError:
       'Failed to update systems. Please try again later.',
@@ -1192,6 +1267,7 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.resetPlayTimeConfirm: 'Reset Play Time',
   AppLocale.resetPlayTimeConfirmBody:
       'This will permanently reset the recorded play time for this game to zero. This cannot be undone.',
+  AppLocale.playTimeResetDone: 'Play time reset',
   AppLocale.removeRomFolderConfirmBody:
       'This will remove this ROM folder from your library sources. Your files on disk are not deleted.',
   AppLocale.disconnectRaConfirm: 'Disconnect RetroAchievements',

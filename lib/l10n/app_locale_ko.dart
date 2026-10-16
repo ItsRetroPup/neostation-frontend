@@ -1,6 +1,50 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleKo = {
+  AppLocale.customSounds: "사용자 지정 효과음",
+  AppLocale.customSoundsSubtitle: "이동, 확인, 뒤로 가기 효과음 선택",
+  AppLocale.customSoundsHint: "WAV, MP3, OGG 또는 FLAC · 최대 5초 및 5 MiB",
+  AppLocale.customSoundsMovement: "이동",
+  AppLocale.customSoundsConfirm: "확인",
+  AppLocale.customSoundsBack: "뒤로",
+  AppLocale.customSoundsDefault: "기본값",
+  AppLocale.customSoundsImport: "가져오기 / 교체",
+  AppLocale.customSoundsPreview: "미리 듣기",
+  AppLocale.customSoundsReset: "기본값 복원",
+  AppLocale.customSoundsClose: "닫기",
+  AppLocale.customSoundsSizeError: "5 MiB 이하의 파일을 선택하세요.",
+  AppLocale.customSoundsDurationError: "5초 이하의 효과음을 선택하세요.",
+  AppLocale.customSoundsInvalidError: "파일이 비어 있거나 지원되지 않거나 재생할 수 없습니다.",
+  AppLocale.customSoundsSaveError: "효과음을 가져오거나 저장하지 못했습니다. 이전 효과음이 유지됩니다.",
+
+  AppLocale.rommSavesAutoDownload: '연결된 게임을 실행하면 최신 클라우드 저장 데이터를 다운로드합니다.',
+  AppLocale.rommSaveFile: '세이브 파일',
+  AppLocale.rommSaveState: '세이브 상태',
+  AppLocale.rommRetryUploads: '업로드 재시도',
+  AppLocale.rommUploadsFailed: '일부 업로드에 실패했습니다. 연결 및 RomM 권한을 확인한 후 다시 시도하세요.',
+  AppLocale.rommUploadsFailedFor:
+      '{games}의 저장 파일을 업로드하지 못했습니다. 연결 및 RomM 권한을 확인한 후 다시 시도하세요.',
+  AppLocale.rommGameListSeparator: ', ',
+  AppLocale.rommGameListMore: '{games} 외 {count}개',
+  AppLocale.rommSavesHelp:
+      'RomM 저장 파일과 상태를 확인합니다. 업로드 재시도는 동기화가 활성화된 RomM 연결 로컬 게임을 확인합니다. 최신 원격 저장 파일은 게임 시작 시 다운로드됩니다.',
+  AppLocale.rommDeleteTitle: 'RomM에서 삭제',
+  AppLocale.rommDeleteConfirm:
+      '{file} 파일이 RomM 서버에서 영구적으로 삭제됩니다. 기기에 있는 사본은 유지되며, 이 게임을 계속 동기화하는 기기는 사본을 다시 업로드합니다.',
+  AppLocale.rommDeleted: 'RomM에서 삭제했습니다.',
+  AppLocale.rommDeleteFailed:
+      'RomM에서 삭제하지 못했습니다. 연결 및 RomM 권한을 확인한 후 다시 시도하세요.',
+  AppLocale.rommDeleteNotSent: '삭제가 RomM에 도달하기 전에 취소되었습니다. 아무것도 삭제되지 않았습니다.',
+  AppLocale.rommSaveFileCount: '세이브 파일 {count}개',
+  AppLocale.rommSaveFilesCount: '세이브 파일 {count}개',
+  AppLocale.rommSaveStateCount: '세이브 상태 {count}개',
+  AppLocale.rommSaveStatesCount: '세이브 상태 {count}개',
+  AppLocale.rommDeleteGameBothConfirm:
+      '{game}의 {saves}와 {states}가 RomM 서버에서 영구적으로 삭제됩니다. 기기에 있는 사본은 유지되며, 이 게임을 계속 동기화하는 기기는 사본을 다시 업로드합니다.',
+  AppLocale.rommDeleteGameConfirm:
+      '{game}의 {files}가 RomM 서버에서 영구적으로 삭제됩니다. 기기에 있는 사본은 유지되며, 이 게임을 계속 동기화하는 기기는 사본을 다시 업로드합니다.',
+  AppLocale.rommDeleteKeepsSaves: '이 게임의 세이브 파일은 RomM에 그대로 남습니다.',
+  AppLocale.rommDeleteKeepsStates: '이 게임의 세이브 상태는 RomM에 그대로 남습니다.',
   AppLocale.ignoreArticlesInGameSort: "게임 정렬 시 관사 무시",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "제목 앞의 The, A, An을 무시합니다. 예: The Legend of Zelda는 L로 정렬됩니다.",
@@ -219,8 +263,8 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.bartopShutdown: '종료할 때 BarTOP 전원 끄기',
   AppLocale.bartopShutdownSubtitle: '앱을 종료할 때 컴퓨터도 함께 종료합니다',
 
-  AppLocale.showSyncTab: 'NeoSync 탭 표시',
-  AppLocale.showSyncTabSubtitle: '내비게이션 바에 NeoSync 탭을 표시합니다',
+  AppLocale.showSyncTab: '세이브 탭 표시',
+  AppLocale.showSyncTabSubtitle: '내비게이션 바에 세이브 탭을 표시합니다',
   AppLocale.showAchievementsTab: '업적 탭 표시',
   AppLocale.showAchievementsTabSubtitle: '내비게이션 바에 RetroAchievements 탭을 표시합니다',
   AppLocale.showRommTab: 'RomM 탭 표시',
@@ -344,7 +388,6 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.scrapingUnavailableAndroid: 'Android 앱은 게임 정보 가져오기를 지원하지 않습니다.',
   AppLocale.achievements: '업적',
 
-  AppLocale.neoSync: 'NeoSync',
   AppLocale.neoSyncLogin: 'NeoSync 로그인',
   AppLocale.neoSyncSynchronizing: 'NeoSync: 동기화 중...',
   AppLocale.neoSyncNotConnected: 'NeoSync: 연결 안 됨',
@@ -622,6 +665,18 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.cannotReadFolder: '이 폴더를 읽을 수 없습니다',
   AppLocale.noStorageFound: '저장소를 찾을 수 없습니다',
   AppLocale.lastPlayed: '마지막 플레이',
+  AppLocale.nowPlayingTitle: '플레이 중',
+  AppLocale.nowPlayingSession: '세션',
+  AppLocale.nowPlayingLastPlayed: '마지막 플레이',
+  AppLocale.launchAnApp: '앱 실행',
+  AppLocale.chooseAnApp: '앱 선택',
+  AppLocale.noAppsFound: '앱을 찾을 수 없습니다',
+  AppLocale.timeNever: '플레이 기록 없음',
+  AppLocale.timeYesterday: '어제',
+  AppLocale.timeDaysAgo: '{count}일 전',
+  AppLocale.timeHoursAgo: '{count}시간 전',
+  AppLocale.timeMinutesAgo: '{count}분 전',
+  AppLocale.timeJustNow: '방금 전',
   AppLocale.apps: '앱',
   AppLocale.tracks: '트랙',
   AppLocale.games: '게임',
@@ -647,7 +702,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.sortByGroup: '정렬 기준',
   AppLocale.orderGroup: '정렬 순서',
   AppLocale.synced: '동기화됨',
-  AppLocale.syncing: '동기화 중',
+  AppLocale.syncing: '동기화 중...',
   AppLocale.conflict: '충돌',
   AppLocale.ready: '준비',
   AppLocale.quota: '용량',
@@ -763,8 +818,13 @@ const Map<String, dynamic> appLocaleKo = {
       'NeoStation은 RetroArch 구성을 관리하고 게임 저장을 올바르게 동기화하려면 "모든 파일 액세스"가 필요합니다.\n\n다음 화면에서 이 권한을 부여해 주세요.',
   AppLocale.screenReturnAccess: '화면 복귀 권한',
   AppLocale.screenReturnAccessDesc:
-      '독에서 실행한 앱을 닫으면 플레이 중 화면으로 돌아오고 시스템 스크린샷을 사용할 수 있습니다. 현재 실행 중인 앱 이름만 읽으며 화면 내용은 수집하지 않습니다.',
+      'Dock에서 실행한 앱을 닫으면 플레이 중 화면으로 돌아오고 시스템 스크린샷을 사용할 수 있습니다. 현재 실행 중인 앱 이름만 읽으며 화면 내용은 수집하지 않습니다.',
   AppLocale.screenReturnAccessHint: 'NeoStation을 켠 뒤 허용을 누르세요',
+  AppLocale.screenReturnDialogTitle: '화면 복귀 사용',
+  AppLocale.screenReturnDialogBody:
+      'Dock에서 앱을 실행하려면 NeoStation에 화면 복귀 접근성 서비스가 필요합니다. 실행한 앱을 닫은 뒤 이 화면으로 돌아올 수 있게 해 줍니다. 이 서비스가 없으면 돌아올 방법이 없을 수 있습니다.',
+  AppLocale.screenReturnDialogSteps: '다음 화면의 서비스 목록에서 NeoStation을 찾아 켜세요.',
+  AppLocale.openSettings: '설정 열기',
   AppLocale.selectRomFolder: 'ROM 폴더 선택',
   AppLocale.romFolderSelected: 'ROM 폴더가 선택되었습니다!',
   AppLocale.chooseRomFolderDesc:
@@ -952,6 +1012,11 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.systemsUpdateDownloading: '시스템 구성 다운로드 중...',
   AppLocale.systemsUpdateCancelling: '취소하는 중...',
   AppLocale.systemsUpdateSyncing: '시스템 데이터베이스 동기화 중...',
+  AppLocale.waitingForRomStorage: 'ROM 저장소를 기다리는 중 ({attempt}/{max})...',
+  AppLocale.updatingSystemsList: '시스템 목록 업데이트 중...',
+  AppLocale.romsScanned: 'ROM 스캔을 마쳤습니다',
+  AppLocale.errorScanningRoms: 'ROM 스캔 중 오류가 발생했습니다',
+  AppLocale.romStorageNotReady: 'ROM 저장소가 준비되지 않았습니다. 기존 게임은 유지되었습니다.',
   AppLocale.systemsUpdateComplete: '시스템이 성공적으로 업데이트되었습니다!',
   AppLocale.systemsUpdateError: '시스템을 업데이트하지 못했습니다. 나중에 다시 시도해 주세요.',
 
@@ -1085,6 +1150,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.resetPlayTimeConfirm: '플레이 시간 재설정',
   AppLocale.resetPlayTimeConfirmBody:
       '이 게임의 플레이 시간 기록을 0으로 초기화합니다. 이 작업은 되돌릴 수 없습니다.',
+  AppLocale.playTimeResetDone: '플레이 시간을 재설정했습니다',
   AppLocale.removeRomFolderConfirmBody:
       '이 ROM 폴더를 라이브러리 소스에서 제거합니다. 디스크의 파일은 삭제되지 않습니다.',
   AppLocale.disconnectRaConfirm: 'RetroAchievements 연결 해제',
@@ -1221,12 +1287,12 @@ const Map<String, dynamic> appLocaleKo = {
       'gamelists와 downloaded_media가 들어 있는 ES-DE 폴더를 선택하세요',
   AppLocale.esdeRunImport: 'ES-DE에서 가져오기',
   AppLocale.esdeRunImportSubtitle: '누락된 메타데이터를 채우고 ES-DE 아트워크를 대체 이미지로 사용합니다',
-  AppLocale.esdeImporting: 'ES-DE에서 가져오기',
+  AppLocale.esdeImporting: 'ES-DE에서 가져오는 중',
   AppLocale.esdeImportComplete: 'ES-DE 가져오기 완료',
   AppLocale.esdeImportNoFolder: '먼저 ES-DE 폴더를 선택하세요',
   AppLocale.esdeReset: 'ES-DE 가져오기 재설정',
   AppLocale.esdeResetSubtitle: '다시 가져올 수 있도록 가져온 메타데이터와 미디어 연결을 제거합니다',
-  AppLocale.esdeResetComplete: 'ES-DE 가져오기 재설정',
+  AppLocale.esdeResetComplete: 'ES-DE 가져오기를 재설정했습니다',
   AppLocale.esdeResetConfirmBody:
       '가져온 모든 ES-DE 메타데이터와 미디어 링크를 제거하고, 선택한 폴더 설정을 초기화합니다. 게임과 ROM 파일에는 영향을 주지 않습니다.',
   AppLocale.esdeImportNotEsdeFolder: '이 폴더는 ES-DE 설치 폴더가 아닙니다(gamelists 없음)',
