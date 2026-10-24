@@ -39,8 +39,8 @@ class CredentialStoreException implements Exception {
 
 /// The single place the app keeps user credentials.
 ///
-/// Gaming distributions (SteamOS, Bazzite, ChimeraOS) prefer the encrypted
-/// file in both desktop and gaming sessions.
+/// Gaming distributions (SteamOS, Bazzite, ChimeraOS, NeOS) prefer the
+/// encrypted file in both desktop and gaming sessions.
 /// Other platforms prefer their own secure storage. What differs is what happens
 /// when that fails, which on Linux is routine rather than exceptional: SteamOS
 /// has no Secret Service at all, so libsecret cannot store anything and both
@@ -84,11 +84,13 @@ class CredentialStore {
   static bool get _preferFile => _preferFileOverride ?? _gamingDistro;
 
   /// Distributions that boot into a gamescope gaming session, where the
-  /// desktop keyring is not unlocked (or not running at all).
+  /// desktop keyring is not unlocked (or not running at all), and handheld
+  /// firmware (NeOS) that boots straight into NeoStation with no keyring.
   static const Set<String> _gamingDistroIds = {
     'steamos',
     'bazzite',
     'chimeraos',
+    'neos',
   };
 
   static bool _detectGamingDistro() {

@@ -32,6 +32,7 @@ import 'package:neostation/utils/app_shortcuts.dart';
 import 'package:neostation/utils/custom_scroll_behavior.dart';
 import 'package:neostation/utils/desktop_window_focus.dart';
 import 'package:neostation/utils/display_metrics_log.dart';
+import 'package:neostation/utils/handheld_build.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:neostation/services/config_service.dart';
@@ -226,8 +227,10 @@ void main() async {
     await FilePicker.skipEntitlementsChecks();
   }
 
-  // Inicializar window_manager para desktop con tamano minimo 640x480
-  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+  // Inicializar window_manager para desktop con tamano minimo 640x480.
+  // Handheld builds have no window: flutter-pi is always full-screen.
+  if ((Platform.isWindows || Platform.isMacOS || Platform.isLinux) &&
+      !isHandheldBuild) {
     await windowManager.ensureInitialized();
 
     WindowOptions windowOptions = WindowOptions(
@@ -277,7 +280,10 @@ void main() async {
   }
 
   // Inicializar fvp para soporte extendido de video (Windows, Linux, etc.)
-  registerWith();
+  // Handheld images don't ship libfvp.so, and loading it is fatal there.
+  if (!isHandheldBuild) {
+    registerWith();
+  }
 
   // Configurar manejo global de errores para evitar crashes
   FlutterError.onError = (FlutterErrorDetails details) {

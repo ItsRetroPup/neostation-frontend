@@ -263,6 +263,7 @@ void main() {
       ('Bazzite', 'NAME="Bazzite"\nID=bazzite\nID_LIKE="fedora"\n', true),
       ('ChimeraOS', 'ID=chimeraos\nID_LIKE=arch\n', true),
       ('a SteamOS derivative', "ID=holo\nID_LIKE='steamos arch'\n", true),
+      ('NeOS', 'NAME="NeOS"\nID=neos\nVARIANT_ID=rg-sp\n', true),
       ('Arch', 'NAME="Arch Linux"\nID=arch\n', false),
       ('Fedora', 'ID=fedora\nVARIANT_ID=steamos-like\n', false),
       (

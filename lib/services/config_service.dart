@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:neostation/services/logger_service.dart';
+import 'package:neostation/utils/handheld_build.dart';
 import '../models/system_model.dart';
 import '../models/config_model.dart';
 import '../models/emulator_model.dart';
@@ -230,9 +231,7 @@ class ConfigService {
       String basePath;
 
       if (Platform.isLinux) {
-        final executable = Platform.resolvedExecutable;
-        if (executable.contains('/.mount_') ||
-            executable.endsWith('.AppImage')) {
+        if (_keepsDataInHome()) {
           final home = Platform.environment['HOME'];
           if (home != null) {
             basePath = path.join(home, '.neostation');
@@ -256,6 +255,16 @@ class ConfigService {
 
       return path.join(basePath, 'user-data');
     }
+  }
+
+  /// Whether Linux user data lives in `~/.neostation` rather than next to the
+  /// working directory: AppImages run from a read-only mount, and handheld
+  /// builds run from the read-only app bundle (flutter-pi resolves bundled
+  /// native libraries relative to the working directory).
+  static bool _keepsDataInHome() {
+    if (isHandheldBuild) return true;
+    final executable = Platform.resolvedExecutable;
+    return executable.contains('/.mount_') || executable.endsWith('.AppImage');
   }
 
   /// Retrieves the user's home directory path, bypassing sandbox limitations on macOS.
@@ -325,9 +334,7 @@ class ConfigService {
       String basePath;
 
       if (Platform.isLinux) {
-        final executable = Platform.resolvedExecutable;
-        if (executable.contains('/.mount_') ||
-            executable.endsWith('.AppImage')) {
+        if (_keepsDataInHome()) {
           final home = Platform.environment['HOME'];
           if (home != null) {
             basePath = path.join(home, '.neostation');
