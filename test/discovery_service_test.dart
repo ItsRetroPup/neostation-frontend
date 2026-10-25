@@ -334,6 +334,53 @@ void main() {
     });
   });
 
+  group('display names', () {
+    setUp(() async {
+      await db.execute(
+        "INSERT INTO app_system_extensions (system_id, extension) "
+        "VALUES ('snes', 'sfc')",
+      );
+    });
+
+    test(
+      'an unscraped pick is named the way its games list names it',
+      () async {
+        await insertGame('Super Metroid (USA) [!].sfc', scraped: false);
+
+        final board = await serviceAt(monday).loadBoard();
+
+        expect(board.entries, isNotEmpty);
+        expect(board.entries.single.game.realName, 'Super Metroid');
+        // The name is the only thing that changes: opening the pick and finding
+        // its art both go by the file.
+        expect(
+          board.entries.single.game.filename,
+          'Super Metroid (USA) [!].sfc',
+        );
+      },
+    );
+
+    test('a system set to prefer file names shows the file name', () async {
+      await insertGame('Chrono Trigger (USA).sfc', rating: 18);
+      await db.execute(
+        'INSERT INTO user_system_settings (app_system_id, prefer_file_name, '
+        "hide_parentheses) VALUES ('snes', 1, 0)",
+      );
+
+      final board = await serviceAt(monday).loadBoard();
+
+      expect(board.entries.single.game.realName, 'Chrono Trigger (USA)');
+    });
+
+    test('the shuffle pool is named the same way', () async {
+      await insertGame('Super Metroid (USA) [!].sfc', scraped: false);
+
+      final board = await serviceAt(monday).loadBoard();
+
+      expect(board.shufflePool.single.realName, 'Super Metroid');
+    });
+  });
+
   group('reroll', () {
     test('replaces the pick and persists the new one', () async {
       await seedLibrary();

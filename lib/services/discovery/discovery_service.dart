@@ -3,6 +3,7 @@ import 'dart:math';
 import '../../models/database_game_model.dart';
 import '../../models/discovery_models.dart';
 import '../../repositories/discovery_repository.dart';
+import '../game/game_list_service.dart';
 import '../../utils/genre_buckets.dart';
 import '../../utils/week_key.dart';
 import 'discovery_pick_engine.dart';
@@ -16,10 +17,17 @@ import 'discovery_pick_engine.dart';
 class DiscoveryService {
   const DiscoveryService({
     this.engine = const DiscoveryPickEngine(),
+    this.displayNames = GameListService.listDisplayNames,
     DateTime Function()? clock,
   }) : _clock = clock;
 
   final DiscoveryPickEngine engine;
+
+  /// Resolves the names the board shows, keyed by `romPath`, applying each
+  /// system's naming preferences the way the games lists do. Injectable so
+  /// the board's own logic is testable without the system settings tables.
+  final Future<Map<String, String>> Function(List<DatabaseGameModel> games)
+  displayNames;
 
   /// Injectable clock, so week rollover is testable without touching the
   /// device clock.
@@ -71,7 +79,7 @@ class DiscoveryService {
       );
     }
 
-    return _composeBoard(weekKey, plan, byPath);
+    return await _composeBoard(weekKey, plan, byPath);
   }
 
   /// Replaces the pick in [slotId] with a different game and persists it.
@@ -142,7 +150,7 @@ class DiscoveryService {
       await DiscoveryRepository.upsertPicks(plan.newPicks);
     }
 
-    return _composeBoard(weekKey, plan, byPath);
+    return await _composeBoard(weekKey, plan, byPath);
   }
 
   /// Reads the stored picks for [weekKey] and drops the ones whose ROM is gone.
@@ -166,11 +174,11 @@ class DiscoveryService {
     return resolved;
   }
 
-  DiscoveryBoard _composeBoard(
+  Future<DiscoveryBoard> _composeBoard(
     String weekKey,
     DiscoveryPlan plan,
     Map<String, Map<String, Object?>> byPath,
-  ) {
+  ) async {
     final entries = <DiscoveryBoardEntry>[];
     for (final pick in plan.picks) {
       final row = byPath[pick.romPath.toLowerCase()];
@@ -183,11 +191,36 @@ class DiscoveryService {
         ),
       );
     }
+    final shufflePool = _sampleShufflePool(byPath.values);
+
+    // Every name on the board goes through the games lists' naming, so an
+    // unscraped pick reads the way it does in its system's list rather than
+    // as a raw file name. The shuffle pool too: its titles flash through the
+    // same tiles. Only the display name changes — the art is found by file
+    // name and opening a pick goes by rom path, neither of which moves.
+    final names = await displayNames([
+      for (final entry in entries) entry.game,
+      ...shufflePool,
+    ]);
+    DatabaseGameModel named(DatabaseGameModel game) {
+      final name = names[game.romPath];
+      return name == null || name.isEmpty
+          ? game
+          : game.copyWith(realName: name);
+    }
+
     return DiscoveryBoard(
       weekKey: weekKey,
-      entries: entries,
+      entries: [
+        for (final entry in entries)
+          DiscoveryBoardEntry(
+            pick: entry.pick,
+            game: named(entry.game),
+            achievementCount: entry.achievementCount,
+          ),
+      ],
       scrapeCoverageLow: plan.scrapeCoverageLow,
-      shufflePool: _sampleShufflePool(byPath.values),
+      shufflePool: [for (final game in shufflePool) named(game)],
     );
   }
 
