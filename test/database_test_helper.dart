@@ -29,6 +29,7 @@ class DatabaseTestHelper {
 
   /// Creates the minimal set of tables required by repository tests.
   Future<void> createMinimalSchema(DatabaseAdapter db) async {
+    await db.execute(SqliteMigrations.createRaCatalogueSyncTableSql);
     await db.execute('''
       CREATE TABLE app_systems (
         id TEXT PRIMARY KEY,
@@ -205,7 +206,8 @@ class DatabaseTestHelper {
         is_default_core INTEGER,
         is_default_standalone INTEGER NOT NULL DEFAULT 0,
         is_ra_compatible INTEGER,
-        neosync_slug TEXT
+        neosync_slug TEXT,
+        supported_extensions TEXT
       )
     ''');
 

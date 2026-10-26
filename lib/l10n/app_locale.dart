@@ -1082,6 +1082,9 @@ mixin AppLocale {
   static const String failedToLaunchAndroidApp = 'failed_to_launch_android_app';
   static const String romFileNotFound = 'rom_file_not_found';
   static const String launchFailed = 'launch_failed';
+  static const String unsupportedGameFormat = 'unsupported_game_format';
+  static const String shortcutResolveFailed = 'shortcut_resolve_failed';
+  static const String invalidPs3Serial = 'invalid_ps3_serial';
   static const String platformNotSupported = 'platform_not_supported';
   static const String coreNotConfigured = 'core_not_configured';
   static const String coreNotInstalled = 'core_not_installed';
@@ -1521,6 +1524,7 @@ mixin AppLocale {
   static const String raFilterBeaten = 'ra_filter_beaten';
   static const String raGamesEndOfList = 'ra_games_end_of_list';
   static const String raGamesEmpty = 'ra_games_empty';
+  static const String raCatalogueRefreshFailed = 'ra_catalogue_refresh_failed';
   static const String raErrorLoadGames = 'ra_error_load_games';
   static const String raHardcore = 'ra_hardcore';
   static const String raUnlocksEndOfList = 'ra_unlocks_end_of_list';

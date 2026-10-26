@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleId = {
+  AppLocale.raCatalogueRefreshFailed:
+      'Katalog RetroAchievements tidak dapat diperbarui. Pencocokan menggunakan data tersimpan.',
   AppLocale.smartMatchesOne: '1 game cocok',
   AppLocale.smartCollection: 'Koleksi pintar',
   AppLocale.manualCollection: 'Koleksi manual',
@@ -1081,6 +1083,11 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.failedToLaunchAndroidApp: 'Gagal menjalankan aplikasi Android',
   AppLocale.romFileNotFound: 'File ROM tidak ditemukan',
   AppLocale.launchFailed: 'Peluncuran gagal',
+  AppLocale.unsupportedGameFormat:
+      'Format game ini tidak didukung oleh emulator yang dipilih',
+  AppLocale.shortcutResolveFailed:
+      'Tidak dapat menyelesaikan pintasan ke aplikasi yang dapat diluncurkan',
+  AppLocale.invalidPs3Serial: 'Deskriptor serial PS3 tidak valid',
   AppLocale.platformNotSupported: 'Platform tidak didukung',
   AppLocale.coreNotConfigured: 'Core tidak dikonfigurasi',
   AppLocale.coreNotInstalled: 'Core "{name}" tidak terinstal',

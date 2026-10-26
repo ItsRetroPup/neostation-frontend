@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleRu = {
+  AppLocale.raCatalogueRefreshFailed:
+      'Не удалось обновить каталог RetroAchievements. Сопоставление выполнено по сохранённым данным.',
   AppLocale.smartMatchesOne: 'Подходящих игр: 1',
   AppLocale.smartCollection: 'Умная коллекция',
   AppLocale.manualCollection: 'Ручная коллекция',
@@ -1084,6 +1086,11 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.failedToLaunchAndroidApp: 'Ошибка запуска приложения Android',
   AppLocale.romFileNotFound: 'Файл ROM не найден',
   AppLocale.launchFailed: 'Ошибка запуска',
+  AppLocale.unsupportedGameFormat:
+      'Этот формат игры не поддерживается выбранным эмулятором',
+  AppLocale.shortcutResolveFailed:
+      'Не удалось разрешить ярлык в запускаемое приложение',
+  AppLocale.invalidPs3Serial: 'Недопустимый дескриптор серийного номера PS3',
   AppLocale.platformNotSupported: 'Платформа не поддерживается',
   AppLocale.coreNotConfigured: 'Ядро не настроено',
   AppLocale.coreNotInstalled: 'Ядро «{name}» не установлено',

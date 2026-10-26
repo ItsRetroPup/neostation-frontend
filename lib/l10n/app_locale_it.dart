@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleIt = {
+  AppLocale.raCatalogueRefreshFailed:
+      'Impossibile aggiornare il catalogo RetroAchievements. La ricerca delle corrispondenze ha usato i dati salvati.',
   AppLocale.smartMatchesOne: '1 gioco corrispondente',
   AppLocale.smartCollection: 'Raccolta intelligente',
   AppLocale.manualCollection: 'Raccolta manuale',
@@ -1109,6 +1111,11 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.failedToLaunchAndroidApp: 'Avvio app Android fallito',
   AppLocale.romFileNotFound: 'File ROM non trovato',
   AppLocale.launchFailed: 'Avvio fallito',
+  AppLocale.unsupportedGameFormat:
+      "Questo formato di gioco non è supportato dall'emulatore selezionato",
+  AppLocale.shortcutResolveFailed:
+      "Impossibile risolvere il collegamento in un'applicazione avviabile",
+  AppLocale.invalidPs3Serial: 'Descrittore del seriale PS3 non valido',
   AppLocale.platformNotSupported: 'Piattaforma non supportata',
   AppLocale.coreNotConfigured: 'Core non configurato',
   AppLocale.coreNotInstalled: 'Core "{name}" non installato',

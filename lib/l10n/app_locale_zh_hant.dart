@@ -1,6 +1,7 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleZhHant = {
+  AppLocale.raCatalogueRefreshFailed: '無法重新整理RetroAchievements目錄。已使用儲存的資料進行比對。',
   AppLocale.smartMatchesOne: '1 個符合的遊戲',
   AppLocale.smartCollection: '智慧合集',
   AppLocale.manualCollection: '手動合集',
@@ -956,6 +957,9 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.failedToLaunchAndroidApp: '啟動 Android 應用程式失敗',
   AppLocale.romFileNotFound: '未發現 ROM 檔案',
   AppLocale.launchFailed: '啟動失敗',
+  AppLocale.unsupportedGameFormat: '所選模擬器不支援此遊戲格式',
+  AppLocale.shortcutResolveFailed: '無法將捷徑解析為可啟動的應用程式',
+  AppLocale.invalidPs3Serial: 'PS3 序號描述符無效',
   AppLocale.platformNotSupported: '平台不支援',
   AppLocale.coreNotConfigured: '核心未設定',
   AppLocale.coreNotInstalled: '核心 "{name}" 未安裝',
