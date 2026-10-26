@@ -93,10 +93,16 @@ class DiscoveryGridTile extends StatelessWidget {
               ),
             ),
             if (_isNeverPlayed(tile))
+              // Bounded on the left so a long translation ellipsises before it
+              // reaches the selection icon (6.r + 14.r) in the opposite corner.
               Positioned(
                 top: 6.r,
+                left: 24.r,
                 right: 6.r,
-                child: const DiscoveryNeverPlayedBadge(),
+                child: const Align(
+                  alignment: Alignment.centerRight,
+                  child: DiscoveryNeverPlayedBadge(),
+                ),
               ),
             if (isSelected)
               Positioned(
@@ -243,15 +249,17 @@ class DiscoveryNeverPlayedBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 5.r, vertical: 2.r),
+      padding: EdgeInsets.symmetric(horizontal: 7.r, vertical: 3.r),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(999.r),
       ),
       child: Text(
         AppLocale.discoveryNeverPlayed.getString(context),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontSize: 6.r,
+          fontSize: 8.r,
           fontWeight: FontWeight.w700,
           color: theme.colorScheme.onPrimary,
         ),

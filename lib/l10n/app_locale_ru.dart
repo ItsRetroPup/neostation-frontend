@@ -1653,7 +1653,7 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.discoveryGenrePicks: 'Подборки по жанрам',
   AppLocale.discoveryReroll: 'Другая игра',
   AppLocale.discoveryRerollHint: 'Нажмите Y, чтобы выбрать другую игру',
-  AppLocale.discoveryNeverPlayed: 'Ни разу не запускалась',
+  AppLocale.discoveryNeverPlayed: 'Не запускалась',
   AppLocale.discoveryEmptyLibrary:
       'Добавьте ROM-файлы, чтобы начать открывать игры',
   AppLocale.discoveryNeedsScraping:

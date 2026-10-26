@@ -1660,7 +1660,7 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.discoveryGenrePicks: 'Pilihan Genre',
   AppLocale.discoveryReroll: 'Acak ulang',
   AppLocale.discoveryRerollHint: 'Tekan Y untuk pilihan lain',
-  AppLocale.discoveryNeverPlayed: 'Belum pernah dimainkan',
+  AppLocale.discoveryNeverPlayed: 'Belum dimainkan',
   AppLocale.discoveryEmptyLibrary: 'Tambahkan ROM untuk mulai menemukan game',
   AppLocale.discoveryNeedsScraping:
       'Scrape lebih banyak pustakamu untuk membuka permata tersembunyi',
