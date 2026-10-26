@@ -115,7 +115,9 @@ class _CustomSaveFoldersViewState extends State<CustomSaveFoldersView> {
       cancelLabel: AppLocale.cancel.getString(context),
       icon: Symbols.delete_forever_rounded,
     );
-    _gamepadNav.activate();
+    // No activate() here: the prompt's layer hands the controller back when the
+    // prompt is disposed. Activating on its return, during the prompt's exit
+    // animation, left this view live alongside it.
 
     if (confirmed != true) return;
     await _removeFolder(system, slug);
@@ -156,22 +158,33 @@ class _CustomSaveFoldersViewState extends State<CustomSaveFoldersView> {
     _log.i('CustomSaveFolder: picker start for $system / $emulatorSlug');
     try {
       String? selected;
-      final isTV = await PermissionService.isTelevision();
-      if (!mounted) return;
+      if (Platform.isAndroid) {
+        final isTV = await PermissionService.isTelevision();
+        if (!mounted) return;
 
-      if (isTV) {
-        selected = await TvDirectoryPicker.show(context);
-      } else {
-        final uri = await PermissionService.requestFolderAccess();
-        if (uri != null) {
-          final hasFiles = await PermissionService.hasAllFilesAccess();
-          selected =
-              await UserDataLocationService.resolveAndroidUserDataPath(
-                uri.toString(),
-                hasAllFilesAccess: hasFiles,
-              ) ??
-              UserDataLocationService.safUriToRealPath(uri.toString());
+        if (isTV) {
+          selected = await TvDirectoryPicker.show(context);
+        } else {
+          final uri = await PermissionService.requestFolderAccess();
+          if (uri != null) {
+            final hasFiles = await PermissionService.hasAllFilesAccess();
+            selected =
+                await UserDataLocationService.resolveAndroidUserDataPath(
+                  uri.toString(),
+                  hasAllFilesAccess: hasFiles,
+                ) ??
+                UserDataLocationService.safUriToRealPath(uri.toString());
+          }
         }
+      } else {
+        // Desktop: the SAF picker above is Android-only and returns null
+        // elsewhere, which closed the dialog without opening anything (#609).
+        // pickDirectory falls back to the in-app browser where no XDG portal
+        // exists (SteamOS Game Mode).
+        selected = await TvDirectoryPicker.pickDirectory(
+          context,
+          dialogTitle: AppLocale.selectFolder.getString(context),
+        );
       }
 
       if (selected == null || !mounted) return;
@@ -272,6 +285,9 @@ class _CustomSaveFoldersViewState extends State<CustomSaveFoldersView> {
   }
 
   Future<void> _openConfigDialog() async {
+    // The dialogue's own layer takes the controller from this view and hands
+    // it back when it closes. It is pushed after the dialogue's first frame, so
+    // let go of the controller now rather than share that frame's presses.
     _gamepadNav.deactivate();
     await showDialog<void>(
       context: context,
@@ -281,7 +297,6 @@ class _CustomSaveFoldersViewState extends State<CustomSaveFoldersView> {
         onSelectFolder: (system, slug) => _selectFolderFor(system, slug),
       ),
     );
-    _gamepadNav.activate();
   }
 
   @override

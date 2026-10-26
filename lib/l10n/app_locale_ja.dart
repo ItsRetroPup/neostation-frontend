@@ -989,6 +989,8 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.platformNotSupported: 'プラットフォームはサポートされていません',
   AppLocale.coreNotConfigured: 'コアが設定されていません',
   AppLocale.coreNotInstalled: 'コア "{name}" はインストールされていません',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch はコアがインストールされていないと報告しています。Online Updater > Core Downloader からインストールしてください。',
   AppLocale.retroArchNotFound: 'RetroArchが見つかりません',
   AppLocale.retroArchExecutableNotFound: 'RetroArchの実行ファイルが見つかりません',
   AppLocale.coresDirectoryNotFound: 'コアディレクトリが見つかりません',
@@ -1147,6 +1149,7 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.romDirectories: 'ROMディレクトリ',
   AppLocale.tools: 'ツール',
   AppLocale.toolsSubtitle: 'ROMの整理に役立つツール',
+  AppLocale.toolsStillRunning: 'ツールがまだ実行中です。完了するまでお待ちください。',
   AppLocale.addRomFolder: 'ROMフォルダを追加',
   AppLocale.removeRomFolder: '削除',
   // RomM (remote library browse + download)
@@ -1187,6 +1190,9 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.rommErrorNotRomm:
       'その URL は RomM サーバーとして応答しませんでした。サーバー URL を確認してください。',
   AppLocale.rommErrorServerStatus: 'RomM サーバーがエラーを返しました（{error}）。',
+  AppLocale.rommErrorUnreadable: 'RomM サーバーから、アプリで読み取れない応答が返されました。',
+  AppLocale.rommErrorLoadFailed: 'RomM から読み込めませんでした。もう一度お試しください。',
+  AppLocale.rommErrorSignInRejected: 'RomM へのログインが拒否されました。もう一度ログインしてください。',
   AppLocale.rommConnectedAs: '{user} として接続中',
   AppLocale.rommCredentialsRequired: 'サーバー URL、ユーザー名、パスワードを入力してください',
   AppLocale.rommAuthPassword: 'パスワード',

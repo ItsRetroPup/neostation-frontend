@@ -1121,6 +1121,8 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.platformNotSupported: 'Plattform nicht unterstützt',
   AppLocale.coreNotConfigured: 'Core nicht konfiguriert',
   AppLocale.coreNotInstalled: 'Core "{name}" nicht installiert',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch meldet, dass der Core nicht installiert ist. Installiere ihn über Online Updater > Core Downloader.',
   AppLocale.retroArchNotFound: 'RetroArch nicht gefunden',
   AppLocale.retroArchExecutableNotFound: 'RetroArch-Programm nicht gefunden',
   AppLocale.coresDirectoryNotFound: 'Core-Verzeichnis nicht gefunden',
@@ -1304,6 +1306,8 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.romDirectories: 'ROM-Verzeichnisse',
   AppLocale.tools: 'Werkzeuge',
   AppLocale.toolsSubtitle: 'Werkzeuge zur Organisation deiner ROMs',
+  AppLocale.toolsStillRunning:
+      'Ein Werkzeug läuft noch. Warte, bis es fertig ist.',
   AppLocale.addRomFolder: 'ROM-Ordner hinzufügen',
   AppLocale.removeRomFolder: 'Entfernen',
   // RomM (remote library browse + download)
@@ -1350,6 +1354,12 @@ const Map<String, dynamic> appLocaleDe = {
       'Unter dieser URL antwortet kein RomM-Server. Prüfe die Server-URL.',
   AppLocale.rommErrorServerStatus:
       'Der RomM-Server hat mit einem Fehler geantwortet ({error}).',
+  AppLocale.rommErrorUnreadable:
+      'Der RomM-Server hat eine Antwort gesendet, die die App nicht lesen konnte.',
+  AppLocale.rommErrorLoadFailed:
+      'Laden von RomM fehlgeschlagen. Versuche es erneut.',
+  AppLocale.rommErrorSignInRejected:
+      'Deine RomM-Anmeldung wurde abgelehnt. Melde dich erneut an.',
   AppLocale.rommConnectedAs: 'Verbunden als {user}',
   AppLocale.rommCredentialsRequired:
       'Gib Server-URL, Benutzername und Passwort ein',

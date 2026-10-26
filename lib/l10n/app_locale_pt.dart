@@ -1103,6 +1103,8 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.platformNotSupported: 'Plataforma não suportada',
   AppLocale.coreNotConfigured: 'Core não configurado',
   AppLocale.coreNotInstalled: 'Core "{name}" não instalado',
+  AppLocale.coreNotInstalledHint:
+      'O RetroArch indica que o core não está instalado. Instale-o em Online Updater > Core Downloader.',
   AppLocale.retroArchNotFound: 'RetroArch não encontrado',
   AppLocale.retroArchExecutableNotFound:
       'Executável do RetroArch não encontrado',
@@ -1284,6 +1286,8 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.romDirectories: 'Diretórios de ROM',
   AppLocale.tools: 'Ferramentas',
   AppLocale.toolsSubtitle: 'Ferramentas para ajudar a organizar as suas ROMs',
+  AppLocale.toolsStillRunning:
+      'Uma ferramenta ainda está em execução. Aguarde até que termine.',
   AppLocale.addRomFolder: 'Adicionar pasta de ROM',
   AppLocale.removeRomFolder: 'Remover',
   // RomM (remote library browse + download)
@@ -1329,6 +1333,12 @@ const Map<String, dynamic> appLocalePt = {
       'Essa URL não respondeu como um servidor RomM. Verifique a URL do servidor.',
   AppLocale.rommErrorServerStatus:
       'O servidor RomM respondeu com um erro ({error}).',
+  AppLocale.rommErrorUnreadable:
+      'O servidor RomM enviou uma resposta que o aplicativo não conseguiu ler.',
+  AppLocale.rommErrorLoadFailed:
+      'Não foi possível carregar do RomM. Tente novamente.',
+  AppLocale.rommErrorSignInRejected:
+      'Seu login no RomM foi recusado. Entre novamente.',
   AppLocale.rommConnectedAs: 'Conectado como {user}',
   AppLocale.rommCredentialsRequired:
       'Informe a URL do servidor, o usuário e a senha',
