@@ -1087,6 +1087,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.platformNotSupported: 'Платформа не поддерживается',
   AppLocale.coreNotConfigured: 'Ядро не настроено',
   AppLocale.coreNotInstalled: 'Ядро «{name}» не установлено',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch сообщает, что ядро не установлено. Установите его через Online Updater > Core Downloader.',
   AppLocale.retroArchNotFound: 'RetroArch не найден',
   AppLocale.retroArchExecutableNotFound: 'Исполняемый файл RetroArch не найден',
   AppLocale.coresDirectoryNotFound: 'Директория ядер не найдена',
@@ -1257,6 +1259,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.romDirectories: 'Директории ROM',
   AppLocale.tools: 'Инструменты',
   AppLocale.toolsSubtitle: 'Инструменты для организации ваших ROM',
+  AppLocale.toolsStillRunning:
+      'Инструмент ещё работает. Дождитесь его завершения.',
   AppLocale.addRomFolder: 'Добавить папку ROM',
   AppLocale.removeRomFolder: 'Удалить',
   // RomM (remote library browse + download)
@@ -1303,6 +1307,11 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.rommErrorNotRomm:
       'По этому URL отвечает не сервер RomM. Проверьте URL сервера.',
   AppLocale.rommErrorServerStatus: 'Сервер RomM ответил ошибкой ({error}).',
+  AppLocale.rommErrorUnreadable:
+      'Сервер RomM прислал ответ, который приложение не смогло прочитать.',
+  AppLocale.rommErrorLoadFailed:
+      'Не удалось загрузить данные из RomM. Попробуйте ещё раз.',
+  AppLocale.rommErrorSignInRejected: 'Вход в RomM отклонён. Войдите снова.',
   AppLocale.rommConnectedAs: 'Подключено как {user}',
   AppLocale.rommCredentialsRequired:
       'Введите URL сервера, имя пользователя и пароль',

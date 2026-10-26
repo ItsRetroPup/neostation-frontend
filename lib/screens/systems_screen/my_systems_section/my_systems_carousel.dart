@@ -18,6 +18,7 @@ import '../../../services/game_service.dart';
 import '../../../utils/game_launch_utils.dart';
 import '../../../providers/system_background_provider.dart';
 import 'package:neostation/widgets/custom_notification.dart';
+import 'package:neostation/widgets/launch_failure_dialog.dart';
 import 'package:neostation/widgets/system_emulator_settings_dialog.dart';
 import '../../collections_screen/collections_browser_screen.dart';
 import '../../search_screen/search_screen.dart';
@@ -503,6 +504,22 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
           onLaunchFailed: (ctx, r) async {
             _achievementsController.stop(hidePanel: true);
             if (mounted) setState(() => _isGameLaunching = false);
+            if (ctx.mounted) {
+              await LaunchFailureDialog.show(
+                ctx,
+                title: AppLocale.launchGameFailed.getString(ctx),
+                intro: AppLocale.unableToLaunch
+                    .getString(ctx)
+                    .replaceFirst(
+                      '{name}',
+                      systemInfo.gameModel?.name ?? systemInfo.title ?? '',
+                    ),
+                message: r.errorMessage?.isNotEmpty == true
+                    ? r.errorMessage!
+                    : AppLocale.unknownError.getString(ctx),
+                details: r.errorDetails,
+              );
+            }
             GamepadNavigationManager.restoreFocusOwner();
           },
         );
@@ -946,7 +963,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
       fontWeight: FontWeight.normal,
     );
     final selectedTextStyle = textStyle.copyWith(
-      color: theme.colorScheme.onPrimary,
+      color: Colors.black,
       fontWeight: FontWeight.bold,
     );
 
@@ -1059,6 +1076,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                             info: system,
                             isSelected: isSelected,
                             backgroundCacheWidth: 1024,
+                            artworkInset: 10,
                             onTap: handleTap,
                             // The centred card only. An off-centre card is
                             // painted outside the page slot the viewport
@@ -1165,7 +1183,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                             width: width,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
+                                color: Colors.white,
                                 borderRadius:
                                     Theme.of(context)
                                         .extension<CornerRadii>()

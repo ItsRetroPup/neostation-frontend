@@ -958,6 +958,8 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.platformNotSupported: '平台不支持',
   AppLocale.coreNotConfigured: '核心未配置',
   AppLocale.coreNotInstalled: '核心 "{name}" 未安装',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch 报告核心未安装。请从 Online Updater > Core Downloader 安装。',
   AppLocale.retroArchNotFound: '未发现 RetroArch',
   AppLocale.retroArchExecutableNotFound: '未发现 RetroArch 可执行文件',
   AppLocale.coresDirectoryNotFound: '未发现核心目录',
@@ -1109,6 +1111,7 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.romDirectories: 'ROM 目录',
   AppLocale.tools: '工具',
   AppLocale.toolsSubtitle: '帮助整理 ROM 的工具',
+  AppLocale.toolsStillRunning: '有工具仍在运行。请等待其完成。',
   AppLocale.addRomFolder: '添加 ROM 文件夹',
   AppLocale.removeRomFolder: '删除',
   // RomM (remote library browse + download)
@@ -1148,6 +1151,9 @@ const Map<String, dynamic> appLocaleZh = {
       '服务器返回了错误（{error}）。请检查 URL 是否指向您的 RomM 服务器。',
   AppLocale.rommErrorNotRomm: '该 URL 的响应不像 RomM 服务器。请检查服务器 URL。',
   AppLocale.rommErrorServerStatus: 'RomM 服务器返回了错误（{error}）。',
+  AppLocale.rommErrorUnreadable: 'RomM 服务器返回了应用无法读取的响应。',
+  AppLocale.rommErrorLoadFailed: '无法从 RomM 加载。请重试。',
+  AppLocale.rommErrorSignInRejected: '您的 RomM 登录被拒绝。请重新登录。',
   AppLocale.rommConnectedAs: '已以 {user} 身份连接',
   AppLocale.rommCredentialsRequired: '请输入服务器 URL、用户名和密码',
   AppLocale.rommAuthPassword: '密码',

@@ -28,6 +28,7 @@ import '../../../services/ra_library_match_runner.dart';
 import 'widgets/grid_empty_state.dart';
 import 'my_systems_carousel.dart';
 import 'package:neostation/widgets/custom_notification.dart';
+import 'package:neostation/widgets/launch_failure_dialog.dart';
 import 'package:neostation/widgets/systems_grid_footer.dart';
 import 'package:neostation/widgets/system_emulator_settings_dialog.dart';
 import 'package:neostation/sync/sync_manager.dart';
@@ -455,6 +456,22 @@ class MySystems extends StatelessWidget {
           onLaunchFailed: (ctx, r) async {
             achievementsController.stop(hidePanel: true);
             MySystems.gridLaunchNotifier.value = false;
+            if (ctx.mounted) {
+              await LaunchFailureDialog.show(
+                ctx,
+                title: AppLocale.launchGameFailed.getString(ctx),
+                intro: AppLocale.unableToLaunch
+                    .getString(ctx)
+                    .replaceFirst(
+                      '{name}',
+                      systemInfo.gameModel?.name ?? systemInfo.title ?? '',
+                    ),
+                message: r.errorMessage?.isNotEmpty == true
+                    ? r.errorMessage!
+                    : AppLocale.unknownError.getString(ctx),
+                details: r.errorDetails,
+              );
+            }
             GamepadNavigationManager.restoreFocusOwner();
           },
         );
@@ -1296,10 +1313,8 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
                 selTop != null &&
                 selWidth != null &&
                 selHeight != null)
-            ? AnimatedPositioned(
+            ? Positioned(
                 key: const ValueKey('focus_indicator'),
-                duration: const Duration(milliseconds: 256),
-                curve: Curves.fastOutSlowIn,
                 left: selLeft + 1.r,
                 top: selTop + 1.r,
                 width: selWidth - 2.r,
@@ -1312,24 +1327,8 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
                             context,
                           ).extension<CornerRadii>()?.radiusExternal ??
                           BorderRadius.circular(14.r),
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.28),
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.08),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.35, 1.0],
-                      ),
                       border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.55),
+                        color: Theme.of(context).colorScheme.onSurface,
                         width: 2.r,
                       ),
                     ),
