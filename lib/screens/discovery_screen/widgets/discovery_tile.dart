@@ -196,7 +196,10 @@ class DiscoveryBandTile extends StatelessWidget {
                       children: [
                         Text(
                           tile.labelKey.getString(context).toUpperCase(),
-                          maxLines: 1,
+                          // Two lines: a long section name such as
+                          // Achievement Spotlight otherwise ellipsises before
+                          // it can be read.
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 9.r,
