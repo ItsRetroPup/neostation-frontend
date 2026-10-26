@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:neostation/data/datasources/sqlite_config_service.dart';
 import 'package:neostation/data/datasources/sqlite_service.dart';
 import 'package:neostation/models/config_model.dart';
@@ -38,6 +39,15 @@ void main() {
       expect(NavTab.settings.index, AppTabs.settings);
       expect(NavTab.androidApps.index, AppTabs.androidApps);
       expect(AppTabs.count, NavTab.values.length);
+    });
+
+    test('every tab registers its own spec', () {
+      // An unregistered tab silently draws the Systems fallback icon: the
+      // Android Apps spec was lost in a rebase that way and nothing failed.
+      for (final tab in NavTab.values) {
+        expect(navTabSpecs, contains(tab), reason: '$tab has no NavTabSpec');
+      }
+      expect(navTabSpec(NavTab.androidApps).iconData, Symbols.android_rounded);
     });
 
     test('it is visible by default', () {

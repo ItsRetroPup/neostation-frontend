@@ -114,6 +114,11 @@ const Map<NavTab, NavTabSpec> navTabSpecs = {
     icon: 'assets/images/icons/setting.webp',
     labelKey: AppLocale.settings,
   ),
+  NavTab.androidApps: NavTabSpec(
+    icon: '',
+    labelKey: AppLocale.androidApps,
+    iconData: Symbols.android_rounded,
+  ),
 };
 
 // Torn out as top-level functions so [navTabSpecs] can stay `const`.
