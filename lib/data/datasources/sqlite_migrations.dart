@@ -14,6 +14,14 @@ import 'package:neostation/utils/cloud_path_builder.dart';
 class SqliteMigrations {
   static final _log = LoggerService.instance;
 
+  static const createRaCatalogueSyncTableSql = '''
+    CREATE TABLE IF NOT EXISTS app_ra_catalogue_sync (
+      console_id INTEGER PRIMARY KEY,
+      refreshed_at TEXT NOT NULL,
+      match_pending INTEGER NOT NULL DEFAULT 1
+    )
+  ''';
+
   // ── RomM schema — single source of truth ──────────────────────────────────
   // Referenced by migration v111 and by the fresh-install table list, so a
   // future column change is made in exactly one place.
@@ -144,6 +152,8 @@ class SqliteMigrations {
     CREATE TABLE IF NOT EXISTS user_collections (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      collection_type TEXT NOT NULL DEFAULT 'manual',
+      rules_json TEXT,
       image_path TEXT,
       color1 TEXT,
       color2 TEXT,
@@ -626,11 +636,51 @@ class SqliteMigrations {
       case 163:
         await _migrateToVersion163(db);
         break;
+      case 164:
+        await _migrateToVersion164(db);
+        break;
       case 165:
         await _migrateToVersion165(db);
         break;
+      case 166:
+        // Backfill for installs that reached v165 without this PR’s v164.
+        await _migrateToVersion164(db);
+        break;
+      case 168:
+        await _migrateToVersion168(db);
+        break;
+      case 170:
+        await _migrateToVersion170(db);
+        break;
+      // 171 is reserved by Android Games (upstream PR #604).
+      case 172:
+        db.execute(createRaCatalogueSyncTableSql);
+        break;
+      case 175:
+        await _migrateToVersion175(db);
+        break;
+      // A pre-merge build of #691 stamped v175 without #665's RA table.
+      // Re-run both guarded checks so those databases heal on upgrade.
+      case 176:
+        db.execute(createRaCatalogueSyncTableSql);
+        await _migrateToVersion175(db);
+        break;
       default:
         _log.w('No migration defined for version $version');
+    }
+  }
+
+  /// Migration v168: durable custom sounds, renumbered from v166.
+  static Future<void> _migrateToVersion168(Database db) async {
+    // Devices on the former v166 build skipped main’s sorting and manual
+    // ScreenScraper migrations. Backfill both without changing preferences.
+    await _migrateToVersion164(db);
+    await _migrateToVersion165(db);
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name']);
+    if (!columns.contains('custom_sfx')) {
+      db.execute('ALTER TABLE user_config ADD COLUMN custom_sfx TEXT');
     }
   }
 
@@ -7122,6 +7172,19 @@ class SqliteMigrations {
     }
   }
 
+  /// Migration v164: persists optional article-insensitive game sorting.
+  static Future<void> _migrateToVersion164(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('ignore_articles_in_game_sort')) {
+      db.execute(
+        'ALTER TABLE user_config ADD COLUMN ignore_articles_in_game_sort INTEGER DEFAULT 0',
+      );
+    }
+  }
+
   /// Migration v163: Adds `app_romm_rom_map.link_source`, recording which
   /// writer produced a RomM link row (`download`, `auto`, or `manual`).
   ///
@@ -7161,6 +7224,30 @@ class SqliteMigrations {
     }
   }
 
+  /// Migration v170: adds smart definitions without changing manual memberships.
+  /// Above main’s v168 and the Android Games PR’s v169; devices already on
+  /// main must still run this migration to install smart definitions.
+  static Future<void> _migrateToVersion170(Database db) async {
+    // Test devices on the smart collections branch already ran its former
+    // v163 and therefore skipped upstream's RomM migration at that version.
+    await _migrateToVersion163(db);
+    // All three collection objects, not just the table: a database that
+    // skipped v139 would otherwise lack the items table and its index.
+    await _migrateToVersion139(db);
+    final columns = db
+        .select('PRAGMA table_info(user_collections)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('collection_type')) {
+      db.execute(
+        "ALTER TABLE user_collections ADD COLUMN collection_type TEXT NOT NULL DEFAULT 'manual'",
+      );
+    }
+    if (!columns.contains('rules_json')) {
+      db.execute('ALTER TABLE user_collections ADD COLUMN rules_json TEXT');
+    }
+  }
+
   /// Migration v165: adds `user_roms.ss_manual_game_id`, the ScreenScraper game
   /// a user picked by hand for a ROM with Identify….
   ///
@@ -7191,6 +7278,34 @@ class SqliteMigrations {
       _log.i('Migration v165 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v165: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v175: adds `app_emulators.supported_extensions`.
+  ///
+  /// Emulator entries can declare which formats they launch (ISO, shortcut,
+  /// serial file, folder...). A null value means "no declaration" and keeps the
+  /// legacy behaviour: compatible with every extension of the system.
+  static Future<void> _migrateToVersion175(Database db) async {
+    _log.i('Migration v175: Adding supported_extensions to app_emulators');
+    try {
+      final columns = db
+          .select('PRAGMA table_info(app_emulators)')
+          .map((row) => row['name'].toString())
+          .toSet();
+      if (!columns.contains('supported_extensions')) {
+        db.execute(
+          'ALTER TABLE app_emulators ADD COLUMN supported_extensions TEXT',
+        );
+        _log.i('Column supported_extensions added via v175');
+      } else {
+        _log.i('Column supported_extensions already exists');
+      }
+      _log.i('Migration v175 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v175: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

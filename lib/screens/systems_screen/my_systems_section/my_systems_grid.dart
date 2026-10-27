@@ -11,7 +11,6 @@ import 'package:neostation/models/system_model.dart';
 import 'package:neostation/screens/app_screen.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:provider/provider.dart';
-import '../../../themes/corner_radii.dart';
 import '../../../utils/gamepad_nav.dart';
 import '../../../services/game_service.dart';
 import '../../../utils/game_launch_utils.dart';
@@ -24,10 +23,10 @@ import '../../game_screen/my_games_list.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'grid_geometry.dart';
 import 'widgets/grid_loading_state.dart';
-import '../../../services/ra_library_match_runner.dart';
 import 'widgets/grid_empty_state.dart';
 import 'my_systems_carousel.dart';
 import 'package:neostation/widgets/custom_notification.dart';
+import 'package:neostation/widgets/launch_failure_dialog.dart';
 import 'package:neostation/widgets/systems_grid_footer.dart';
 import 'package:neostation/widgets/system_emulator_settings_dialog.dart';
 import 'package:neostation/sync/sync_manager.dart';
@@ -35,9 +34,7 @@ import 'package:neostation/providers/theme_provider.dart';
 import '../../collections_screen/collections_browser_screen.dart';
 import '../../search_screen/search_screen.dart';
 import '../../game_screen/android_apps/android_apps_grid.dart';
-import 'package:neostation/widgets/header_sort_dropdown.dart';
-import 'package:neostation/widgets/context_menu/anchored_context_menu.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'widgets/system_options_dialog.dart';
 
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/models/secondary_display_state.dart';
@@ -57,12 +54,6 @@ part 'my_systems_grid/pull_to_refresh.dart';
 /// [SystemCardGridView.navLayerId].
 const String kSystemsGridNavLayerId = 'my_systems_list';
 
-const String _menuSettings = 'settings';
-const String _menuSearch = 'search';
-const String _menuViewMode = 'view_mode';
-const String _menuViewGrid = 'view_grid';
-const String _menuViewCarousel = 'view_carousel';
-
 /// Primary widget for the 'My Systems' view, supporting both Grid and Carousel layouts.
 ///
 /// Orchestrates the selection and navigation of gaming systems, including handling
@@ -75,13 +66,15 @@ class MySystems extends StatelessWidget {
   /// Static lock to prevent race conditions during heavy navigation transitions.
   static bool isNavigating = false;
 
+  /// Guards the Options panel against a second Start press landing before the
+  /// dialog's own navigation layer is registered.
+  ///
+  /// Without it a quick double Start opened two stacked dialogs; closing the
+  /// top one exposed the other for a frame and could leave the screen black.
+  static bool _optionsDialogOpen = false;
+
   /// Notifier to hide the systems grid while a game launch dialog is active.
   static final gridLaunchNotifier = ValueNotifier<bool>(false);
-
-  /// Anchor for the card context menu: both layouts move this key onto
-  /// whichever card is selected, so the menu opens beside that card rather
-  /// than in the middle of the screen.
-  static final GlobalKey _cardAnchorKey = GlobalKey();
 
   /// Currently selected system index in the active layout (Grid or Carousel).
   final int selectedIndex;
@@ -120,17 +113,24 @@ class MySystems extends StatelessWidget {
               children: [
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.only(top: 42.r),
+                    padding: EdgeInsets.only(top: 56.r),
                     child: MySystemsCarousel(
                       selectedIndex: selectedIndex,
                       onCardTapped: onCardTapped,
-                      selectedItemKey: _cardAnchorKey,
                       hideSystemLogos: configProvider.config.hideSystemLogos,
-                      onYPressed: () => _openSystemContextMenu(
+                      bindYButton: false,
+                      onOptions: (index) {
+                        final selected = index >= 0 && index < allSystems.length
+                            ? allSystems[index]
+                            : currentSystem;
+                        _openSystemOptions(context, selected, configProvider);
+                      },
+                      onYPressed: () => _openSystemOptions(
                         context,
                         currentSystem,
                         configProvider,
                       ),
+                      onWestPressed: () => _openSearch(context),
                     ),
                   ),
                 ),
@@ -140,7 +140,7 @@ class MySystems extends StatelessWidget {
                     SfxService().playEnterSound();
                     _navigateToSystem(context, currentSystem, configProvider);
                   },
-                  onOptions: () => _openSystemContextMenu(
+                  onOptions: () => _openSystemOptions(
                     context,
                     currentSystem,
                     configProvider,
@@ -153,38 +153,18 @@ class MySystems extends StatelessWidget {
           }
 
           // If a non-blocking background scan is active, overlay a progress
-          // toast. The RetroAchievements pass that runs after the scan gets the
-          // same treatment: it is the other half of "the library is still
-          // settling", and it is deliberately on this branch and not the
-          // isGlobalScanning one above, so it never blocks the grid.
-          return ValueListenableBuilder<RaMatchProgress?>(
-            valueListenable: RaLibraryMatchRunner.progress,
-            builder: (context, raProgress, _) {
-              // A splash-holding pass is never seen here — the startup screen
-              // is still up. This row is for the pass that resumes after a game
-              // session, which runs against a library already on screen.
-              final showRaRow = raProgress != null && !raProgress.holdsSplash;
-              if (!configProvider.isScanning && !showRaRow) {
-                return systemsWidget;
-              }
-              return Column(
-                children: [
-                  if (configProvider.isScanning)
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SystemScanProgressWidget(),
-                    ),
-                  Expanded(child: systemsWidget),
-                  // Below the grid, not above it: the header floats over the
-                  // top of this column and would clip the row out of sight.
-                  if (showRaRow)
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SystemScanProgressWidget(),
-                    ),
-                ],
-              );
-            },
+          // toast above the grid. RetroAchievements matching reports through
+          // the global notification centre instead of adding a second row here.
+          if (!configProvider.isScanning) return systemsWidget;
+
+          return Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: SystemScanProgressWidget(),
+              ),
+              Expanded(child: systemsWidget),
+            ],
           );
         },
       ),
@@ -238,13 +218,11 @@ class MySystems extends StatelessWidget {
               recentCardSize: configProvider.config.recentCardSize,
               selectedIndex: selectedIndex,
               onCardTapped: onCardTapped,
-              selectedItemKey: _cardAnchorKey,
               systems: allSystems,
-              onYPressed: () => _openSystemContextMenu(
-                context,
-                currentSystem,
-                configProvider,
-              ),
+              bindYButton: false,
+              onYPressed: () =>
+                  _openSystemOptions(context, currentSystem, configProvider),
+              onWestPressed: () => _openSearch(context),
               onEnterPressed: () {
                 final current = selectedIndex < allSystems.length
                     ? allSystems[selectedIndex]
@@ -255,7 +233,7 @@ class MySystems extends StatelessWidget {
                 final current = selectedIndex < allSystems.length
                     ? allSystems[selectedIndex]
                     : allSystems[0];
-                _openSystemSettings(context, current, configProvider);
+                _openSystemOptions(context, current, configProvider);
               },
             ),
           ),
@@ -268,107 +246,51 @@ class MySystems extends StatelessWidget {
             _navigateToSystem(context, currentSystem, configProvider);
           },
           onOptions: () =>
-              _openSystemContextMenu(context, currentSystem, configProvider),
+              _openSystemOptions(context, currentSystem, configProvider),
         ),
       ],
     );
   }
 
-  /// The card context menu, opened by Y or by a long press on the card.
+  /// Opens the centered Options dialog for [system].
   ///
-  /// It exists because the screen's footer does not: the footer carried the
-  /// only touch route to a system's settings, so removing it to give the cards
-  /// the vertical space needed somewhere else for that action to live. Start
-  /// still opens the settings dialog directly, so the pad keeps its one-press
-  /// route and this is purely an addition.
-  ///
-  /// `Settings` is the first row on every card, as it is in the games view's
-  /// own Y menu. It used to be omitted on a recent-game card, on the grounds
-  /// that such a card has no system to configure — but it does: the game on it
-  /// belongs to one, and [_openSystemSettings] now resolves it the same way
-  /// [_navigateToSystem] does. That left `View mode` as the top row on exactly
-  /// one kind of card, so the menu's first entry moved depending on which card
-  /// the cursor happened to be on.
-  ///
-  /// `Search` follows it, so the library search is one Y press away wherever
-  /// the cursor is. The Search card itself gets neither: it has no system to
-  /// configure, and A on it already opens search, so its menu is View mode
-  /// alone.
-  Future<void> _openSystemContextMenu(
+  /// Start and the footer's Options control both land here, and the touch
+  /// long-press uses the same route. The dialog itself owns the library
+  /// display and sorting changes; it reports back only the two actions that
+  /// need this screen's navigation, Game Settings and Search.
+  Future<void> _openSystemOptions(
     BuildContext context,
     SystemInfo system,
     SqliteConfigProvider configProvider,
   ) async {
+    if (_optionsDialogOpen) return;
+    _optionsDialogOpen = true;
+
     SfxService().playNavSound();
 
-    final isCarousel = configProvider.config.systemViewMode == 'carousel';
-    final isSearchCard = system.folderName == SystemFolderNames.search;
+    SystemOptionsAction? action;
+    try {
+      action = await showSystemOptionsDialog(context: context, system: system);
+    } finally {
+      _optionsDialogOpen = false;
+    }
 
-    final items = <ContextMenuItem>[
-      if (!isSearchCard) ...[
-        ContextMenuItem(
-          id: _menuSettings,
-          label: AppLocale.settings.getString(context),
-          icon: Symbols.settings_rounded,
-        ),
-        ContextMenuItem(
-          id: _menuSearch,
-          label: AppLocale.searchTitle.getString(context),
-          icon: Symbols.search_rounded,
-        ),
-      ],
-      ContextMenuItem(
-        id: _menuViewMode,
-        label: AppLocale.viewMode.getString(context),
-        icon: Symbols.grid_view_rounded,
-        separatorBefore: !isSearchCard,
-        children: [
-          ContextMenuItem(
-            id: _menuViewGrid,
-            label: AppLocale.gridView.getString(context),
-            icon: Symbols.grid_view_rounded,
-            selected: !isCarousel,
-          ),
-          ContextMenuItem(
-            id: _menuViewCarousel,
-            label: AppLocale.carouselView.getString(context),
-            icon: Symbols.view_carousel_rounded,
-            selected: isCarousel,
-          ),
-        ],
-      ),
-    ];
+    if (action == null || !context.mounted) return;
 
-    final result = await showAnchoredContextMenu(
-      context: context,
-      items: items,
-      // Falls back to the screen centre when no card is mounted: the key
-      // resolves to null and the menu centres itself.
-      anchorKey: _cardAnchorKey.currentContext != null ? _cardAnchorKey : null,
-      alignment: ContextMenuAlignment.overAnchor,
-      layerId: 'system_context_menu',
-      submenuLayerId: 'system_context_submenu',
-    );
-
-    if (result == null || !context.mounted) return;
-
-    switch (result) {
-      case _menuSettings:
+    switch (action) {
+      case SystemOptionsAction.gameSettings:
         _openSystemSettings(context, system, configProvider);
-      case _menuSearch:
+      case SystemOptionsAction.search:
         // A recent-game card is not a system, so it searches everything.
         await _openSearch(
           context,
           systemFolder: system.isGame ? null : system.folderName,
         );
-      case _menuViewGrid:
-        await configProvider.updateSystemViewMode('grid');
-      case _menuViewCarousel:
-        await configProvider.updateSystemViewMode('carousel');
     }
   }
 
-  /// Opens search from the Y menu of any card, filtered to [systemFolder].
+  /// Opens the library search from the Options dialog, or library-wide from
+  /// the West face button.
   ///
   /// The same hand-off [_navigateToSystem] makes for the Search card, minus
   /// its secondary-display refresh: that would repaint the second screen for
@@ -515,6 +437,22 @@ class MySystems extends StatelessWidget {
           onLaunchFailed: (ctx, r) async {
             achievementsController.stop(hidePanel: true);
             MySystems.gridLaunchNotifier.value = false;
+            if (ctx.mounted) {
+              await LaunchFailureDialog.show(
+                ctx,
+                title: AppLocale.launchGameFailed.getString(ctx),
+                intro: AppLocale.unableToLaunch
+                    .getString(ctx)
+                    .replaceFirst(
+                      '{name}',
+                      systemInfo.gameModel?.name ?? systemInfo.title ?? '',
+                    ),
+                message: r.errorMessage?.isNotEmpty == true
+                    ? r.errorMessage!
+                    : AppLocale.unknownError.getString(ctx),
+                details: r.errorDetails,
+              );
+            }
             GamepadNavigationManager.restoreFocusOwner();
           },
         );
@@ -723,6 +661,8 @@ class SystemCardGridView extends StatefulWidget {
     this.onYPressed,
     this.onBackPressed,
     this.onXPressed,
+    this.onWestPressed,
+    this.bindYButton = true,
     this.systems = const [],
     this.recentCardSize = RecentCardSizes.defaultSize,
     this.navLayerId = kSystemsGridNavLayerId,
@@ -750,21 +690,34 @@ class SystemCardGridView extends StatefulWidget {
   final int selectedIndex;
   final Function(int index)? onCardTapped;
   final VoidCallback? onEnterPressed;
+
+  /// Start. Opens the centered Options dialog on the systems screen; the
+  /// collections browser opens its card menu with it.
   final VoidCallback? onEscapePressed;
 
-  /// Y. Unbound on the systems screen; the collections browser opens its
-  /// per-collection menu with it (Start does the same, through
-  /// [onEscapePressed]).
+  /// Options entry point for pad Y (when [bindYButton]) and the touch
+  /// long-press. The systems screen binds only the long-press now that Options
+  /// moved to Start; the collections browser still uses Y for its menu.
   final VoidCallback? onYPressed;
 
   /// B. Unbound on the systems screen, which is a root tab and has nothing to
   /// go back to. A pushed host (the collections browser) pops itself here.
   final VoidCallback? onBackPressed;
 
-  /// X. Defaults to the header's view/sort picker, which is what the systems
-  /// screen wants; a host without a header passes [showSystemViewDropdown]
-  /// itself so both reach the same menu.
+  /// X. Unbound on the systems screen; the collections browser opens its view
+  /// picker with it.
   final VoidCallback? onXPressed;
+
+  /// The West face button (X on an Xbox pad, Y on a Nintendo-style one). The
+  /// systems screen opens the library search with it.
+  final VoidCallback? onWestPressed;
+
+  /// Whether the gamepad's Y button fires [onYPressed].
+  ///
+  /// The systems screen turns this off now that Options moved to Start. The
+  /// callback itself stays bound to the touch long-press route, which is why
+  /// the two are separate.
+  final bool bindYButton;
 
   final List<dynamic> systems;
 
@@ -869,13 +822,13 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
   /// (`State.setState` is `@protected`).
   void rebuild(VoidCallback fn) => setState(fn);
 
-  /// Touch route to the card menu: select the pressed card, then open the menu
-  /// a frame later.
+  /// Touch route to Options: select the pressed card, then open the dialog a
+  /// frame later.
   ///
-  /// The wait is not cosmetic. The menu anchors to the *selected* card's key,
-  /// and the host only moves that key onto this card once the selection has
-  /// been rebuilt, so opening in the same frame anchors the menu to whichever
-  /// card was selected before the press.
+  /// The wait is not cosmetic. The host resolves the dialog's system from its
+  /// selected index, and that index only moves once the selection has been
+  /// rebuilt, so opening in the same frame would show the previous card's
+  /// system.
   void _openMenuFor(int index) {
     widget.onCardTapped?.call(index);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1224,8 +1177,6 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
         final List<Widget> cardWidgets = [];
         final Set<int> placedIndices = {};
 
-        double? selLeft, selTop, selWidth, selHeight;
-
         for (int r = 0; r < grid.length; r++) {
           for (int c = 0; c < grid[r].length; c++) {
             final cardIdx = grid[r][c];
@@ -1252,13 +1203,6 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
               // Center the card vertically inside the row band.
               final rowItemHeight = rowItemHeights[r];
               top = rowTop(r) + (rowItemHeight - cardHeight) / 2;
-            }
-
-            if (cardIdx == widget.selectedIndex) {
-              selLeft = left;
-              selTop = top;
-              selWidth = width;
-              selHeight = cardHeight;
             }
 
             final bool cardIsSelected = cardIdx == widget.selectedIndex;
@@ -1296,6 +1240,10 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
                   key: ValueKey('system_card_${card.title}_$cardIdx'),
                   info: card,
                   isSelected: cardIsSelected,
+                  showShadow: false,
+                  isCompact:
+                      card.isGame &&
+                      widget.recentCardSize == RecentCardSizes.twoByOne,
                   onTap: handleTap,
                   onLongPress: widget.onYPressed == null
                       ? null
@@ -1338,53 +1286,6 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
           }
         }
 
-        final focusIndicator =
-            (selLeft != null &&
-                selTop != null &&
-                selWidth != null &&
-                selHeight != null)
-            ? AnimatedPositioned(
-                key: const ValueKey('focus_indicator'),
-                duration: const Duration(milliseconds: 256),
-                curve: Curves.fastOutSlowIn,
-                left: selLeft + 1.r,
-                top: selTop + 1.r,
-                width: selWidth - 2.r,
-                height: selHeight - 2.r,
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius:
-                          Theme.of(
-                            context,
-                          ).extension<CornerRadii>()?.radiusExternal ??
-                          BorderRadius.circular(14.r),
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.28),
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.08),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.35, 1.0],
-                      ),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.55),
-                        width: 2.r,
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            : const SizedBox.shrink();
-
         return SingleChildScrollView(
           controller: _scrollController,
           clipBehavior: Clip.none,
@@ -1393,10 +1294,7 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
           ),
           child: SizedBox(
             height: totalHeight,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [...cardWidgets, focusIndicator],
-            ),
+            child: Stack(clipBehavior: Clip.none, children: cardWidgets),
           ),
         );
       },

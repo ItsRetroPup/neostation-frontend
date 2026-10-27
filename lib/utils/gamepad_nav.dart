@@ -62,15 +62,29 @@ class GamepadNavigation {
   final VoidCallback? onPreviousTab;
   final VoidCallback? onNextTab;
   final VoidCallback? onSelectItem;
+
+  /// Disable when selection itself previews an audio clip.
+  final bool playSelectSound;
   final VoidCallback? onBack;
   final VoidCallback? onFavorite;
   final VoidCallback? onSettings;
   final VoidCallback? onXButton;
+
+  /// The West face button — X on an Xbox pad, Square on a PlayStation one, Y
+  /// on a Nintendo-style one — whichever input the active controller reports
+  /// it as (see [GamepadEventTranslator.westButtonFor]). When set it takes
+  /// that press ahead of [onXButton] / [onFavorite].
+  final VoidCallback? onWestButton;
   final VoidCallback? onLeftStickClick;
   final VoidCallback? onRightStickClick;
   final VoidCallback? onSelectButton;
   final VoidCallback? onLeftBumper;
   final VoidCallback? onRightBumper;
+
+  /// L2/R2. Fire once per pull, on press; holding does not repeat. Unbound
+  /// triggers stay silent.
+  final VoidCallback? onLeftTrigger;
+  final VoidCallback? onRightTrigger;
 
   /// Select (View) chord combos. On its own Select fires [onSelectButton], or
   /// [globalSelectTap] when the layer defines none.
@@ -329,6 +343,12 @@ class GamepadNavigation {
   String? _currentGamepadId;
   String? _currentGamepadName;
 
+  /// Which input the most recently used controller reports its West face
+  /// button as, so button hints can show the glyph of the button to press.
+  static final ValueNotifier<GamepadInputType> activeWestButton = ValueNotifier(
+    GamepadInputType.buttonX,
+  );
+
   final GamepadEventTranslator _translator = GamepadEventTranslator();
 
   bool _keyboardInitialized = false;
@@ -350,15 +370,19 @@ class GamepadNavigation {
     this.onPreviousTab,
     this.onNextTab,
     this.onSelectItem,
+    this.playSelectSound = true,
     this.onBack,
     this.onFavorite,
     this.onSettings,
     this.onXButton,
+    this.onWestButton,
     this.onLeftStickClick,
     this.onRightStickClick,
     this.onSelectButton,
     this.onLeftBumper,
     this.onRightBumper,
+    this.onLeftTrigger,
+    this.onRightTrigger,
     this.onSelectModifierA,
     this.onSelectModifierB,
     this.onSelectModifierX,
@@ -443,6 +467,7 @@ class GamepadNavigation {
           firstGamepad.systemInfo,
         );
         _translator.updateGamepadName(firstGamepad.id, firstGamepad.name);
+        activeWestButton.value = _translator.westButtonFor(firstGamepad.id);
 
         if (Platform.isLinux) {
           final connectionType = firstGamepad.deviceInfo.connectionType;
@@ -468,6 +493,7 @@ class GamepadNavigation {
 
       _translator.updateGamepadSystemInfo(gamepadId, gamepad.systemInfo);
       _translator.updateGamepadName(gamepadId, gamepad.name);
+      activeWestButton.value = _translator.westButtonFor(gamepadId);
       final connectionType = gamepad.deviceInfo.connectionType;
       _translator.updateGamepadConnectionType(gamepadId, connectionType);
       _currentGamepadName = gamepad.name;
@@ -565,6 +591,18 @@ class GamepadNavigation {
       default:
         return null;
     }
+  }
+
+  /// Fires [onWestButton] when [event] is the active controller's West face
+  /// button, reporting whether it did.
+  bool _dispatchWest(TranslatedGamepadEvent event) {
+    final onWest = onWestButton;
+    if (onWest == null) return false;
+    if (event.inputType != _translator.westButtonFor(event.gamepadId)) {
+      return false;
+    }
+    onWest();
+    return true;
   }
 
   /// Cancels all active auto-repeat timers.
@@ -849,7 +887,11 @@ class GamepadNavigation {
           }
           _lastShoulderDispatchTime = now;
           _shoulderReleasedSinceDispatch = false;
-        } else {
+        } else if (!GamepadEventTranslator.isTrigger(
+          translatedEvent.inputType,
+        )) {
+          // Triggers skip this: the translator already makes each pull one
+          // press, and a pull must not swallow the button pressed after it.
           // Select and any face button that lands during a Select chord bypass
           // the action debounce so a quick chord isn't swallowed.
           final isChordRelated =
@@ -927,7 +969,7 @@ class GamepadNavigation {
 
     bool shouldProcess;
 
-    // Directional and shoulder buttons usually fire on press.
+    // Directional, shoulder and trigger buttons usually fire on press.
     if (event.inputType == GamepadInputType.dpadUp ||
         event.inputType == GamepadInputType.dpadDown ||
         event.inputType == GamepadInputType.dpadLeft ||
@@ -936,6 +978,7 @@ class GamepadNavigation {
         event.inputType == GamepadInputType.leftStickY ||
         event.inputType == GamepadInputType.buttonLB ||
         event.inputType == GamepadInputType.buttonRB ||
+        event.inputType == GamepadInputType.buttonLT ||
         event.inputType == GamepadInputType.buttonRT) {
       shouldProcess = event.isPressed;
     } else {
@@ -1040,7 +1083,7 @@ class GamepadNavigation {
         break;
 
       case GamepadInputType.buttonA:
-        SfxService().playEnterSound();
+        if (playSelectSound) SfxService().playEnterSound();
         onSelectItem?.call();
         break;
 
@@ -1051,12 +1094,12 @@ class GamepadNavigation {
 
       case GamepadInputType.buttonY:
         SfxService().playNavSound();
-        onFavorite?.call();
+        if (!_dispatchWest(event)) onFavorite?.call();
         break;
 
       case GamepadInputType.buttonX:
         SfxService().playNavSound();
-        onXButton?.call();
+        if (!_dispatchWest(event)) onXButton?.call();
         break;
 
       case GamepadInputType.buttonStart:
@@ -1070,6 +1113,17 @@ class GamepadNavigation {
       case GamepadInputType.buttonLB:
       case GamepadInputType.buttonRB:
         if (_dispatchShoulder(event.inputType)) _startShoulderHold(event);
+        break;
+
+      case GamepadInputType.buttonLT:
+      case GamepadInputType.buttonRT:
+        final action = event.inputType == GamepadInputType.buttonLT
+            ? onLeftTrigger
+            : onRightTrigger;
+        if (action != null) {
+          SfxService().playNavSound();
+          action();
+        }
         break;
 
       // L3 (left stick click) only — the UI hint shows the Left-Stick-Click
@@ -1171,7 +1225,8 @@ class GamepadNavigation {
           key == LogicalKeyboardKey.arrowRight ||
           key == LogicalKeyboardKey.enter ||
           key == LogicalKeyboardKey.backspace ||
-          key == LogicalKeyboardKey.escape) {
+          key == LogicalKeyboardKey.escape ||
+          key == LogicalKeyboardKey.contextMenu) {
         return true;
       }
       return false;
@@ -1222,7 +1277,7 @@ class GamepadNavigation {
       handled = true;
     } else if (key == LogicalKeyboardKey.enter) {
       if (isKeyDown) {
-        SfxService().playEnterSound();
+        if (playSelectSound) SfxService().playEnterSound();
         onSelectItem?.call();
       }
       handled = true;
@@ -1240,7 +1295,10 @@ class GamepadNavigation {
         onFavorite?.call();
       }
       handled = true;
-    } else if (key == LogicalKeyboardKey.escape) {
+    } else if (key == LogicalKeyboardKey.escape ||
+        // A TV remote's ≡ (Android's Menu key) arrives as a keyboard key, not
+        // through the gamepad plugin: it is the remote's Start.
+        key == LogicalKeyboardKey.contextMenu) {
       if (isKeyDown) {
         SfxService().playNavSound();
         onSettings?.call();

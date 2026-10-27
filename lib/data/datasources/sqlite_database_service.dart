@@ -246,7 +246,15 @@ class SqliteDatabaseService {
       if (!walkedDirs.add(target.canonicalPath)) continue;
 
       try {
-        final entries = target.useSaf
+        final entries = system.id == 'ps3'
+            ? await scanPs3Path(
+                target.dirPath,
+                validExtensionsSet,
+                system.recursiveScan,
+                useSaf: target.useSaf,
+                ignoreHiddenFiles: ignoreHiddenFiles,
+              )
+            : target.useSaf
             ? await _scanSafUri(
                 target.dirPath,
                 validExtensionsSet,
@@ -1365,6 +1373,29 @@ class SqliteDatabaseService {
   ///
   /// Android's SAF walk stays where it is: it reaches the DocumentsProvider
   /// over a platform channel, which is only bound on the root isolate.
+  /// Recognises extracted disc games as a single entry at their outer folder.
+  /// Does not descend into recognised games (including PS3_UPDATE).
+  @visibleForTesting
+  static Future<List<RomEntry>> scanPs3Path(
+    String root,
+    Set<String> extensions,
+    bool recursive, {
+    bool useSaf = false,
+    bool ignoreHiddenFiles = true,
+  }) async {
+    final entries = await SqliteConfigService.scanPs3Path(
+      root,
+      extensions,
+      recursive,
+      useSaf: useSaf,
+      ignoreHiddenFiles: ignoreHiddenFiles,
+    );
+    return [
+      for (final entry in entries)
+        RomEntry(path: entry.path, filename: entry.filename, size: entry.size),
+    ];
+  }
+
   @visibleForTesting
   static Future<List<RomEntry>> scanStandardPath(
     String pathStr,
@@ -1402,26 +1433,44 @@ class SqliteDatabaseService {
       final entities = await Directory(
         pathStr,
       ).list(recursive: recursive, followLinks: false).toList();
+      // Directory-backed formats such as macOS `.app` bundles are one entry,
+      // and their contents must not be reported as separate games.
+      entities.sort((a, b) => a.path.length.compareTo(b.path.length));
+      final directoryEntries = <String>[];
       for (final entity in entities) {
+        if (directoryEntries.any(
+          (entry) => path.isWithin(entry, entity.path),
+        )) {
+          continue;
+        }
         if (_shouldSkipStandardEntity(
           entity,
           ignoreHiddenFiles: ignoreHiddenFiles,
         )) {
           continue;
         }
-        if (entity is File) {
-          final filename = path.basename(entity.path);
-          final ext = path.extension(filename).toLowerCase();
-          if (validExtensions.contains(ext.replaceAll('.', '')) ||
-              validExtensions.isEmpty) {
+        final filename = path.basename(entity.path);
+        final ext = path.extension(filename).toLowerCase().replaceAll('.', '');
+        final matches =
+            validExtensions.contains(ext) || validExtensions.isEmpty;
+        if (entity is Directory) {
+          // Only `.app` is a directory-backed launchable format today.
+          if (ext == 'app' && validExtensions.contains('app')) {
             entries.add(
-              RomEntry(
-                path: entity.path,
-                filename: filename,
-                size: await entity.length(),
-              ),
+              RomEntry(path: entity.path, filename: filename, size: 0),
             );
+            directoryEntries.add(entity.path);
           }
+          continue;
+        }
+        if (entity is File && matches) {
+          entries.add(
+            RomEntry(
+              path: entity.path,
+              filename: filename,
+              size: await entity.length(),
+            ),
+          );
         }
       }
     } catch (e) {

@@ -19,6 +19,7 @@ import '../services/romm_service.dart';
 import '../services/romm_archive_service.dart';
 import '../services/storage_space_service.dart';
 import '../services/user_data_location_service.dart';
+import '../utils/log_redaction.dart';
 import '../utils/romm_local_matcher.dart';
 import 'file_provider.dart';
 import 'romm_bulk_sync.dart';
@@ -120,7 +121,23 @@ class RommProvider extends ChangeNotifier {
   /// screen, so a global error would put a failing `/api/collections` under
   /// the search field of a search that worked. Scoped here, the search caption
   /// only ever reports the search.
-  String? _romsError;
+  ///
+  /// Its [RommException.kind] is what the UI says, in the app language; the
+  /// message is English, for the log.
+  RommException? _romsFailure;
+
+  /// The failure of the last [loadPlatforms], or null when it succeeded (or
+  /// has not run), so an empty platform list can say why it is empty.
+  RommException? _platformsFailure;
+
+  /// The failure of the last [loadCollections], as [_platformsFailure].
+  RommException? _collectionsFailure;
+
+  /// Why the saved account was rejected when it was checked at start-up, or
+  /// null. Set only for a definite rejection (see
+  /// [_verifyRestoredConnection]), so the connect screen can say why it is
+  /// showing instead of the library.
+  RommException? _restoreFailure;
 
   String _serverUrl = '';
   String _username = '';
@@ -244,11 +261,27 @@ class RommProvider extends ChangeNotifier {
   RommConnectionStatus get status => _status;
   bool get isConnected => _status == RommConnectionStatus.connected;
   String? get lastError => _lastError;
-  String? get romsError => _romsError;
+  RommException? get romsFailure => _romsFailure;
+  RommException? get platformsFailure => _platformsFailure;
+  RommException? get collectionsFailure => _collectionsFailure;
+  RommException? get restoreFailure => _restoreFailure;
   String get serverUrl => _serverUrl;
   String get username => _username;
 
   List<RommPlatform> get platforms => List.unmodifiable(_platforms);
+
+  /// Human-readable platform name for [rom]: the loaded platform list's name
+  /// for its slug, else the name RomM sent with the ROM, else the upper-cased
+  /// slug. Null when the ROM names no platform at all.
+  String? platformLabel(RommRom rom) {
+    final slug = rom.platformSlug;
+    if (slug.isEmpty) return rom.platformName;
+    for (final platform in _platforms) {
+      if (platform.slug == slug) return platform.name;
+    }
+    return rom.platformName ?? slug.toUpperCase();
+  }
+
   bool get loadingPlatforms => _loadingPlatforms;
 
   /// [loadingPlatforms] under the name the sync layer's guards read it by.
@@ -435,8 +468,13 @@ class RommProvider extends ChangeNotifier {
   // ── Lifecycle / connection ──────────────────────────────────────────────────
 
   /// Loads any persisted credentials/tokens and configures the service.
-  /// Does not hit the network; status becomes [connected] when a config exists.
+  ///
+  /// A saved account reports [RommConnectionStatus.connected] straight away,
+  /// so the cached library stays usable offline, and is then verified in the
+  /// background (see [_verifyRestoredConnection]).
   Future<void> initialize() async {
+    final epoch = ++_connectionEpoch;
+    _restoreFailure = null;
     try {
       final config = await RommRepository.getConfig();
       if (config == null) {
@@ -463,6 +501,7 @@ class RommProvider extends ChangeNotifier {
       _status = RommConnectionStatus.connected;
       notifyListeners();
       _flushQueuedPlaytime();
+      unawaited(_verifyRestoredConnection(epoch));
     } catch (e) {
       _log.e('RomM initialize failed: $e');
       _status = RommConnectionStatus.disconnected;
@@ -470,47 +509,58 @@ class RommProvider extends ChangeNotifier {
     }
   }
 
-  /// Validates credentials against the server without persisting them.
-  /// Returns null on success, or a user-facing error message.
+  /// Bumped by every [initialize], [connect] and [disconnect], so a
+  /// background check that finishes late cannot overwrite a newer state.
+  int _connectionEpoch = 0;
+
+  /// Confirms a restored account still authenticates.
   ///
-  /// Pass either [username]/[password] or an [apiKey], matching [connect].
-  Future<String?> testConnection({
-    required String serverUrl,
-    String username = '',
-    String password = '',
-    String apiKey = '',
-  }) async {
-    final probe = RommService()
-      ..configure(
-        serverUrl: serverUrl,
-        username: username,
-        password: password,
-        apiKey: apiKey,
-      );
+  /// Only a definite rejection (401/403) reports [RommConnectionStatus.error].
+  /// An unreachable server is normal offline, or before Wi-Fi associates at
+  /// boot, so the account stays connected and the next real call reports
+  /// the problem. A token refreshed along the way is persisted, because the
+  /// server may already have rotated the refresh token the DB holds.
+  Future<void> _verifyRestoredConnection(int epoch) async {
     try {
-      await probe.verifyConnection();
-      return null;
+      await _service.verifyStoredConnection();
+      if (epoch != _connectionEpoch) return;
+      await _persistRefreshedTokens();
     } on RommException catch (e) {
-      return e.message;
+      if (epoch != _connectionEpoch) return;
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        _log.w('RomM: saved account was rejected: ${e.message}');
+        _status = RommConnectionStatus.error;
+        _lastError = e.message;
+        _restoreFailure = e;
+        notifyListeners();
+      } else {
+        _log.w('RomM: could not verify the saved account: ${e.message}');
+      }
     } catch (e) {
-      return 'Connection failed: $e';
+      _log.w('RomM: could not verify the saved account: $e');
     }
   }
 
   /// Authenticates, persists credentials + tokens, and marks the provider
-  /// connected. Returns null on success or a user-facing error message.
+  /// connected. Returns null on success, or the failure: its
+  /// [RommException.kind] says why in a form the UI can translate
+  /// (`rommFailureMessage`), its message is English for the log.
   ///
   /// Pass either [username]/[password] for the OAuth2 password grant or an
   /// [apiKey] for a RomM Client API Token; the mode that isn't used is stored
   /// empty, so reconnecting one way clears the other way's secret.
-  Future<String?> connect({
+  Future<RommException?> connect({
     required String serverUrl,
     String username = '',
     String password = '',
     String apiKey = '',
   }) async {
+    _connectionEpoch++;
     _status = RommConnectionStatus.connecting;
     _lastError = null;
+    // Signing in again is the answer to a rejected saved account; whatever
+    // this attempt says replaces it.
+    _restoreFailure = null;
     notifyListeners();
 
     _service.configure(
@@ -520,17 +570,24 @@ class RommProvider extends ChangeNotifier {
       apiKey: apiKey,
     );
     try {
-      await _service.authenticate();
+      await _service.verifyConnection();
     } on RommException catch (e) {
+      // The user sees a translated message for e.kind; the cause is here.
+      _log.w(
+        'RomM: connecting to ${_service.baseUrl} failed (${e.kind.name}): '
+        '${e.message}'
+        '${e.serverResponse == null ? '' : ' — server answered: ${e.serverResponse}'}',
+      );
       _status = RommConnectionStatus.error;
       _lastError = e.message;
       notifyListeners();
-      return e.message;
+      return e;
     } catch (e) {
+      _log.w('RomM: connecting to ${_service.baseUrl} failed: $e');
       _status = RommConnectionStatus.error;
       _lastError = 'Connection failed: $e';
       notifyListeners();
-      return _lastError;
+      return RommException(_lastError!);
     }
 
     await RommRepository.saveConfig(
@@ -544,12 +601,13 @@ class RommProvider extends ChangeNotifier {
     // Only the password grant produces tokens worth caching; an API key is
     // itself the credential and is already in the config row.
     if (!_service.usesApiKey) {
-      await RommRepository.saveTokens(
+      final saved = await RommRepository.saveTokens(
         accessToken: _service.accessToken!,
         refreshToken: _service.refreshToken,
         tokenExpires: _service.tokenExpiresMs,
       );
-      _lastPersistedAccessToken = _service.accessToken;
+      // Left unmarked when the save failed, so the next call saves it again.
+      if (saved) _lastPersistedAccessToken = _service.accessToken;
     }
 
     _serverUrl = _service.baseUrl;
@@ -581,14 +639,18 @@ class RommProvider extends ChangeNotifier {
     // Stop a bulk sync before the credentials go: its remaining transfers would
     // otherwise keep running (and failing) against a server we just forgot.
     bulkSync.cancel();
+    _connectionEpoch++;
     await RommRepository.clearConfig();
     _status = RommConnectionStatus.disconnected;
     _lastError = null;
+    _restoreFailure = null;
     _serverUrl = '';
     _username = '';
     _platforms = [];
+    _platformsFailure = null;
     _platformIdsBySystemName = null;
     _collections = [];
+    _collectionsFailure = null;
     _currentPlatform = null;
     _currentCollection = null;
     _librarySearch = false;
@@ -615,6 +677,7 @@ class RommProvider extends ChangeNotifier {
     _loadingPlatforms = true;
     final load = _platformsLoad = Completer<void>();
     _lastError = null;
+    _platformsFailure = null;
     notifyListeners();
     try {
       // Via the [service] getter, not [_service], so a test can substitute the
@@ -628,8 +691,10 @@ class RommProvider extends ChangeNotifier {
       unawaited(_loadRaProgression().then((_) => notifyListeners()));
     } on RommException catch (e) {
       _lastError = e.message;
+      _platformsFailure = e;
     } catch (e) {
       _lastError = 'Failed to load platforms: $e';
+      _platformsFailure = RommException(_lastError!);
     } finally {
       _loadingPlatforms = false;
       _platformsLoad = null;
@@ -646,6 +711,7 @@ class RommProvider extends ChangeNotifier {
     if (_collections.isNotEmpty && !force) return;
     _loadingCollections = true;
     _lastError = null;
+    _collectionsFailure = null;
     notifyListeners();
     try {
       final user = await _service.getCollections();
@@ -661,8 +727,10 @@ class RommProvider extends ChangeNotifier {
       await _persistRefreshedTokens();
     } on RommException catch (e) {
       _lastError = e.message;
+      _collectionsFailure = e;
     } catch (e) {
       _lastError = 'Failed to load collections: $e';
+      _collectionsFailure = RommException(_lastError!);
     } finally {
       _loadingCollections = false;
       notifyListeners();
@@ -791,7 +859,7 @@ class RommProvider extends ChangeNotifier {
   /// blocked by a request whose answer is about to be discarded.
   void _resetRoms() {
     _roms = [];
-    _romsError = null;
+    _romsFailure = null;
     _romsOffset = 0;
     _romsHasMore = false;
     _loadingRoms = false;
@@ -818,7 +886,7 @@ class RommProvider extends ChangeNotifier {
     final offset = _romsOffset;
     _loadingRoms = true;
     _lastError = null;
-    _romsError = null;
+    _romsFailure = null;
     notifyListeners();
     try {
       final page = await _service.getRoms(
@@ -856,7 +924,7 @@ class RommProvider extends ChangeNotifier {
         return;
       }
       _lastError = e.message;
-      _romsError = e.message;
+      _romsFailure = e;
     } catch (e) {
       if (generation != _romsGeneration) {
         _log.d(
@@ -866,7 +934,7 @@ class RommProvider extends ChangeNotifier {
         return;
       }
       _lastError = 'Failed to load ROMs: $e';
-      _romsError = _lastError;
+      _romsFailure = RommException(_lastError!);
     } finally {
       // A stale request's loading flag was already released by [_resetRoms];
       // clearing it here would cancel the flag of the load that replaced it.
@@ -1671,11 +1739,16 @@ class RommProvider extends ChangeNotifier {
       return active;
     }
     final tracker = RommDownload(romId: rom.id);
+    final logName = oneLine(rom.fsName);
     _downloads[rom.id] = tracker;
     _notifyDownloadState();
 
     final system = await resolveSystem(rom);
     if (system == null) {
+      _log.w(
+        'RomM: cannot download rom ${rom.id} ($logName): no system for '
+        'platform "${oneLine(rom.platformSlug)}"',
+      );
       tracker
         ..status = RommDownloadStatus.failed
         ..error = RommDownloadError.noSystemMatch;
@@ -1692,6 +1765,10 @@ class RommProvider extends ChangeNotifier {
         : existing?.directory;
     final destDir = existingDir ?? await _resolveDestDir(system, romFolders);
     if (destDir == null) {
+      _log.w(
+        'RomM: cannot download rom ${rom.id} ($logName): no writable ROM '
+        'folder for ${system.folderName}',
+      );
       tracker
         ..status = RommDownloadStatus.failed
         ..error = RommDownloadError.noWritableFolder;
@@ -1782,6 +1859,9 @@ class RommProvider extends ChangeNotifier {
           },
           shouldCancel: () => tracker.cancelRequested,
         );
+        // The download landed; a token the server refreshed on the way is
+        // worth keeping whatever happens next. Never fails the download: a
+        // failed save is logged by the repository and retried on the next call.
         await _persistRefreshedTokens();
         destPath = await RommArchiveService.ensureArchiveExtension(
           destPath,
@@ -1791,10 +1871,18 @@ class RommProvider extends ChangeNotifier {
       } on RommCancelledException {
         // User-cancelled: a distinct type (not a message-string match) keeps this
         // from being reported as a network failure if the message ever changes.
+        _log.i('RomM: download of rom ${rom.id} ($logName) cancelled');
         tracker.status = RommDownloadStatus.cancelled;
         _notifyDownloadState();
         return tracker;
       } on RommException catch (e) {
+        // The card only says the download failed; this line is where the
+        // reason (and what the server answered) can be found.
+        final answer = e.serverResponse;
+        _log.w(
+          'RomM: download of rom ${rom.id} ($logName) failed: ${e.message}'
+          '${answer == null || answer.isEmpty ? '' : ' — server answered $answer'}',
+        );
         tracker
           ..status = RommDownloadStatus.failed
           ..error = RommDownloadError.network
@@ -1802,6 +1890,7 @@ class RommProvider extends ChangeNotifier {
         _notifyDownloadState();
         return tracker;
       } catch (e) {
+        _log.e('RomM: download of rom ${rom.id} ($logName) failed', error: e);
         tracker
           ..status = RommDownloadStatus.failed
           ..error = RommDownloadError.network
@@ -1833,6 +1922,10 @@ class RommProvider extends ChangeNotifier {
           scummVm: scummVm,
         );
         if (extractedName == null) {
+          _log.w(
+            'RomM: download of rom ${rom.id} ($logName) failed: could not '
+            'extract a playable ROM from the archive',
+          );
           await _keepFailedDownload(destPath, destDir, staleRaw, staleBackup);
           tracker
             ..status = RommDownloadStatus.failed
@@ -1847,6 +1940,7 @@ class RommProvider extends ChangeNotifier {
         await File(destPath).rename(p.join(destDir, indexedName));
       }
     } catch (e) {
+      _log.e('RomM: installing rom ${rom.id} ($logName) failed', error: e);
       await _keepFailedDownload(destPath, destDir, staleRaw, staleBackup);
       tracker
         ..status = RommDownloadStatus.failed
@@ -1860,7 +1954,7 @@ class RommProvider extends ChangeNotifier {
       } catch (e) {
         // A locked file (Windows AV) must not leave the tracker downloading;
         // the next download's sweep retries the cleanup.
-        _log.w('RomM: could not remove ${downloadDir.path}: $e');
+        _log.w('RomM: could not remove ${oneLine(downloadDir.path)}: $e');
       }
     }
 
@@ -2111,7 +2205,9 @@ class RommProvider extends ChangeNotifier {
         await File(archivePath).rename(kept);
       }
     } catch (e) {
-      _log.w('RomM: could not keep failed download $archivePath: $e');
+      _log.w(
+        'RomM: could not keep failed download ${oneLine(archivePath)}: $e',
+      );
     }
   }
 
@@ -2134,7 +2230,7 @@ class RommProvider extends ChangeNotifier {
         try {
           await entity.delete(recursive: true);
         } catch (e) {
-          _log.w('RomM: could not remove stale ${entity.path}: $e');
+          _log.w('RomM: could not remove stale ${oneLine(entity.path)}: $e');
         }
       }
     } catch (_) {
@@ -2539,18 +2635,21 @@ class RommProvider extends ChangeNotifier {
   String? _lastPersistedAccessToken;
 
   /// Persists tokens after a call that may have transparently refreshed them —
-  /// but only when the access token actually changed. Browsing calls this after
-  /// every platform/collection/ROM page and every download; without the guard
-  /// each 50-ROM page cost a needless UPDATE on the hot path.
+  /// but only when the access token changed since the last successful save.
+  /// Browsing calls this after every platform/collection/ROM page and every
+  /// download; without the guard each 50-ROM page cost a needless UPDATE on
+  /// the hot path.
   Future<void> _persistRefreshedTokens() async {
     final token = _service.accessToken;
     if (token == null || token == _lastPersistedAccessToken) return;
-    await RommRepository.saveTokens(
+    final saved = await RommRepository.saveTokens(
       accessToken: token,
       refreshToken: _service.refreshToken,
       tokenExpires: _service.tokenExpiresMs,
     );
-    _lastPersistedAccessToken = token;
+    // A failed save is tried again on the next call: the server may already
+    // have rotated the refresh token the database still holds.
+    if (saved) _lastPersistedAccessToken = token;
   }
 
   /// Best-effort fetch of the user's RetroAchievements progress. Failures are

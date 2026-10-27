@@ -81,6 +81,11 @@ class TranslatedGamepadEvent {
   }
 }
 
+/// Android's Menu key. Many generic Bluetooth pads, and Amazon's Fire TV game
+/// controller, send it for their ≡ / Start button instead of
+/// `KEYCODE_BUTTON_START`; it arrives action-encoded like the button keycodes.
+const String _androidMenuKey = 'keycode_menu';
+
 /// Translates raw hardware gamepad events into standardized [TranslatedGamepadEvent] objects.
 ///
 /// This class handles platform-specific quirks, mapping detections, and input normalization
@@ -106,6 +111,10 @@ class GamepadEventTranslator {
 
   /// State cache used to determine press and release transitions.
   final Map<String, Map<GamepadInputType, double>> _previousStates = {};
+
+  /// The keys holding each trigger down, per gamepad.
+  final Map<String, Map<GamepadInputType, Set<String>>> _pressedTriggerKeys =
+      {};
 
   /// Tracks the last active direction per key to ensure correct release detection on desktop platforms.
   final Map<String, GamepadInputType> _lastDirectionByKey = {};
@@ -179,8 +188,9 @@ class GamepadEventTranslator {
       // reads as they arrive (see its Select handling).
       final isAndroidKeycodeButton =
           _isAndroid &&
-          key.startsWith('keycode_button_') &&
-          key != 'keycode_button_select';
+          ((key.startsWith('keycode_button_') &&
+                  key != 'keycode_button_select') ||
+              key == _androidMenuKey);
 
       if (_isAndroid &&
           (key.startsWith('keycode_dpad_') || isAndroidKeycodeButton)) {
@@ -210,6 +220,14 @@ class GamepadEventTranslator {
         return null;
       }
 
+      final isTrigger = GamepadEventTranslator.isTrigger(inputType);
+
+      // LINUX: joydev scales every axis to [-32767, 32767], so an analog
+      // trigger rests at -32767. Bring it to [0, 1] like the other platforms.
+      if (_isLinux && isTrigger && eventType == KeyType.analog) {
+        value = (value / 32767 + 1) / 2;
+      }
+
       final previousValue = previousState[inputType] ?? 0.0;
 
       final isAnalog =
@@ -220,12 +238,35 @@ class GamepadEventTranslator {
 
       final isDpadInput = GamepadEventTranslator.isDirectionalInput(inputType);
 
-      final wasPressed = isDpadInput
+      var wasPressed = isDpadInput
           ? _isDpadPressed(previousValue, isAnalog: isAnalog)
           : previousValue > 0.5;
-      final isNowPressed = isDpadInput
+      var isNowPressed = isDpadInput
           ? _isDpadPressed(value, isAnalog: isAnalog)
           : value > 0.5;
+      // This key's own state, which the dropped-release recovery below reads.
+      var keyWasPressed = wasPressed;
+      var keyIsPressed = isNowPressed;
+
+      // A trigger can report through an axis and a button at once (Android's
+      // AXIS_LTRIGGER and KEYCODE_BUTTON_L2, a DualShock's ABS_Z and BTN_TL2
+      // on Linux), interleaved in any order. It is down while any of them is,
+      // so one pull is one press. An axis lets go well below where it pressed,
+      // so a trigger held near the threshold does not chatter.
+      if (isTrigger) {
+        final keys = _pressedTriggerKeys
+            .putIfAbsent(gamepadId, () => {})
+            .putIfAbsent(inputType, () => {});
+        wasPressed = keys.isNotEmpty;
+        keyWasPressed = keys.contains(key);
+        keyIsPressed = value > (keyWasPressed ? 0.3 : 0.5);
+        if (keyIsPressed) {
+          keys.add(key);
+        } else {
+          keys.remove(key);
+        }
+        isNowPressed = keys.isNotEmpty;
+      }
 
       // Recover from a dropped ACTION_UP: when a release never arrives,
       // [previousState] stays stuck "pressed" and edge detection would swallow
@@ -236,8 +277,8 @@ class GamepadEventTranslator {
       // press, and an auto-repeat never is — a time gap cannot tell them apart.
       final forcePress =
           isAndroidKeycodeButton &&
-          isNowPressed &&
-          wasPressed &&
+          keyIsPressed &&
+          keyWasPressed &&
           rawEvent.repeat == 0;
 
       // An auto-repeat is never a new press — not even when the stored state no
@@ -276,7 +317,7 @@ class GamepadEventTranslator {
 
         // Clear directional tracking upon a successful release event.
         if (effectiveIsReleased) {
-          _lastDirectionByKey.remove(key);
+          _lastDirectionByKey.remove(_directionKey(key, eventType));
         }
 
         return translatedEvent;
@@ -308,17 +349,12 @@ class GamepadEventTranslator {
       }
     }
 
-    // LINUX: Utilize native event type from the plugin.
+    // LINUX: The plugin says whether a numeric key is a button or an axis, so
+    // nothing below, which tells them apart by name, sees a Linux event.
     if (_isLinux) {
-      if (eventType == KeyType.button) {
-        return _translateButtonEvent(key, mapping, gamepadId);
-      } else if (eventType == KeyType.analog) {
-        // Directional input (D-pad) takes precedence over generic analog axes.
-        if (_isDpadEvent(key)) {
-          return _translateDpadEvent(key, value, mapping);
-        }
-        return _translateAnalogEvent(key);
-      }
+      return eventType == KeyType.button
+          ? _translateButtonEvent(key, mapping, gamepadId)
+          : _translateLinuxAxis(key, value, gamepadId);
     }
 
     // D-pad translation for other platforms.
@@ -404,15 +440,99 @@ class GamepadEventTranslator {
     return null;
   }
 
+  /// The ABS code (linux/input-event-codes.h) behind each joydev axis index of
+  /// the common layout (xpad, hid-sony, hid-playstation), for a pad whose
+  /// plugin reported no axis map.
+  static const _defaultLinuxAxisCodes = [0, 1, 2, 3, 4, 5, 16, 17];
+
+  /// Translates a Linux joydev axis. joydev numbers a pad's axes in order of
+  /// the ABS codes it has, so the same index is a different axis on different
+  /// pads; the plugin reports each index's code.
+  GamepadInputType _translateLinuxAxis(
+    String key,
+    double value,
+    String gamepadId,
+  ) {
+    final reported = _systemInfoCache[gamepadId]?['axisMap'];
+    final codes = reported is List && reported.isNotEmpty
+        ? reported.cast<int>()
+        : _defaultLinuxAxisCodes;
+    final index = int.tryParse(key);
+    if (index == null || index < 0 || index >= codes.length) {
+      return GamepadInputType.unknown;
+    }
+    // Z/RZ are the analog triggers on a pad with its right stick on RX/RY,
+    // and the right stick itself on generic HID pads.
+    final zIsTrigger = codes.contains(3) && codes.contains(4);
+    switch (codes[index]) {
+      case 0: // ABS_X
+        return GamepadInputType.leftStickX;
+      case 1: // ABS_Y
+        return GamepadInputType.leftStickY;
+      case 2: // ABS_Z
+        return zIsTrigger
+            ? GamepadInputType.buttonLT
+            : GamepadInputType.rightStickX;
+      case 3: // ABS_RX
+        return GamepadInputType.rightStickX;
+      case 4: // ABS_RY
+        return GamepadInputType.rightStickY;
+      case 5: // ABS_RZ
+        return zIsTrigger
+            ? GamepadInputType.buttonRT
+            : GamepadInputType.rightStickY;
+      case 9: // ABS_GAS
+        return GamepadInputType.buttonRT;
+      case 10: // ABS_BRAKE
+        return GamepadInputType.buttonLT;
+      case 16: // ABS_HAT0X
+        return _hatDirection(
+          key,
+          value,
+          GamepadInputType.dpadLeft,
+          GamepadInputType.dpadRight,
+        );
+      case 17: // ABS_HAT0Y
+        return _hatDirection(
+          key,
+          value,
+          GamepadInputType.dpadUp,
+          GamepadInputType.dpadDown,
+        );
+      case 20: // ABS_HAT2X: the Steam Deck's R2 under hid-steam
+        return GamepadInputType.buttonRT;
+      case 21: // ABS_HAT2Y: and its L2
+        return GamepadInputType.buttonLT;
+    }
+    return GamepadInputType.unknown;
+  }
+
+  /// A hat axis's direction. Centred, it is the one being let go, so that
+  /// direction's release is reported.
+  GamepadInputType _hatDirection(
+    String key,
+    double value,
+    GamepadInputType negative,
+    GamepadInputType positive,
+  ) {
+    final entry = _directionKey(key, KeyType.analog);
+    if (value < -0.5) return _lastDirectionByKey[entry] = negative;
+    if (value > 0.5) return _lastDirectionByKey[entry] = positive;
+    return _lastDirectionByKey[entry] ?? GamepadInputType.unknown;
+  }
+
+  /// [key]'s entry in [_lastDirectionByKey]. Linux numbers buttons and axes
+  /// separately, so on an Xbox pad button 6 (Select) and axis 6 (the D-pad's
+  /// X axis) share a key: releasing Select mid-hold would forget the D-pad's
+  /// direction, and its release would never be reported.
+  String _directionKey(String key, KeyType eventType) =>
+      _isLinux && eventType == KeyType.analog ? 'axis:$key' : key;
+
   /// Determines if a key identifier corresponds to a D-pad (directional) input.
   bool _isDpadEvent(String key) {
     return key == 'pov' || // Windows POV
         key == 'axis_hat_x' || // Android Horizontal
         key == 'axis_hat_y' || // Android Vertical
-        key == 'axis_6' ||
-        key == '6' || // Linux Horizontal
-        key == 'axis_7' ||
-        key == '7' || // Linux Vertical
         // Android fallback for controllers not using AXIS_HAT.
         key == 'keycode_dpad_up' ||
         key == 'keycode_dpad_down' ||
@@ -425,33 +545,17 @@ class GamepadEventTranslator {
     // Inputs starting with "axis" are generally analog, not digital buttons.
     if (key.startsWith('axis')) return false;
 
-    // On Linux, indices 0-5 are typically reserved for analog axes.
-    if (_isLinux) {
-      final numValue = int.tryParse(key);
-      if (numValue != null) {
-        // 0-5: Analog Sticks (LS, RS, Triggers).
-        // 6+: Physical buttons.
-        return numValue >= 6;
-      }
-    }
-
     return key.startsWith('button-') || // Windows/Linux hyphenated format.
         key.startsWith('button_') || // Linux underscore format.
         (key.isNotEmpty &&
             key.length <= 2 &&
             int.tryParse(key) != null) || // Direct numeric identifiers.
-        key.startsWith('keycode_button_'); // Android keycodes.
+        key.startsWith('keycode_button_') || // Android keycodes.
+        key == _androidMenuKey;
   }
 
   /// Determines if a key identifier corresponds to an analog axis input.
   bool _isAnalogEvent(String key) {
-    if (_isLinux) {
-      final numValue = int.tryParse(key);
-      if (numValue != null && numValue >= 0 && numValue <= 5) {
-        return true;
-      }
-    }
-
     return (key.startsWith('axis_') &&
             !key.contains('hat') && // Exclude Android D-pad axes.
             !key.contains('brake') &&
@@ -523,28 +627,6 @@ class GamepadEventTranslator {
           return _lastDirectionByKey[key] = GamepadInputType.dpadUp;
         }
         if (value == -1.0) {
-          return _lastDirectionByKey[key] = GamepadInputType.dpadDown;
-        }
-        return _lastDirectionByKey[key] ?? GamepadInputType.unknown;
-      }
-    }
-
-    if (_isLinux) {
-      // Linux typically uses axis 6/7 for D-pad.
-      if (key == 'axis_6' || key == '6') {
-        if (value < -0.5) {
-          return _lastDirectionByKey[key] = GamepadInputType.dpadLeft;
-        }
-        if (value > 0.5) {
-          return _lastDirectionByKey[key] = GamepadInputType.dpadRight;
-        }
-        return _lastDirectionByKey[key] ?? GamepadInputType.unknown;
-      }
-      if (key == 'axis_7' || key == '7') {
-        if (value < -0.5) {
-          return _lastDirectionByKey[key] = GamepadInputType.dpadUp;
-        }
-        if (value > 0.5) {
           return _lastDirectionByKey[key] = GamepadInputType.dpadDown;
         }
         return _lastDirectionByKey[key] ?? GamepadInputType.unknown;
@@ -750,6 +832,7 @@ class GamepadEventTranslator {
         case 'keycode_button_select':
           return GamepadInputType.buttonSelect;
         case 'keycode_button_start':
+        case _androidMenuKey:
           return GamepadInputType.buttonStart;
         case 'keycode_button_thumbl':
           return GamepadInputType.leftStickButton;
@@ -769,14 +852,12 @@ class GamepadEventTranslator {
       // Left Stick X.
       case 'axis_x':
       case 'axis_0':
-      case '0': // Linux
       case 'dwxpos': // Windows
         return GamepadInputType.leftStickX;
 
       // Left Stick Y.
       case 'axis_y':
       case 'axis_1':
-      case '1': // Linux
       case 'dwypos': // Windows
         return GamepadInputType.leftStickY;
 
@@ -784,7 +865,6 @@ class GamepadEventTranslator {
       case 'axis_z':
       case 'axis_rx':
       case 'axis_2':
-      case '2': // Linux
       case 'dwrpos': // Windows
         return GamepadInputType.rightStickX;
 
@@ -792,19 +872,16 @@ class GamepadEventTranslator {
       case 'axis_rz':
       case 'axis_ry':
       case 'axis_3':
-      case '3': // Linux
       case 'dwzpos': // Windows
         return GamepadInputType.rightStickY;
 
       // Analog Left Trigger.
       case 'axis_ltrigger':
-      case '4':
       case 'axis_4':
         return GamepadInputType.buttonLT;
 
       // Analog Right Trigger.
       case 'axis_rtrigger':
-      case '5':
       case 'axis_5':
         return GamepadInputType.buttonRT;
     }
@@ -893,6 +970,26 @@ class GamepadEventTranslator {
     return value;
   }
 
+  /// The face button in the West position (left of the diamond) on
+  /// [gamepadId]. See [isWestReportedAsY].
+  GamepadInputType westButtonFor(String gamepadId) =>
+      isWestReportedAsY(_systemInfoCache[gamepadId])
+      ? GamepadInputType.buttonY
+      : GamepadInputType.buttonX;
+
+  /// Whether a controller's West face button arrives as [GamepadInputType.buttonY].
+  ///
+  /// The face buttons are otherwise translated on the Xbox layout, where X is
+  /// West and Y is North. The AYN built-in controller (Thor, Odin; VID 2020)
+  /// names its keycodes after its Nintendo-style labels instead: West, labelled
+  /// Y, sends KEYCODE_BUTTON_Y and North, labelled X, sends KEYCODE_BUTTON_X
+  /// (confirmed on the Thor).
+  static bool isWestReportedAsY(Map<String, dynamic>? systemInfo) {
+    if (!_isAndroid) return false;
+    final vendorId = (systemInfo?['vendorId'] as String?)?.toLowerCase();
+    return vendorId == '2020';
+  }
+
   /// Checks if a gamepad is a Sony (PlayStation) device based on Vendor ID.
   bool _isSonyController(String gamepadId) {
     final vendorId = (_systemInfoCache[gamepadId]?['vendorId'] as String?)
@@ -908,12 +1005,14 @@ class GamepadEventTranslator {
   /// pressed" state would swallow the next press of that button.
   void clearButtonStates() {
     _previousStates.clear();
+    _pressedTriggerKeys.clear();
     _lastDirectionByKey.clear();
   }
 
   /// Clears all internal state caches.
   void clearStates() {
     _previousStates.clear();
+    _pressedTriggerKeys.clear();
     _connectionTypeCache.clear();
     _systemInfoCache.clear();
     _lastDirectionByKey.clear();
@@ -948,6 +1047,11 @@ class GamepadEventTranslator {
         return false;
     }
   }
+
+  /// Checks if an input type represents L2 or R2.
+  static bool isTrigger(GamepadInputType inputType) =>
+      inputType == GamepadInputType.buttonLT ||
+      inputType == GamepadInputType.buttonRT;
 
   /// Checks if an input type represents a shoulder button or trigger.
   static bool isShoulderButton(GamepadInputType inputType) {

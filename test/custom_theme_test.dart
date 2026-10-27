@@ -46,11 +46,13 @@ void main() {
       expect(scheme.primary, const Color(0xFFFF79C6));
       expect(scheme.onPrimary, const Color(0xFF16050E));
       expect(scheme.secondary, const Color(0xFFBD93F9));
-      expect(scheme.tertiary, const Color(0xFFFFB86C)); // accent -> tertiary
+      expect(scheme.tertiary, scheme.primary);
+      expect(scheme.onTertiary, scheme.onPrimary);
       expect(scheme.surface, const Color(0xFF282A36)); // base-100
       expect(scheme.onSurface, const Color(0xFFF8F8F3)); // base-content
       expect(scheme.outline, const Color(0xFF303241)); // base-300
-      expect(scheme.tertiaryFixed, const Color(0xFF414558)); // neutral
+      expect(scheme.tertiaryFixed, scheme.surface);
+      expect(scheme.onTertiaryFixed, scheme.onSurface);
       expect(scheme.error, const Color(0xFFFF5555));
       expect(theme.themeData.cardColor, const Color(0xFF1F202A)); // base-200
       expect(theme.themeData.scaffoldBackgroundColor, scheme.surface);
@@ -154,6 +156,21 @@ void main() {
       final radii = theme.themeData.extension<CornerRadii>()!;
       expect(radii.radiusExternalRaw, 32.0); // 2rem * 16
       expect(radii.radiusInternalRaw, 0.0);
+    });
+
+    test('attaches the theme glass block when present', () {
+      final json = Map<String, dynamic>.from(_daisyJson)
+        ..['glass'] = {'blur': 1, 'transparency': 20, 'borderWidth': 3};
+      final theme = CustomTheme.fromDaisyJson(json);
+      expect(theme.glass, isNotNull);
+      expect(theme.glass!.blur, 1);
+      expect(theme.glass!.transparency, 20);
+      expect(theme.glass!.borderWidth, 3.0);
+    });
+
+    test('glass is null when the json has no glass block', () {
+      final theme = CustomTheme.fromDaisyJson(_daisyJson);
+      expect(theme.glass, isNull);
     });
 
     test('identical palettes share a signature; different ones do not', () {

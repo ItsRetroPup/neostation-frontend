@@ -22,8 +22,12 @@ import 'settings_title.dart';
 import 'widgets/setting_row.dart';
 import 'widgets/setting_value_chip.dart';
 import 'widgets/language_picker_overlay.dart';
+import 'widgets/custom_sounds_dialog.dart';
 import '../../../services/permission_service.dart';
 import '../../../services/sfx_service.dart';
+import '../../../services/systems_update_service.dart';
+import '../../../utils/systems_update_flow.dart';
+import 'widgets/settings_action_button.dart';
 
 /// A specialized content panel for system-wide configuration, including platform-specific orchestration (Windows/Android/Linux).
 ///
@@ -49,6 +53,10 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     with WidgetsBindingObserver {
   bool _isDefaultLauncher = false;
 
+  /// The installed systems version, shown on the check-for-updates row. Empty
+  /// until it has loaded.
+  String _systemsVersion = '';
+
   static final _log = LoggerService.instance;
 
   final ScrollController _scrollController = ScrollController();
@@ -73,19 +81,60 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     WidgetsBinding.instance.addObserver(this);
     _loadFullscreenState();
     _checkDefaultLauncher();
+    _loadSystemsVersion();
+    SystemsUpdateFlow.checking.addListener(_onSystemsCheckChanged);
+    SystemsUpdateFlow.running.addListener(_onSystemsUpdateRunChanged);
 
     // Pre-allocate keys for maximum theoretical setting items (the fixed rows
     // plus one per navigation tab that can be toggled).
-    for (int i = 0; i < 17 + NavTab.values.length; i++) {
+    for (int i = 0; i < 19 + NavTab.values.length; i++) {
       _itemKeys.add(GlobalKey());
     }
   }
 
   @override
   void dispose() {
+    SystemsUpdateFlow.checking.removeListener(_onSystemsCheckChanged);
+    SystemsUpdateFlow.running.removeListener(_onSystemsUpdateRunChanged);
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Swaps the row's subtitle between the version and "Checking...".
+  void _onSystemsCheckChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// A run that ended, from here or from start-up, may have installed a new
+  /// version, so the row re-reads it.
+  void _onSystemsUpdateRunChanged() {
+    if (!SystemsUpdateFlow.running.value) _loadSystemsVersion();
+  }
+
+  Future<void> _loadSystemsVersion() async {
+    try {
+      final version = await SystemsUpdateService.currentVersion();
+      if (!mounted) return;
+      setState(() => _systemsVersion = version);
+    } catch (e) {
+      _log.w('Failed to read the systems version: $e');
+    }
+  }
+
+  /// Checks for a systems update now, through the same flow as start-up.
+  ///
+  /// Not awaited: the flow outlives this panel and reports its outcome through
+  /// the notification bell, and the row follows it through the listeners
+  /// above. A press while a check is already running joins that one.
+  void _checkForSystemsUpdate() {
+    unawaited(
+      SystemsUpdateFlow.run(
+        context,
+        trigger: SystemsUpdateTrigger.manual,
+        library: SystemsUpdateLibrary.of(context.read<SqliteConfigProvider>()),
+      ),
+    );
   }
 
   @override
@@ -202,9 +251,12 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     count++; // Ignore hidden files in scan
     count++; // Auto-update App
     count++; // Auto-update Systems
+    count++; // Check for Systems Updates
     count++; // SFX Sounds
     count++; // SFX volume (dimmed, but still navigable, while SFX are off)
+    count++; // Custom sounds
     count++; // 12-Hour Clock
+    count++; // Ignore leading articles in game sorting
     count++; // Show subfolders (every system)
     count++; // Cloud-save mark in the game views
     count++; // Achievement badges on game tiles
@@ -342,6 +394,13 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     }
     currentItemIndex++;
 
+    // Protocol: Check for Systems Updates now.
+    if (index == currentItemIndex) {
+      _checkForSystemsUpdate();
+      return;
+    }
+    currentItemIndex++;
+
     // Protocol: Interface Sound Effects.
     if (index == currentItemIndex) {
       final sfxEnabled = configProvider.config.sfxEnabled;
@@ -361,10 +420,28 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
     }
     currentItemIndex++;
 
+    if (index == currentItemIndex) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const CustomSoundsDialog(),
+      );
+      return;
+    }
+    currentItemIndex++;
+
     // Protocol: 12-Hour Clock Format.
     if (index == currentItemIndex) {
       configProvider.updateUse12HourClock(
         !configProvider.config.use12HourClock,
+      );
+      return;
+    }
+    currentItemIndex++;
+
+    if (index == currentItemIndex) {
+      configProvider.updateIgnoreArticlesInGameSort(
+        !configProvider.config.ignoreArticlesInGameSort,
       );
       return;
     }
@@ -534,7 +611,7 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
           child: SingleChildScrollView(
             controller: _scrollController,
             physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.only(bottom: 24.r),
+            padding: EdgeInsets.only(top: 6.r, bottom: 24.r),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -666,6 +743,35 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                   );
                 }(),
 
+                // Setting: Check for Systems Updates now.
+                SizedBox(height: 12.r),
+                () {
+                  final index = currentItemIdx++;
+                  final focused =
+                      widget.isContentFocused &&
+                      widget.selectedContentIndex == index;
+                  return SettingRow(
+                    key: _itemKeys[index],
+                    onTap: () => selectItem(index),
+                    focused: focused,
+                    title: AppLocale.checkSystemsUpdates.getString(context),
+                    subtitle: SystemsUpdateFlow.checking.value
+                        ? AppLocale.systemsUpdateChecking.getString(context)
+                        : AppLocale.systemsUpdateCurrentVersion
+                              .getString(context)
+                              .replaceFirst(
+                                '{version}',
+                                _systemsVersion.isNotEmpty
+                                    ? _systemsVersion
+                                    : '-',
+                              ),
+                    trailing: SettingsActionButton(
+                      icon: Symbols.system_update_alt_rounded,
+                      selected: focused,
+                    ),
+                  );
+                }(),
+
                 // Setting: SFX Feedback.
                 SizedBox(height: 12.r),
                 () {
@@ -713,6 +819,21 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                   );
                 }(),
 
+                SizedBox(height: 12.r),
+                () {
+                  final index = currentItemIdx++;
+                  return SettingRow(
+                    key: _itemKeys[index],
+                    onTap: () => selectItem(index),
+                    focused:
+                        widget.isContentFocused &&
+                        widget.selectedContentIndex == index,
+                    title: AppLocale.customSounds.getString(context),
+                    subtitle: AppLocale.customSoundsSubtitle.getString(context),
+                    trailing: Icon(Symbols.chevron_right_rounded, size: 18.r),
+                  );
+                }(),
+
                 // Setting: 12-Hour Clock Format.
                 SizedBox(height: 12.r),
                 () {
@@ -739,9 +860,31 @@ class GeneralSettingsContentState extends State<GeneralSettingsContent>
                   );
                 }(),
 
-                // Setting: Show subfolders, applied to every system. The
-                // per-system toggle in a system's settings dialog stays
-                // available; this stamps them all at once.
+                // Setting: Ignore leading articles in game sorting.
+                SizedBox(height: 12.r),
+                () {
+                  final index = currentItemIdx++;
+                  return SettingRow(
+                    key: _itemKeys[index],
+                    onTap: () => selectItem(index),
+                    focused:
+                        widget.isContentFocused &&
+                        widget.selectedContentIndex == index,
+                    title: AppLocale.ignoreArticlesInGameSort.getString(
+                      context,
+                    ),
+                    subtitle: AppLocale.ignoreArticlesInGameSortSubtitle
+                        .getString(context),
+                    trailing: CustomToggleSwitch(
+                      value: config.ignoreArticlesInGameSort,
+                      onChanged: (value) => context
+                          .read<SqliteConfigProvider>()
+                          .updateIgnoreArticlesInGameSort(value),
+                      activeColor: theme.colorScheme.primary,
+                    ),
+                  );
+                }(),
+
                 SizedBox(height: 12.r),
                 () {
                   final index = currentItemIdx++;

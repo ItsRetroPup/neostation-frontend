@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:neostation/themes/chrome_surface.dart';
 import 'package:neostation/themes/corner_radii.dart';
+import 'package:neostation/themes/theme_glass.dart';
 
 /// A concrete custom-colors holder for imported (user-supplied) themes.
 ///
@@ -61,6 +62,11 @@ class CustomTheme {
   final ThemeData themeData;
   final NeoCustomColors customColors;
 
+  /// The theme's frosted-glass (NeoGlass) defaults, when the JSON ships a
+  /// `glass` block. Applied to the user's NeoGlass settings when the theme is
+  /// selected; null means "leave the user's current glass untouched".
+  final ThemeGlass? glass;
+
   /// The original daisyUI JSON, kept verbatim so it can be re-persisted.
   final Map<String, dynamic> rawJson;
 
@@ -77,6 +83,7 @@ class CustomTheme {
     required this.customColors,
     required this.rawJson,
     required this.signature,
+    this.glass,
   });
 
   /// Builds a [CustomTheme] from a daisyUI theme JSON map.
@@ -123,8 +130,6 @@ class CustomTheme {
     final onPrimary = read('primary-content');
     final secondary = read('secondary');
     final onSecondary = read('secondary-content');
-    final tertiary = read('accent');
-    final onTertiary = read('accent-content');
     final surface = read('base-100');
     final onSurface = read('base-content');
     final card = read('base-200');
@@ -134,12 +139,6 @@ class CustomTheme {
     final success = read('success');
     final warning = read('warning');
     final info = read('info');
-
-    // daisyUI's `neutral` maps onto Material's tertiaryFixed — the app uses it
-    // for the systems-grid footer and sort dropdown. Fall back to base-300 when
-    // absent so those surfaces stay legible.
-    final neutral = readOr('neutral', outline);
-    final onNeutral = readOr('neutral-content', onSurface);
 
     // daisyUI JSON has no dedicated on-success/on-info/on-warning; derive
     // sensible defaults so nothing renders unreadable.
@@ -151,13 +150,13 @@ class CustomTheme {
         ? ColorScheme.dark(
             primary: primary,
             secondary: secondary,
-            tertiary: tertiary,
-            tertiaryFixed: neutral,
+            tertiary: primary,
+            tertiaryFixed: surface,
             surface: surface,
             onPrimary: onPrimary,
             onSecondary: onSecondary,
-            onTertiary: onTertiary,
-            onTertiaryFixed: onNeutral,
+            onTertiary: onPrimary,
+            onTertiaryFixed: onSurface,
             onSurface: onSurface,
             error: error,
             onError: onError,
@@ -167,13 +166,13 @@ class CustomTheme {
         : ColorScheme.light(
             primary: primary,
             secondary: secondary,
-            tertiary: tertiary,
-            tertiaryFixed: neutral,
+            tertiary: primary,
+            tertiaryFixed: surface,
             surface: surface,
             onPrimary: onPrimary,
             onSecondary: onSecondary,
-            onTertiary: onTertiary,
-            onTertiaryFixed: onNeutral,
+            onTertiary: onPrimary,
+            onTertiaryFixed: onSurface,
             onSurface: onSurface,
             error: error,
             onError: onError,
@@ -244,14 +243,10 @@ class CustomTheme {
       onPrimary,
       secondary,
       onSecondary,
-      tertiary,
-      onTertiary,
       surface,
       onSurface,
       card,
       outline,
-      neutral,
-      onNeutral,
       error,
       onError,
       success,
@@ -273,6 +268,7 @@ class CustomTheme {
       customColors: customColors,
       rawJson: Map<String, dynamic>.from(json),
       signature: sig.toString(),
+      glass: ThemeGlass.fromJson(json['glass']),
     );
   }
 

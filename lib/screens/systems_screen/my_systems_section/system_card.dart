@@ -14,6 +14,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import '../../../themes/corner_radii.dart';
+import '../../../widgets/neo_glass.dart';
 import '../../../widgets/shaders/shader_gif_widget.dart';
 import '../../../widgets/shaders/music_card_shader_background.dart';
 import '../../../utils/image_utils.dart';
@@ -52,6 +53,9 @@ class SystemCard extends StatefulWidget {
     this.isSelected = false,
     this.backgroundCacheWidth = 512,
     this.showCount = false,
+    this.isCompact = false,
+    this.artworkInset = 4,
+    this.showShadow = true,
   });
 
   /// The system or game metadata resolved for this card.
@@ -86,6 +90,20 @@ class SystemCard extends StatefulWidget {
   /// Decode width for the card's background image. Defaults to 512 (grid
   /// cards); the carousel passes 1024 since its cards are much larger.
   final int backgroundCacheWidth;
+
+  /// Whether this card occupies the compact 2x1 recent-game slot.
+  ///
+  /// The compact slot has less artwork to spare, so the game wheel is scaled
+  /// down to keep it from crowding the card.
+  final bool isCompact;
+
+  /// Inset of the artwork and footer from the card edge, in logical pixels
+  /// before responsive scaling. The grid passes a larger value than the
+  /// carousel so its smaller cards get visible breathing room.
+  final double artworkInset;
+
+  /// Whether the card casts its drop shadow.
+  final bool showShadow;
 
   @override
   State<SystemCard> createState() => _SystemCardState();
@@ -232,6 +250,26 @@ class _SystemCardState extends State<SystemCard> {
       _musicPlayerService.isPlaying &&
       _musicCoverBytes != null;
 
+  Widget _buildSmartCollectionBadge(BuildContext context) => Positioned(
+    top: 8.r,
+    right: 8.r,
+    child: Tooltip(
+      message: AppLocale.smartCollection.getString(context),
+      child: Container(
+        padding: EdgeInsets.all(5.r),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Icon(
+          Symbols.auto_awesome_rounded,
+          size: 18.r,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     // Subscribe to theme folder changes — only re-resolve assets when theme actually changes.
@@ -259,108 +297,137 @@ class _SystemCardState extends State<SystemCard> {
           : neoAssets.getBackgroundForSystemSync(folderName);
     }
 
+    final radii = Theme.of(context).extension<CornerRadii>();
+    final outerRadius = radii?.radiusExternal ?? BorderRadius.circular(14.r);
+    final outerRadiusPx = radii?.radiusExternalRadius ?? 14.r;
+
     return Padding(
       padding: EdgeInsets.all(2.r),
       child: MouseRegion(
         cursor: SystemMouseCursors.basic,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius:
-                Theme.of(context).extension<CornerRadii>()?.radiusExternal ??
-                BorderRadius.circular(14.r),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
-              width: 1.r,
+        child: NeoGlassRim(
+          cornerRadius: outerRadiusPx,
+          child: Container(
+            decoration: BoxDecoration(
+              // The chrome (the frame around the artwork and the footer)
+              // switches to secondary on selection; the artwork itself stays.
+              color: widget.isSelected
+                  ? Theme.of(context).colorScheme.secondary
+                  : Theme.of(context).colorScheme.surface,
+              borderRadius: outerRadius,
+              boxShadow: widget.showShadow
+                  ? [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.shadow.withValues(alpha: 0.1),
+                        blurRadius: 4.r,
+                        offset: Offset(2.0.r, 2.0.r),
+                      ),
+                    ]
+                  : null,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(
-                  context,
-                ).colorScheme.shadow.withValues(alpha: 0.1),
-                blurRadius: 4.r,
-                offset: Offset(2.0.r, 2.0.r),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius:
-                Theme.of(context).extension<CornerRadii>()?.radiusInternal ??
-                BorderRadius.circular(9.r),
-            child: InkWell(
-              focusNode: _focusNode,
-              onTap: () {
-                // A tap on the already-selected card confirms it rather than
-                // moving the selection (touch users have no A button), so it
-                // earns the enter sound instead of the nav sound.
-                if (widget.isSelected) {
-                  SfxService().playEnterSound();
-                } else {
-                  SfxService().playNavSound();
-                }
-                widget.onTap?.call();
-              },
-              // No sound here: every host opens a menu from this callback and
-              // plays its own, so playing one too would double it.
-              onLongPress: widget.onLongPress,
-              canRequestFocus: false,
-              focusColor: Colors.transparent,
-              hoverColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              splashColor: Colors.transparent,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  top: 4.r,
-                  bottom: 0.r,
-                  left: 4.r,
-                  right: 4.r,
-                ),
-                child: widget.info.isGame
-                    ? Column(
-                        children: [
-                          Expanded(
-                            child: Stack(
-                              key: _contentStackKey,
-                              children: [
-                                _buildSystemBackground(),
-                                _buildGameMainContent(context),
-                              ],
+            child: ClipRRect(
+              borderRadius:
+                  Theme.of(context).extension<CornerRadii>()?.radiusInternal ??
+                  BorderRadius.circular(9.r),
+              child: InkWell(
+                focusNode: _focusNode,
+                onTap: () {
+                  // A tap on the already-selected card confirms it rather than
+                  // moving the selection (touch users have no A button), so it
+                  // earns the enter sound instead of the nav sound.
+                  if (widget.isSelected) {
+                    SfxService().playEnterSound();
+                  } else {
+                    SfxService().playNavSound();
+                  }
+                  widget.onTap?.call();
+                },
+                // No sound here: every host opens a menu from this callback and
+                // plays its own, so playing one too would double it.
+                onLongPress: widget.onLongPress,
+                canRequestFocus: false,
+                focusColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                splashColor: Colors.transparent,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: widget.artworkInset.r,
+                    bottom: hideSystemLogos && !widget.info.isGame
+                        ? widget.artworkInset.r
+                        : 0.r,
+                    left: widget.artworkInset.r,
+                    right: widget.artworkInset.r,
+                  ),
+                  child: widget.info.isGame
+                      ? Column(
+                          children: [
+                            Expanded(
+                              child: Stack(
+                                key: _contentStackKey,
+                                children: [
+                                  _buildSystemBackground(),
+                                  _buildGameMainContent(context),
+                                ],
+                              ),
                             ),
-                          ),
-                          _buildGameFooter(context),
-                        ],
-                      )
-                    : (hideSystemLogos
-                          ? Column(
-                              children: [
-                                Expanded(
-                                  child: Stack(
-                                    key: _contentStackKey,
-                                    children: [
-                                      _buildSystemBackground(),
-                                      if (widget.showCount)
-                                        _buildCountPill(context),
-                                    ],
+                            _buildGameFooter(context),
+                          ],
+                        )
+                      : (hideSystemLogos
+                            ? Column(
+                                children: [
+                                  Expanded(
+                                    child: Stack(
+                                      key: _contentStackKey,
+                                      children: [
+                                        _buildSystemBackground(),
+                                        if (widget.info.isSmartCollection)
+                                          _buildSmartCollectionBadge(context),
+                                        if (widget.showCount)
+                                          _buildCountPill(context),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              children: [
-                                AspectRatio(
-                                  aspectRatio: 1,
-                                  child: Stack(
-                                    key: _contentStackKey,
+                                ],
+                              )
+                            : LayoutBuilder(
+                                builder: (context, constraints) {
+                                  // Simple two-part card: artwork content on top,
+                                  // a dedicated footer strip for the logo below.
+                                  // Reserving real height for the footer stops it
+                                  // collapsing into a one-pixel line at size S.
+                                  final footerHeight = math.max(
+                                    28.r,
+                                    constraints.maxWidth * 0.24,
+                                  );
+                                  return Column(
                                     children: [
-                                      _buildSystemBackground(),
-                                      if (widget.showCount)
-                                        _buildCountPill(context),
+                                      Expanded(
+                                        child: Stack(
+                                          key: _contentStackKey,
+                                          children: [
+                                            _buildSystemBackground(),
+                                            if (widget.info.isSmartCollection)
+                                              _buildSmartCollectionBadge(
+                                                context,
+                                              ),
+                                            if (widget.showCount)
+                                              _buildCountPill(context),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: footerHeight,
+                                        child: _buildSystemFooter(context),
+                                      ),
                                     ],
-                                  ),
-                                ),
-                                _buildSystemFooter(context),
-                              ],
-                            )),
+                                  );
+                                },
+                              )),
+                ),
               ),
             ),
           ),
@@ -618,35 +685,10 @@ class _SystemCardState extends State<SystemCard> {
     );
   }
 
-  /// Builds the foreground content for game cards, including the RECENT badge
-  /// and the game wheel/logo.
+  /// Builds the foreground content for game cards: the game wheel/logo.
   Widget _buildGameMainContent(BuildContext context) {
     return Stack(
       children: [
-        // RECENT badge.
-        Positioned(
-          top: 6.r,
-          right: 6.r,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondary,
-              borderRadius:
-                  Theme.of(context).extension<CornerRadii>()?.radiusInternal ??
-                  BorderRadius.circular(9.r),
-            ),
-            child: Text(
-              AppLocale.recentBadge.getString(context),
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSecondary,
-                fontSize: 8.r,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
-        ),
-
         // Central game wheel/logo. The inset that lets the wheel breathe on the
         // 3x2 card would eat most of a 2x1 one, so it scales with the box and
         // only reaches its full value on cards tall enough to spare it.
@@ -656,9 +698,11 @@ class _SystemCardState extends State<SystemCard> {
               : LayoutBuilder(
                   builder: (context, constraints) {
                     final shortestSide = constraints.biggest.shortestSide;
+                    final maxInset = widget.isCompact ? 36.r : 48.r;
+                    final insetFactor = widget.isCompact ? 0.22 : 0.15;
                     final inset = shortestSide.isFinite
-                        ? math.min(48.r, shortestSide * 0.15)
-                        : 48.r;
+                        ? math.min(maxInset, shortestSide * insetFactor)
+                        : maxInset;
 
                     return Padding(
                       padding: EdgeInsets.all(inset),
@@ -701,7 +745,9 @@ class _SystemCardState extends State<SystemCard> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
+              color: widget.isSelected
+                  ? Theme.of(context).colorScheme.onSecondary
+                  : Theme.of(context).colorScheme.onSurface,
               fontSize: 10.r,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
@@ -712,32 +758,25 @@ class _SystemCardState extends State<SystemCard> {
     );
   }
 
-  /// Renders a bottom footer with the system logo for non-game system cards.
+  /// Renders the dedicated logo footer.
   ///
-  /// The footer expands to fill the remaining space below the square artwork,
-  /// and the logo is auto-sized to fit while keeping its aspect ratio — the
-  /// whole strip is the logo's, which is the point of floating the count over
-  /// the artwork instead (see [_buildCountPill]).
+  /// No background of its own: the card surface already provides it. Keeping
+  /// the logo in a fixed-height strip (rather than overlaying it or squeezing
+  /// it into a gradient) is both simpler to reason about and cheaper to paint.
   Widget _buildSystemFooter(BuildContext context) {
     final assetLogoPath = _resolveSystemLogoPath();
+    final selected = widget.isSelected;
 
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.only(top: 1.r, bottom: 1.r, left: 2.r, right: 2.r),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: _buildSystemLogo(
-                  assetLogoPath,
-                  height: 128.r,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ],
+    return Padding(
+      padding: EdgeInsets.only(bottom: 2.r, left: 4.r, right: 4.r),
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: _buildSystemLogo(
+          assetLogoPath,
+          height: 128.r,
+          color: selected
+              ? Theme.of(context).colorScheme.onSecondary
+              : Theme.of(context).colorScheme.onSurface,
         ),
       ),
     );

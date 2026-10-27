@@ -1,3 +1,5 @@
+import 'package:neostation/providers/sqlite_database_provider.dart';
+import 'package:neostation/providers/retro_achievements_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
@@ -5,13 +7,12 @@ import 'package:neostation/utils/nav_tabs.dart';
 import 'package:neostation/models/config_model.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/services/update_service.dart';
-import 'package:neostation/services/systems_update_service.dart';
 import 'package:neostation/widgets/update_dialog.dart';
-import 'package:neostation/widgets/systems_update_dialog.dart';
+import 'package:neostation/utils/systems_update_flow.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/game/game_session_manager.dart';
 import 'package:neostation/services/ra_library_match_runner.dart';
-import 'package:neostation/services/retroachievements_hash_service.dart';
+import 'package:neostation/services/retro_achievements_helper.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import '../widgets/fixed_header.dart';
@@ -19,7 +20,7 @@ import 'systems_screen/system_content.dart';
 import 'systems_screen/my_systems_section/initial_setup_widget.dart';
 import 'retro_achievements_screen/ra_content.dart';
 import 'settings_screen/new_settings_screen.dart';
-import 'neo_sync_screen/login_screen/neo_sync_content.dart';
+import 'saves_screen/saves_tab.dart';
 import 'romm_screen/romm_tab.dart';
 import 'game_screen/android_apps/android_apps_grid.dart';
 import 'package:neostation/services/game_service.dart';
@@ -219,16 +220,15 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
       }
     }
 
-    // Systems/emulator config update check (network).
-    Future<void>? systemsRescan;
-    if (configProvider.config.autoUpdateSystems) {
-      final systemsUpdated = await _checkAndShowSystemsUpdate(configProvider);
-      if (systemsUpdated && mounted) {
-        // New definitions were applied — re-scan to reflect them. Wait for the
-        // initial scan to settle first, since scanSystems ignores concurrent calls.
-        await initialScan;
-        if (mounted) systemsRescan = configProvider.scanSystems();
-      }
+    // Systems/emulator config update check (network). When an update is
+    // applied the flow re-scans to reflect it, after the initial scan settles
+    // (scanSystems ignores concurrent calls), and returns once that is done.
+    if (configProvider.config.autoUpdateSystems && mounted) {
+      await SystemsUpdateFlow.run(
+        context,
+        trigger: SystemsUpdateTrigger.startup,
+        library: SystemsUpdateLibrary.of(configProvider),
+      );
     }
 
     // Match whatever the scan just added. After the scan, never before it: the
@@ -236,13 +236,12 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     // ROMs are not in it yet. That includes the systems-update re-scan, which
     // can bring a system into RA range for the first time.
     await initialScan;
-    await systemsRescan;
     await _runStartupRaMatch(configProvider, holdsSplash: true);
   }
 
-  /// Runs the RetroAchievements match pass over ROMs the startup scan added.
+  /// Refreshes the RA catalogue and matches hashes already in the library.
   ///
-  /// Opt-in, and silent when there is nothing to do. Hashing is otherwise only
+  /// Hashing new ROMs is opt-in. Hashing is otherwise only
   /// ever triggered by the user opening a game or walking to Tools, so a ROM
   /// added last week carries no match and no badge until somebody remembers to
   /// press a button.
@@ -256,7 +255,6 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     bool holdsSplash = false,
   }) async {
     if (!mounted) return;
-    if (!configProvider.config.raMatchOnStartup) return;
 
     // Nothing to walk, and nothing the user would see if we did.
     if (configProvider.config.romFolders.isEmpty) return;
@@ -264,21 +262,30 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     // The Tools button may already be running one; it is single-flight anyway,
     // but starting a pass that immediately refuses itself would log a warning
     // on every launch.
-    if (RetroAchievementsHashService.isRematchRunning) return;
+    if (RaLibraryMatchRunner.isRunning) return;
 
-    // Deliberately not gated on being signed in to RetroAchievements. The pass
-    // hashes locally and resolves against the bundled RA database, so it needs
-    // no account, and what it produces — the match, and the achievement count
-    // behind the library badge — is visible without one. Tools takes the same
-    // view: signed out it warns and still runs, rather than refusing.
+    final raProvider = context.read<RetroAchievementsProvider>();
+    final databaseProvider = context.read<SqliteDatabaseProvider>();
+    final apiKey = await raProvider.catalogueApiKey();
+    final hashMissing = configProvider.config.raMatchOnStartup;
+    if (!mounted || GameSessionManager.isGameLaunchInProgress) return;
+    if (!hashMissing && apiKey.isEmpty) return;
 
     final strings = _raMatchStrings();
     if (strings == null) return;
 
     _raMatchInterrupted = await RaLibraryMatchRunner.run(
       strings: strings,
+      apiKey: apiKey,
+      hashMissing: hashMissing,
+      onCatalogueChanged: () async {
+        RetroAchievementsHelper.forgetResolvedIds();
+        raProvider.invalidateCachedReads();
+        await databaseProvider.refresh();
+      },
       trigger: RaMatchTrigger.automatic,
-      holdsSplash: holdsSplash,
+      // A catalogue-only network refresh must not hold up the library.
+      holdsSplash: holdsSplash && hashMissing,
     );
   }
 
@@ -357,31 +364,6 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
       }
     } catch (e) {
       _log.e('AppScreen: App update check failure', error: e);
-    }
-    return false;
-  }
-
-  /// Checks for systems/emulator config updates and shows the dialog if found.
-  /// Returns true if the update was accepted and applied (caller triggers scan).
-  Future<bool> _checkAndShowSystemsUpdate(
-    SqliteConfigProvider configProvider,
-  ) async {
-    try {
-      final updateInfo = await SystemsUpdateService.checkForUpdate();
-      if (updateInfo == null || !mounted) return false;
-
-      final updated = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => SystemsUpdateDialog(updateInfo: updateInfo),
-      );
-
-      if (updated == true && mounted) {
-        await configProvider.reloadSystemDefinitions();
-        return true;
-      }
-    } catch (e) {
-      _log.e('AppScreen: Systems update check failure', error: e);
     }
     return false;
   }
@@ -588,24 +570,11 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
         return; // System tab manages its own secondary display state.
       }
 
-      String tabName = '';
-      switch (index) {
-        case AppTabs.sync:
-          tabName = 'Sync';
-          break;
-        case AppTabs.achievements:
-          tabName = 'Achievements';
-          break;
-        case AppTabs.romm:
-          tabName = 'RomM';
-          break;
-        case AppTabs.settings:
-          tabName = 'Settings';
-          break;
-        case AppTabs.androidApps:
-          tabName = AppLocale.androidApps.getString(context);
-          break;
-      }
+      // The same label as the header's tab strip, translated here: the
+      // second engine reads the language only when it starts.
+      final tabName = navTabSpec(
+        NavTab.values[index],
+      ).labelKey.getString(context);
 
       secondaryState.updateState(
         systemName: tabName,
@@ -741,16 +710,16 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
           onCardTapped: _onSystemCardTapped,
         );
       case AppTabs.sync:
-        // NeoSync tab manages its own focus lifecycle due to complex login flows.
+        // Each save provider's content owns its gamepad navigation layer.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _gamepadNav.deactivate();
         });
-        return const NeoSyncContent();
+        return const SavesTab();
       case AppTabs.achievements:
         return RAContent();
       case AppTabs.romm:
         // RomM tab hosts its own gamepad navigation layer (browse/connect),
-        // so hand off focus like the NeoSync tab does.
+        // so hand off focus like the Saves tab does.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _gamepadNav.deactivate();
         });

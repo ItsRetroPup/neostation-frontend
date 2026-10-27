@@ -21,7 +21,6 @@ import 'package:neostation/utils/letter_jump.dart';
 import 'package:neostation/providers/collections_provider.dart';
 import 'package:neostation/widgets/achievements_badge.dart';
 import 'package:neostation/widgets/collection_badge.dart';
-import 'package:neostation/widgets/game_view_mode_dropdown.dart';
 import 'package:neostation/widgets/native_carousel.dart';
 import 'package:neostation/widgets/game_view_footer.dart';
 import 'package:neostation/constants/system_folder_names.dart';
@@ -40,7 +39,7 @@ class GamesCarousel extends StatefulWidget {
   final VoidCallback onPlay;
   final VoidCallback? onFavorite;
   final VoidCallback? onRandom;
-  final VoidCallback? onSettings;
+  final VoidCallback? onOptions;
   final VoidCallback? onScrape;
   final Set<String> scrapingGameRomnames;
   final Map<String, double> scrapeProgress;
@@ -80,6 +79,11 @@ class GamesCarousel extends StatefulWidget {
   /// calling [onFavorite] directly — it is a mouse/touch affordance.
   final VoidCallback? onYButton;
 
+  /// The West face button (X on an Xbox pad, Y on a Nintendo-style one), and
+  /// the footer hint for it. Opens
+  /// the library search; null leaves both unbound.
+  final VoidCallback? onSearch;
+
   /// Attached to the centred card so the host can anchor the context menu to
   /// it. Null when no anchor is needed.
   final GlobalKey? selectedItemKey;
@@ -110,7 +114,7 @@ class GamesCarousel extends StatefulWidget {
     required this.onPlay,
     this.onFavorite,
     this.onRandom,
-    this.onSettings,
+    this.onOptions,
     this.onScrape,
     this.scrapingGameRomnames = const {},
     this.scrapeProgress = const {},
@@ -120,6 +124,7 @@ class GamesCarousel extends StatefulWidget {
     this.folderCoverResolver,
     this.artworkVersion = 0,
     this.onYButton,
+    this.onSearch,
     this.selectedItemKey,
     this.isSecondaryScreenActive = false,
     this.navLayerId = 'games_carousel',
@@ -274,6 +279,10 @@ class _GamesCarouselState extends State<GamesCarousel> {
     widget.games,
     folderCount: widget.folderCount,
     favoritesLabel: _favoritesLabel,
+    ignoreArticles: context
+        .read<SqliteConfigProvider>()
+        .config
+        .ignoreArticlesInGameSort,
   );
 
   /// The bar's group for the entry at [index].
@@ -285,7 +294,13 @@ class _GamesCarouselState extends State<GamesCarousel> {
     if (index < widget.folderCount + _favoritesRunLength) {
       return _favoritesLabel;
     }
-    return letterGroupOf(widget.games[index]);
+    return letterGroupOf(
+      widget.games[index],
+      ignoreArticles: context
+          .read<SqliteConfigProvider>()
+          .config
+          .ignoreArticlesInGameSort,
+    );
   }
 
   int _getFirstGameIndexForLetter(String letter) {
@@ -299,7 +314,16 @@ class _GamesCarouselState extends State<GamesCarousel> {
       i < widget.games.length;
       i++
     ) {
-      if (letterGroupOf(widget.games[i]) == letter) return i;
+      if (letterGroupOf(
+            widget.games[i],
+            ignoreArticles: context
+                .read<SqliteConfigProvider>()
+                .config
+                .ignoreArticlesInGameSort,
+          ) ==
+          letter) {
+        return i;
+      }
     }
     return 0;
   }
@@ -418,19 +442,16 @@ class _GamesCarouselState extends State<GamesCarousel> {
         }
       },
       onBack: widget.onBack,
-      onFavorite: widget.onYButton ?? widget.onFavorite, // Button Y.
-      onXButton: () {
-        try {
-          GameViewModeDropdown.globalKey.currentState?.showDropdown();
-        } catch (_) {}
-      },
+      onFavorite: null, // Options moved to Start.
+      onXButton: null, // Options moved to Start.
+      onWestButton: widget.onSearch, // West face button - Search.
       onLetterJump: _letterJump, // Held D-pad left/right → alphabet skipping.
       letterJumpAxis: LetterJumpAxis.horizontal,
       onLeftStickClick: widget.onRandom,
       onSelectButton: _toggleVideoMute, // Select tap - Mute preview video.
       onSelectModifierA: widget.onScrape, // Select + A - Scrape.
       onSelectModifierY: widget.onRandom, // Select + Y - Random game.
-      onSettings: widget.onSettings,
+      onSettings: widget.onOptions,
       // The bumpers deliberately bind nothing here. This view lives on a route
       // PUSHED OVER AppScreen, so cycling the app's top-level tabs from it
       // switched the tab underneath a screen that stays on top: the main
@@ -1392,10 +1413,11 @@ class _GamesCarouselState extends State<GamesCarousel> {
             // #188 layout: drop the top spacer so the carousel gets the full
             // height (bigger cards sit closer together). Pad symmetrically so
             // the centered card stays centered on-screen while still clearing
-            // the vertical legend on the left.
+            // the vertical legend on the left. The vertical margin keeps the
+            // artwork off the screen edges; this view has no header to clear.
             Expanded(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 60.r),
+                padding: EdgeInsets.symmetric(horizontal: 60.r, vertical: 24.r),
                 child: NativeCarousel(
                   key: _carouselKey,
                   itemCount: widget.games.length,
