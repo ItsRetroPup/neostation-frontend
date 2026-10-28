@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
 import 'package:neostation/sync/sync_manager.dart';
 import 'package:neostation/models/game_model.dart';
@@ -23,6 +24,7 @@ import 'package:neostation/repositories/game_repository.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:neostation/widgets/game_view_footer.dart';
+import 'package:neostation/widgets/spring_selected_card.dart';
 import 'package:neostation/constants/system_folder_names.dart';
 import 'package:neostation/models/retro_achievements_game_info.dart';
 import 'package:neostation/providers/retro_achievements_provider.dart';
@@ -81,6 +83,11 @@ class GamesGrid extends StatefulWidget {
   /// calling [onFavorite] directly — it is a mouse/touch affordance.
   final VoidCallback? onYButton;
 
+  /// The West face button (X on an Xbox pad, Y on a Nintendo-style one), and
+  /// the footer hint for it. Opens
+  /// the library search; null leaves both unbound.
+  final VoidCallback? onSearch;
+
   /// Attached to the selected card so the host can anchor the context menu to
   /// it. Null when no anchor is needed.
   final GlobalKey? selectedItemKey;
@@ -121,6 +128,7 @@ class GamesGrid extends StatefulWidget {
     this.folderCoverResolver,
     this.artworkVersion = 0,
     this.onYButton,
+    this.onSearch,
     this.selectedItemKey,
     this.isSecondaryScreenActive = false,
     this.navLayerId = 'games_grid',
@@ -134,6 +142,8 @@ class _GamesGridState extends State<GamesGrid> {
   late GamepadNavigation _gamepadNav;
   final ScrollController _scrollController = ScrollController();
   int _selectedIndex = 0;
+  int? _previousSelectedIndex;
+  late int _lastRenderedSelectedIndex;
   int _crossAxisCount = 5;
   bool _isNavigatingFast = false;
 
@@ -171,9 +181,6 @@ class _GamesGridState extends State<GamesGrid> {
   static const Duration _chromeSettleDelay = Duration(milliseconds: 160);
   String? _chromeSig;
   Widget? _chromeFooter;
-
-  // Preview-video existence per resolved media path — see _hasVideoFor.
-  final Map<String, bool> _videoExistsCache = {};
 
   // Memoized grid rows. buildRow→_buildCard is a pure function of layout
   // (`_layoutGen`), `targetWidth`, `theme`, and per-card favorite/scrape state —
@@ -315,24 +322,6 @@ class _GamesGridState extends State<GamesGrid> {
       return game.systemFolderName!;
     }
     return widget.system.primaryFolderName;
-  }
-
-  /// Whether the game has a preview video, so the footer knows whether a mute
-  /// control is worth showing.
-  ///
-  /// Scraped media lives on the plain filesystem (unlike SAF ROM paths), so a
-  /// sync stat is safe, and this only runs when the selection settles — not
-  /// per frame. Memoized because a back-and-forth between two games would
-  /// otherwise re-stat both every time.
-  bool _hasVideoFor(GameModel game) {
-    final videoPath = game.getVideoPath(
-      _folderForGame(game),
-      widget.fileProvider,
-    );
-    return _videoExistsCache.putIfAbsent(
-      videoPath,
-      () => File(videoPath).existsSync(),
-    );
   }
 
   String _box2dPath(int index) {
@@ -573,6 +562,7 @@ class _GamesGridState extends State<GamesGrid> {
       (widget.games.length - 1).clamp(0, 999999),
     );
     _settledIndex = _selectedIndex;
+    _lastRenderedSelectedIndex = _selectedIndex;
     _updateCrossAxisCount();
     _initializeGamepad();
 
@@ -722,7 +712,6 @@ class _GamesGridState extends State<GamesGrid> {
     // whether the footer's mute pill applies. Drop the stat cache and the
     // chrome signature so the footer is rebuilt against the new media.
     if (widget.artworkVersion != oldWidget.artworkVersion) {
-      _videoExistsCache.clear();
       _chromeSig = null;
     }
     if (widget.selectedIndex != oldWidget.selectedIndex) {
@@ -748,6 +737,7 @@ class _GamesGridState extends State<GamesGrid> {
       onBack: widget.onBack,
       onFavorite: null, // Options moved to Start.
       onXButton: null, // Options moved to Start.
+      onWestButton: widget.onSearch, // West face button - Search.
       onLeftStickClick: widget.onRandom,
       onSelectButton: _toggleVideoMute, // Select tap - Mute preview video.
       onSelectModifierA: widget.onScrape, // Select + A - Scrape.
@@ -1099,6 +1089,11 @@ class _GamesGridState extends State<GamesGrid> {
       );
     }
 
+    if (_lastRenderedSelectedIndex != _selectedIndex) {
+      _previousSelectedIndex = _lastRenderedSelectedIndex;
+      _lastRenderedSelectedIndex = _selectedIndex;
+    }
+
     _buildSettledChrome();
 
     return Stack(
@@ -1162,10 +1157,13 @@ class _GamesGridState extends State<GamesGrid> {
                     // with the selection), so we skip the cache for just that
                     // row; every other row stays cached and the fast-scroll perf
                     // is preserved.
-                    final hasSelection =
-                        _selectedIndex >= row.startIndex &&
-                        _selectedIndex < row.startIndex + row.count;
-                    if (!hasSelection) {
+                    bool rowContains(int? index) =>
+                        index != null &&
+                        index >= row.startIndex &&
+                        index < row.startIndex + row.count;
+                    final hasSelection = rowContains(_selectedIndex);
+                    final hasSettling = rowContains(_previousSelectedIndex);
+                    if (!hasSelection && !hasSettling) {
                       final cached = _rowCache[rowIndex];
                       if (cached != null) return cached;
                     }
@@ -1205,6 +1203,28 @@ class _GamesGridState extends State<GamesGrid> {
                           ],
                         );
                       }
+                      final identity = idx < widget.folderCount
+                          ? 'folder_$idx'
+                          : widget.games[idx].romname;
+                      cell = SpringSelectedCard(
+                        key: ValueKey('spring_game_$identity'),
+                        selected: idx == _selectedIndex,
+                        previouslySelected: idx == _previousSelectedIndex,
+                        child: cell,
+                      );
+                      cell = AnimationConfiguration.staggeredGrid(
+                        position: idx,
+                        columnCount: _cols,
+                        duration: const Duration(milliseconds: 320),
+                        delay: const Duration(milliseconds: 24),
+                        child: FadeInAnimation(
+                          duration: const Duration(milliseconds: 320),
+                          child: SlideAnimation(
+                            verticalOffset: 14.r,
+                            child: ScaleAnimation(scale: 0.98, child: cell),
+                          ),
+                        ),
+                      );
                       cards.add(
                         SizedBox(
                           width: rect.width,
@@ -1220,7 +1240,9 @@ class _GamesGridState extends State<GamesGrid> {
                         children: _interleaveSpacing(cards, _spX),
                       ),
                     );
-                    if (!hasSelection) _rowCache[rowIndex] = built;
+                    if (!hasSelection && !hasSettling) {
+                      _rowCache[rowIndex] = built;
+                    }
                     return built;
                   }
 
@@ -1232,37 +1254,39 @@ class _GamesGridState extends State<GamesGrid> {
                     behavior: HitTestBehavior.translucent,
                     child: Stack(
                       children: [
-                        CustomScrollView(
-                          controller: _scrollController,
-                          slivers: [
-                            SliverPadding(
-                              padding: EdgeInsets.only(
-                                top: 12,
-                                bottom: 80,
-                                left: 16,
-                                right: 16,
+                        AnimationLimiter(
+                          child: CustomScrollView(
+                            controller: _scrollController,
+                            slivers: [
+                              SliverPadding(
+                                padding: EdgeInsets.only(
+                                  top: 12,
+                                  bottom: 80,
+                                  left: 16,
+                                  right: 16,
+                                ),
+                                // Exact per-row extents (known from
+                                // _positionCards) let the sliver compute exact
+                                // absolute offsets and maxScrollExtent for the
+                                // WHOLE list without building rows — no lazy
+                                // estimate, so model-based centring
+                                // (_centerTargetFor) always lands. This is what
+                                // fixes the "selection off-screen after resize /
+                                // fast-scroll" divergence while keeping lazy row
+                                // rendering.
+                                sliver: SliverVariedExtentList.builder(
+                                  itemCount: _rows.length,
+                                  itemExtentBuilder: (index, _) {
+                                    if (index < 0 || index >= _rows.length) {
+                                      return 0;
+                                    }
+                                    return _rows[index].height + _spY;
+                                  },
+                                  itemBuilder: buildRow,
+                                ),
                               ),
-                              // Exact per-row extents (known from
-                              // _positionCards) let the sliver compute exact
-                              // absolute offsets and maxScrollExtent for the
-                              // WHOLE list without building rows — no lazy
-                              // estimate, so model-based centring
-                              // (_centerTargetFor) always lands. This is what
-                              // fixes the "selection off-screen after resize /
-                              // fast-scroll" divergence while keeping lazy row
-                              // rendering.
-                              sliver: SliverVariedExtentList.builder(
-                                itemCount: _rows.length,
-                                itemExtentBuilder: (index, _) {
-                                  if (index < 0 || index >= _rows.length) {
-                                    return 0;
-                                  }
-                                  return _rows[index].height + _spY;
-                                },
-                                itemBuilder: buildRow,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         // Selection cursor is drawn in-cell (see buildRow).
                         ValueListenableBuilder<String?>(
@@ -1339,8 +1363,7 @@ class _GamesGridState extends State<GamesGrid> {
     // this view is open — a lid opening is exactly that.
     final sig =
         '$_settledIndex|${settledGame.romname}|${settledGame.isFavorite}'
-        '|$hasRa|$loadingRa|${identityHashCode(_currentGameInfo)}'
-        '|${widget.isSecondaryScreenActive}';
+        '|$hasRa|$loadingRa|${identityHashCode(_currentGameInfo)}';
     if (sig == _chromeSig && _chromeFooter != null) {
       return;
     }
@@ -1352,8 +1375,6 @@ class _GamesGridState extends State<GamesGrid> {
       isLoadingAchievements: loadingRa,
       currentGameInfo: settled ? _currentGameInfo : null,
       onShowAchievements: _showAchievementsDialog,
-      onToggleMute: widget.isSecondaryScreenActive ? null : _toggleVideoMute,
-      hasVideo: !isFolder && _hasVideoFor(settledGame),
       isFolder: isFolder,
       // The game's own system, so the cloud mark reflects the game rather than
       // the placeholder an aggregate view is browsing under.
@@ -1442,13 +1463,6 @@ class _GamesGridState extends State<GamesGrid> {
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 2.r,
-                    offset: Offset(2.r, 2.r),
-                  ),
-                ],
               ),
               clipBehavior: Clip.antiAlias,
               child: _GameCardImage(
@@ -1579,16 +1593,7 @@ class _GamesGridState extends State<GamesGrid> {
       child: RepaintBoundary(
         child: Container(
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 2.r,
-                offset: Offset(2.r, 2.r),
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12.r)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12.r),
             child: Stack(

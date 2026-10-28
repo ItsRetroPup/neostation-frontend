@@ -74,6 +74,9 @@ mixin AppLocale {
   static const String ignoreArticlesInGameSort = 'ignoreArticlesInGameSort';
   static const String ignoreArticlesInGameSortSubtitle =
       'ignoreArticlesInGameSortSubtitle';
+  static const String videoPreviews = 'videoPreviews';
+  static const String videoPreviewsSubtitle = 'videoPreviewsSubtitle';
+  static const String videoPreviewsOff = 'videoPreviewsOff';
   // ---------------------------------------------------------------------------
   // Navigation / Controls
   // ---------------------------------------------------------------------------
@@ -1085,9 +1088,13 @@ mixin AppLocale {
   static const String failedToLaunchAndroidApp = 'failed_to_launch_android_app';
   static const String romFileNotFound = 'rom_file_not_found';
   static const String launchFailed = 'launch_failed';
+  static const String unsupportedGameFormat = 'unsupported_game_format';
+  static const String shortcutResolveFailed = 'shortcut_resolve_failed';
+  static const String invalidPs3Serial = 'invalid_ps3_serial';
   static const String platformNotSupported = 'platform_not_supported';
   static const String coreNotConfigured = 'core_not_configured';
   static const String coreNotInstalled = 'core_not_installed';
+  static const String coreNotInstalledHint = 'core_not_installed_hint';
   static const String retroArchNotFound = 'retroarch_not_found';
   static const String retroArchExecutableNotFound = 'retroarch_exe_not_found';
   static const String coresDirectoryNotFound = 'cores_dir_not_found';
@@ -1222,6 +1229,12 @@ mixin AppLocale {
   static const String errorScanningRomsDetail = 'error_scanning_roms_detail';
   static const String systemsUpdateComplete = 'systems_update_complete';
   static const String systemsUpdateError = 'systems_update_error';
+  static const String checkSystemsUpdates = 'check_systems_updates';
+  static const String systemsUpdateChecking = 'systems_update_checking';
+  static const String systemsUpToDate = 'systems_up_to_date';
+  static const String systemsUpdateCheckFailed = 'systems_update_check_failed';
+  static const String systemsUpdateNeedsNewerApp =
+      'systems_update_needs_newer_app';
 
   // ---------------------------------------------------------------------------
   // Scraper single-game progress & result messages
@@ -1339,6 +1352,7 @@ mixin AppLocale {
   static const String romDirectories = 'rom_directories';
   static const String tools = 'tools';
   static const String toolsSubtitle = 'tools_subtitle';
+  static const String toolsStillRunning = 'tools_still_running';
   static const String addRomFolder = 'add_rom_folder';
   static const String removeRomFolder = 'remove_rom_folder';
 
@@ -1381,6 +1395,11 @@ mixin AppLocale {
       'romm_error_unexpected_status';
   static const String rommErrorNotRomm = 'romm_error_not_romm';
   static const String rommErrorServerStatus = 'romm_error_server_status';
+  // Why loading from a connected RomM server failed, where the connect wording
+  // (check the URL, the password) no longer fits.
+  static const String rommErrorUnreadable = 'romm_error_unreadable';
+  static const String rommErrorLoadFailed = 'romm_error_load_failed';
+  static const String rommErrorSignInRejected = 'romm_error_sign_in_rejected';
   static const String rommConnectedAs = 'romm_connected_as';
   static const String rommCredentialsRequired = 'romm_credentials_required';
   static const String rommAuthPassword = 'romm_auth_password';
@@ -1517,6 +1536,7 @@ mixin AppLocale {
   static const String raFilterBeaten = 'ra_filter_beaten';
   static const String raGamesEndOfList = 'ra_games_end_of_list';
   static const String raGamesEmpty = 'ra_games_empty';
+  static const String raCatalogueRefreshFailed = 'ra_catalogue_refresh_failed';
   static const String raErrorLoadGames = 'ra_error_load_games';
   static const String raHardcore = 'ra_hardcore';
   static const String raUnlocksEndOfList = 'ra_unlocks_end_of_list';

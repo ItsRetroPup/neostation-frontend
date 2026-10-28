@@ -1,3 +1,5 @@
+import 'package:neostation/providers/sqlite_database_provider.dart';
+import 'package:neostation/providers/retro_achievements_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:neostation/utils/gamepad_nav.dart';
@@ -5,17 +7,17 @@ import 'package:neostation/utils/nav_tabs.dart';
 import 'package:neostation/models/config_model.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/services/update_service.dart';
-import 'package:neostation/services/systems_update_service.dart';
 import 'package:neostation/widgets/update_dialog.dart';
-import 'package:neostation/widgets/systems_update_dialog.dart';
+import 'package:neostation/utils/systems_update_flow.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/game/game_session_manager.dart';
 import 'package:neostation/services/ra_library_match_runner.dart';
-import 'package:neostation/services/retroachievements_hash_service.dart';
+import 'package:neostation/services/retro_achievements_helper.dart';
 import 'package:neostation/l10n/app_locale.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import '../widgets/fixed_header.dart';
 import 'systems_screen/system_content.dart';
+import 'search_screen/search_screen.dart';
 import 'systems_screen/my_systems_section/initial_setup_widget.dart';
 import 'retro_achievements_screen/ra_content.dart';
 import 'settings_screen/new_settings_screen.dart';
@@ -96,6 +98,9 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
 
   /// Internal state tracker for system selection within the System tab.
   int _selectedSystemIndex = 0;
+
+  /// Guards the header's touch Search control against a double push.
+  bool _searchOpen = false;
 
   /// Input orchestration layer for gamepad and keyboard support.
   late GamepadNavigation _gamepadNav;
@@ -219,16 +224,15 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
       }
     }
 
-    // Systems/emulator config update check (network).
-    Future<void>? systemsRescan;
-    if (configProvider.config.autoUpdateSystems) {
-      final systemsUpdated = await _checkAndShowSystemsUpdate(configProvider);
-      if (systemsUpdated && mounted) {
-        // New definitions were applied — re-scan to reflect them. Wait for the
-        // initial scan to settle first, since scanSystems ignores concurrent calls.
-        await initialScan;
-        if (mounted) systemsRescan = configProvider.scanSystems();
-      }
+    // Systems/emulator config update check (network). When an update is
+    // applied the flow re-scans to reflect it, after the initial scan settles
+    // (scanSystems ignores concurrent calls), and returns once that is done.
+    if (configProvider.config.autoUpdateSystems && mounted) {
+      await SystemsUpdateFlow.run(
+        context,
+        trigger: SystemsUpdateTrigger.startup,
+        library: SystemsUpdateLibrary.of(configProvider),
+      );
     }
 
     // Match whatever the scan just added. After the scan, never before it: the
@@ -236,13 +240,12 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     // ROMs are not in it yet. That includes the systems-update re-scan, which
     // can bring a system into RA range for the first time.
     await initialScan;
-    await systemsRescan;
     await _runStartupRaMatch(configProvider, holdsSplash: true);
   }
 
-  /// Runs the RetroAchievements match pass over ROMs the startup scan added.
+  /// Refreshes the RA catalogue and matches hashes already in the library.
   ///
-  /// Opt-in, and silent when there is nothing to do. Hashing is otherwise only
+  /// Hashing new ROMs is opt-in. Hashing is otherwise only
   /// ever triggered by the user opening a game or walking to Tools, so a ROM
   /// added last week carries no match and no badge until somebody remembers to
   /// press a button.
@@ -256,7 +259,6 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     bool holdsSplash = false,
   }) async {
     if (!mounted) return;
-    if (!configProvider.config.raMatchOnStartup) return;
 
     // Nothing to walk, and nothing the user would see if we did.
     if (configProvider.config.romFolders.isEmpty) return;
@@ -264,21 +266,30 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     // The Tools button may already be running one; it is single-flight anyway,
     // but starting a pass that immediately refuses itself would log a warning
     // on every launch.
-    if (RetroAchievementsHashService.isRematchRunning) return;
+    if (RaLibraryMatchRunner.isRunning) return;
 
-    // Deliberately not gated on being signed in to RetroAchievements. The pass
-    // hashes locally and resolves against the bundled RA database, so it needs
-    // no account, and what it produces — the match, and the achievement count
-    // behind the library badge — is visible without one. Tools takes the same
-    // view: signed out it warns and still runs, rather than refusing.
+    final raProvider = context.read<RetroAchievementsProvider>();
+    final databaseProvider = context.read<SqliteDatabaseProvider>();
+    final apiKey = await raProvider.catalogueApiKey();
+    final hashMissing = configProvider.config.raMatchOnStartup;
+    if (!mounted || GameSessionManager.isGameLaunchInProgress) return;
+    if (!hashMissing && apiKey.isEmpty) return;
 
     final strings = _raMatchStrings();
     if (strings == null) return;
 
     _raMatchInterrupted = await RaLibraryMatchRunner.run(
       strings: strings,
+      apiKey: apiKey,
+      hashMissing: hashMissing,
+      onCatalogueChanged: () async {
+        RetroAchievementsHelper.forgetResolvedIds();
+        raProvider.invalidateCachedReads();
+        await databaseProvider.refresh();
+      },
       trigger: RaMatchTrigger.automatic,
-      holdsSplash: holdsSplash,
+      // A catalogue-only network refresh must not hold up the library.
+      holdsSplash: holdsSplash && hashMissing,
     );
   }
 
@@ -357,31 +368,6 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
       }
     } catch (e) {
       _log.e('AppScreen: App update check failure', error: e);
-    }
-    return false;
-  }
-
-  /// Checks for systems/emulator config updates and shows the dialog if found.
-  /// Returns true if the update was accepted and applied (caller triggers scan).
-  Future<bool> _checkAndShowSystemsUpdate(
-    SqliteConfigProvider configProvider,
-  ) async {
-    try {
-      final updateInfo = await SystemsUpdateService.checkForUpdate();
-      if (updateInfo == null || !mounted) return false;
-
-      final updated = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => SystemsUpdateDialog(updateInfo: updateInfo),
-      );
-
-      if (updated == true && mounted) {
-        await configProvider.reloadSystemDefinitions();
-        return true;
-      }
-    } catch (e) {
-      _log.e('AppScreen: Systems update check failure', error: e);
     }
     return false;
   }
@@ -691,6 +677,9 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
                       ? FixedHeader(
                           selectedTabIndex: _selectedTabIndex,
                           onTabSelected: _onTabSelected,
+                          onSearch: _selectedTabIndex == AppTabs.systems
+                              ? () => unawaited(_openSearchFromHeader())
+                              : null,
                         )
                       : const SizedBox.shrink(),
                 ),
@@ -713,6 +702,16 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
         );
       },
     );
+  }
+
+  Future<void> _openSearchFromHeader() async {
+    if (_searchOpen) return;
+    _searchOpen = true;
+    try {
+      await openSearch(context);
+    } finally {
+      _searchOpen = false;
+    }
   }
 
   Widget _buildFooterForCurrentTab() {

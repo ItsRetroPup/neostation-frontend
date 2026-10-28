@@ -81,6 +81,11 @@ class TranslatedGamepadEvent {
   }
 }
 
+/// Android's Menu key. Many generic Bluetooth pads, and Amazon's Fire TV game
+/// controller, send it for their ≡ / Start button instead of
+/// `KEYCODE_BUTTON_START`; it arrives action-encoded like the button keycodes.
+const String _androidMenuKey = 'keycode_menu';
+
 /// Translates raw hardware gamepad events into standardized [TranslatedGamepadEvent] objects.
 ///
 /// This class handles platform-specific quirks, mapping detections, and input normalization
@@ -183,8 +188,9 @@ class GamepadEventTranslator {
       // reads as they arrive (see its Select handling).
       final isAndroidKeycodeButton =
           _isAndroid &&
-          key.startsWith('keycode_button_') &&
-          key != 'keycode_button_select';
+          ((key.startsWith('keycode_button_') &&
+                  key != 'keycode_button_select') ||
+              key == _androidMenuKey);
 
       if (_isAndroid &&
           (key.startsWith('keycode_dpad_') || isAndroidKeycodeButton)) {
@@ -544,7 +550,8 @@ class GamepadEventTranslator {
         (key.isNotEmpty &&
             key.length <= 2 &&
             int.tryParse(key) != null) || // Direct numeric identifiers.
-        key.startsWith('keycode_button_'); // Android keycodes.
+        key.startsWith('keycode_button_') || // Android keycodes.
+        key == _androidMenuKey;
   }
 
   /// Determines if a key identifier corresponds to an analog axis input.
@@ -825,6 +832,7 @@ class GamepadEventTranslator {
         case 'keycode_button_select':
           return GamepadInputType.buttonSelect;
         case 'keycode_button_start':
+        case _androidMenuKey:
           return GamepadInputType.buttonStart;
         case 'keycode_button_thumbl':
           return GamepadInputType.leftStickButton;
@@ -960,6 +968,26 @@ class GamepadEventTranslator {
     }
 
     return value;
+  }
+
+  /// The face button in the West position (left of the diamond) on
+  /// [gamepadId]. See [isWestReportedAsY].
+  GamepadInputType westButtonFor(String gamepadId) =>
+      isWestReportedAsY(_systemInfoCache[gamepadId])
+      ? GamepadInputType.buttonY
+      : GamepadInputType.buttonX;
+
+  /// Whether a controller's West face button arrives as [GamepadInputType.buttonY].
+  ///
+  /// The face buttons are otherwise translated on the Xbox layout, where X is
+  /// West and Y is North. The AYN built-in controller (Thor, Odin; VID 2020)
+  /// names its keycodes after its Nintendo-style labels instead: West, labelled
+  /// Y, sends KEYCODE_BUTTON_Y and North, labelled X, sends KEYCODE_BUTTON_X
+  /// (confirmed on the Thor).
+  static bool isWestReportedAsY(Map<String, dynamic>? systemInfo) {
+    if (!_isAndroid) return false;
+    final vendorId = (systemInfo?['vendorId'] as String?)?.toLowerCase();
+    return vendorId == '2020';
   }
 
   /// Checks if a gamepad is a Sony (PlayStation) device based on Vendor ID.

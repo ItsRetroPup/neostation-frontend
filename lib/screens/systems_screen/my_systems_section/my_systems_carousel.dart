@@ -18,6 +18,7 @@ import '../../../services/game_service.dart';
 import '../../../utils/game_launch_utils.dart';
 import '../../../providers/system_background_provider.dart';
 import 'package:neostation/widgets/custom_notification.dart';
+import 'package:neostation/widgets/launch_failure_dialog.dart';
 import 'package:neostation/widgets/system_emulator_settings_dialog.dart';
 import '../../collections_screen/collections_browser_screen.dart';
 import '../../search_screen/search_screen.dart';
@@ -58,6 +59,7 @@ class MySystemsCarousel extends StatefulWidget {
     this.onYPressed,
     this.onBackPressed,
     this.onXPressed,
+    this.onWestPressed,
     this.bindYButton = true,
     this.navLayerId = kSystemsCarouselNavLayerId,
     this.cardOverrideBuilder,
@@ -100,6 +102,10 @@ class MySystemsCarousel extends StatefulWidget {
 
   /// X. Unbound on the systems screen; a pushed host supplies its own picker.
   final VoidCallback? onXPressed;
+
+  /// The West face button (X on an Xbox pad, Y on a Nintendo-style one). The
+  /// systems screen opens the library search with it.
+  final VoidCallback? onWestPressed;
 
   /// Whether the gamepad's Y button fires [onYPressed].
   ///
@@ -311,6 +317,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
       onFavorite: widget.bindYButton ? () => widget.onYPressed?.call() : null,
       onBack: widget.onBackPressed,
       onXButton: widget.onXPressed,
+      onWestButton: widget.onWestPressed,
       onPreviousTab: widget.enableTabBumpers ? AppNavigation.previousTab : null,
       onNextTab: widget.enableTabBumpers ? AppNavigation.nextTab : null,
       onLeftBumper: widget.enableTabBumpers ? AppNavigation.previousTab : null,
@@ -503,6 +510,22 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
           onLaunchFailed: (ctx, r) async {
             _achievementsController.stop(hidePanel: true);
             if (mounted) setState(() => _isGameLaunching = false);
+            if (ctx.mounted) {
+              await LaunchFailureDialog.show(
+                ctx,
+                title: AppLocale.launchGameFailed.getString(ctx),
+                intro: AppLocale.unableToLaunch
+                    .getString(ctx)
+                    .replaceFirst(
+                      '{name}',
+                      systemInfo.gameModel?.name ?? systemInfo.title ?? '',
+                    ),
+                message: r.errorMessage?.isNotEmpty == true
+                    ? r.errorMessage!
+                    : AppLocale.unknownError.getString(ctx),
+                details: r.errorDetails,
+              );
+            }
             GamepadNavigationManager.restoreFocusOwner();
           },
         );
@@ -1059,6 +1082,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                             info: system,
                             isSelected: isSelected,
                             backgroundCacheWidth: 1024,
+                            artworkInset: 10,
                             onTap: handleTap,
                             // The centred card only. An off-centre card is
                             // painted outside the page slot the viewport
@@ -1150,7 +1174,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
 
                 // Focused item sliding indicator. Painted between the
                 // backgrounds and the text so the selected label gets a
-                // solid fill while the text stays perfectly readable.
+                // primary fill and onPrimary text.
                 Positioned.fill(
                   child: ValueListenableBuilder<double>(
                     valueListenable: _pageOffsetNotifier,
@@ -1181,8 +1205,8 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                 ),
 
                 // Foreground text track. Transparent background so the
-                // selector and surface backgrounds show through, while
-                // the selected label uses onPrimary for contrast.
+                // selector and surface backgrounds show through, while the
+                // selected label uses onPrimary for contrast.
                 ValueListenableBuilder<double>(
                   valueListenable: _pageOffsetNotifier,
                   builder: (context, page, _) {

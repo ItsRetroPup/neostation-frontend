@@ -1,6 +1,7 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleZh = {
+  AppLocale.raCatalogueRefreshFailed: '无法刷新RetroAchievements目录。已使用保存的数据进行匹配。',
   AppLocale.smartMatchesOne: '1 个匹配游戏',
   AppLocale.smartCollection: '智能合集',
   AppLocale.manualCollection: '手动合集',
@@ -80,6 +81,9 @@ const Map<String, dynamic> appLocaleZh = {
       '{game} 的 {files}将从你的 RomM 服务器永久删除。设备上的副本会保留，仍在同步此游戏的设备会再次上传其副本。',
   AppLocale.rommDeleteKeepsSaves: '此游戏的存档文件会保留在 RomM 上。',
   AppLocale.rommDeleteKeepsStates: '此游戏的即时存档会保留在 RomM 上。',
+  AppLocale.videoPreviews: "预览视频延迟",
+  AppLocale.videoPreviewsSubtitle: "关闭，或在播放前等待 0–5 秒。适用于游戏视图和第二屏幕。",
+  AppLocale.videoPreviewsOff: "关闭",
   AppLocale.ignoreArticlesInGameSort: "排序游戏时忽略冠词",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "忽略标题开头的 The、A 或 An。例如，The Legend of Zelda 排在 L 下。",
@@ -957,9 +961,14 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.failedToLaunchAndroidApp: '启动 Android 应用失败',
   AppLocale.romFileNotFound: '未发现 ROM 文件',
   AppLocale.launchFailed: '启动失败',
+  AppLocale.unsupportedGameFormat: '所选模拟器不支持此游戏格式',
+  AppLocale.shortcutResolveFailed: '无法将快捷方式解析为可启动的应用程序',
+  AppLocale.invalidPs3Serial: 'PS3 序列号描述符无效',
   AppLocale.platformNotSupported: '平台不支持',
   AppLocale.coreNotConfigured: '核心未配置',
   AppLocale.coreNotInstalled: '核心 "{name}" 未安装',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch 报告核心未安装。请从 Online Updater > Core Downloader 安装。',
   AppLocale.retroArchNotFound: '未发现 RetroArch',
   AppLocale.retroArchExecutableNotFound: '未发现 RetroArch 可执行文件',
   AppLocale.coresDirectoryNotFound: '未发现核心目录',
@@ -1072,6 +1081,11 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.errorScanningRomsDetail: '扫描 ROM 时出错：{error}',
   AppLocale.systemsUpdateComplete: '系统更新成功！',
   AppLocale.systemsUpdateError: '系统更新失败，请稍后再试。',
+  AppLocale.checkSystemsUpdates: '检查系统更新',
+  AppLocale.systemsUpdateChecking: '正在检查系统更新...',
+  AppLocale.systemsUpToDate: '系统已是最新版本（v{version}）',
+  AppLocale.systemsUpdateCheckFailed: '无法检查系统更新。请检查网络连接后重试。',
+  AppLocale.systemsUpdateNeedsNewerApp: '新版系统配置需要更新版本的 NeoStation。请先更新应用。',
 
   AppLocale.checkingCredentials: '正在检查凭据...',
   AppLocale.scrapeNoCredentials: '未发现 ScreenScraper 凭据。请登录。',
@@ -1111,6 +1125,7 @@ const Map<String, dynamic> appLocaleZh = {
   AppLocale.romDirectories: 'ROM 目录',
   AppLocale.tools: '工具',
   AppLocale.toolsSubtitle: '帮助整理 ROM 的工具',
+  AppLocale.toolsStillRunning: '有工具仍在运行。请等待其完成。',
   AppLocale.addRomFolder: '添加 ROM 文件夹',
   AppLocale.removeRomFolder: '删除',
   // RomM (remote library browse + download)
@@ -1150,6 +1165,9 @@ const Map<String, dynamic> appLocaleZh = {
       '服务器返回了错误（{error}）。请检查 URL 是否指向您的 RomM 服务器。',
   AppLocale.rommErrorNotRomm: '该 URL 的响应不像 RomM 服务器。请检查服务器 URL。',
   AppLocale.rommErrorServerStatus: 'RomM 服务器返回了错误（{error}）。',
+  AppLocale.rommErrorUnreadable: 'RomM 服务器返回了应用无法读取的响应。',
+  AppLocale.rommErrorLoadFailed: '无法从 RomM 加载。请重试。',
+  AppLocale.rommErrorSignInRejected: '您的 RomM 登录被拒绝。请重新登录。',
   AppLocale.rommConnectedAs: '已以 {user} 身份连接',
   AppLocale.rommCredentialsRequired: '请输入服务器 URL、用户名和密码',
   AppLocale.rommAuthPassword: '密码',

@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleId = {
+  AppLocale.raCatalogueRefreshFailed:
+      'Katalog RetroAchievements tidak dapat diperbarui. Pencocokan menggunakan data tersimpan.',
   AppLocale.smartMatchesOne: '1 game cocok',
   AppLocale.smartCollection: 'Koleksi pintar',
   AppLocale.manualCollection: 'Koleksi manual',
@@ -92,6 +94,10 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.rommDeleteKeepsSaves: 'Berkas simpanan game ini tetap ada di RomM.',
   AppLocale.rommDeleteKeepsStates:
       'Status simpanan game ini tetap ada di RomM.',
+  AppLocale.videoPreviews: "Jeda video pratinjau",
+  AppLocale.videoPreviewsSubtitle:
+      "Nonaktif, atau tunggu 0–5 detik sebelum diputar. Berlaku untuk tampilan game dan layar kedua.",
+  AppLocale.videoPreviewsOff: "Nonaktif",
   AppLocale.ignoreArticlesInGameSort: "Abaikan artikel saat mengurutkan game",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Abaikan The, A, atau An di awal judul. Misalnya, The Legend of Zelda diurutkan di huruf L.",
@@ -1084,9 +1090,16 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.failedToLaunchAndroidApp: 'Gagal menjalankan aplikasi Android',
   AppLocale.romFileNotFound: 'File ROM tidak ditemukan',
   AppLocale.launchFailed: 'Peluncuran gagal',
+  AppLocale.unsupportedGameFormat:
+      'Format game ini tidak didukung oleh emulator yang dipilih',
+  AppLocale.shortcutResolveFailed:
+      'Tidak dapat menyelesaikan pintasan ke aplikasi yang dapat diluncurkan',
+  AppLocale.invalidPs3Serial: 'Deskriptor serial PS3 tidak valid',
   AppLocale.platformNotSupported: 'Platform tidak didukung',
   AppLocale.coreNotConfigured: 'Core tidak dikonfigurasi',
   AppLocale.coreNotInstalled: 'Core "{name}" tidak terinstal',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch melaporkan core belum terpasang. Pasang dari Online Updater > Core Downloader.',
   AppLocale.retroArchNotFound: 'RetroArch tidak ditemukan',
   AppLocale.retroArchExecutableNotFound: 'Eksekusi RetroArch tidak ditemukan',
   AppLocale.coresDirectoryNotFound: 'Direktori core tidak ditemukan',
@@ -1219,6 +1232,13 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.errorScanningRomsDetail: 'Kesalahan saat memindai ROM: {error}',
   AppLocale.systemsUpdateComplete: 'Sistem berhasil diperbarui!',
   AppLocale.systemsUpdateError: 'Gagal memperbarui sistem. Coba lagi nanti.',
+  AppLocale.checkSystemsUpdates: 'Periksa Pembaruan Sistem',
+  AppLocale.systemsUpdateChecking: 'Memeriksa pembaruan sistem...',
+  AppLocale.systemsUpToDate: 'Sistem sudah versi terbaru (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'Tidak dapat memeriksa pembaruan sistem. Periksa koneksi internet Anda dan coba lagi.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Versi sistem yang lebih baru memerlukan NeoStation yang lebih baru. Perbarui aplikasi terlebih dahulu.',
 
   AppLocale.checkingCredentials: 'Memeriksa kredensial...',
   AppLocale.scrapeNoCredentials:
@@ -1264,6 +1284,8 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.romDirectories: 'Direktori ROM',
   AppLocale.tools: 'Alat',
   AppLocale.toolsSubtitle: 'Alat untuk membantu mengatur ROM Anda',
+  AppLocale.toolsStillRunning:
+      'Masih ada alat yang berjalan. Tunggu hingga selesai.',
   AppLocale.addRomFolder: 'Tambah Folder ROM',
   AppLocale.removeRomFolder: 'Hapus',
   // RomM (remote library browse + download)
@@ -1309,6 +1331,11 @@ const Map<String, dynamic> appLocaleId = {
       'URL itu tidak merespons seperti server RomM. Periksa URL server.',
   AppLocale.rommErrorServerStatus:
       'Server RomM merespons dengan kesalahan ({error}).',
+  AppLocale.rommErrorUnreadable:
+      'Server RomM mengirim respons yang tidak dapat dibaca aplikasi.',
+  AppLocale.rommErrorLoadFailed: 'Tidak dapat memuat dari RomM. Coba lagi.',
+  AppLocale.rommErrorSignInRejected:
+      'Proses masuk RomM Anda ditolak. Silakan masuk lagi.',
   AppLocale.rommConnectedAs: 'Terhubung sebagai {user}',
   AppLocale.rommCredentialsRequired:
       'Masukkan URL server, nama pengguna, dan kata sandi',

@@ -173,8 +173,9 @@ class GameDetailsFooter extends StatelessWidget {
                   SizedBox(
                     height: _bottomRowHeight,
                     // The whole row is touch-only. Every action on it has a
-                    // hardware binding already (A launches, Y opens the context
-                    // menu, Start opens settings), and a focusable widget inside
+                    // hardware binding already (A launches, Y opens the
+                    // context menu, Start opens settings), and a focusable
+                    // widget inside
                     // the card would put a second cursor in a view that owns its
                     // own selection.
                     child: ExcludeFocus(

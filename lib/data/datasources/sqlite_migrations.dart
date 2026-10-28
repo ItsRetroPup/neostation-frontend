@@ -14,6 +14,14 @@ import 'package:neostation/utils/cloud_path_builder.dart';
 class SqliteMigrations {
   static final _log = LoggerService.instance;
 
+  static const createRaCatalogueSyncTableSql = '''
+    CREATE TABLE IF NOT EXISTS app_ra_catalogue_sync (
+      console_id INTEGER PRIMARY KEY,
+      refreshed_at TEXT NOT NULL,
+      match_pending INTEGER NOT NULL DEFAULT 1
+    )
+  ''';
+
   // ── RomM schema — single source of truth ──────────────────────────────────
   // Referenced by migration v111 and by the fresh-install table list, so a
   // future column change is made in exactly one place.
@@ -644,7 +652,30 @@ class SqliteMigrations {
       case 170:
         await _migrateToVersion170(db);
         break;
+      // 171 is reserved by Android Games (upstream PR #604).
+      case 172:
+        db.execute(createRaCatalogueSyncTableSql);
+        break;
       case 174:
+        await _migrateToVersion174(db);
+        break;
+      case 175:
+        await _migrateToVersion175(db);
+        break;
+      // A pre-merge build of #691 stamped v175 without #665's RA table.
+      // Re-run both guarded checks so those databases heal on upgrade.
+      case 176:
+        db.execute(createRaCatalogueSyncTableSql);
+        await _migrateToVersion175(db);
+        break;
+      case 177:
+        await _migrateToVersion177(db);
+        break;
+      case 178:
+        await _migrateToVersion178(db);
+        break;
+      // Main builds through v178 skipped the logo-toggle migration at v174.
+      case 179:
         await _migrateToVersion174(db);
         break;
       default:
@@ -7288,6 +7319,75 @@ class SqliteMigrations {
       _log.i('Migration v165 completed');
     } catch (e, stackTrace) {
       _log.e('Error in migration v165: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v178: turns the preview on/off flag into a delay in seconds.
+  ///
+  /// -1 disables previews, 0 plays as soon as the decoder is ready, and 1..5
+  /// holds the screenshot. Existing installs with previews off stay off; every
+  /// other install gets the new two-second default. The guard and the
+  /// conditional backfill make the step safe to re-run.
+  static Future<void> _migrateToVersion178(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('video_preview_delay')) {
+      db.execute(
+        'ALTER TABLE user_config ADD COLUMN video_preview_delay INTEGER DEFAULT 2',
+      );
+      if (columns.contains('video_previews')) {
+        db.execute(
+          'UPDATE user_config SET video_preview_delay = -1 '
+          'WHERE video_previews = 0',
+        );
+      }
+    }
+  }
+
+  /// Migration v177: persists whether game preview videos play.
+  ///
+  /// Existing installs default to on, preserving the current behaviour until
+  /// the user turns previews off. The column guard makes the migration safe to
+  /// re-run.
+  static Future<void> _migrateToVersion177(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('video_previews')) {
+      db.execute(
+        'ALTER TABLE user_config ADD COLUMN video_previews INTEGER DEFAULT 1',
+      );
+    }
+  }
+
+  /// Migration v175: adds `app_emulators.supported_extensions`.
+  ///
+  /// Emulator entries can declare which formats they launch (ISO, shortcut,
+  /// serial file, folder...). A null value means "no declaration" and keeps the
+  /// legacy behaviour: compatible with every extension of the system.
+  static Future<void> _migrateToVersion175(Database db) async {
+    _log.i('Migration v175: Adding supported_extensions to app_emulators');
+    try {
+      final columns = db
+          .select('PRAGMA table_info(app_emulators)')
+          .map((row) => row['name'].toString())
+          .toSet();
+      if (!columns.contains('supported_extensions')) {
+        db.execute(
+          'ALTER TABLE app_emulators ADD COLUMN supported_extensions TEXT',
+        );
+        _log.i('Column supported_extensions added via v175');
+      } else {
+        _log.i('Column supported_extensions already exists');
+      }
+      _log.i('Migration v175 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v175: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

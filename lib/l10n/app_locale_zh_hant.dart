@@ -1,6 +1,7 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleZhHant = {
+  AppLocale.raCatalogueRefreshFailed: '無法重新整理RetroAchievements目錄。已使用儲存的資料進行比對。',
   AppLocale.smartMatchesOne: '1 個符合的遊戲',
   AppLocale.smartCollection: '智慧合集',
   AppLocale.manualCollection: '手動合集',
@@ -80,6 +81,9 @@ const Map<String, dynamic> appLocaleZhHant = {
       '{game} 的 {files}將從你的 RomM 伺服器永久刪除。裝置上的副本會保留，仍在同步此遊戲的裝置會再次上傳其副本。',
   AppLocale.rommDeleteKeepsSaves: '此遊戲的存檔檔案會保留在 RomM 上。',
   AppLocale.rommDeleteKeepsStates: '此遊戲的即時存檔會保留在 RomM 上。',
+  AppLocale.videoPreviews: "預覽影片延遲",
+  AppLocale.videoPreviewsSubtitle: "關閉，或在播放前等待 0–5 秒。適用於遊戲檢視與第二畫面。",
+  AppLocale.videoPreviewsOff: "關閉",
   AppLocale.ignoreArticlesInGameSort: "排序遊戲時忽略冠詞",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "忽略標題開頭的 The、A 或 An。例如，The Legend of Zelda 排在 L 下。",
@@ -958,9 +962,14 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.failedToLaunchAndroidApp: '啟動 Android 應用程式失敗',
   AppLocale.romFileNotFound: '未發現 ROM 檔案',
   AppLocale.launchFailed: '啟動失敗',
+  AppLocale.unsupportedGameFormat: '所選模擬器不支援此遊戲格式',
+  AppLocale.shortcutResolveFailed: '無法將捷徑解析為可啟動的應用程式',
+  AppLocale.invalidPs3Serial: 'PS3 序號描述符無效',
   AppLocale.platformNotSupported: '平台不支援',
   AppLocale.coreNotConfigured: '核心未設定',
   AppLocale.coreNotInstalled: '核心 "{name}" 未安裝',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch 回報核心未安裝。請從 Online Updater > Core Downloader 安裝。',
   AppLocale.retroArchNotFound: '未發現 RetroArch',
   AppLocale.retroArchExecutableNotFound: '未發現 RetroArch 執行檔',
   AppLocale.coresDirectoryNotFound: '未發現核心目錄',
@@ -1073,6 +1082,11 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.errorScanningRomsDetail: '掃描 ROM 時發生錯誤：{error}',
   AppLocale.systemsUpdateComplete: '系統更新成功！',
   AppLocale.systemsUpdateError: '系統更新失敗，請稍後再試。',
+  AppLocale.checkSystemsUpdates: '檢查系統更新',
+  AppLocale.systemsUpdateChecking: '正在檢查系統更新...',
+  AppLocale.systemsUpToDate: '系統已是最新版本（v{version}）',
+  AppLocale.systemsUpdateCheckFailed: '無法檢查系統更新。請檢查網路連線後再試一次。',
+  AppLocale.systemsUpdateNeedsNewerApp: '新版系統設定需要更新版本的 NeoStation。請先更新應用程式。',
 
   AppLocale.checkingCredentials: '正在檢查憑證...',
   AppLocale.scrapeNoCredentials: '未發現 ScreenScraper 憑證。請登入。',
@@ -1112,6 +1126,7 @@ const Map<String, dynamic> appLocaleZhHant = {
   AppLocale.romDirectories: 'ROM 目錄',
   AppLocale.tools: '工具',
   AppLocale.toolsSubtitle: '協助整理 ROM 的工具',
+  AppLocale.toolsStillRunning: '有工具仍在執行中。請等待其完成。',
   AppLocale.addRomFolder: '新增 ROM 資料夾',
   AppLocale.removeRomFolder: '移除',
   // RomM (remote library browse + download)
@@ -1151,6 +1166,9 @@ const Map<String, dynamic> appLocaleZhHant = {
       '伺服器回傳了錯誤（{error}）。請確認 URL 是否指向您的 RomM 伺服器。',
   AppLocale.rommErrorNotRomm: '該 URL 的回應不像 RomM 伺服器。請檢查伺服器 URL。',
   AppLocale.rommErrorServerStatus: 'RomM 伺服器回傳了錯誤（{error}）。',
+  AppLocale.rommErrorUnreadable: 'RomM 伺服器回傳了應用程式無法讀取的回應。',
+  AppLocale.rommErrorLoadFailed: '無法從 RomM 載入。請再試一次。',
+  AppLocale.rommErrorSignInRejected: '您的 RomM 登入遭到拒絕。請重新登入。',
   AppLocale.rommConnectedAs: '已以 {user} 身分連線',
   AppLocale.rommCredentialsRequired: '請輸入伺服器 URL、使用者名稱和密碼',
   AppLocale.rommAuthPassword: '密碼',

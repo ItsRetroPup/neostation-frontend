@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ffi' show Abi;
 import 'dart:io';
 import 'dart:convert';
@@ -11,6 +12,7 @@ import 'package:archive/archive_io.dart';
 import 'package:neostation/services/logger_service.dart';
 
 import 'package:neostation/services/permission_service.dart';
+import 'package:neostation/utils/chunked_file_writer.dart';
 import 'package:neostation/utils/version_compare.dart';
 
 /// Service responsible for orchestrating the over-the-air (OTA) update lifecycle.
@@ -169,56 +171,116 @@ class UpdateService {
   }
 
   /// Downloads the update payload and executes the platform-specific installer.
-  static Future<bool> downloadAndInstall(
+  ///
+  /// [shouldCancel] is asked while the download runs; returning true stops it
+  /// and the result is [UpdateOutcome.cancelled].
+  static Future<UpdateOutcome> downloadAndInstall(
     UpdateInfo updateInfo,
-    void Function(double progress)? onProgress,
-  ) async {
+    void Function(double progress)? onProgress, {
+    bool Function()? shouldCancel,
+  }) async {
+    bool cancelled() => shouldCancel?.call() ?? false;
     try {
       // 1. Localize the update binary to a temporary directory.
-      final downloadedFile = await _downloadFile(
+      final downloadedFile = await downloadUpdateFile(
         updateInfo.downloadUrl,
         updateInfo.fileName,
         onProgress,
+        shouldCancel: shouldCancel,
       );
 
       if (downloadedFile == null) {
+        if (cancelled()) return UpdateOutcome.cancelled;
         _log.e('UpdateService: Download operation failed');
-        return false;
+        return UpdateOutcome.downloadFailed;
+      }
+      if (cancelled()) {
+        await downloadedFile.delete();
+        return UpdateOutcome.cancelled;
       }
 
       // 2. Delegate to platform-specific installation logic.
+      if (Platform.isAndroid) return await installAndroid(downloadedFile);
+      final bool started;
       if (Platform.isWindows) {
-        return await _installWindows(downloadedFile);
+        started = await _installWindows(downloadedFile);
       } else if (Platform.isLinux) {
-        return await _installLinux(downloadedFile);
+        started = await _installLinux(downloadedFile);
       } else if (Platform.isMacOS) {
-        return await _installMacOS(downloadedFile);
-      } else if (Platform.isAndroid) {
-        return await _installAndroid(downloadedFile);
+        started = await _installMacOS(downloadedFile);
+      } else {
+        started = false;
       }
-
-      return false;
+      return started ? UpdateOutcome.installing : UpdateOutcome.installFailed;
     } catch (e, stackTrace) {
       _log.e(
         'UpdateService: Installation sequence failed',
         error: e,
         stackTrace: stackTrace,
       );
-      return false;
+      return UpdateOutcome.installFailed;
     }
   }
 
-  /// Downloads a file from a URL with real-time progress tracking.
-  static Future<File?> _downloadFile(
+  /// How long [downloadUpdateFile] waits for the response headers.
+  @visibleForTesting
+  static const downloadRequestTimeout = Duration(seconds: 60);
+
+  /// How long [downloadUpdateFile] waits for the next chunk of the body. There
+  /// is no limit on the whole download: a slow connection is fine, as long as
+  /// the update keeps arriving.
+  @visibleForTesting
+  static const downloadStallTimeout = Duration(seconds: 60);
+
+  /// How often [downloadUpdateFile] asks its `shouldCancel`, so a cancel also
+  /// reaches a download that has stopped arriving.
+  static const _cancelPollInterval = Duration(milliseconds: 250);
+
+  /// Downloads a file from a URL, reporting progress as bytes are written.
+  ///
+  /// The headers must arrive within [requestTimeout] and each chunk of the
+  /// body within [stallTimeout] of the last. [shouldCancel] returning true
+  /// stops the download. Returns null on any failure or cancel, with any
+  /// partial file removed and the connection closed.
+  @visibleForTesting
+  static Future<File?> downloadUpdateFile(
     String url,
     String fileName,
-    void Function(double progress)? onProgress,
-  ) async {
+    void Function(double progress)? onProgress, {
+    bool Function()? shouldCancel,
+    Duration requestTimeout = downloadRequestTimeout,
+    Duration stallTimeout = downloadStallTimeout,
+  }) async {
+    // Completing [abort] drops the request and its connection on a cancel;
+    // closing [client] drops it on every other way out of this method, and on
+    // a cancel while still connecting, which the abort doesn't reach.
+    final client = http.Client();
+    final abort = Completer<void>();
+    void fireAbort() {
+      if (!abort.isCompleted) abort.complete();
+    }
+
+    final cancelPoll = shouldCancel == null
+        ? null
+        : Timer.periodic(_cancelPollInterval, (_) {
+            if (shouldCancel()) {
+              fireAbort();
+              client.close();
+            }
+          });
     try {
-      final request = http.Request('GET', Uri.parse(url));
-      final response = await request.send();
+      final response = await client
+          .send(
+            http.AbortableRequest(
+              'GET',
+              Uri.parse(url),
+              abortTrigger: abort.future,
+            ),
+          )
+          .timeout(requestTimeout);
 
       if (response.statusCode != 200) {
+        _log.e('UpdateService: Download refused (HTTP ${response.statusCode})');
         return null;
       }
 
@@ -228,23 +290,26 @@ class UpdateService {
       final contentLength = response.contentLength ?? 0;
       var downloadedBytes = 0;
 
-      final sink = file.openWrite();
-
-      await for (final chunk in response.stream) {
-        sink.add(chunk);
-        downloadedBytes += chunk.length;
-
-        if (contentLength > 0 && onProgress != null) {
-          final progress = downloadedBytes / contentLength;
-          onProgress(progress);
+      // Each chunk is written before the next is read, so a full disk stops
+      // the download; the partial file is removed.
+      Stream<List<int>> written() async* {
+        await for (final chunk in response.stream.timeout(stallTimeout)) {
+          yield chunk;
+          downloadedBytes += chunk.length;
+          if (contentLength > 0 && onProgress != null) {
+            onProgress(downloadedBytes / contentLength);
+          }
         }
       }
 
-      await sink.close();
+      await writeChunksToFile(file, written());
       return file;
     } catch (e) {
       _log.e('UpdateService: File download failed', error: e);
       return null;
+    } finally {
+      cancelPoll?.cancel();
+      client.close();
     }
   }
 
@@ -451,19 +516,24 @@ rm -f "$scriptPath"
     }
   }
 
+  /// Whether NeoStation may install an APK, asking for the permission to
+  /// install unknown apps when it may not yet.
+  @visibleForTesting
+  static Future<bool> Function() ensureInstallPermission = () async {
+    if (await PermissionService.hasInstallPermission()) return true;
+    return PermissionService.requestInstallPermission();
+  };
+
   /// Installs an APK on Android via a native MethodChannel integration.
-  static Future<bool> _installAndroid(File apkFile) async {
+  @visibleForTesting
+  static Future<UpdateOutcome> installAndroid(File apkFile) async {
     try {
       _log.i('UpdateService: Verifying Android installation permissions...');
 
       // Verify and request 'REQUEST_INSTALL_PACKAGES' permission if necessary.
-      if (!await PermissionService.hasInstallPermission()) {
-        final granted = await PermissionService.requestInstallPermission();
-
-        if (!granted) {
-          _log.w('UpdateService: Android installation permission denied');
-          return false;
-        }
+      if (!await ensureInstallPermission()) {
+        _log.w('UpdateService: Android installation permission denied');
+        return UpdateOutcome.installPermissionDenied;
       }
 
       _log.i('UpdateService: Executing APK installation...');
@@ -472,12 +542,36 @@ rm -f "$scriptPath"
       final platform = const MethodChannel('com.neogamelab.neostation/game');
       await platform.invokeMethod('installApk', {'filePath': apkFile.path});
 
-      return true;
+      return UpdateOutcome.installing;
+    } on PlatformException catch (e) {
+      _log.e('UpdateService: Android installation failure', error: e);
+      // The permission is missing, or its settings screen couldn't be opened.
+      return e.code == 'PERMISSION_DENIED' || e.code == 'INTENT_ERROR'
+          ? UpdateOutcome.installPermissionDenied
+          : UpdateOutcome.installFailed;
     } catch (e) {
       _log.e('UpdateService: Android installation failure', error: e);
-      return false;
+      return UpdateOutcome.installFailed;
     }
   }
+}
+
+/// What became of an update the user chose to install.
+enum UpdateOutcome {
+  /// The installer took over.
+  installing,
+
+  /// The user cancelled the download.
+  cancelled,
+
+  /// The download failed, stalled or was refused.
+  downloadFailed,
+
+  /// Android: the permission to install unknown apps wasn't granted.
+  installPermissionDenied,
+
+  /// The installer couldn't be started.
+  installFailed,
 }
 
 /// Metadata container for a resolved software update.

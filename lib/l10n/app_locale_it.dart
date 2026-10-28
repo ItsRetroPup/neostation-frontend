@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleIt = {
+  AppLocale.raCatalogueRefreshFailed:
+      'Impossibile aggiornare il catalogo RetroAchievements. La ricerca delle corrispondenze ha usato i dati salvati.',
   AppLocale.smartMatchesOne: '1 gioco corrispondente',
   AppLocale.smartCollection: 'Raccolta intelligente',
   AppLocale.manualCollection: 'Raccolta manuale',
@@ -94,6 +96,10 @@ const Map<String, dynamic> appLocaleIt = {
       'I file di salvataggio di questo gioco restano su RomM.',
   AppLocale.rommDeleteKeepsStates:
       'Gli stati salvati di questo gioco restano su RomM.',
+  AppLocale.videoPreviews: "Ritardo video di anteprima",
+  AppLocale.videoPreviewsSubtitle:
+      "Disattivato, oppure attendi 0-5 secondi prima della riproduzione. Vale per la vista giochi e il secondo schermo.",
+  AppLocale.videoPreviewsOff: "Disattivato",
   AppLocale.ignoreArticlesInGameSort:
       "Ignora gli articoli nel riordino dei giochi",
   AppLocale.ignoreArticlesInGameSortSubtitle:
@@ -1112,9 +1118,16 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.failedToLaunchAndroidApp: 'Avvio app Android fallito',
   AppLocale.romFileNotFound: 'File ROM non trovato',
   AppLocale.launchFailed: 'Avvio fallito',
+  AppLocale.unsupportedGameFormat:
+      "Questo formato di gioco non è supportato dall'emulatore selezionato",
+  AppLocale.shortcutResolveFailed:
+      "Impossibile risolvere il collegamento in un'applicazione avviabile",
+  AppLocale.invalidPs3Serial: 'Descrittore del seriale PS3 non valido',
   AppLocale.platformNotSupported: 'Piattaforma non supportata',
   AppLocale.coreNotConfigured: 'Core non configurato',
   AppLocale.coreNotInstalled: 'Core "{name}" non installato',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch segnala che il core non è installato. Installalo da Online Updater > Core Downloader.',
   AppLocale.retroArchNotFound: 'RetroArch non trovato',
   AppLocale.retroArchExecutableNotFound: 'Eseguibile RetroArch non trovato',
   AppLocale.coresDirectoryNotFound: 'Directory dei core non trovata',
@@ -1252,6 +1265,13 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.systemsUpdateComplete: 'Sistemi aggiornati con successo!',
   AppLocale.systemsUpdateError:
       'Aggiornamento sistemi fallito. Riprova più tardi.',
+  AppLocale.checkSystemsUpdates: 'Cerca Aggiornamenti dei Sistemi',
+  AppLocale.systemsUpdateChecking: 'Ricerca aggiornamenti dei sistemi...',
+  AppLocale.systemsUpToDate: 'I sistemi sono aggiornati (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'Impossibile cercare aggiornamenti dei sistemi. Controlla la connessione a internet e riprova.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Una versione più recente dei sistemi richiede un NeoStation più recente. Aggiorna prima l’app.',
 
   AppLocale.checkingCredentials: 'Verifica credenziali...',
   AppLocale.scrapeNoCredentials:
@@ -1297,6 +1317,8 @@ const Map<String, dynamic> appLocaleIt = {
   AppLocale.romDirectories: 'Directory ROM',
   AppLocale.tools: 'Strumenti',
   AppLocale.toolsSubtitle: 'Strumenti per aiutarti a organizzare le tue ROM',
+  AppLocale.toolsStillRunning:
+      'Uno strumento è ancora in esecuzione. Attendi che finisca.',
   AppLocale.addRomFolder: 'Aggiungi cartella ROM',
   AppLocale.removeRomFolder: 'Rimuovi',
   // RomM (remote library browse + download)
@@ -1344,6 +1366,11 @@ const Map<String, dynamic> appLocaleIt = {
       'Quell’URL non ha risposto come un server RomM. Controlla l’URL del server.',
   AppLocale.rommErrorServerStatus:
       'Il server RomM ha risposto con un errore ({error}).',
+  AppLocale.rommErrorUnreadable:
+      'Il server RomM ha inviato una risposta che l’app non è riuscita a leggere.',
+  AppLocale.rommErrorLoadFailed: 'Impossibile caricare da RomM. Riprova.',
+  AppLocale.rommErrorSignInRejected:
+      'Il tuo accesso a RomM è stato rifiutato. Accedi di nuovo.',
   AppLocale.rommConnectedAs: 'Connesso come {user}',
   AppLocale.rommCredentialsRequired:
       'Inserisci URL del server, utente e password',
