@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleEn = {
+  AppLocale.raCatalogueRefreshFailed:
+      'Could not refresh the RetroAchievements catalogue. Matching used saved data.',
   AppLocale.smartMatchesOne: '1 matching game',
   AppLocale.smartCollection: 'Smart collection',
   AppLocale.manualCollection: 'Manual collection',
@@ -92,6 +94,10 @@ const Map<String, dynamic> appLocaleEn = {
       '{files} for {game} will be permanently deleted from your RomM server. Copies on your devices are kept, and any device that still syncs this game will upload its copies again.',
   AppLocale.rommDeleteKeepsSaves: "This game's save files stay on RomM.",
   AppLocale.rommDeleteKeepsStates: "This game's save states stay on RomM.",
+  AppLocale.videoPreviews: "Preview video delay",
+  AppLocale.videoPreviewsSubtitle:
+      "Off, or wait 0-5 seconds before playing. Applies to the game view and the second screen.",
+  AppLocale.videoPreviewsOff: "Off",
   AppLocale.ignoreArticlesInGameSort: "Ignore articles when sorting games",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Sort by title without leading The, A, or An. For example, The Legend of Zelda sorts under L.",
@@ -281,6 +287,9 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.nowPlayingFanartDim: 'Dim fanart',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Darken the background art behind the logo so a busy fanart does not clash with it',
+  AppLocale.secondaryHideSystemLogo: 'Hide system logo',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Show only the background art, without the logo or system name',
   AppLocale.nowPlayingDimOff: 'Off',
   AppLocale.secondarySectionNowPlaying: 'Now Playing panel',
   AppLocale.secondarySectionDock: 'App dock',
@@ -1075,9 +1084,16 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.failedToLaunchAndroidApp: 'Failed to launch Android app',
   AppLocale.romFileNotFound: 'ROM file not found',
   AppLocale.launchFailed: 'Launch failed',
+  AppLocale.unsupportedGameFormat:
+      'This game format is not supported by the selected emulator',
+  AppLocale.shortcutResolveFailed:
+      'Could not resolve the shortcut to a launchable application',
+  AppLocale.invalidPs3Serial: 'Invalid PS3 serial descriptor',
   AppLocale.platformNotSupported: 'Platform not supported',
   AppLocale.coreNotConfigured: 'Core not configured',
   AppLocale.coreNotInstalled: 'Core "{name}" is not installed',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch reports the core is not installed. Install it from Online Updater > Core Downloader.',
   AppLocale.retroArchNotFound: 'RetroArch not found',
   AppLocale.retroArchExecutableNotFound: 'RetroArch executable not found',
   AppLocale.coresDirectoryNotFound: 'Cores directory not found',
@@ -1209,6 +1225,13 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.systemsUpdateComplete: 'Systems updated successfully!',
   AppLocale.systemsUpdateError:
       'Failed to update systems. Please try again later.',
+  AppLocale.checkSystemsUpdates: 'Check for Systems Updates',
+  AppLocale.systemsUpdateChecking: 'Checking for systems updates...',
+  AppLocale.systemsUpToDate: 'Systems are up to date (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      "Couldn't check for systems updates. Check your internet connection and try again.",
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'A newer systems version needs a newer NeoStation. Update the app first.',
 
   AppLocale.checkingCredentials: 'Checking credentials...',
   AppLocale.scrapeNoCredentials:
@@ -1255,6 +1278,8 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.romDirectories: 'ROM Directories',
   AppLocale.tools: 'Tools',
   AppLocale.toolsSubtitle: 'Tools to help organise your ROMs',
+  AppLocale.toolsStillRunning:
+      'A tool is still running. Wait until it finishes.',
   AppLocale.addRomFolder: 'Add ROM Folder',
   AppLocale.removeRomFolder: 'Remove',
   // RomM (remote library browse + download)
@@ -1297,6 +1322,11 @@ const Map<String, dynamic> appLocaleEn = {
       'That URL didn\'t answer like a RomM server. Check the server URL.',
   AppLocale.rommErrorServerStatus:
       'The RomM server answered with an error ({error}).',
+  AppLocale.rommErrorUnreadable:
+      'The RomM server sent an answer the app couldn\'t read.',
+  AppLocale.rommErrorLoadFailed: 'Couldn\'t load from RomM. Try again.',
+  AppLocale.rommErrorSignInRejected:
+      'Your RomM sign-in was rejected. Sign in again.',
   AppLocale.rommConnectedAs: 'Connected as {user}',
   AppLocale.rommCredentialsRequired:
       'Enter the server URL, username and password',

@@ -258,6 +258,21 @@ extension SqliteConfigMutators on SqliteConfigProvider {
     _notify();
   }
 
+  /// Updates the preview video delay in seconds.
+  ///
+  /// -1 disables previews, 0 starts as soon as the decoder is ready, and 1..5
+  /// holds the screenshot for that long. Pushed to the secondary display when
+  /// it is connected.
+  Future<void> updateVideoPreviewDelay(int seconds) async {
+    final value = seconds.clamp(-1, 5);
+    if (_config.videoPreviewDelay == value) return;
+    final previous = _config;
+    _config = _config.copyWith(videoPreviewDelay: value);
+    await _saveOrRevert(previous);
+    _secondaryDisplayState?.updateState(videoPreviewDelay: value);
+    _notify();
+  }
+
   /// Updates whether hidden files/folders are ignored during ROM scans.
   Future<void> updateIgnoreHiddenFiles(bool ignoreHiddenFiles) async {
     final previous = _config;
@@ -453,6 +468,17 @@ extension SqliteConfigMutators on SqliteConfigProvider {
     _config = _config.copyWith(dockEnabled: enabled);
     await _saveOrRevert(previous);
     _secondaryDisplayState?.updateState(dockEnabled: enabled);
+    _notify();
+  }
+
+  /// Shows or hides the system logo on the secondary display while browsing.
+  /// Persists and pushes the value to the secondary display.
+  Future<void> updateSecondaryHideSystemLogo(bool value) async {
+    if (_config.secondaryHideSystemLogo == value) return;
+    final previous = _config;
+    _config = _config.copyWith(secondaryHideSystemLogo: value);
+    await _saveOrRevert(previous);
+    _secondaryDisplayState?.updateState(hideSystemLogo: value);
     _notify();
   }
 

@@ -469,7 +469,7 @@ class SqliteService {
   SqliteService._internal();
 
   // Database configuration
-  static const int _databaseVersion = 176;
+  static const int _databaseVersion = 183;
   static const String _databaseName = 'data.sqlite';
 
   DatabaseAdapter? _database;
@@ -710,6 +710,9 @@ class SqliteService {
     List<EmulatorDefinition> emulators,
     Map<String, int> osMap,
   ) => _syncEmulators(txn, systemId, emulators, osMap, systemId);
+
+  static String? _encodeExtensions(List<String> extensions) =>
+      extensions.isEmpty ? null : jsonEncode(extensions);
 
   static Future<void> _syncEmulators(
     TransactionAdapter txn,
@@ -955,6 +958,7 @@ class SqliteService {
             'android_activity_name': platformData['_resolved_activity_name'],
             'is_ra_compatible': retroAchievementsCompatible ? 1 : 0,
             'neosync_slug': neosyncSlug,
+            'supported_extensions': _encodeExtensions(emuDef.extensions),
           };
 
           if (isDefaultCore) {
@@ -991,6 +995,7 @@ class SqliteService {
               'android_activity_name': platformData['_resolved_activity_name'],
               'is_ra_compatible': retroAchievementsCompatible ? 1 : 0,
               'neosync_slug': neosyncSlug,
+              'supported_extensions': _encodeExtensions(emuDef.extensions),
             };
             if (isDefaultCore) {
               updateData['is_default_core'] = 1;
@@ -1021,6 +1026,7 @@ class SqliteService {
               'is_default': 0,
               'is_ra_compatible': retroAchievementsCompatible ? 1 : 0,
               'neosync_slug': neosyncSlug,
+              'supported_extensions': _encodeExtensions(emuDef.extensions),
             };
             if (isDefaultCore) {
               insertData['is_default_core'] = 1;
@@ -1885,6 +1891,7 @@ class SqliteService {
           android_package_name TEXT,
           android_activity_name TEXT,
           neosync_slug TEXT,
+          supported_extensions TEXT,
           PRIMARY KEY (os_id, unique_identifier),
           FOREIGN KEY (os_id) REFERENCES app_os(id) ON DELETE CASCADE,
           FOREIGN KEY (system_id) REFERENCES app_systems(id) ON DELETE CASCADE
@@ -1930,6 +1937,8 @@ class SqliteService {
         custom_sfx TEXT,
         system_sort_by TEXT DEFAULT 'alphabetical',
         ignore_articles_in_game_sort INTEGER DEFAULT 0,
+        video_previews INTEGER DEFAULT 1,
+        video_preview_delay INTEGER DEFAULT 2,
         collection_sort_by TEXT DEFAULT 'name',
         collection_sort_order TEXT DEFAULT 'asc',
         system_sort_order TEXT DEFAULT 'asc',
@@ -1965,6 +1974,7 @@ class SqliteService {
         use_12_hour_clock INTEGER DEFAULT 0,
         dock_apps TEXT,
         dock_enabled INTEGER DEFAULT 1,
+        secondary_hide_system_logo INTEGER DEFAULT 0,
         dock_slot_count INTEGER DEFAULT 3,
         now_playing_dim_delay INTEGER DEFAULT 3,
         now_playing_dim_level INTEGER DEFAULT 100,
@@ -2158,7 +2168,7 @@ class SqliteService {
       // One row per Discovery slot per ISO week. No foreign key to user_roms on
       // purpose: a rescan that removes a ROM should leave a dangling pick that
       // the service re-resolves into a new choice, not cascade the row away.
-      // Must stay identical to migration v175 — fresh installs run this instead
+      // Must stay identical to migration v182 — fresh installs run this instead
       // of the migrations.
       '''
       CREATE TABLE IF NOT EXISTS user_discovery_picks (
@@ -2183,6 +2193,7 @@ class SqliteService {
   /// Creates tables dedicated to RetroAchievements game metadata.
   Future<void> _createRetroArchTables(DatabaseExecutorAdapter db) async {
     const raTables = [
+      SqliteMigrations.createRaCatalogueSyncTableSql,
       '''
       CREATE TABLE IF NOT EXISTS app_ra_game_list (
           id INTEGER,
@@ -2817,6 +2828,8 @@ class SqliteService {
     int? scanOnStartup,
     int? ignoreHiddenFiles,
     int? ignoreArticlesInGameSort,
+    int? videoPreviews,
+    int? videoPreviewDelay,
     int? setupCompleted,
     int? hideBottomScreen,
     int? sfxEnabled,
@@ -2851,6 +2864,7 @@ class SqliteService {
     String? gameCarouselCardStyle,
     String? dockApps,
     int? dockEnabled,
+    int? secondaryHideSystemLogo,
     int? dockSlotCount,
     int? nowPlayingDimDelay,
     int? nowPlayingDimLevel,
@@ -2920,6 +2934,10 @@ class SqliteService {
     }
     if (ignoreArticlesInGameSort != null) {
       updates['ignore_articles_in_game_sort'] = ignoreArticlesInGameSort;
+    }
+    if (videoPreviews != null) updates['video_previews'] = videoPreviews;
+    if (videoPreviewDelay != null) {
+      updates['video_preview_delay'] = videoPreviewDelay;
     }
     if (collectionSortBy != null) {
       updates['collection_sort_by'] = collectionSortBy;
@@ -2998,6 +3016,9 @@ class SqliteService {
     }
     if (dockEnabled != null) {
       updates['dock_enabled'] = dockEnabled;
+    }
+    if (secondaryHideSystemLogo != null) {
+      updates['secondary_hide_system_logo'] = secondaryHideSystemLogo;
     }
     if (dockSlotCount != null) {
       updates['dock_slot_count'] = dockSlotCount;
@@ -6123,11 +6144,34 @@ class SqliteService {
       await db.transaction((txn) async {
         _log.i('Refreshing local RetroAchievements game database...');
 
+        // A bundled snapshot must never replace downloaded catalogues. Keep
+        // those consoles intact even when an app upgrade changes the seed.
+        final syncTable = await txn.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'app_ra_catalogue_sync'",
+        );
+        if (syncTable.isNotEmpty) {
+          await txn.execute('''
+            CREATE TEMP TABLE ra_live_seed_backup AS
+            SELECT * FROM app_ra_game_list WHERE console_id IN
+              (SELECT console_id FROM app_ra_catalogue_sync)
+          ''');
+        }
+
         // Purge existing data to ensure a clean sync.
         await txn.execute('DELETE FROM app_ra_game_list');
 
         // Batch insert data from the SQL seed file.
         await _executeSqlFileOptimized(txn, _raSeedAsset, 'ra_insert');
+        if (syncTable.isNotEmpty) {
+          await txn.execute('''
+            DELETE FROM app_ra_game_list WHERE console_id IN
+              (SELECT console_id FROM app_ra_catalogue_sync)
+          ''');
+          await txn.execute(
+            'INSERT INTO app_ra_game_list SELECT * FROM ra_live_seed_backup',
+          );
+          await txn.execute('DROP TABLE ra_live_seed_backup');
+        }
       });
 
       if (assetStamp.isNotEmpty) {

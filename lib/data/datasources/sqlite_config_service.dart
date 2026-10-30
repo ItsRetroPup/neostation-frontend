@@ -51,21 +51,30 @@ class SqliteConfigService {
         )).length;
       }
       final directory = Directory(directoryPath);
-      final files = await directory
+      final entities = await directory
           .list(recursive: recursive, followLinks: false)
-          .where((entity) => entity is File)
-          .cast<File>()
           .toList();
-
+      // Directory-backed formats such as macOS `.app` bundles count as one
+      // game each, and their contents must not be counted again.
+      entities.sort((a, b) => a.path.length.compareTo(b.path.length));
+      final directoryEntries = <String>[];
       int count = 0;
-      for (final file in files) {
-        String extension = path.extension(file.path).toLowerCase();
+      for (final entity in entities) {
+        if (directoryEntries.any(
+          (entry) => path.isWithin(entry, entity.path),
+        )) {
+          continue;
+        }
+        String extension = path.extension(entity.path).toLowerCase();
         if (extension.startsWith('.')) {
           extension = extension.substring(1);
         }
-        if (validExtensions.contains(extension)) {
-          count++;
+        if (!validExtensions.contains(extension)) continue;
+        if (entity is Directory) {
+          if (extension != 'app') continue;
+          directoryEntries.add(entity.path);
         }
+        count++;
       }
 
       return count;
@@ -75,9 +84,10 @@ class SqliteConfigService {
     }
   }
 
-  /// Lists PS3 disc folders as single games while retaining ordinary ROM files.
+  /// Lists PS3 disc/PSN folders as single games, retaining ordinary ISO files.
   ///
-  /// A folder is a game when it contains `PS3_GAME/PARAM.SFO`. Recognised game
+  /// A disc folder contains `PS3_GAME/PARAM.SFO`; an extracted PSN folder has
+  /// `PARAM.SFO` and `USRDIR/EBOOT.BIN` directly inside it. Recognised game
   /// folders are not traversed, so files below `PS3_GAME` and `PS3_UPDATE` are
   /// never reported as separate games.
   static Future<List<({String path, String filename, int size})>> scanPs3Path(
@@ -105,6 +115,26 @@ class SqliteConfigService {
     }
 
     Future<bool> isGame(List<Map<String, dynamic>> items) async {
+      final hasDirectSfo = items.any(
+        (item) =>
+            item['isDirectory'] != true &&
+            item['name'].toString().toUpperCase() == 'PARAM.SFO',
+      );
+      if (hasDirectSfo) {
+        for (final item in items) {
+          if (item['isDirectory'] == true &&
+              item['name'].toString().toUpperCase() == 'USRDIR') {
+            final executableItems = await children(item['uri'].toString());
+            if (executableItems.any(
+              (child) =>
+                  child['isDirectory'] != true &&
+                  child['name'].toString().toUpperCase() == 'EBOOT.BIN',
+            )) {
+              return true;
+            }
+          }
+        }
+      }
       for (final item in items) {
         if (item['isDirectory'] != true ||
             item['name'].toString().toUpperCase() != 'PS3_GAME') {
@@ -163,7 +193,10 @@ class SqliteConfigService {
     }
 
     try {
-      await visit(root, path.basename(root), true);
+      final rootName = useSaf
+          ? path.posix.basename(Uri.parse(root).pathSegments.last)
+          : path.basename(root);
+      await visit(root, rootName, true);
     } catch (error) {
       _log.e('Error scanning PS3 folders: $error');
       rethrow;
@@ -188,6 +221,10 @@ class SqliteConfigService {
   static Future<ConfigModel> loadConfig() async {
     try {
       final userConfig = await SqliteService.getUserConfig();
+      final rawPreviewDelay = userConfig?['video_preview_delay'];
+      final videoPreviewDelay = rawPreviewDelay != null
+          ? (int.tryParse(rawPreviewDelay.toString()) ?? 2).clamp(-1, 5)
+          : (userConfig?['video_previews'] == 0 ? -1 : 2);
       var romFolders = await SqliteService.getUserRomFolders();
       if (Platform.isAndroid && romFolders.isEmpty) {
         final recoveredFolders =
@@ -275,6 +312,7 @@ class SqliteConfigService {
         systemSortOrder: userConfig?['system_sort_order']?.toString() ?? 'asc',
         ignoreArticlesInGameSort:
             userConfig?['ignore_articles_in_game_sort'] == 1,
+        videoPreviewDelay: videoPreviewDelay,
         collectionSortBy:
             userConfig?['collection_sort_by']?.toString() ?? 'name',
         collectionSortOrder:
@@ -360,6 +398,13 @@ class SqliteConfigService {
         dockEnabled:
             (int.tryParse(userConfig?['dock_enabled']?.toString() ?? '1') ??
                 1) ==
+            1,
+        // Missing column/row => 0 => logo shown (the default).
+        secondaryHideSystemLogo:
+            (int.tryParse(
+                  userConfig?['secondary_hide_system_logo']?.toString() ?? '0',
+                ) ??
+                0) ==
             1,
         dockSlotCount:
             (int.tryParse(userConfig?['dock_slot_count']?.toString() ?? '3') ??
@@ -474,6 +519,8 @@ class SqliteConfigService {
           scanOnStartup: config.scanOnStartup ? 1 : 0,
           ignoreHiddenFiles: config.ignoreHiddenFiles ? 1 : 0,
           ignoreArticlesInGameSort: config.ignoreArticlesInGameSort ? 1 : 0,
+          videoPreviews: config.videoPreviewDelay >= 0 ? 1 : 0,
+          videoPreviewDelay: config.videoPreviewDelay,
           setupCompleted: config.setupCompleted ? 1 : 0,
           hideBottomScreen: config.hideBottomScreen ? 1 : 0,
           videoSound: config.videoSound ? 1 : 0,
@@ -504,6 +551,7 @@ class SqliteConfigService {
           gameCarouselCardStyle: config.gameCarouselCardStyle,
           dockApps: jsonEncode(config.dockApps),
           dockEnabled: config.dockEnabled ? 1 : 0,
+          secondaryHideSystemLogo: config.secondaryHideSystemLogo ? 1 : 0,
           dockSlotCount: config.dockSlotCount,
           nowPlayingDimDelay: config.nowPlayingDimDelay,
           nowPlayingDimLevel: config.nowPlayingDimLevel,

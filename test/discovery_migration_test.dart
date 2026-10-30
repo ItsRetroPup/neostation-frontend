@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:neostation/data/datasources/sqlite_migrations.dart';
 
-/// Tests for the two Discovery schema migrations, v175 (`user_discovery_picks`)
-/// and v176 (`user_config.hide_tab_discovery`).
+/// Tests for the two Discovery schema migrations, v182 (`user_discovery_picks`)
+/// and v183 (`user_config.hide_tab_discovery`).
 ///
 /// Both must be safe to re-run, because a device that already carries the
 /// change — from another branch, or from a partially applied upgrade — runs
@@ -20,14 +20,16 @@ void main() {
 
   setUp(() {
     db = sqlite3.openInMemory();
+    // Every real database has this table; v182 re-runs main's v175 against it.
+    db.execute('CREATE TABLE app_emulators (id INTEGER PRIMARY KEY)');
   });
 
   tearDown(() {
     db.close();
   });
 
-  Future<void> runV175() => SqliteMigrations.migrateToVersion(db, 175);
-  Future<void> runV176() => SqliteMigrations.migrateToVersion(db, 176);
+  Future<void> runV182() => SqliteMigrations.migrateToVersion(db, 182);
+  Future<void> runV183() => SqliteMigrations.migrateToVersion(db, 183);
 
   void createUserConfig() {
     db.execute('''
@@ -48,9 +50,9 @@ void main() {
     [table],
   ).isNotEmpty;
 
-  group('migration v175', () {
+  group('migration v182', () {
     test('creates the picks table with its full column set', () async {
-      await runV175();
+      await runV182();
 
       expect(tableExists('user_discovery_picks'), isTrue);
       expect(columnsOf('user_discovery_picks'), [
@@ -66,7 +68,7 @@ void main() {
     });
 
     test('creates the week index', () async {
-      await runV175();
+      await runV182();
 
       final indexes = db.select(
         "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='user_discovery_picks'",
@@ -78,7 +80,7 @@ void main() {
     });
 
     test('week and slot together are the primary key', () async {
-      await runV175();
+      await runV182();
 
       db.execute(
         "INSERT INTO user_discovery_picks (week_key, slot_id, section, rom_path) "
@@ -104,7 +106,7 @@ void main() {
     });
 
     test('rom_path compares case insensitively, like user_roms', () async {
-      await runV175();
+      await runV182();
 
       db.execute(
         "INSERT INTO user_discovery_picks (week_key, slot_id, section, rom_path) "
@@ -118,13 +120,13 @@ void main() {
     });
 
     test('re-running it changes nothing and keeps existing rows', () async {
-      await runV175();
+      await runV182();
       db.execute(
         "INSERT INTO user_discovery_picks (week_key, slot_id, section, rom_path) "
         "VALUES ('2026-W33', 'gotw', 'gameOfTheWeek', '/roms/a.sfc')",
       );
 
-      await runV175();
+      await runV182();
 
       expect(
         db.select('SELECT COUNT(*) AS n FROM user_discovery_picks').first['n'],
@@ -153,18 +155,33 @@ void main() {
         "VALUES ('2026-W33', 'gotw', 'gameOfTheWeek', '/roms/kept.sfc')",
       );
 
-      await runV175();
+      await runV182();
 
       final rows = db.select('SELECT rom_path FROM user_discovery_picks');
       expect(rows.single['rom_path'], '/roms/kept.sfc');
     });
+
+    test('heals a dev database that skipped main\'s v175 and v176', () async {
+      // A build of this branch at 175/176 stamped the database past main's own
+      // v175 (supported_extensions) and v176 (the RA catalogue table).
+      await runV182();
+
+      expect(columnsOf('app_emulators'), contains('supported_extensions'));
+      expect(tableExists('app_ra_catalogue_sync'), isTrue);
+
+      await runV182();
+      expect(
+        columnsOf('app_emulators').where((c) => c == 'supported_extensions'),
+        hasLength(1),
+      );
+    });
   });
 
-  group('migration v176', () {
+  group('migration v183', () {
     test('adds the hide_tab_discovery column, defaulting to visible', () async {
       createUserConfig();
 
-      await runV176();
+      await runV183();
 
       expect(columnsOf('user_config'), contains('hide_tab_discovery'));
       db.execute('INSERT INTO user_config (id) VALUES (1)');
@@ -178,12 +195,12 @@ void main() {
 
     test('re-running it is a no-op and keeps the stored value', () async {
       createUserConfig();
-      await runV176();
+      await runV183();
       db.execute(
         'INSERT INTO user_config (id, hide_tab_discovery) VALUES (1, 1)',
       );
 
-      await runV176();
+      await runV183();
 
       expect(
         db
@@ -205,7 +222,7 @@ void main() {
         )
       ''');
 
-      await runV176();
+      await runV183();
 
       expect(
         columnsOf('user_config').where((c) => c == 'hide_tab_discovery').length,
@@ -236,7 +253,7 @@ void main() {
     }
 
     test('the fresh-install picks table matches the migrated one', () async {
-      await runV175();
+      await runV182();
       final migrated = columnsOf('user_discovery_picks');
 
       final fresh = sqlite3.openInMemory();
@@ -293,7 +310,7 @@ void main() {
       expect(before, contains('hide_tab_discovery'));
 
       // Running the migration over the fresh schema must find nothing to do.
-      await SqliteMigrations.migrateToVersion(fresh, 176);
+      await SqliteMigrations.migrateToVersion(fresh, 183);
 
       final after = fresh
           .select('PRAGMA table_info(user_config)')

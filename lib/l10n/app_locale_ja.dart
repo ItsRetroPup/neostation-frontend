@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleJa = {
+  AppLocale.raCatalogueRefreshFailed:
+      'RetroAchievementsカタログを更新できませんでした。保存済みのデータで照合しました。',
   AppLocale.smartMatchesOne: '一致するゲーム：1件',
   AppLocale.smartCollection: 'スマートコレクション',
   AppLocale.manualCollection: '手動コレクション',
@@ -81,6 +83,9 @@ const Map<String, dynamic> appLocaleJa = {
       '{game} の{files}をRomMサーバーから完全に削除します。デバイス上のコピーは残り、このゲームの同期を続けているデバイスからは再びアップロードされます。',
   AppLocale.rommDeleteKeepsSaves: 'このゲームのセーブデータはRomMに残ります。',
   AppLocale.rommDeleteKeepsStates: 'このゲームのセーブステートはRomMに残ります。',
+  AppLocale.videoPreviews: "プレビュー動画の遅延",
+  AppLocale.videoPreviewsSubtitle: "オフ、または再生まで 0～5 秒待ちます。ゲーム表示とセカンド画面に適用されます。",
+  AppLocale.videoPreviewsOff: "オフ",
   AppLocale.ignoreArticlesInGameSort: "ゲームの並び替えで冠詞を無視",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "タイトル先頭の The、A、An を無視します。例：The Legend of Zelda は L に分類されます。",
@@ -251,6 +256,8 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.nowPlayingDockSlotsSubtitle: 'ドックに表示するアプリスロット数 (0-5)',
   AppLocale.nowPlayingFanartDim: 'ファンアートを暗くする',
   AppLocale.nowPlayingFanartDimSubtitle: 'ロゴの背後を暗くして、派手なファンアートが視認性を妨げないようにする',
+  AppLocale.secondaryHideSystemLogo: 'システムロゴを非表示',
+  AppLocale.secondaryHideSystemLogoSubtitle: 'ロゴやシステム名を表示せず、背景アートのみを表示する',
   AppLocale.nowPlayingDimOff: 'オフ',
   AppLocale.secondarySectionNowPlaying: 'Now Playingパネル',
   AppLocale.secondarySectionDock: 'アプリドック',
@@ -984,9 +991,14 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.failedToLaunchAndroidApp: 'Androidアプリの起動に失敗しました',
   AppLocale.romFileNotFound: 'ROMファイルが見つかりません',
   AppLocale.launchFailed: '起動失敗',
+  AppLocale.unsupportedGameFormat: '選択したエミュレーターはこのゲーム形式をサポートしていません',
+  AppLocale.shortcutResolveFailed: 'ショートカットを起動可能なアプリケーションに解決できませんでした',
+  AppLocale.invalidPs3Serial: 'PS3 シリアル記述子が無効です',
   AppLocale.platformNotSupported: 'プラットフォームはサポートされていません',
   AppLocale.coreNotConfigured: 'コアが設定されていません',
   AppLocale.coreNotInstalled: 'コア "{name}" はインストールされていません',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch はコアがインストールされていないと報告しています。Online Updater > Core Downloader からインストールしてください。',
   AppLocale.retroArchNotFound: 'RetroArchが見つかりません',
   AppLocale.retroArchExecutableNotFound: 'RetroArchの実行ファイルが見つかりません',
   AppLocale.coresDirectoryNotFound: 'コアディレクトリが見つかりません',
@@ -1105,6 +1117,13 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.errorScanningRomsDetail: 'ROMのスキャン中にエラーが発生しました: {error}',
   AppLocale.systemsUpdateComplete: 'システムが正常に更新されました！',
   AppLocale.systemsUpdateError: 'システムの更新に失敗しました。後でもう一度試してください。',
+  AppLocale.checkSystemsUpdates: 'システムの更新を確認',
+  AppLocale.systemsUpdateChecking: 'システムの更新を確認中...',
+  AppLocale.systemsUpToDate: 'システムは最新です (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'システムの更新を確認できませんでした。インターネット接続を確認して、もう一度お試しください。',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      '新しいシステムバージョンには、より新しい NeoStation が必要です。先にアプリを更新してください。',
 
   AppLocale.checkingCredentials: '資格情報を確認中...',
   AppLocale.scrapeNoCredentials: 'ScreenScraperの資格情報が見つかりません。ログインしてください。',
@@ -1145,6 +1164,7 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.romDirectories: 'ROMディレクトリ',
   AppLocale.tools: 'ツール',
   AppLocale.toolsSubtitle: 'ROMの整理に役立つツール',
+  AppLocale.toolsStillRunning: 'ツールがまだ実行中です。完了するまでお待ちください。',
   AppLocale.addRomFolder: 'ROMフォルダを追加',
   AppLocale.removeRomFolder: '削除',
   // RomM (remote library browse + download)
@@ -1185,6 +1205,9 @@ const Map<String, dynamic> appLocaleJa = {
   AppLocale.rommErrorNotRomm:
       'その URL は RomM サーバーとして応答しませんでした。サーバー URL を確認してください。',
   AppLocale.rommErrorServerStatus: 'RomM サーバーがエラーを返しました（{error}）。',
+  AppLocale.rommErrorUnreadable: 'RomM サーバーから、アプリで読み取れない応答が返されました。',
+  AppLocale.rommErrorLoadFailed: 'RomM から読み込めませんでした。もう一度お試しください。',
+  AppLocale.rommErrorSignInRejected: 'RomM へのログインが拒否されました。もう一度ログインしてください。',
   AppLocale.rommConnectedAs: '{user} として接続中',
   AppLocale.rommCredentialsRequired: 'サーバー URL、ユーザー名、パスワードを入力してください',
   AppLocale.rommAuthPassword: 'パスワード',

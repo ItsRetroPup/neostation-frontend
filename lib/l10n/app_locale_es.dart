@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleEs = {
+  AppLocale.raCatalogueRefreshFailed:
+      'No se pudo actualizar el catálogo de RetroAchievements. Se usaron los datos guardados para buscar coincidencias.',
   AppLocale.smartMatchesOne: '1 juego coincidente',
   AppLocale.smartCollection: 'Colección inteligente',
   AppLocale.manualCollection: 'Colección manual',
@@ -94,6 +96,10 @@ const Map<String, dynamic> appLocaleEs = {
       'Las partidas guardadas de este juego se mantienen en RomM.',
   AppLocale.rommDeleteKeepsStates:
       'Los estados guardados de este juego se mantienen en RomM.',
+  AppLocale.videoPreviews: "Retraso del video de vista previa",
+  AppLocale.videoPreviewsSubtitle:
+      "Desactivado, o espera de 0 a 5 segundos antes de reproducir. Se aplica a la vista de juegos y a la segunda pantalla.",
+  AppLocale.videoPreviewsOff: "Desactivado",
   AppLocale.ignoreArticlesInGameSort: "Ignorar artículos al ordenar juegos",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Ignorar The, A y An al inicio. Por ejemplo, The Legend of Zelda se ordena en la L.",
@@ -289,6 +295,9 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.nowPlayingFanartDim: 'Atenuar fanart',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Oscurece el arte de fondo tras el logo para que un fanart recargado no choque con él',
+  AppLocale.secondaryHideSystemLogo: 'Ocultar logo del sistema',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Muestra solo el arte de fondo, sin el logo ni el nombre del sistema',
   AppLocale.nowPlayingDimOff: 'Desactivado',
   AppLocale.secondarySectionNowPlaying: 'Panel Reproduciendo',
   AppLocale.secondarySectionDock: 'Dock de apps',
@@ -1107,9 +1116,16 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.failedToLaunchAndroidApp: 'Error al iniciar la aplicación Android',
   AppLocale.romFileNotFound: 'Archivo ROM no encontrado',
   AppLocale.launchFailed: 'Fallo al iniciar',
+  AppLocale.unsupportedGameFormat:
+      'El emulador seleccionado no admite este formato de juego',
+  AppLocale.shortcutResolveFailed:
+      'No se pudo resolver el acceso directo a una aplicación ejecutable',
+  AppLocale.invalidPs3Serial: 'Descriptor de serial de PS3 no válido',
   AppLocale.platformNotSupported: 'Plataforma no soportada',
   AppLocale.coreNotConfigured: 'Núcleo no configurado',
   AppLocale.coreNotInstalled: 'El núcleo "{name}" no está instalado',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch indica que el núcleo no está instalado. Instálalo desde Online Updater > Core Downloader.',
   AppLocale.retroArchNotFound: 'RetroArch no encontrado',
   AppLocale.retroArchExecutableNotFound:
       'Ejecutable de RetroArch no encontrado',
@@ -1249,6 +1265,13 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.systemsUpdateComplete: '¡Sistemas actualizados correctamente!',
   AppLocale.systemsUpdateError:
       'Error al actualizar los sistemas. Inténtalo más tarde.',
+  AppLocale.checkSystemsUpdates: 'Buscar Actualizaciones de Sistemas',
+  AppLocale.systemsUpdateChecking: 'Buscando actualizaciones de sistemas...',
+  AppLocale.systemsUpToDate: 'Los sistemas están actualizados (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'No se pudieron buscar actualizaciones de sistemas. Comprueba tu conexión a internet e inténtalo de nuevo.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Una versión más reciente de los sistemas requiere un NeoStation más reciente. Actualiza primero la app.',
 
   AppLocale.checkingCredentials: 'Verificando credenciales...',
   AppLocale.scrapeNoCredentials:
@@ -1296,6 +1319,8 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.romDirectories: 'Directorios de ROMs',
   AppLocale.tools: 'Herramientas',
   AppLocale.toolsSubtitle: 'Herramientas para ayudarte a organizar tus ROMs',
+  AppLocale.toolsStillRunning:
+      'Todavía hay una herramienta en ejecución. Espera a que termine.',
   AppLocale.addRomFolder: 'Añadir carpeta de ROMs',
   AppLocale.removeRomFolder: 'Eliminar',
   // RomM (remote library browse + download)
@@ -1342,6 +1367,12 @@ const Map<String, dynamic> appLocaleEs = {
       'Esa URL no respondió como un servidor RomM. Comprueba la URL del servidor.',
   AppLocale.rommErrorServerStatus:
       'El servidor RomM respondió con un error ({error}).',
+  AppLocale.rommErrorUnreadable:
+      'El servidor RomM envió una respuesta que la app no pudo leer.',
+  AppLocale.rommErrorLoadFailed:
+      'No se pudo cargar desde RomM. Inténtalo de nuevo.',
+  AppLocale.rommErrorSignInRejected:
+      'Se rechazó tu inicio de sesión en RomM. Vuelve a iniciar sesión.',
   AppLocale.rommConnectedAs: 'Conectado como {user}',
   AppLocale.rommCredentialsRequired:
       'Introduce la URL del servidor, el usuario y la contraseña',

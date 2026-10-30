@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleKo = {
+  AppLocale.raCatalogueRefreshFailed:
+      'RetroAchievements 카탈로그를 새로 고칠 수 없습니다. 저장된 데이터로 일치하는 게임을 찾았습니다.',
   AppLocale.smartMatchesOne: '일치하는 게임 1개',
   AppLocale.smartCollection: '스마트 컬렉션',
   AppLocale.manualCollection: '수동 컬렉션',
@@ -82,6 +84,10 @@ const Map<String, dynamic> appLocaleKo = {
       '{game}의 {files}가 RomM 서버에서 영구적으로 삭제됩니다. 기기에 있는 사본은 유지되며, 이 게임을 계속 동기화하는 기기는 사본을 다시 업로드합니다.',
   AppLocale.rommDeleteKeepsSaves: '이 게임의 세이브 파일은 RomM에 그대로 남습니다.',
   AppLocale.rommDeleteKeepsStates: '이 게임의 세이브 상태는 RomM에 그대로 남습니다.',
+  AppLocale.videoPreviews: "미리보기 동영상 지연",
+  AppLocale.videoPreviewsSubtitle:
+      "끄기 또는 재생 전 0~5초 대기합니다. 게임 보기와 보조 화면에 적용됩니다.",
+  AppLocale.videoPreviewsOff: "끔",
   AppLocale.ignoreArticlesInGameSort: "게임 정렬 시 관사 무시",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "제목 앞의 The, A, An을 무시합니다. 예: The Legend of Zelda는 L로 정렬됩니다.",
@@ -251,6 +257,8 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.nowPlayingFanartDim: '팬아트 어둡기',
   AppLocale.nowPlayingFanartDimSubtitle:
       '복잡한 팬아트가 로고를 방해하지 않도록 로고 뒤의 배경을 어둡게 표시합니다',
+  AppLocale.secondaryHideSystemLogo: '시스템 로고 숨기기',
+  AppLocale.secondaryHideSystemLogoSubtitle: '로고나 시스템 이름 없이 배경 아트만 표시합니다',
   AppLocale.nowPlayingDimOff: '끄기',
   AppLocale.secondarySectionNowPlaying: '플레이 중 패널',
   AppLocale.secondarySectionDock: '앱 Dock',
@@ -990,9 +998,14 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.failedToLaunchAndroidApp: 'Android 앱을 실행하지 못했습니다',
   AppLocale.romFileNotFound: 'ROM 파일을 찾을 수 없습니다',
   AppLocale.launchFailed: '실행 실패',
+  AppLocale.unsupportedGameFormat: '선택한 에뮬레이터에서 이 게임 형식을 지원하지 않습니다',
+  AppLocale.shortcutResolveFailed: '바로 가기를 실행 가능한 애플리케이션으로 확인할 수 없습니다',
+  AppLocale.invalidPs3Serial: '잘못된 PS3 시리얼 설명자입니다',
   AppLocale.platformNotSupported: '지원되지 않는 플랫폼',
   AppLocale.coreNotConfigured: '코어가 구성되지 않았습니다',
   AppLocale.coreNotInstalled: '코어 "{name}"이(가) 설치되지 않았습니다',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch에서 코어가 설치되지 않았다고 보고합니다. Online Updater > Core Downloader에서 설치하세요.',
   AppLocale.retroArchNotFound: 'RetroArch를 찾을 수 없습니다',
   AppLocale.retroArchExecutableNotFound: 'RetroArch 실행 파일을 찾을 수 없습니다',
   AppLocale.coresDirectoryNotFound: '코어 폴더를 찾을 수 없습니다',
@@ -1114,6 +1127,13 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.errorScanningRomsDetail: 'ROM 스캔 중 오류: {error}',
   AppLocale.systemsUpdateComplete: '시스템이 성공적으로 업데이트되었습니다!',
   AppLocale.systemsUpdateError: '시스템을 업데이트하지 못했습니다. 나중에 다시 시도해 주세요.',
+  AppLocale.checkSystemsUpdates: '시스템 업데이트 확인',
+  AppLocale.systemsUpdateChecking: '시스템 업데이트 확인 중...',
+  AppLocale.systemsUpToDate: '시스템이 최신 상태입니다 (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      '시스템 업데이트를 확인하지 못했습니다. 인터넷 연결을 확인한 후 다시 시도해 주세요.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      '새 시스템 버전을 사용하려면 최신 NeoStation이 필요합니다. 먼저 앱을 업데이트해 주세요.',
 
   AppLocale.checkingCredentials: '로그인 정보 확인 중...',
   AppLocale.scrapeNoCredentials: 'ScreenScraper 로그인 정보가 없습니다. 로그인해 주세요.',
@@ -1155,6 +1175,7 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.romDirectories: 'ROM 폴더',
   AppLocale.tools: '도구',
   AppLocale.toolsSubtitle: 'ROM 정리에 도움이 되는 도구',
+  AppLocale.toolsStillRunning: '도구가 아직 실행 중입니다. 완료될 때까지 기다려 주세요.',
   AppLocale.addRomFolder: 'ROM 폴더 추가',
   AppLocale.removeRomFolder: '제거',
   // RomM (원격 라이브러리 탐색 + 다운로드)
@@ -1195,6 +1216,9 @@ const Map<String, dynamic> appLocaleKo = {
       '서버가 오류로 응답했습니다({error}). URL이 RomM 서버를 가리키는지 확인하세요.',
   AppLocale.rommErrorNotRomm: '이 URL은 RomM 서버처럼 응답하지 않았습니다. 서버 URL을 확인하세요.',
   AppLocale.rommErrorServerStatus: 'RomM 서버가 오류로 응답했습니다({error}).',
+  AppLocale.rommErrorUnreadable: 'RomM 서버가 앱에서 읽을 수 없는 응답을 보냈습니다.',
+  AppLocale.rommErrorLoadFailed: 'RomM에서 불러오지 못했습니다. 다시 시도하세요.',
+  AppLocale.rommErrorSignInRejected: 'RomM 로그인이 거부되었습니다. 다시 로그인하세요.',
   AppLocale.rommConnectedAs: '{user}(으)로 연결됨',
   AppLocale.rommCredentialsRequired: '서버 URL, 사용자 이름, 비밀번호를 입력하세요',
   AppLocale.rommAuthPassword: '비밀번호',

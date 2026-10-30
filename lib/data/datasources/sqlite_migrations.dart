@@ -14,6 +14,14 @@ import 'package:neostation/utils/cloud_path_builder.dart';
 class SqliteMigrations {
   static final _log = LoggerService.instance;
 
+  static const createRaCatalogueSyncTableSql = '''
+    CREATE TABLE IF NOT EXISTS app_ra_catalogue_sync (
+      console_id INTEGER PRIMARY KEY,
+      refreshed_at TEXT NOT NULL,
+      match_pending INTEGER NOT NULL DEFAULT 1
+    )
+  ''';
+
   // ── RomM schema — single source of truth ──────────────────────────────────
   // Referenced by migration v111 and by the fresh-install table list, so a
   // future column change is made in exactly one place.
@@ -645,11 +653,38 @@ class SqliteMigrations {
       case 170:
         await _migrateToVersion170(db);
         break;
+      // 171 is reserved by Android Games (upstream PR #604).
+      case 172:
+        db.execute(createRaCatalogueSyncTableSql);
+        break;
+      case 174:
+        await _migrateToVersion174(db);
+        break;
       case 175:
         await _migrateToVersion175(db);
         break;
+      // A pre-merge build of #691 stamped v175 without #665's RA table.
+      // Re-run both guarded checks so those databases heal on upgrade.
       case 176:
-        await _migrateToVersion176(db);
+        db.execute(createRaCatalogueSyncTableSql);
+        await _migrateToVersion175(db);
+        break;
+      case 177:
+        await _migrateToVersion177(db);
+        break;
+      case 178:
+        await _migrateToVersion178(db);
+        break;
+      // Main builds through v178 skipped the logo-toggle migration at v174.
+      case 179:
+        await _migrateToVersion174(db);
+        break;
+      // 180 and 181 are claimed by other open work (#717).
+      case 182:
+        await _migrateToVersion182(db);
+        break;
+      case 183:
+        await _migrateToVersion183(db);
         break;
       default:
         _log.w('No migration defined for version $version');
@@ -6892,7 +6927,7 @@ class SqliteMigrations {
     }
   }
 
-  /// Migration v175: Adds the `user_discovery_picks` table backing the weekly
+  /// Migration v182: Adds the `user_discovery_picks` table backing the weekly
   /// Discovery board.
   ///
   /// One row per slot per ISO week (`'2026-W33'` + `'gotw'`), so re-rolling a
@@ -6905,16 +6940,22 @@ class SqliteMigrations {
   /// silently cascade-deleted and leave the section blank for the rest of the
   /// week. `COLLATE NOCASE` matches `user_roms.rom_path`.
   ///
-  /// Numbered 175, having started at 132 and passed through 142, 151, 160 and
-  /// 161. A reserved slot is not a safe slot: each time main's own version
+  /// Numbered 182, having started at 132 and passed through 142, 151, 160, 161
+  /// and 175. A reserved slot is not a safe slot: each time main's own version
   /// climbed past the pair, a device upgrading from main would already sit past
   /// both and skip them silently — the table would simply never exist. Every
   /// rebase onto main therefore has to re-check the pair against the highest
   /// number in use anywhere, not just against the numbers main itself occupies:
-  /// main reached 170, with 169 and 171-174 still claimed by open PRs (#604,
-  /// #665, #674, #677), by the time this landed on 175.
-  static Future<void> _migrateToVersion175(Database db) async {
-    _log.i('Migration v175: Adding user_discovery_picks table');
+  /// main reached 179, with 180 still claimed by an open PR (#717), by the time
+  /// this landed on 182.
+  ///
+  /// Dev builds that ran this branch at 175/176 already sit past main's own
+  /// v175 (`supported_extensions`) and v176 (the RA catalogue table) and would
+  /// skip both, so they are re-run here first; both are idempotent.
+  static Future<void> _migrateToVersion182(Database db) async {
+    db.execute(createRaCatalogueSyncTableSql);
+    await _migrateToVersion175(db);
+    _log.i('Migration v182: Adding user_discovery_picks table');
 
     try {
       final tableExists = db.select('''
@@ -6947,9 +6988,9 @@ class SqliteMigrations {
         ON user_discovery_picks(week_key)
       ''');
 
-      _log.i('Migration v175 completed');
+      _log.i('Migration v182 completed');
     } catch (e, stackTrace) {
-      _log.e('Error in migration v175: $e');
+      _log.e('Error in migration v182: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }
@@ -7297,6 +7338,34 @@ class SqliteMigrations {
     }
   }
 
+  /// Migration v174: adds `user_config.secondary_hide_system_logo`.
+  ///
+  /// When enabled, the secondary display drops the system logo while browsing
+  /// and shows only the background art. v171 and v173 are claimed by other
+  /// branches (Android games system, favourite-games sorting), so this takes
+  /// the next slot above them.
+  static Future<void> _migrateToVersion174(Database db) async {
+    _log.i('Migration v174: Adding secondary_hide_system_logo to user_config');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('secondary_hide_system_logo')) {
+        db.execute(
+          'ALTER TABLE user_config ADD COLUMN secondary_hide_system_logo '
+          'INTEGER DEFAULT 0',
+        );
+        _log.i('Column secondary_hide_system_logo added via v174');
+      } else {
+        _log.i('Column secondary_hide_system_logo already exists');
+      }
+      _log.i('Migration v174 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v174: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
   /// Migration v165: adds `user_roms.ss_manual_game_id`, the ScreenScraper game
   /// a user picked by hand for a ROM with Identify….
   ///
@@ -7332,21 +7401,90 @@ class SqliteMigrations {
     }
   }
 
-  /// Migration v176: Adds `user_config.hide_tab_discovery`, the visibility
+  /// Migration v178: turns the preview on/off flag into a delay in seconds.
+  ///
+  /// -1 disables previews, 0 plays as soon as the decoder is ready, and 1..5
+  /// holds the screenshot. Existing installs with previews off stay off; every
+  /// other install gets the new two-second default. The guard and the
+  /// conditional backfill make the step safe to re-run.
+  static Future<void> _migrateToVersion178(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('video_preview_delay')) {
+      db.execute(
+        'ALTER TABLE user_config ADD COLUMN video_preview_delay INTEGER DEFAULT 2',
+      );
+      if (columns.contains('video_previews')) {
+        db.execute(
+          'UPDATE user_config SET video_preview_delay = -1 '
+          'WHERE video_previews = 0',
+        );
+      }
+    }
+  }
+
+  /// Migration v177: persists whether game preview videos play.
+  ///
+  /// Existing installs default to on, preserving the current behaviour until
+  /// the user turns previews off. The column guard makes the migration safe to
+  /// re-run.
+  static Future<void> _migrateToVersion177(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('video_previews')) {
+      db.execute(
+        'ALTER TABLE user_config ADD COLUMN video_previews INTEGER DEFAULT 1',
+      );
+    }
+  }
+
+  /// Migration v175: adds `app_emulators.supported_extensions`.
+  ///
+  /// Emulator entries can declare which formats they launch (ISO, shortcut,
+  /// serial file, folder...). A null value means "no declaration" and keeps the
+  /// legacy behaviour: compatible with every extension of the system.
+  static Future<void> _migrateToVersion175(Database db) async {
+    _log.i('Migration v175: Adding supported_extensions to app_emulators');
+    try {
+      final columns = db
+          .select('PRAGMA table_info(app_emulators)')
+          .map((row) => row['name'].toString())
+          .toSet();
+      if (!columns.contains('supported_extensions')) {
+        db.execute(
+          'ALTER TABLE app_emulators ADD COLUMN supported_extensions TEXT',
+        );
+        _log.i('Column supported_extensions added via v175');
+      } else {
+        _log.i('Column supported_extensions already exists');
+      }
+      _log.i('Migration v175 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v175: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Migration v183: Adds `user_config.hide_tab_discovery`, the visibility
   /// toggle for the Discovery tab.
   ///
-  /// Split from [_migrateToVersion175] rather than folded into it so that a
+  /// Split from [_migrateToVersion182] rather than folded into it so that a
   /// collision with a version another branch claims in the meantime only forces
   /// one of the two to move — which is exactly what happened: both started at
   /// 132/133 and moved together, to 142/143, then 151/152, then 160/161, then
-  /// 161/162, then 175/176, on successive rebases onto main.
+  /// 161/162, then 175/176, then 182/183, on successive rebases onto main.
   ///
   /// Dev builds that ran this branch at 161/162 already sit past main's own
   /// v161 (`game_list_size`) and v162 (`android_apps_as_tab`) and would skip
   /// both, so they are re-run here first; every step is idempotent.
-  static Future<void> _migrateToVersion176(Database db) async {
+  static Future<void> _migrateToVersion183(Database db) async {
     await _migrateToVersion162(db);
-    _log.i('Migration v176: Adding hide_tab_discovery to user_config');
+    _log.i('Migration v183: Adding hide_tab_discovery to user_config');
     try {
       final tableInfo = db.select('PRAGMA table_info(user_config)');
       final columns = tableInfo.map((c) => c['name'].toString()).toList();
@@ -7354,13 +7492,13 @@ class SqliteMigrations {
         db.execute(
           'ALTER TABLE user_config ADD COLUMN hide_tab_discovery INTEGER DEFAULT 0',
         );
-        _log.i('Column hide_tab_discovery added via v176');
+        _log.i('Column hide_tab_discovery added via v183');
       } else {
         _log.i('Column hide_tab_discovery already exists');
       }
-      _log.i('Migration v176 completed');
+      _log.i('Migration v183 completed');
     } catch (e, stackTrace) {
-      _log.e('Error in migration v176: $e');
+      _log.e('Error in migration v183: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
     }

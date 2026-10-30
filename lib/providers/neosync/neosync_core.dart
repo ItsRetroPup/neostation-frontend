@@ -422,6 +422,14 @@ extension NeoSyncCore on NeoSyncProvider {
       if (localSaveFiles.isEmpty) {
         // Buscar archivos en la nube para este juego
         final cloudFiles = await _getCloudSaveFilesForGame(game);
+        if (cloudFiles == null) {
+          _updateGameSyncState(
+            game.romname,
+            game.name,
+            neo_sync.GameSyncStatus.error,
+          );
+          return;
+        }
 
         if (cloudFiles.isNotEmpty) {
           // Descargar todos los archivos de la nube
@@ -442,7 +450,7 @@ extension NeoSyncCore on NeoSyncProvider {
           if (currentState?.status != neo_sync.GameSyncStatus.quotaExceeded) {
             final status = allDownloadsSucceeded
                 ? neo_sync.GameSyncStatus.upToDate
-                : neo_sync.GameSyncStatus.upToDate;
+                : neo_sync.GameSyncStatus.error;
             _updateGameSyncState(game.romname, game.name, status);
           }
           return;
@@ -463,6 +471,16 @@ extension NeoSyncCore on NeoSyncProvider {
       bool allCloudDownloadsSucceeded = true;
 
       final cloudFiles = await _getCloudSaveFilesForGame(game);
+      // Without the cloud list every local save would look missing from the
+      // cloud: sync nothing rather than guess.
+      if (cloudFiles == null) {
+        _updateGameSyncState(
+          game.romname,
+          game.name,
+          neo_sync.GameSyncStatus.error,
+        );
+        return;
+      }
 
       // 1. Verificar cada archivo local contra la nube
       for (final localFile in localSaveFiles) {
@@ -588,10 +606,8 @@ extension NeoSyncCore on NeoSyncProvider {
       if (_quotaExceededActive || quotaExceededDuringProcessing) {
         finalStatus = neo_sync.GameSyncStatus.quotaExceeded;
       } else if (!allUploadsSucceeded || !allCloudDownloadsSucceeded) {
-        NeoSyncProvider._log.w(
-          'Sync had errors for ${game.name}, marking as upToDate',
-        );
-        finalStatus = neo_sync.GameSyncStatus.upToDate;
+        NeoSyncProvider._log.w('Sync had errors for ${game.name}');
+        finalStatus = neo_sync.GameSyncStatus.error;
       } else {
         finalStatus = neo_sync.GameSyncStatus.upToDate;
       }
@@ -602,7 +618,7 @@ extension NeoSyncCore on NeoSyncProvider {
       _updateGameSyncState(
         game.romname,
         game.name,
-        neo_sync.GameSyncStatus.noSaveFound,
+        neo_sync.GameSyncStatus.error,
       );
     }
   }
@@ -637,8 +653,8 @@ extension NeoSyncCore on NeoSyncProvider {
       if (result['success']) {
         return true;
       }
-      final errorMessage = result['message']?.toString().toLowerCase() ?? '';
-      if (errorMessage.contains('quota') && errorMessage.contains('exceeded')) {
+      final errorMessage = result['message']?.toString() ?? '';
+      if (NeoSyncProvider.isQuotaExceededMessage(errorMessage)) {
         _quotaExceededActive = true;
         throw QuotaExceededException('Storage quota exceeded', 1);
       }
@@ -750,11 +766,13 @@ extension NeoSyncCore on NeoSyncProvider {
       // 1. Resolver la ruta local de manera universal
       final localPaths = await resolveCloudFileToLocalPath(game, cloudSave);
       if (localPaths.isEmpty) {
+        // A cloud save NeoStation can't place can never sync, so skipping it
+        // isn't a failure.
         NeoSyncProvider._log.w(
           'Auto-download: no path for ${cloudSave.fileName} '
           '(${game.name}); skipping',
         );
-        return false;
+        return true;
       }
 
       // Verificar si el sistema tiene sync deshabilitado
@@ -853,33 +871,22 @@ extension NeoSyncCore on NeoSyncProvider {
       final List<File> allFiles = [];
       const int maxFileSize = 10 * 1024 * 1024; // 10MB
 
-      // Execute heavy listing and filtering in background
-      final List<String> filePaths = await Isolate.run(() {
-        final List<String> paths = [];
-        for (final folderPath in resolvedFolders) {
-          final dir = Directory(folderPath);
-          if (dir.existsSync()) {
-            final files = dir.listSync(recursive: true).whereType<File>().where(
-              (file) {
-                try {
-                  // NeoSync recovery backups are never synced.
-                  if (file.path.toLowerCase().endsWith('.neosync.bak')) {
-                    return false;
-                  }
-                  final size = file.lengthSync();
-                  return size <= maxFileSize;
-                } catch (e) {
-                  return false;
-                }
-              },
-            );
-            paths.addAll(files.map((f) => f.path));
-          }
-        }
-        return paths;
+      // Execute heavy listing and filtering in background. An unreadable
+      // subfolder is skipped rather than failing the listing: an empty list
+      // here means "no local saves", and the sync would then download the
+      // cloud saves over the readable local ones.
+      final listing = await Isolate.run(() async {
+        final skipped = <String>[];
+        final paths = await listSaveFilePaths(
+          resolvedFolders,
+          maxFileSize: maxFileSize,
+          skipped: skipped,
+        );
+        return (paths: paths, skipped: skipped);
       });
+      _logUnreadable(listing.skipped);
 
-      allFiles.addAll(filePaths.map((path) => File(path)));
+      allFiles.addAll(listing.paths.map((path) => File(path)));
 
       // 4. Filtrar archivos según el sistema
       final List<LocalSaveFile> matchingFiles = [];
@@ -1014,7 +1021,9 @@ extension NeoSyncCore on NeoSyncProvider {
   );
 
   /// Obtiene TODOS los archivos de guardado de la nube para un juego específico
-  Future<List<NeoSyncFile>> _getCloudSaveFilesForGame(GameModel game) async {
+  ///
+  /// Returns null when the cloud list can't be fetched.
+  Future<List<NeoSyncFile>?> _getCloudSaveFilesForGame(GameModel game) async {
     try {
       // 1. Obtener el sistema para resolver sus características
       final system = await _getSystemForGame(game);
@@ -1023,13 +1032,23 @@ extension NeoSyncCore on NeoSyncProvider {
       // Verificar si el sistema tiene sync deshabilitado
       if (!system.neosync.sync) return [];
 
-      // 2. Cargar archivos de la nube si no están cargados
-      if (_files.isEmpty) {
+      // 2. Fetch the cloud list unless a recent one for this account is
+      // held.
+      final account = _authService?.currentUser?.id;
+      final fetchedAt = _filesFetchedAt;
+      final fresh =
+          fetchedAt != null &&
+          _filesAccountId == account &&
+          _now().difference(fetchedAt) < NeoSyncProvider._cloudListMaxAge;
+      if (!fresh) {
+        final generation = _filesGeneration;
         final result = await _neoSyncService.getAllFiles();
-        if (result['success']) {
-          _files = result['files'];
-        } else {
-          return [];
+        if (result['success'] != true) return null;
+        _files = result['files'];
+        // Only a list asked for since the last "stale" mark counts as fresh.
+        if (generation == _filesGeneration) {
+          _filesFetchedAt = _now();
+          _filesAccountId = account;
         }
       }
 
@@ -1106,7 +1125,7 @@ extension NeoSyncCore on NeoSyncProvider {
       NeoSyncProvider._log.e(
         'Error getting cloud save files for ${game.name}: $e',
       );
-      return [];
+      return null;
     }
   }
 
@@ -1115,7 +1134,7 @@ extension NeoSyncCore on NeoSyncProvider {
     GameModel game, {
     LocalSaveFile? localSave,
   }) async {
-    final allFiles = await _getCloudSaveFilesForGame(game);
+    final allFiles = await _getCloudSaveFilesForGame(game) ?? const [];
     return allFiles.isNotEmpty ? allFiles.first : null;
   }
 
@@ -1294,6 +1313,9 @@ extension NeoSyncCore on NeoSyncProvider {
     // Expose the deadline to the shared download path (_downloadCloudFile) so a
     // late download abandons its write once the launch has proceeded.
     _launchDeadline = deadline;
+    // A save made on another device since the list was fetched must be seen
+    // before the game starts, or the game is played on the old one.
+    _markCloudListStale(olderThan: NeoSyncProvider._cloudListLaunchMaxAge);
     try {
       // Detectar saves actuales
       await detectGameSaveFiles(game);
@@ -1347,6 +1369,10 @@ extension NeoSyncCore on NeoSyncProvider {
     try {
       // Pequeña pausa para asegurar que el juego haya terminado de escribir saves
       await Future.delayed(const Duration(seconds: 1));
+
+      // Compare with the cloud as it is now: pick up a save made on another
+      // device meanwhile, and drop files deleted there.
+      _markCloudListStale(olderThan: NeoSyncProvider._cloudListLaunchMaxAge);
 
       // Detectar saves actuales (pueden haber cambiado durante el juego)
       await detectGameSaveFiles(game);

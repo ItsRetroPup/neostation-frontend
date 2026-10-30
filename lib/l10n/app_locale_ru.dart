@@ -1,6 +1,8 @@
 part of 'app_locale.dart';
 
 const Map<String, dynamic> appLocaleRu = {
+  AppLocale.raCatalogueRefreshFailed:
+      'Не удалось обновить каталог RetroAchievements. Сопоставление выполнено по сохранённым данным.',
   AppLocale.smartMatchesOne: 'Подходящих игр: 1',
   AppLocale.smartCollection: 'Умная коллекция',
   AppLocale.manualCollection: 'Ручная коллекция',
@@ -91,6 +93,10 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.rommDeleteKeepsSaves:
       'Файлы сохранения этой игры останутся в RomM.',
   AppLocale.rommDeleteKeepsStates: 'Состояния этой игры останутся в RomM.',
+  AppLocale.videoPreviews: "Задержка видеопревью",
+  AppLocale.videoPreviewsSubtitle:
+      "Выключено или ожидание 0–5 секунд перед воспроизведением. Применяется к виду игр и второму экрану.",
+  AppLocale.videoPreviewsOff: "Выключено",
   AppLocale.ignoreArticlesInGameSort: "Игнорировать артикли при сортировке игр",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Пропускать The, A и An в начале названия. Например, The Legend of Zelda сортируется под буквой L.",
@@ -284,6 +290,9 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.nowPlayingFanartDim: 'Затемнять фанарт',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Затемнять фон за логотипом, чтобы яркий фанарт не мешал',
+  AppLocale.secondaryHideSystemLogo: 'Скрыть логотип системы',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Показывать только фон, без логотипа и названия системы',
   AppLocale.nowPlayingDimOff: 'Выкл',
   AppLocale.secondarySectionNowPlaying: 'Панель Now Playing',
   AppLocale.secondarySectionDock: 'Док приложений',
@@ -1084,9 +1093,16 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.failedToLaunchAndroidApp: 'Ошибка запуска приложения Android',
   AppLocale.romFileNotFound: 'Файл ROM не найден',
   AppLocale.launchFailed: 'Ошибка запуска',
+  AppLocale.unsupportedGameFormat:
+      'Этот формат игры не поддерживается выбранным эмулятором',
+  AppLocale.shortcutResolveFailed:
+      'Не удалось разрешить ярлык в запускаемое приложение',
+  AppLocale.invalidPs3Serial: 'Недопустимый дескриптор серийного номера PS3',
   AppLocale.platformNotSupported: 'Платформа не поддерживается',
   AppLocale.coreNotConfigured: 'Ядро не настроено',
   AppLocale.coreNotInstalled: 'Ядро «{name}» не установлено',
+  AppLocale.coreNotInstalledHint:
+      'RetroArch сообщает, что ядро не установлено. Установите его через Online Updater > Core Downloader.',
   AppLocale.retroArchNotFound: 'RetroArch не найден',
   AppLocale.retroArchExecutableNotFound: 'Исполняемый файл RetroArch не найден',
   AppLocale.coresDirectoryNotFound: 'Директория ядер не найдена',
@@ -1213,6 +1229,13 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.errorScanningRomsDetail: 'Ошибка при сканировании ROM: {error}',
   AppLocale.systemsUpdateComplete: 'Системы успешно обновлены!',
   AppLocale.systemsUpdateError: 'Ошибка обновления систем. Попробуйте позже.',
+  AppLocale.checkSystemsUpdates: 'Проверить обновления систем',
+  AppLocale.systemsUpdateChecking: 'Проверка обновлений систем...',
+  AppLocale.systemsUpToDate: 'Системы в актуальном состоянии (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'Не удалось проверить обновления систем. Проверьте подключение к интернету и попробуйте снова.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Для новой версии систем нужна более новая версия NeoStation. Сначала обновите приложение.',
 
   AppLocale.checkingCredentials: 'Проверка учетных данных...',
   AppLocale.scrapeNoCredentials:
@@ -1257,6 +1280,8 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.romDirectories: 'Директории ROM',
   AppLocale.tools: 'Инструменты',
   AppLocale.toolsSubtitle: 'Инструменты для организации ваших ROM',
+  AppLocale.toolsStillRunning:
+      'Инструмент ещё работает. Дождитесь его завершения.',
   AppLocale.addRomFolder: 'Добавить папку ROM',
   AppLocale.removeRomFolder: 'Удалить',
   // RomM (remote library browse + download)
@@ -1303,6 +1328,11 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.rommErrorNotRomm:
       'По этому URL отвечает не сервер RomM. Проверьте URL сервера.',
   AppLocale.rommErrorServerStatus: 'Сервер RomM ответил ошибкой ({error}).',
+  AppLocale.rommErrorUnreadable:
+      'Сервер RomM прислал ответ, который приложение не смогло прочитать.',
+  AppLocale.rommErrorLoadFailed:
+      'Не удалось загрузить данные из RomM. Попробуйте ещё раз.',
+  AppLocale.rommErrorSignInRejected: 'Вход в RomM отклонён. Войдите снова.',
   AppLocale.rommConnectedAs: 'Подключено как {user}',
   AppLocale.rommCredentialsRequired:
       'Введите URL сервера, имя пользователя и пароль',
