@@ -1316,23 +1316,6 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
                 top: top,
                 width: width,
                 height: cardHeight,
-                child: RepaintBoundary(
-                  // The anchor is a sibling overlay, never a wrapper around the
-                  // card. Wrapping only the selected card changes that card's
-                  // subtree shape as the selection travels, which remounts
-                  // `SystemCard` and reloads its artwork — a visible flicker on
-                  // every D-pad press. Here the tree is identical for every
-                  // card and only the `SizedBox`'s key moves; a `SizedBox` has
-                  // no state to lose. `passthrough` hands the card exactly the
-                  // constraints it had before the Stack existed.
-                  child: Stack(
-                    fit: StackFit.passthrough,
-                    children: [
-                      shownCard,
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: SizedBox.expand(
-                            key: cardIsSelected ? widget.selectedItemKey : null,
                 child: AnimationConfiguration.staggeredGrid(
                   position: animationPosition,
                   columnCount: cols,
@@ -1362,7 +1345,7 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
                             child: Stack(
                               fit: StackFit.passthrough,
                               children: [
-                                cardWidget,
+                                shownCard,
                                 Positioned.fill(
                                   child: IgnorePointer(
                                     child: SizedBox.expand(
