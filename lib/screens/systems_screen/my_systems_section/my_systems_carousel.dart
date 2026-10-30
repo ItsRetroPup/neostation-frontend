@@ -63,6 +63,7 @@ class MySystemsCarousel extends StatefulWidget {
     this.onYPressed,
     this.onBackPressed,
     this.onXPressed,
+    this.onWestPressed,
     this.bindYButton = true,
     this.navLayerId = kSystemsCarouselNavLayerId,
     this.cardOverrideBuilder,
@@ -110,6 +111,10 @@ class MySystemsCarousel extends StatefulWidget {
 
   /// X. Unbound on the systems screen; a pushed host supplies its own picker.
   final VoidCallback? onXPressed;
+
+  /// The West face button (X on an Xbox pad, Y on a Nintendo-style one). The
+  /// systems screen opens the library search with it.
+  final VoidCallback? onWestPressed;
 
   /// Whether the gamepad's Y button fires [onYPressed].
   ///
@@ -332,6 +337,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
       onRightTrigger: widget.onRightTrigger == null
           ? null
           : () => widget.onRightTrigger?.call(),
+      onWestButton: widget.onWestPressed,
       onPreviousTab: widget.enableTabBumpers ? AppNavigation.previousTab : null,
       onNextTab: widget.enableTabBumpers ? AppNavigation.nextTab : null,
       onLeftBumper: widget.enableTabBumpers ? AppNavigation.previousTab : null,
@@ -1000,7 +1006,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
       fontWeight: FontWeight.normal,
     );
     final selectedTextStyle = textStyle.copyWith(
-      color: Colors.black,
+      color: theme.colorScheme.onPrimary,
       fontWeight: FontWeight.bold,
     );
 
@@ -1214,7 +1220,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
 
                 // Focused item sliding indicator. Painted between the
                 // backgrounds and the text so the selected label gets a
-                // solid fill while the text stays perfectly readable.
+                // primary fill and onPrimary text.
                 Positioned.fill(
                   child: ValueListenableBuilder<double>(
                     valueListenable: _pageOffsetNotifier,
@@ -1229,7 +1235,7 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                             width: width,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: theme.colorScheme.primary,
                                 borderRadius:
                                     Theme.of(context)
                                         .extension<CornerRadii>()
@@ -1245,8 +1251,8 @@ class _MySystemsCarouselState extends State<MySystemsCarousel> {
                 ),
 
                 // Foreground text track. Transparent background so the
-                // selector and surface backgrounds show through, while
-                // the selected label uses onPrimary for contrast.
+                // selector and surface backgrounds show through, while the
+                // selected label uses onPrimary for contrast.
                 ValueListenableBuilder<double>(
                   valueListenable: _pageOffsetNotifier,
                   builder: (context, page, _) {

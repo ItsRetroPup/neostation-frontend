@@ -39,29 +39,41 @@ extension _GamepadNav on _SystemGamesListState {
     _goBack();
   }
 
-  /// Handles Select button (View/Share) for mute refresh depending on the
-  /// active details tab.
-  void _handleSelectButton() {
+  /// Handles Select (View/Share) as the preview-video mute toggle.
+  ///
+  /// Owned by the list rather than the details card: Select must work before
+  /// the card has registered anything, and the same toggle is shared by the
+  /// primary player and the secondary display.
+  Future<void> _handleSelectButton() async {
     SfxService().playNavSound();
-    _selectButtonAction?.call();
+    final configProvider = context.read<SqliteConfigProvider>();
+    await configProvider.toggleVideoSound();
+
+    final controller = _videoController;
+    if (controller != null && controller.value.isInitialized) {
+      final secondaryActive =
+          _secondaryDisplayState?.value?.isSecondaryActive ?? false;
+      final muted = !configProvider.config.videoSound || secondaryActive;
+      await controller.setVolume(muted ? 0.0 : 1.0);
+    }
   }
 
   /// Handles the X button for the music library.
   ///
-  /// Games moved their view picker into Options on Start; music keeps its
-  /// shuffle toggle because it is not a view setting.
+  /// Games moved their view picker into Options on Start and open search with
+  /// the West face button ([_searchAction]); music keeps its shuffle toggle
+  /// because it is not a view setting.
   void _handleXButton() {
-    if (widget.system.folderName == 'music') {
-      final service = MusicPlayerService();
-      service.toggleShuffle();
-      AppNotification.showNotification(
-        context,
-        service.isShuffle
-            ? AppLocale.shuffleEnabled.getString(context)
-            : AppLocale.shuffleDisabled.getString(context),
-        type: NotificationType.info,
-      );
-    }
+    if (widget.system.folderName != 'music') return;
+    final service = MusicPlayerService();
+    service.toggleShuffle();
+    AppNotification.showNotification(
+      context,
+      service.isShuffle
+          ? AppLocale.shuffleEnabled.getString(context)
+          : AppLocale.shuffleDisabled.getString(context),
+      type: NotificationType.info,
+    );
   }
 
   /// Registers gamepad and keyboard input mappings for the screen.
@@ -75,10 +87,15 @@ extension _GamepadNav on _SystemGamesListState {
       accelerateRepeats: true, // Text-only rows keep up with a ramping repeat.
       onSelectItem: _handleAButton, // Button A - panel gate, else launch.
       onBack: _handleBButton, // Button B - leave the panel, else go back.
-      onFavorite: widget.system.folderName == 'music'
-          ? _toggleFavorite
-          : null, // Games use Start -> Options; music keeps Y = favourite.
-      onXButton: _handleXButton, // Music only: shuffle.
+      onFavorite: _toggleFavorite, // Button Y - favourite the selected game.
+      // Games use North Y for favourites and the other face button for Search,
+      // so the binding stays the same on both Xbox-style and AYN-style pads
+      // where the West face button is reported as Y. Music keeps its shuffle
+      // on the X face button.
+      onXButton: widget.system.folderName == 'music'
+          ? _handleXButton
+          : _searchAction,
+      onWestButton: null,
       onSettings: widget.system.folderName == 'music'
           ? _openGameSettingsDialog
           : _openGameOptions, // Button Start - Options.

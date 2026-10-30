@@ -7,6 +7,20 @@ import 'emulator_model.dart';
 String _normalizeGameListSize(String value) =>
     const {'S', 'M', 'L', 'XL'}.contains(value) ? value : 'S';
 
+/// Reads the preview delay from the new integer key, falling back to the old
+/// on/off boolean from builds before the setting became a delay.
+int _parseVideoPreviewDelay(Map<String, dynamic> json) {
+  final raw = json['videoPreviewDelay'] ?? json['video_preview_delay'];
+  if (raw != null) {
+    final parsed = int.tryParse(raw.toString());
+    if (parsed != null) return parsed.clamp(-1, 5);
+  }
+
+  final legacy = json['videoPreviews'] ?? json['video_previews'];
+  if (legacy == null) return 2;
+  return [false, 0, '0', 'false'].contains(legacy) ? -1 : 2;
+}
+
 /// Represents the global application configuration and user preferences.
 class ConfigModel {
   /// Maximum number of storable slots in the secondary "Now Playing" app dock.
@@ -76,6 +90,10 @@ class ConfigModel {
 
   /// Ignore leading English articles when ordering game titles.
   final bool ignoreArticlesInGameSort;
+
+  /// Preview video delay in seconds: -1 disables previews, 0 plays as soon as
+  /// the decoder is ready, and 1..5 holds the screenshot for that long.
+  final int videoPreviewDelay;
 
   /// Whether the initial onboarding/setup process has been finished.
   final bool setupCompleted;
@@ -172,6 +190,11 @@ class ConfigModel {
 
   /// Whether the secondary "Now Playing" app dock is shown at all.
   final bool dockEnabled;
+
+  /// Whether the secondary display hides the system logo while browsing,
+  /// showing only the background art (no logo or system name). Separate from
+  /// [hideSystemLogos], which only affects the main screen's system cards.
+  final bool secondaryHideSystemLogo;
 
   /// How many dock slots are visible, from [dockMinSlotCount] to
   /// [dockMaxSlotCount]. Slots beyond this stay persisted but hidden.
@@ -272,6 +295,7 @@ class ConfigModel {
     this.scanOnStartup = true,
     this.ignoreHiddenFiles = true,
     this.ignoreArticlesInGameSort = false,
+    this.videoPreviewDelay = 2,
     this.setupCompleted = false,
     this.hideBottomScreen = false,
     this.videoSound = false,
@@ -305,6 +329,7 @@ class ConfigModel {
     this.fanartDimLevel = 25,
     this.dockApps = const ['', '', '', '', ''],
     this.dockEnabled = true,
+    this.secondaryHideSystemLogo = false,
     this.dockSlotCount = 3,
     this.esdeFolderPath = '',
     this.showAchievementsBadge = false,
@@ -408,6 +433,7 @@ class ConfigModel {
         json['ignoreArticlesInGameSort'] ??
             json['ignore_articles_in_game_sort'],
       ),
+      videoPreviewDelay: _parseVideoPreviewDelay(json),
       collectionSortBy:
           (json['collectionSortBy'] ?? json['collection_sort_by'] ?? 'name')
               .toString(),
@@ -514,6 +540,15 @@ class ConfigModel {
       dockEnabled:
           (json['dockEnabled'] ?? true).toString().toLowerCase() == 'true' ||
           (json['dock_enabled'] ?? 1).toString() == '1',
+      // Absent => 0 => logo shown (the default).
+      secondaryHideSystemLogo:
+          (json['secondaryHideSystemLogo'] ??
+                      json['secondary_hide_system_logo'] ??
+                      0)
+                  .toString() ==
+              '1' ||
+          (json['secondaryHideSystemLogo'] ?? false).toString().toLowerCase() ==
+              'true',
       dockSlotCount:
           (int.tryParse(
                     (json['dockSlotCount'] ?? json['dock_slot_count'] ?? 3)
@@ -627,6 +662,8 @@ class ConfigModel {
       'scanOnStartup': scanOnStartup,
       'ignoreHiddenFiles': ignoreHiddenFiles,
       'ignoreArticlesInGameSort': ignoreArticlesInGameSort,
+      'videoPreviewDelay': videoPreviewDelay,
+      'videoPreviews': videoPreviewDelay >= 0,
       'setupCompleted': setupCompleted,
       'hideBottomScreen': hideBottomScreen,
       'videoSound': videoSound,
@@ -660,6 +697,7 @@ class ConfigModel {
       'fanartDimLevel': fanartDimLevel,
       'dockApps': dockApps,
       'dockEnabled': dockEnabled,
+      'secondaryHideSystemLogo': secondaryHideSystemLogo,
       'dockSlotCount': dockSlotCount,
       'esdeFolderPath': esdeFolderPath,
       'showAchievementsBadge': showAchievementsBadge,
@@ -687,6 +725,7 @@ class ConfigModel {
     bool? scanOnStartup,
     bool? ignoreHiddenFiles,
     bool? ignoreArticlesInGameSort,
+    int? videoPreviewDelay,
     bool? setupCompleted,
     bool? hideBottomScreen,
     bool? videoSound,
@@ -720,6 +759,7 @@ class ConfigModel {
     int? fanartDimLevel,
     List<String>? dockApps,
     bool? dockEnabled,
+    bool? secondaryHideSystemLogo,
     int? dockSlotCount,
     String? esdeFolderPath,
     bool? showAchievementsBadge,
@@ -745,6 +785,7 @@ class ConfigModel {
       ignoreHiddenFiles: ignoreHiddenFiles ?? this.ignoreHiddenFiles,
       ignoreArticlesInGameSort:
           ignoreArticlesInGameSort ?? this.ignoreArticlesInGameSort,
+      videoPreviewDelay: videoPreviewDelay ?? this.videoPreviewDelay,
       setupCompleted: setupCompleted ?? this.setupCompleted,
       hideBottomScreen: hideBottomScreen ?? this.hideBottomScreen,
       videoSound: videoSound ?? this.videoSound,
@@ -779,6 +820,8 @@ class ConfigModel {
       fanartDimLevel: fanartDimLevel ?? this.fanartDimLevel,
       dockApps: dockApps ?? this.dockApps,
       dockEnabled: dockEnabled ?? this.dockEnabled,
+      secondaryHideSystemLogo:
+          secondaryHideSystemLogo ?? this.secondaryHideSystemLogo,
       dockSlotCount: dockSlotCount ?? this.dockSlotCount,
       esdeFolderPath: esdeFolderPath ?? this.esdeFolderPath,
       showAchievementsBadge:

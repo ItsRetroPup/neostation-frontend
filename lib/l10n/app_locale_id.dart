@@ -94,6 +94,10 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.rommDeleteKeepsSaves: 'Berkas simpanan game ini tetap ada di RomM.',
   AppLocale.rommDeleteKeepsStates:
       'Status simpanan game ini tetap ada di RomM.',
+  AppLocale.videoPreviews: "Jeda video pratinjau",
+  AppLocale.videoPreviewsSubtitle:
+      "Nonaktif, atau tunggu 0–5 detik sebelum diputar. Berlaku untuk tampilan game dan layar kedua.",
+  AppLocale.videoPreviewsOff: "Nonaktif",
   AppLocale.ignoreArticlesInGameSort: "Abaikan artikel saat mengurutkan game",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Abaikan The, A, atau An di awal judul. Misalnya, The Legend of Zelda diurutkan di huruf L.",
@@ -285,6 +289,9 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.nowPlayingFanartDim: 'Redupkan fanart',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Gelapkan seni latar belakang di belakang logo agar fanart yang ramai tidak bertabrakan',
+  AppLocale.secondaryHideSystemLogo: 'Sembunyikan logo sistem',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Tampilkan hanya gambar latar, tanpa logo atau nama sistem',
   AppLocale.nowPlayingDimOff: 'Mati',
   AppLocale.secondarySectionNowPlaying: 'Panel Now Playing',
   AppLocale.secondarySectionDock: 'Dock aplikasi',
@@ -1225,6 +1232,13 @@ const Map<String, dynamic> appLocaleId = {
   AppLocale.errorScanningRomsDetail: 'Kesalahan saat memindai ROM: {error}',
   AppLocale.systemsUpdateComplete: 'Sistem berhasil diperbarui!',
   AppLocale.systemsUpdateError: 'Gagal memperbarui sistem. Coba lagi nanti.',
+  AppLocale.checkSystemsUpdates: 'Periksa Pembaruan Sistem',
+  AppLocale.systemsUpdateChecking: 'Memeriksa pembaruan sistem...',
+  AppLocale.systemsUpToDate: 'Sistem sudah versi terbaru (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'Tidak dapat memeriksa pembaruan sistem. Periksa koneksi internet Anda dan coba lagi.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Versi sistem yang lebih baru memerlukan NeoStation yang lebih baru. Perbarui aplikasi terlebih dahulu.',
 
   AppLocale.checkingCredentials: 'Memeriksa kredensial...',
   AppLocale.scrapeNoCredentials:

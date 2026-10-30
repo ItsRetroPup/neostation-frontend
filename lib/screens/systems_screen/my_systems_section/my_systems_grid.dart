@@ -11,7 +11,6 @@ import 'package:neostation/models/system_model.dart';
 import 'package:neostation/screens/app_screen.dart';
 import 'package:neostation/services/sfx_service.dart';
 import 'package:provider/provider.dart';
-import '../../../themes/corner_radii.dart';
 import '../../../utils/gamepad_nav.dart';
 import '../../../services/game_service.dart';
 import '../../../utils/game_launch_utils.dart';
@@ -23,11 +22,12 @@ import '../../../providers/recent_games_cycler.dart';
 import '../../../widgets/system_scan_progress_widget.dart';
 import '../../game_screen/my_games_list.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'grid_geometry.dart';
 import 'widgets/grid_loading_state.dart';
-import '../../../services/ra_library_match_runner.dart';
 import 'widgets/grid_empty_state.dart';
 import 'widgets/recent_card_cycle.dart';
+import 'package:neostation/widgets/spring_selected_card.dart';
 import 'my_systems_carousel.dart';
 import 'package:neostation/widgets/custom_notification.dart';
 import 'package:neostation/widgets/launch_failure_dialog.dart';
@@ -143,6 +143,7 @@ class MySystems extends StatelessWidget {
                         currentSystem,
                         configProvider,
                       ),
+                      onWestPressed: () => _openSearch(context),
                     ),
                   ),
                 ),
@@ -165,38 +166,18 @@ class MySystems extends StatelessWidget {
           }
 
           // If a non-blocking background scan is active, overlay a progress
-          // toast. The RetroAchievements pass that runs after the scan gets the
-          // same treatment: it is the other half of "the library is still
-          // settling", and it is deliberately on this branch and not the
-          // isGlobalScanning one above, so it never blocks the grid.
-          return ValueListenableBuilder<RaMatchProgress?>(
-            valueListenable: RaLibraryMatchRunner.progress,
-            builder: (context, raProgress, _) {
-              // A splash-holding pass is never seen here — the startup screen
-              // is still up. This row is for the pass that resumes after a game
-              // session, which runs against a library already on screen.
-              final showRaRow = raProgress != null && !raProgress.holdsSplash;
-              if (!configProvider.isScanning && !showRaRow) {
-                return systemsWidget;
-              }
-              return Column(
-                children: [
-                  if (configProvider.isScanning)
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SystemScanProgressWidget(),
-                    ),
-                  Expanded(child: systemsWidget),
-                  // Below the grid, not above it: the header floats over the
-                  // top of this column and would clip the row out of sight.
-                  if (showRaRow)
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SystemScanProgressWidget(),
-                    ),
-                ],
-              );
-            },
+          // toast above the grid. RetroAchievements matching reports through
+          // the global notification centre instead of adding a second row here.
+          if (!configProvider.isScanning) return systemsWidget;
+
+          return Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: SystemScanProgressWidget(),
+              ),
+              Expanded(child: systemsWidget),
+            ],
           );
         },
       ),
@@ -258,6 +239,7 @@ class MySystems extends StatelessWidget {
               onRightTrigger: () => _cycleRecent(cycler, currentSystem, 1),
               onYPressed: () =>
                   _openSystemOptions(context, currentSystem, configProvider),
+              onWestPressed: () => _openSearch(context),
               onEnterPressed: () {
                 final current = selectedIndex < allSystems.length
                     ? allSystems[selectedIndex]
@@ -336,7 +318,8 @@ class MySystems extends StatelessWidget {
     }
   }
 
-  /// Opens the library search from the Options dialog.
+  /// Opens the library search from the Options dialog, or library-wide from
+  /// the West face button.
   ///
   /// The same hand-off [_navigateToSystem] makes for the Search card, minus
   /// its secondary-display refresh: that would repaint the second screen for
@@ -709,6 +692,7 @@ class SystemCardGridView extends StatefulWidget {
     this.onYPressed,
     this.onBackPressed,
     this.onXPressed,
+    this.onWestPressed,
     this.bindYButton = true,
     this.systems = const [],
     this.recentCardSize = RecentCardSizes.defaultSize,
@@ -759,6 +743,10 @@ class SystemCardGridView extends StatefulWidget {
   /// X. Unbound on the systems screen; the collections browser opens its view
   /// picker with it.
   final VoidCallback? onXPressed;
+
+  /// The West face button (X on an Xbox pad, Y on a Nintendo-style one). The
+  /// systems screen opens the library search with it.
+  final VoidCallback? onWestPressed;
 
   /// Whether the gamepad's Y button fires [onYPressed].
   ///
@@ -857,6 +845,10 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
   /// Cached conversion of widget.systems to SystemInfo list, rebuilt only on systems change.
   late List<SystemInfo> _systemCards;
 
+  /// The card the selection left on the latest move. Only this card runs the
+  /// settle animation; all earlier cards snap back to rest.
+  int? _previousSelectedIndex;
+
   /// Cached ThemeData with scrollbar overrides — rebuilt only in didChangeDependencies.
   ThemeData? _cachedThemeData;
   ScrollBehavior? _cachedScrollBehavior;
@@ -946,6 +938,7 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
       _systemCards = _toSystemCards(widget.systems);
     }
     if (oldWidget.selectedIndex != widget.selectedIndex) {
+      _previousSelectedIndex = oldWidget.selectedIndex;
       if (mounted && _scrollController.hasClients) {
         _ensureSelectedItemVisibleUniversal();
       }
@@ -1235,8 +1228,7 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
 
         final List<Widget> cardWidgets = [];
         final Set<int> placedIndices = {};
-
-        double? selLeft, selTop, selWidth, selHeight;
+        var animationPosition = 0;
 
         for (int r = 0; r < grid.length; r++) {
           for (int c = 0; c < grid[r].length; c++) {
@@ -1264,13 +1256,6 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
               // Center the card vertically inside the row band.
               final rowItemHeight = rowItemHeights[r];
               top = rowTop(r) + (rowItemHeight - cardHeight) / 2;
-            }
-
-            if (cardIdx == widget.selectedIndex) {
-              selLeft = left;
-              selTop = top;
-              selWidth = width;
-              selHeight = cardHeight;
             }
 
             final bool cardIsSelected = cardIdx == widget.selectedIndex;
@@ -1308,6 +1293,7 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
                   key: ValueKey('system_card_${card.title}_$cardIdx'),
                   info: card,
                   isSelected: cardIsSelected,
+                  showShadow: false,
                   isCompact:
                       card.isGame &&
                       widget.recentCardSize == RecentCardSizes.twoByOne,
@@ -1347,59 +1333,71 @@ class _SystemCardGridViewState extends State<SystemCardGridView> {
                         child: IgnorePointer(
                           child: SizedBox.expand(
                             key: cardIsSelected ? widget.selectedItemKey : null,
+                child: AnimationConfiguration.staggeredGrid(
+                  position: animationPosition,
+                  columnCount: cols,
+                  duration: const Duration(milliseconds: 360),
+                  delay: const Duration(milliseconds: 32),
+                  child: FadeInAnimation(
+                    duration: const Duration(milliseconds: 360),
+                    child: SlideAnimation(
+                      verticalOffset: 18.r,
+                      child: ScaleAnimation(
+                        scale: 0.97,
+                        child: SpringSelectedCard(
+                          key: ValueKey('spring_card_${card.title}_$cardIdx'),
+                          selected: cardIsSelected,
+                          previouslySelected: cardIdx == _previousSelectedIndex,
+                          child: RepaintBoundary(
+                            // The anchor is a sibling overlay, never a wrapper
+                            // around the card. Wrapping only the selected card
+                            // changes that card's subtree shape as the selection
+                            // travels, which remounts `SystemCard` and reloads
+                            // its artwork — a visible flicker on every D-pad
+                            // press. Here the tree is identical for every card
+                            // and only the `SizedBox`'s key moves; a `SizedBox`
+                            // has no state to lose. `passthrough` hands the card
+                            // exactly the constraints it had before the Stack
+                            // existed.
+                            child: Stack(
+                              fit: StackFit.passthrough,
+                              children: [
+                                cardWidget,
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: SizedBox.expand(
+                                      key: cardIsSelected
+                                          ? widget.selectedItemKey
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             );
 
             placedIndices.add(cardIdx);
+            animationPosition++;
           }
         }
 
-        final focusIndicator =
-            (selLeft != null &&
-                selTop != null &&
-                selWidth != null &&
-                selHeight != null)
-            ? Positioned(
-                key: const ValueKey('focus_indicator'),
-                left: selLeft + 1.r,
-                top: selTop + 1.r,
-                width: selWidth - 2.r,
-                height: selHeight - 2.r,
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius:
-                          Theme.of(
-                            context,
-                          ).extension<CornerRadii>()?.radiusExternal ??
-                          BorderRadius.circular(14.r),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        width: 2.r,
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            : const SizedBox.shrink();
-
-        return SingleChildScrollView(
-          controller: _scrollController,
-          clipBehavior: Clip.none,
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          child: SizedBox(
-            height: totalHeight,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [...cardWidgets, focusIndicator],
+        return AnimationLimiter(
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            clipBehavior: Clip.none,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            child: SizedBox(
+              height: totalHeight,
+              child: Stack(clipBehavior: Clip.none, children: cardWidgets),
             ),
           ),
         );

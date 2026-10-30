@@ -94,6 +94,10 @@ const Map<String, dynamic> appLocaleEn = {
       '{files} for {game} will be permanently deleted from your RomM server. Copies on your devices are kept, and any device that still syncs this game will upload its copies again.',
   AppLocale.rommDeleteKeepsSaves: "This game's save files stay on RomM.",
   AppLocale.rommDeleteKeepsStates: "This game's save states stay on RomM.",
+  AppLocale.videoPreviews: "Preview video delay",
+  AppLocale.videoPreviewsSubtitle:
+      "Off, or wait 0-5 seconds before playing. Applies to the game view and the second screen.",
+  AppLocale.videoPreviewsOff: "Off",
   AppLocale.ignoreArticlesInGameSort: "Ignore articles when sorting games",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Sort by title without leading The, A, or An. For example, The Legend of Zelda sorts under L.",
@@ -283,6 +287,9 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.nowPlayingFanartDim: 'Dim fanart',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Darken the background art behind the logo so a busy fanart does not clash with it',
+  AppLocale.secondaryHideSystemLogo: 'Hide system logo',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Show only the background art, without the logo or system name',
   AppLocale.nowPlayingDimOff: 'Off',
   AppLocale.secondarySectionNowPlaying: 'Now Playing panel',
   AppLocale.secondarySectionDock: 'App dock',
@@ -1218,6 +1225,13 @@ const Map<String, dynamic> appLocaleEn = {
   AppLocale.systemsUpdateComplete: 'Systems updated successfully!',
   AppLocale.systemsUpdateError:
       'Failed to update systems. Please try again later.',
+  AppLocale.checkSystemsUpdates: 'Check for Systems Updates',
+  AppLocale.systemsUpdateChecking: 'Checking for systems updates...',
+  AppLocale.systemsUpToDate: 'Systems are up to date (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      "Couldn't check for systems updates. Check your internet connection and try again.",
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'A newer systems version needs a newer NeoStation. Update the app first.',
 
   AppLocale.checkingCredentials: 'Checking credentials...',
   AppLocale.scrapeNoCredentials:

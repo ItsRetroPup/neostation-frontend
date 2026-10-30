@@ -98,6 +98,10 @@ const Map<String, dynamic> appLocaleDe = {
       'Die Spielstände dieses Spiels bleiben auf RomM.',
   AppLocale.rommDeleteKeepsStates:
       'Die Speicherstände dieses Spiels bleiben auf RomM.',
+  AppLocale.videoPreviews: "Verzögerung der Vorschauvideos",
+  AppLocale.videoPreviewsSubtitle:
+      "Aus oder 0–5 Sekunden warten, bevor abgespielt wird. Gilt für die Spieleansicht und den zweiten Bildschirm.",
+  AppLocale.videoPreviewsOff: "Aus",
   AppLocale.ignoreArticlesInGameSort:
       "Artikel beim Sortieren von Spielen ignorieren",
   AppLocale.ignoreArticlesInGameSortSubtitle:
@@ -293,6 +297,9 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.nowPlayingFanartDim: 'Fanart abdunkeln',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Hintergrundbild hinter dem Logo abdunkeln, damit ein unruhiges Fanart nicht stört',
+  AppLocale.secondaryHideSystemLogo: 'Systemlogo ausblenden',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Nur das Hintergrundbild anzeigen, ohne Logo oder Systemnamen',
   AppLocale.nowPlayingDimOff: 'Aus',
   AppLocale.secondarySectionNowPlaying: 'Now Playing-Bereich',
   AppLocale.secondarySectionDock: 'App-Dock',
@@ -1265,6 +1272,13 @@ const Map<String, dynamic> appLocaleDe = {
   AppLocale.systemsUpdateComplete: 'Systeme erfolgreich aktualisiert!',
   AppLocale.systemsUpdateError:
       'Fehler beim Aktualisieren der Systeme. Bitte versuche es später.',
+  AppLocale.checkSystemsUpdates: 'Nach System-Updates suchen',
+  AppLocale.systemsUpdateChecking: 'Suche nach System-Updates...',
+  AppLocale.systemsUpToDate: 'Systeme sind auf dem neuesten Stand (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'Suche nach System-Updates fehlgeschlagen. Prüfe deine Internetverbindung und versuche es erneut.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Eine neuere Systemversion erfordert ein neueres NeoStation. Aktualisiere zuerst die App.',
 
   AppLocale.checkingCredentials: 'Anmeldedaten werden überprüft...',
   AppLocale.scrapeNoCredentials:

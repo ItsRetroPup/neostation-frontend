@@ -282,7 +282,6 @@ class _SystemGamesListState extends State<SystemGamesList> {
   VoidCallback? _movePanelLeft;
   VoidCallback? _movePanelRight;
   VoidCallback? _triggerOverlayAction;
-  VoidCallback? _selectButtonAction; // Maps to Select (View) for mute/refresh.
   VoidCallback? _scrapeAction; // Maps to Select + A (scrape highlighted game).
   bool Function(bool isRight)?
   _tabNavigationAction; // Facilitates tab switching via D-pad left/right.
@@ -292,6 +291,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
 
   // Secondary display hardware management (OEM support).
   SecondaryDisplayState? _secondaryDisplayState;
+  bool _lastSecondaryActive = false;
 
   /// Drives the live RetroAchievements panel on the secondary display for the
   /// duration of a launched game (push at launch, poll during play, stop on
@@ -317,10 +317,13 @@ class _SystemGamesListState extends State<SystemGamesList> {
   Timer? _videoTimer;
   bool _showVideo = false;
   bool _isVideoLoading = false;
-  static const Duration _videoDelay = Duration(
-    milliseconds: 1500,
-  ); // Debounce for video playback.
   bool _lastShowInfo = false; // Memoizes 'showGameInfo' config state.
+  int _lastVideoPreviewDelay = 2; // Memoizes the preview delay setting.
+  DateTime? _videoPreviewSelectedAt;
+  DateTime? _videoPreviewDeadline;
+  bool _videoPreviewFileChecked = false;
+  bool _videoPreviewFileExists = false;
+  GameModel? _videoPreviewFileCheckGame;
   String? _lastGameViewMode; // Memoizes 'gameViewMode' config state.
   String? _lastGameListSize; // Memoizes the active List view size.
   bool _isGameLaunching =
@@ -352,6 +355,10 @@ class _SystemGamesListState extends State<SystemGamesList> {
 
   // Media controllers.
   VideoPlayerController? _videoController;
+
+  /// The game [_videoController] belongs to. Lets repeated selection-settle
+  /// passes reuse an already loaded preview instead of creating it twice.
+  GameModel? _videoControllerGame;
 
   // A game leaving the favourites block is re-seated into its alphabetical
   // place, but not while the context menu is standing on top of it: the panel
@@ -466,6 +473,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
     _invalidateArtworkCaches();
 
     _lastShowInfo = _configProvider.config.showGameInfo;
+    _lastVideoPreviewDelay = _configProvider.config.videoPreviewDelay;
     _lastGameListSize = _configProvider.config.gameListSize;
     _lastGameViewMode = _configProvider.config.gameViewMode;
 
@@ -475,6 +483,8 @@ class _SystemGamesListState extends State<SystemGamesList> {
 
     if (Platform.isAndroid) {
       _secondaryDisplayState = SecondaryDisplayState.instance;
+      _lastSecondaryActive =
+          _secondaryDisplayState?.value?.isSecondaryActive ?? false;
       _secondaryDisplayState!.addListener(_onSecondaryDisplayChanged);
     }
   }
@@ -542,10 +552,29 @@ class _SystemGamesListState extends State<SystemGamesList> {
   }
 
   void _onSecondaryDisplayChanged() {
-    if (mounted) {
-      setState(() {});
-      _updateMusicDucking();
+    if (!mounted) return;
+
+    final active = _secondaryDisplayState?.value?.isSecondaryActive ?? false;
+    if (active != _lastSecondaryActive) {
+      _lastSecondaryActive = active;
+      final listMode = _lastGameViewMode == 'list';
+
+      if (!active) {
+        _clearSecondaryDisplayVideo();
+        if (!listMode) {
+          _videoPreviewDeadline = null;
+          _resetVideoState();
+        }
+      } else if (_selectedGame != null && !_isGameLaunching) {
+        _videoPreviewSelectedAt = DateTime.now();
+        _videoPreviewDeadline = null;
+        _resetVideoState();
+        _startVideoTimer();
+      }
     }
+
+    setState(() {});
+    _updateMusicDucking();
   }
 
   @override
@@ -623,6 +652,20 @@ class _SystemGamesListState extends State<SystemGamesList> {
           GamepadNavigationManager.reactivate();
         }
       } catch (_) {}
+
+      // Grid and carousel have nowhere to render the primary preview. Only
+      // keep video work alive when the list is showing or a second screen can
+      // display it.
+      final secondaryActive =
+          _secondaryDisplayState?.value?.isSecondaryActive ?? false;
+      _videoPreviewSelectedAt = DateTime.now();
+      _videoPreviewDeadline = null;
+      _resetVideoState();
+      if (gameViewMode == 'list' || secondaryActive) {
+        if (_selectedGame != null && !_isGameLaunching) _startVideoTimer();
+      } else {
+        _clearSecondaryDisplayVideo();
+      }
     }
 
     if (newShowInfo != _lastShowInfo) {
@@ -643,6 +686,27 @@ class _SystemGamesListState extends State<SystemGamesList> {
 
       if (_selectedGame != null) {
         _updateSecondaryDisplay(_selectedGame!);
+      }
+    }
+
+    final previewDelay = configProvider.config.videoPreviewDelay;
+    if (previewDelay != _lastVideoPreviewDelay) {
+      final wasEnabled = _lastVideoPreviewDelay >= 0;
+      _lastVideoPreviewDelay = previewDelay;
+      if (previewDelay < 0) {
+        _videoPreviewDeadline = null;
+        _resetVideoState();
+        _clearSecondaryDisplayVideo();
+        if (_selectedGame != null) _updateSecondaryDisplay(_selectedGame!);
+      } else {
+        final base = wasEnabled
+            ? (_videoPreviewSelectedAt ?? DateTime.now())
+            : DateTime.now();
+        _videoPreviewSelectedAt = base;
+        _videoPreviewDeadline = base.add(Duration(seconds: previewDelay));
+        _resetVideoState();
+        if (_selectedGame != null && !_isGameLaunching) _startVideoTimer();
+        if (_selectedGame != null) _updateSecondaryDisplay(_selectedGame!);
       }
     }
 
@@ -746,6 +810,19 @@ class _SystemGamesListState extends State<SystemGamesList> {
     _resetVideoState();
 
     final now = DateTime.now();
+    _videoPreviewSelectedAt = now;
+    final config = context.read<SqliteConfigProvider>().config;
+    final previewDelay = config.videoPreviewDelay;
+    final secondaryActive =
+        _secondaryDisplayState?.value?.isSecondaryActive ?? false;
+    final previewAvailable =
+        previewDelay >= 0 && (config.gameViewMode == 'list' || secondaryActive);
+    _videoPreviewDeadline = previewAvailable
+        ? now.add(Duration(seconds: previewDelay))
+        : null;
+    _videoPreviewFileChecked = false;
+    _videoPreviewFileExists = false;
+    _videoPreviewFileCheckGame = null;
     bool isFast = forceFast;
     if (!isFast && _lastNavTime != null) {
       final delta = now.difference(_lastNavTime!);
@@ -1445,6 +1522,11 @@ class _SystemGamesListState extends State<SystemGamesList> {
     );
   }
 
+  /// The library search the West face button opens, or null in the music
+  /// library, where that button keeps its old X / Y actions.
+  VoidCallback? get _searchAction =>
+      widget.system.folderName == 'music' ? null : _openSearchFromButton;
+
   /// Builds the game carousel view with letter-based navigation.
   Widget _buildGamesCarousel() {
     return GamesCarousel(
@@ -1465,6 +1547,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
       onPlay: _selectCurrentGame,
       onFavorite: _toggleFavorite,
       onYButton: _openGameOptions,
+      onSearch: _searchAction,
       selectedItemKey: _selectedItemKey,
       onRandom: _showRandomGameDialog,
       onOptions: _openGameOptions,
@@ -1504,6 +1587,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
       onPlay: _selectCurrentGame,
       onFavorite: _toggleFavorite,
       onYButton: _openGameOptions,
+      onSearch: _searchAction,
       selectedItemKey: _selectedItemKey,
       onRandom: _showRandomGameDialog,
       onOptions: _openGameOptions,
@@ -1930,6 +2014,10 @@ class _SystemGamesListState extends State<SystemGamesList> {
       );
     }
 
+    final previewDelaySeconds = context
+        .read<SqliteConfigProvider>()
+        .config
+        .videoPreviewDelay;
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: TextScaler.linear(
@@ -1952,6 +2040,12 @@ class _SystemGamesListState extends State<SystemGamesList> {
           showVideo: _showVideo,
           videoController: _videoController,
           isVideoLoading: _isVideoLoading,
+          videoPreviewDeadline: _videoPreviewDeadline,
+          videoPreviewTotal: Duration(
+            seconds: previewDelaySeconds < 0 ? 0 : previewDelaySeconds,
+          ),
+          videoPreviewFileChecked: _videoPreviewFileChecked,
+          videoPreviewFileExists: _videoPreviewFileExists,
           isAllMode: SystemFolderNames.isAggregate(widget.system.folderName),
           initialDetailTab: widget.initialDetailTab,
           retroAchievementsProvider: _retroAchievementsProvider,
@@ -1964,6 +2058,7 @@ class _SystemGamesListState extends State<SystemGamesList> {
           externalScrapeProgress: _scrapeProgress[_selectedGame!.romname],
           externalScrapeStatus: _selectedScrapeStatus,
           isNavigatingFast: _isNavigatingFast,
+          onVideoPlaybackChanged: _updateMusicDucking,
           isSecondaryScreenActive:
               _secondaryDisplayState?.value?.isSecondaryActive ?? false,
           onDeactivateNavigation: () => _gamepadNav.deactivate(),
@@ -1993,9 +2088,6 @@ class _SystemGamesListState extends State<SystemGamesList> {
           onRegisterPanelFocus: (enter, exit) {
             _activateDetailsPanel = enter;
             _dismissDetailsPanel = exit;
-          },
-          onRegisterSelectButton: (action) {
-            _selectButtonAction = action;
           },
           onRegisterScrapeAction: (action) {
             _scrapeAction = action;

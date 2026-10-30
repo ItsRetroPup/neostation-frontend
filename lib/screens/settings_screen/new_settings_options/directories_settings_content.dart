@@ -250,6 +250,8 @@ class DirectoriesSettingsContentState
   Future<void> _selectEsdeFolder() async {
     try {
       String? selected;
+      // A folder from another provider has no path the import can read.
+      var unusable = false;
 
       if (Platform.isAndroid) {
         final isTV = await PermissionService.isTelevision();
@@ -260,14 +262,11 @@ class DirectoriesSettingsContentState
           try {
             final uri = await PermissionService.requestFolderAccess();
             if (uri != null) {
-              final uriStr = uri.toString();
-              final hasFiles = await PermissionService.hasAllFilesAccess();
-              selected =
-                  await UserDataLocationService.resolveAndroidUserDataPath(
-                    uriStr,
-                    hasAllFilesAccess: hasFiles,
-                  ) ??
-                  UserDataLocationService.safUriToRealPath(uriStr);
+              // The folder as picked, never NeoStation's own storage.
+              selected = UserDataLocationService.safUriToRealPath(
+                uri.toString(),
+              );
+              unusable = selected == null;
             }
           } on PlatformException catch (e) {
             if (e.code == 'PICKER_FAILED' && mounted) {
@@ -282,7 +281,16 @@ class DirectoriesSettingsContentState
         );
       }
 
-      if (selected == null || !mounted) return;
+      if (selected == null || !mounted) {
+        if (unusable && mounted) {
+          AppNotification.showNotification(
+            context,
+            AppLocale.wizardFolderNotUsable.getString(context),
+            type: NotificationType.error,
+          );
+        }
+        return;
+      }
       if (selected.endsWith(Platform.pathSeparator)) {
         selected = selected.substring(0, selected.length - 1);
       }
@@ -338,6 +346,18 @@ class DirectoriesSettingsContentState
     final localeEsdeImportFailed = AppLocale.esdeImportFailed.getString(
       context,
     );
+    final localeGrantAllFiles = AppLocale.userDataFolderGrantAllFiles.getString(
+      context,
+    );
+
+    // Without All files access, a folder NeoStation can't read looks empty to
+    // the import; when it finds nothing, say how to grant it.
+    final needsAllFilesAccess =
+        Platform.isAndroid &&
+        !await PermissionService.isTelevision() &&
+        !await PermissionService.hasAllFilesAccess();
+    if (!mounted) return;
+    final allFilesHint = needsAllFilesAccess ? '\n$localeGrantAllFiles' : '';
 
     setState(() {
       _isImporting = true;
@@ -398,7 +418,7 @@ class DirectoriesSettingsContentState
         // No gamelists/ dir — the picked folder isn't an ES-DE installation.
         GlobalNotificationService().update(
           id: notificationId,
-          message: localeEsdeImportNotEsdeFolder,
+          message: '$localeEsdeImportNotEsdeFolder$allFilesHint',
           type: GlobalNotificationType.error,
           progress: null,
         );
@@ -406,7 +426,7 @@ class DirectoriesSettingsContentState
         // Valid ES-DE folder, but nothing here mapped to a NeoStation system.
         GlobalNotificationService().update(
           id: notificationId,
-          message: localeEsdeImportNothingFound,
+          message: '$localeEsdeImportNothingFound$allFilesHint',
           type: GlobalNotificationType.info,
           progress: null,
         );
@@ -983,11 +1003,7 @@ class DirectoriesSettingsContentState
                       final isEsdeDisabled = _isEsdeDisabled(
                         item['action'] as String,
                       );
-                      final borderColor = isSelected
-                          ? (isRemoveItem
-                                ? theme.colorScheme.error
-                                : theme.colorScheme.primary)
-                          : theme.colorScheme.outline.withValues(alpha: 0);
+                      const borderColor = Colors.transparent;
                       final foreground = isSelected
                           ? (isRemoveItem
                                 ? theme.colorScheme.error
@@ -1159,7 +1175,11 @@ class DirectoriesSettingsContentState
                                                 'esde_select_folder' &&
                                             _esdePath.trim().isNotEmpty) ...[
                                           SizedBox(height: 6.r),
-                                          _buildPathChip(theme, _esdePath),
+                                          _buildPathChip(
+                                            theme,
+                                            _esdePath,
+                                            selected: isSelected,
+                                          ),
                                         ],
                                         // Show current path under user_data item
                                         if (isUserData &&
@@ -1171,8 +1191,11 @@ class DirectoriesSettingsContentState
                                               vertical: 4.r,
                                             ),
                                             decoration: BoxDecoration(
-                                              color:
-                                                  theme.scaffoldBackgroundColor,
+                                              color: isSelected
+                                                  ? theme.colorScheme.surface
+                                                        .withValues(alpha: 0.12)
+                                                  : theme
+                                                        .scaffoldBackgroundColor,
                                               borderRadius:
                                                   BorderRadius.circular(6.r),
                                             ),
@@ -1181,10 +1204,9 @@ class DirectoriesSettingsContentState
                                                 Icon(
                                                   Symbols.folder_rounded,
                                                   size: 11.r,
-                                                  color: theme
-                                                      .colorScheme
-                                                      .primary
-                                                      .withValues(alpha: 0.5),
+                                                  color: foreground.withValues(
+                                                    alpha: 0.7,
+                                                  ),
                                                 ),
                                                 SizedBox(width: 6.r),
                                                 Expanded(
@@ -1192,11 +1214,9 @@ class DirectoriesSettingsContentState
                                                     _currentUserDataPath!,
                                                     style: TextStyle(
                                                       fontSize: 9.r,
-                                                      color: theme
-                                                          .colorScheme
-                                                          .onSurface
+                                                      color: foreground
                                                           .withValues(
-                                                            alpha: 0.55,
+                                                            alpha: 0.7,
                                                           ),
                                                       fontFamily: 'monospace',
                                                     ),
@@ -1250,11 +1270,16 @@ class DirectoriesSettingsContentState
     }
   }
 
-  Widget _buildPathChip(ThemeData theme, String path) {
+  Widget _buildPathChip(ThemeData theme, String path, {bool selected = false}) {
+    final foreground = selected
+        ? theme.colorScheme.surface
+        : theme.colorScheme.onSurface;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.06),
+        color: selected
+            ? theme.colorScheme.surface.withValues(alpha: 0.12)
+            : theme.colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(6.r),
       ),
       child: Row(
@@ -1262,7 +1287,7 @@ class DirectoriesSettingsContentState
           Icon(
             Symbols.folder_rounded,
             size: 11.r,
-            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+            color: foreground.withValues(alpha: 0.7),
           ),
           SizedBox(width: 6.r),
           Expanded(
@@ -1270,7 +1295,7 @@ class DirectoriesSettingsContentState
               path,
               style: TextStyle(
                 fontSize: 9.r,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                color: foreground.withValues(alpha: 0.7),
                 fontFamily: 'monospace',
               ),
               maxLines: 2,

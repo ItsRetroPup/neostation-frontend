@@ -96,6 +96,10 @@ const Map<String, dynamic> appLocalePt = {
       'Os arquivos de save deste jogo continuam no RomM.',
   AppLocale.rommDeleteKeepsStates:
       'Os estados salvos deste jogo continuam no RomM.',
+  AppLocale.videoPreviews: "Atraso das prévias em vídeo",
+  AppLocale.videoPreviewsSubtitle:
+      "Desativado, ou aguarde de 0 a 5 segundos antes de reproduzir. Aplica-se à visualização de jogos e à segunda tela.",
+  AppLocale.videoPreviewsOff: "Desativado",
   AppLocale.ignoreArticlesInGameSort: "Ignorar artigos ao ordenar jogos",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Ignorar The, A e An no início do título. Por exemplo, The Legend of Zelda fica na letra L.",
@@ -292,6 +296,9 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.nowPlayingFanartDim: 'Escurecer fanart',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Escurecer o fundo atrás do logo para que um fanart carregado não conflite',
+  AppLocale.secondaryHideSystemLogo: 'Ocultar logo do sistema',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Mostra apenas a arte de fundo, sem o logo nem o nome do sistema',
   AppLocale.nowPlayingDimOff: 'Desligado',
   AppLocale.secondarySectionNowPlaying: 'Painel Now Playing',
   AppLocale.secondarySectionDock: 'Dock de apps',
@@ -1245,6 +1252,13 @@ const Map<String, dynamic> appLocalePt = {
   AppLocale.systemsUpdateComplete: 'Sistemas atualizados com sucesso!',
   AppLocale.systemsUpdateError:
       'Falha ao atualizar sistemas. Tente mais tarde.',
+  AppLocale.checkSystemsUpdates: 'Verificar Atualizações de Sistemas',
+  AppLocale.systemsUpdateChecking: 'Verificando atualizações de sistemas...',
+  AppLocale.systemsUpToDate: 'Os sistemas estão atualizados (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'Não foi possível verificar atualizações de sistemas. Verifique sua conexão com a internet e tente novamente.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Uma versão mais recente dos sistemas requer um NeoStation mais recente. Atualize o app primeiro.',
 
   AppLocale.checkingCredentials: 'Verificando credenciais...',
   AppLocale.scrapeNoCredentials:

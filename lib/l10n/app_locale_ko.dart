@@ -84,6 +84,10 @@ const Map<String, dynamic> appLocaleKo = {
       '{game}의 {files}가 RomM 서버에서 영구적으로 삭제됩니다. 기기에 있는 사본은 유지되며, 이 게임을 계속 동기화하는 기기는 사본을 다시 업로드합니다.',
   AppLocale.rommDeleteKeepsSaves: '이 게임의 세이브 파일은 RomM에 그대로 남습니다.',
   AppLocale.rommDeleteKeepsStates: '이 게임의 세이브 상태는 RomM에 그대로 남습니다.',
+  AppLocale.videoPreviews: "미리보기 동영상 지연",
+  AppLocale.videoPreviewsSubtitle:
+      "끄기 또는 재생 전 0~5초 대기합니다. 게임 보기와 보조 화면에 적용됩니다.",
+  AppLocale.videoPreviewsOff: "끔",
   AppLocale.ignoreArticlesInGameSort: "게임 정렬 시 관사 무시",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "제목 앞의 The, A, An을 무시합니다. 예: The Legend of Zelda는 L로 정렬됩니다.",
@@ -253,6 +257,8 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.nowPlayingFanartDim: '팬아트 어둡기',
   AppLocale.nowPlayingFanartDimSubtitle:
       '복잡한 팬아트가 로고를 방해하지 않도록 로고 뒤의 배경을 어둡게 표시합니다',
+  AppLocale.secondaryHideSystemLogo: '시스템 로고 숨기기',
+  AppLocale.secondaryHideSystemLogoSubtitle: '로고나 시스템 이름 없이 배경 아트만 표시합니다',
   AppLocale.nowPlayingDimOff: '끄기',
   AppLocale.secondarySectionNowPlaying: '플레이 중 패널',
   AppLocale.secondarySectionDock: '앱 Dock',
@@ -1121,6 +1127,13 @@ const Map<String, dynamic> appLocaleKo = {
   AppLocale.errorScanningRomsDetail: 'ROM 스캔 중 오류: {error}',
   AppLocale.systemsUpdateComplete: '시스템이 성공적으로 업데이트되었습니다!',
   AppLocale.systemsUpdateError: '시스템을 업데이트하지 못했습니다. 나중에 다시 시도해 주세요.',
+  AppLocale.checkSystemsUpdates: '시스템 업데이트 확인',
+  AppLocale.systemsUpdateChecking: '시스템 업데이트 확인 중...',
+  AppLocale.systemsUpToDate: '시스템이 최신 상태입니다 (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      '시스템 업데이트를 확인하지 못했습니다. 인터넷 연결을 확인한 후 다시 시도해 주세요.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      '새 시스템 버전을 사용하려면 최신 NeoStation이 필요합니다. 먼저 앱을 업데이트해 주세요.',
 
   AppLocale.checkingCredentials: '로그인 정보 확인 중...',
   AppLocale.scrapeNoCredentials: 'ScreenScraper 로그인 정보가 없습니다. 로그인해 주세요.',

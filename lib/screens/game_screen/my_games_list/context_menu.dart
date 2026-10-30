@@ -166,6 +166,20 @@ extension _ContextMenu on _SystemGamesListState {
     );
   }
 
+  /// Opens the library search from the West face button.
+  ///
+  /// Inside a concrete system this is the same filtered search as Options →
+  /// Search. Aggregate views still span several systems, so they open
+  /// unfiltered.
+  Future<void> _openSearchFromButton() async {
+    final folder = widget.system.folderName;
+    await openSearch(
+      context,
+      systemFolder: SystemFolderNames.isAggregate(folder) ? null : folder,
+      showInPlace: _selectSearchPickInPlace,
+    );
+  }
+
   /// Selects [picked] in the loaded folder level, if it is there.
   bool _selectSearchPickInPlace(DatabaseGameModel picked) {
     final romPath = GameModel.fromDatabaseModel(picked).romPath;

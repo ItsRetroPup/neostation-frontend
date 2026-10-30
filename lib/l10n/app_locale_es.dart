@@ -96,6 +96,10 @@ const Map<String, dynamic> appLocaleEs = {
       'Las partidas guardadas de este juego se mantienen en RomM.',
   AppLocale.rommDeleteKeepsStates:
       'Los estados guardados de este juego se mantienen en RomM.',
+  AppLocale.videoPreviews: "Retraso del video de vista previa",
+  AppLocale.videoPreviewsSubtitle:
+      "Desactivado, o espera de 0 a 5 segundos antes de reproducir. Se aplica a la vista de juegos y a la segunda pantalla.",
+  AppLocale.videoPreviewsOff: "Desactivado",
   AppLocale.ignoreArticlesInGameSort: "Ignorar artículos al ordenar juegos",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Ignorar The, A y An al inicio. Por ejemplo, The Legend of Zelda se ordena en la L.",
@@ -291,6 +295,9 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.nowPlayingFanartDim: 'Atenuar fanart',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Oscurece el arte de fondo tras el logo para que un fanart recargado no choque con él',
+  AppLocale.secondaryHideSystemLogo: 'Ocultar logo del sistema',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Muestra solo el arte de fondo, sin el logo ni el nombre del sistema',
   AppLocale.nowPlayingDimOff: 'Desactivado',
   AppLocale.secondarySectionNowPlaying: 'Panel Reproduciendo',
   AppLocale.secondarySectionDock: 'Dock de apps',
@@ -1258,6 +1265,13 @@ const Map<String, dynamic> appLocaleEs = {
   AppLocale.systemsUpdateComplete: '¡Sistemas actualizados correctamente!',
   AppLocale.systemsUpdateError:
       'Error al actualizar los sistemas. Inténtalo más tarde.',
+  AppLocale.checkSystemsUpdates: 'Buscar Actualizaciones de Sistemas',
+  AppLocale.systemsUpdateChecking: 'Buscando actualizaciones de sistemas...',
+  AppLocale.systemsUpToDate: 'Los sistemas están actualizados (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'No se pudieron buscar actualizaciones de sistemas. Comprueba tu conexión a internet e inténtalo de nuevo.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Una versión más reciente de los sistemas requiere un NeoStation más reciente. Actualiza primero la app.',
 
   AppLocale.checkingCredentials: 'Verificando credenciales...',
   AppLocale.scrapeNoCredentials:

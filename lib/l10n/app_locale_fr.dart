@@ -97,6 +97,10 @@ const Map<String, dynamic> appLocaleFr = {
       'Les fichiers de sauvegarde de ce jeu restent sur RomM.',
   AppLocale.rommDeleteKeepsStates:
       'Les états sauvegardés de ce jeu restent sur RomM.',
+  AppLocale.videoPreviews: "Délai des vidéos d'aperçu",
+  AppLocale.videoPreviewsSubtitle:
+      "Désactivé, ou attendre 0 à 5 secondes avant la lecture. S'applique à la vue des jeux et au second écran.",
+  AppLocale.videoPreviewsOff: "Désactivé",
   AppLocale.ignoreArticlesInGameSort:
       "Ignorer les articles dans le tri des jeux",
   AppLocale.ignoreArticlesInGameSortSubtitle:
@@ -299,6 +303,9 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.nowPlayingFanartDim: 'Atténuer le fanart',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Assombrir l\'arrière-plan derrière le logo pour éviter les conflits visuels',
+  AppLocale.secondaryHideSystemLogo: 'Masquer le logo du système',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Afficher uniquement l\'illustration de fond, sans le logo ni le nom du système',
   AppLocale.nowPlayingDimOff: 'Désactivé',
   AppLocale.secondarySectionNowPlaying: 'Panneau Now Playing',
   AppLocale.secondarySectionDock: 'Dock d\'applications',
@@ -1269,6 +1276,13 @@ const Map<String, dynamic> appLocaleFr = {
   AppLocale.systemsUpdateComplete: 'Systèmes mis à jour avec succès !',
   AppLocale.systemsUpdateError:
       'Échec de la mise à jour des systèmes. Réessayez plus tard.',
+  AppLocale.checkSystemsUpdates: 'Rechercher des mises à jour des systèmes',
+  AppLocale.systemsUpdateChecking: 'Recherche de mises à jour des systèmes...',
+  AppLocale.systemsUpToDate: 'Les systèmes sont à jour (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'Impossible de rechercher les mises à jour des systèmes. Vérifiez votre connexion Internet et réessayez.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Une version plus récente des systèmes nécessite une version plus récente de NeoStation. Mettez d’abord l’application à jour.',
 
   AppLocale.checkingCredentials: 'Vérification des identifiants...',
   AppLocale.scrapeNoCredentials:

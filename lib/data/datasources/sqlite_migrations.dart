@@ -656,8 +656,27 @@ class SqliteMigrations {
       case 172:
         db.execute(createRaCatalogueSyncTableSql);
         break;
+      case 174:
+        await _migrateToVersion174(db);
+        break;
       case 175:
         await _migrateToVersion175(db);
+        break;
+      // A pre-merge build of #691 stamped v175 without #665's RA table.
+      // Re-run both guarded checks so those databases heal on upgrade.
+      case 176:
+        db.execute(createRaCatalogueSyncTableSql);
+        await _migrateToVersion175(db);
+        break;
+      case 177:
+        await _migrateToVersion177(db);
+        break;
+      case 178:
+        await _migrateToVersion178(db);
+        break;
+      // Main builds through v178 skipped the logo-toggle migration at v174.
+      case 179:
+        await _migrateToVersion174(db);
         break;
       default:
         _log.w('No migration defined for version $version');
@@ -7242,6 +7261,34 @@ class SqliteMigrations {
     }
   }
 
+  /// Migration v174: adds `user_config.secondary_hide_system_logo`.
+  ///
+  /// When enabled, the secondary display drops the system logo while browsing
+  /// and shows only the background art. v171 and v173 are claimed by other
+  /// branches (Android games system, favourite-games sorting), so this takes
+  /// the next slot above them.
+  static Future<void> _migrateToVersion174(Database db) async {
+    _log.i('Migration v174: Adding secondary_hide_system_logo to user_config');
+    try {
+      final tableInfo = db.select('PRAGMA table_info(user_config)');
+      final columns = tableInfo.map((c) => c['name'].toString()).toList();
+      if (!columns.contains('secondary_hide_system_logo')) {
+        db.execute(
+          'ALTER TABLE user_config ADD COLUMN secondary_hide_system_logo '
+          'INTEGER DEFAULT 0',
+        );
+        _log.i('Column secondary_hide_system_logo added via v174');
+      } else {
+        _log.i('Column secondary_hide_system_logo already exists');
+      }
+      _log.i('Migration v174 completed');
+    } catch (e, stackTrace) {
+      _log.e('Error in migration v174: $e');
+      _log.e('   StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
   /// Migration v165: adds `user_roms.ss_manual_game_id`, the ScreenScraper game
   /// a user picked by hand for a ROM with Identify….
   ///
@@ -7274,6 +7321,47 @@ class SqliteMigrations {
       _log.e('Error in migration v165: $e');
       _log.e('   StackTrace: $stackTrace');
       rethrow;
+    }
+  }
+
+  /// Migration v178: turns the preview on/off flag into a delay in seconds.
+  ///
+  /// -1 disables previews, 0 plays as soon as the decoder is ready, and 1..5
+  /// holds the screenshot. Existing installs with previews off stay off; every
+  /// other install gets the new two-second default. The guard and the
+  /// conditional backfill make the step safe to re-run.
+  static Future<void> _migrateToVersion178(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('video_preview_delay')) {
+      db.execute(
+        'ALTER TABLE user_config ADD COLUMN video_preview_delay INTEGER DEFAULT 2',
+      );
+      if (columns.contains('video_previews')) {
+        db.execute(
+          'UPDATE user_config SET video_preview_delay = -1 '
+          'WHERE video_previews = 0',
+        );
+      }
+    }
+  }
+
+  /// Migration v177: persists whether game preview videos play.
+  ///
+  /// Existing installs default to on, preserving the current behaviour until
+  /// the user turns previews off. The column guard makes the migration safe to
+  /// re-run.
+  static Future<void> _migrateToVersion177(Database db) async {
+    final columns = db
+        .select('PRAGMA table_info(user_config)')
+        .map((row) => row['name'].toString())
+        .toSet();
+    if (!columns.contains('video_previews')) {
+      db.execute(
+        'ALTER TABLE user_config ADD COLUMN video_previews INTEGER DEFAULT 1',
+      );
     }
   }
 

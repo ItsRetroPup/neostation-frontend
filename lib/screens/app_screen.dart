@@ -7,9 +7,8 @@ import 'package:neostation/utils/nav_tabs.dart';
 import 'package:neostation/models/config_model.dart';
 import 'package:neostation/providers/sqlite_config_provider.dart';
 import 'package:neostation/services/update_service.dart';
-import 'package:neostation/services/systems_update_service.dart';
 import 'package:neostation/widgets/update_dialog.dart';
-import 'package:neostation/widgets/systems_update_dialog.dart';
+import 'package:neostation/utils/systems_update_flow.dart';
 import 'package:neostation/services/logger_service.dart';
 import 'package:neostation/services/game/game_session_manager.dart';
 import 'package:neostation/services/ra_library_match_runner.dart';
@@ -18,6 +17,7 @@ import 'package:neostation/l10n/app_locale.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import '../widgets/fixed_header.dart';
 import 'systems_screen/system_content.dart';
+import 'search_screen/search_screen.dart';
 import 'systems_screen/my_systems_section/initial_setup_widget.dart';
 import 'retro_achievements_screen/ra_content.dart';
 import 'settings_screen/new_settings_screen.dart';
@@ -98,6 +98,9 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
 
   /// Internal state tracker for system selection within the System tab.
   int _selectedSystemIndex = 0;
+
+  /// Guards the header's touch Search control against a double push.
+  bool _searchOpen = false;
 
   /// Input orchestration layer for gamepad and keyboard support.
   late GamepadNavigation _gamepadNav;
@@ -212,6 +215,10 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
 
     unawaited(_fixRetroarchAndroidDefault());
 
+    // Updates downloaded by an earlier run are no longer needed. Awaited, so
+    // it can't remove a download the update below starts.
+    await UpdateService.cleanUpDownloads();
+
     // App update check (network) — runs alongside the scan, no longer blocking it.
     if (configProvider.config.autoUpdateApp) {
       final appUpdateResult = await _checkAndShowAppUpdate();
@@ -221,16 +228,15 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
       }
     }
 
-    // Systems/emulator config update check (network).
-    Future<void>? systemsRescan;
-    if (configProvider.config.autoUpdateSystems) {
-      final systemsUpdated = await _checkAndShowSystemsUpdate(configProvider);
-      if (systemsUpdated && mounted) {
-        // New definitions were applied — re-scan to reflect them. Wait for the
-        // initial scan to settle first, since scanSystems ignores concurrent calls.
-        await initialScan;
-        if (mounted) systemsRescan = configProvider.scanSystems();
-      }
+    // Systems/emulator config update check (network). When an update is
+    // applied the flow re-scans to reflect it, after the initial scan settles
+    // (scanSystems ignores concurrent calls), and returns once that is done.
+    if (configProvider.config.autoUpdateSystems && mounted) {
+      await SystemsUpdateFlow.run(
+        context,
+        trigger: SystemsUpdateTrigger.startup,
+        library: SystemsUpdateLibrary.of(configProvider),
+      );
     }
 
     // Match whatever the scan just added. After the scan, never before it: the
@@ -238,7 +244,6 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
     // ROMs are not in it yet. That includes the systems-update re-scan, which
     // can bring a system into RA range for the first time.
     await initialScan;
-    await systemsRescan;
     await _runStartupRaMatch(configProvider, holdsSplash: true);
   }
 
@@ -367,31 +372,6 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
       }
     } catch (e) {
       _log.e('AppScreen: App update check failure', error: e);
-    }
-    return false;
-  }
-
-  /// Checks for systems/emulator config updates and shows the dialog if found.
-  /// Returns true if the update was accepted and applied (caller triggers scan).
-  Future<bool> _checkAndShowSystemsUpdate(
-    SqliteConfigProvider configProvider,
-  ) async {
-    try {
-      final updateInfo = await SystemsUpdateService.checkForUpdate();
-      if (updateInfo == null || !mounted) return false;
-
-      final updated = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => SystemsUpdateDialog(updateInfo: updateInfo),
-      );
-
-      if (updated == true && mounted) {
-        await configProvider.reloadSystemDefinitions();
-        return true;
-      }
-    } catch (e) {
-      _log.e('AppScreen: Systems update check failure', error: e);
     }
     return false;
   }
@@ -701,6 +681,9 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
                       ? FixedHeader(
                           selectedTabIndex: _selectedTabIndex,
                           onTabSelected: _onTabSelected,
+                          onSearch: _selectedTabIndex == AppTabs.systems
+                              ? () => unawaited(_openSearchFromHeader())
+                              : null,
                         )
                       : const SizedBox.shrink(),
                 ),
@@ -723,6 +706,16 @@ class AppScreenState extends State<AppScreen> with WidgetsBindingObserver {
         );
       },
     );
+  }
+
+  Future<void> _openSearchFromHeader() async {
+    if (_searchOpen) return;
+    _searchOpen = true;
+    try {
+      await openSearch(context);
+    } finally {
+      _searchOpen = false;
+    }
   }
 
   Widget _buildFooterForCurrentTab() {

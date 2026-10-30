@@ -18,6 +18,7 @@ import '../repositories/neosync_save_folder_repository.dart';
 import '../data/datasources/sqlite_service.dart';
 import '../utils/cloud_path_builder.dart';
 import '../utils/safe_path.dart';
+import '../utils/save_file_listing.dart';
 import '../services/config_service.dart';
 import '../services/retroarch_config_service.dart';
 import '../services/retroachievements_hash_service.dart';
@@ -100,7 +101,11 @@ class NeoSyncProvider extends ChangeNotifier {
   /// Low-level network service for NeoSync API interactions.
   final NeoSyncService _neoSyncService;
 
-  NeoSyncProvider(this._neoSyncService);
+  NeoSyncProvider(this._neoSyncService, {DateTime Function()? now})
+    : _now = now ?? DateTime.now;
+
+  /// The clock the cloud list's age is measured with; tests pass their own.
+  final DateTime Function() _now;
 
   /// Whether a global synchronization task is currently active.
   bool _isSyncing = false;
@@ -172,6 +177,36 @@ class NeoSyncProvider extends ChangeNotifier {
   /// All metadata for files discovered during the sync process.
   List<NeoSyncFile> _files = [];
 
+  /// When [_files] was fetched from the server, and for which account. A
+  /// game's sync fetches it again once it is older than [_cloudListMaxAge] or
+  /// another account is signed in, so saves changed on another device are
+  /// seen.
+  DateTime? _filesFetchedAt;
+  String? _filesAccountId;
+
+  /// Bumped whenever [_files] is marked stale, so a fetch that was already
+  /// under way can't mark it fresh again with an older list.
+  int _filesGeneration = 0;
+
+  /// How long a game's sync trusts the cloud file list it already has.
+  static const _cloudListMaxAge = Duration(seconds: 60);
+
+  /// How old the list may be at a launch or a close before it's fetched
+  /// again. The game list's own sync usually fetched it a moment earlier.
+  static const _cloudListLaunchMaxAge = Duration(seconds: 10);
+
+  /// Marks [_files] stale, or only when older than [olderThan].
+  void _markCloudListStale({Duration? olderThan}) {
+    final fetchedAt = _filesFetchedAt;
+    if (olderThan != null &&
+        fetchedAt != null &&
+        _now().difference(fetchedAt) < olderThan) {
+      return;
+    }
+    _filesFetchedAt = null;
+    _filesGeneration++;
+  }
+
   /// Current user's storage quota and usage metadata.
   NeoSyncQuota? _quota;
 
@@ -238,15 +273,23 @@ class NeoSyncProvider extends ChangeNotifier {
     return fileName;
   }
 
+  /// Whether an upload's failure [message] is the NeoSync server saying the
+  /// account is out of storage.
+  ///
+  /// Only the server's own reply counts. `syncFile` reports a local file or
+  /// network failure as "Network error: …", and those often mention a
+  /// `/storage/…` path or a connection "closed before full header", which
+  /// must not be taken for a full account.
+  @visibleForTesting
+  static bool isQuotaExceededMessage(String message) =>
+      !message.startsWith('Network error:') &&
+      message.toLowerCase().contains('quota');
+
   /// Analyzes an error message to determine if it represents a storage quota violation.
   ///
   /// Increments failure counters if a quota issue is detected.
   bool _checkQuotaExceeded(String errorMessage) {
-    final lowerMessage = errorMessage.toLowerCase();
-    if (lowerMessage.contains('quota') ||
-        lowerMessage.contains('storage') ||
-        lowerMessage.contains('413') ||
-        lowerMessage.contains('full')) {
+    if (isQuotaExceededMessage(errorMessage)) {
       _quotaExceededAttempts++;
       return true;
     }
@@ -315,6 +358,9 @@ class NeoSyncProvider extends ChangeNotifier {
         'Download: FAILED for ${cloudFile.fileName} -> ${localFile.path}: '
         '$reason (status ${statusCode ?? 'n/a'})',
       );
+      // The file may have been deleted or replaced elsewhere: fetch the
+      // cloud list again next time.
+      _markCloudListStale();
       throw Exception(reason);
     }
   }

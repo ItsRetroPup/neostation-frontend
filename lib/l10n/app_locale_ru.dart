@@ -93,6 +93,10 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.rommDeleteKeepsSaves:
       'Файлы сохранения этой игры останутся в RomM.',
   AppLocale.rommDeleteKeepsStates: 'Состояния этой игры останутся в RomM.',
+  AppLocale.videoPreviews: "Задержка видеопревью",
+  AppLocale.videoPreviewsSubtitle:
+      "Выключено или ожидание 0–5 секунд перед воспроизведением. Применяется к виду игр и второму экрану.",
+  AppLocale.videoPreviewsOff: "Выключено",
   AppLocale.ignoreArticlesInGameSort: "Игнорировать артикли при сортировке игр",
   AppLocale.ignoreArticlesInGameSortSubtitle:
       "Пропускать The, A и An в начале названия. Например, The Legend of Zelda сортируется под буквой L.",
@@ -286,6 +290,9 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.nowPlayingFanartDim: 'Затемнять фанарт',
   AppLocale.nowPlayingFanartDimSubtitle:
       'Затемнять фон за логотипом, чтобы яркий фанарт не мешал',
+  AppLocale.secondaryHideSystemLogo: 'Скрыть логотип системы',
+  AppLocale.secondaryHideSystemLogoSubtitle:
+      'Показывать только фон, без логотипа и названия системы',
   AppLocale.nowPlayingDimOff: 'Выкл',
   AppLocale.secondarySectionNowPlaying: 'Панель Now Playing',
   AppLocale.secondarySectionDock: 'Док приложений',
@@ -1222,6 +1229,13 @@ const Map<String, dynamic> appLocaleRu = {
   AppLocale.errorScanningRomsDetail: 'Ошибка при сканировании ROM: {error}',
   AppLocale.systemsUpdateComplete: 'Системы успешно обновлены!',
   AppLocale.systemsUpdateError: 'Ошибка обновления систем. Попробуйте позже.',
+  AppLocale.checkSystemsUpdates: 'Проверить обновления систем',
+  AppLocale.systemsUpdateChecking: 'Проверка обновлений систем...',
+  AppLocale.systemsUpToDate: 'Системы в актуальном состоянии (v{version})',
+  AppLocale.systemsUpdateCheckFailed:
+      'Не удалось проверить обновления систем. Проверьте подключение к интернету и попробуйте снова.',
+  AppLocale.systemsUpdateNeedsNewerApp:
+      'Для новой версии систем нужна более новая версия NeoStation. Сначала обновите приложение.',
 
   AppLocale.checkingCredentials: 'Проверка учетных данных...',
   AppLocale.scrapeNoCredentials:

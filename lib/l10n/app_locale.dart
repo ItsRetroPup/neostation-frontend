@@ -74,6 +74,9 @@ mixin AppLocale {
   static const String ignoreArticlesInGameSort = 'ignoreArticlesInGameSort';
   static const String ignoreArticlesInGameSortSubtitle =
       'ignoreArticlesInGameSortSubtitle';
+  static const String videoPreviews = 'videoPreviews';
+  static const String videoPreviewsSubtitle = 'videoPreviewsSubtitle';
+  static const String videoPreviewsOff = 'videoPreviewsOff';
   // ---------------------------------------------------------------------------
   // Navigation / Controls
   // ---------------------------------------------------------------------------
@@ -248,6 +251,9 @@ mixin AppLocale {
   static const String nowPlayingFanartDimSubtitle =
       'now_playing_fanart_dim_subtitle';
   static const String nowPlayingDimOff = 'now_playing_dim_off';
+  static const String secondaryHideSystemLogo = 'secondary_hide_system_logo';
+  static const String secondaryHideSystemLogoSubtitle =
+      'secondary_hide_system_logo_subtitle';
   static const String secondarySectionNowPlaying =
       'secondary_section_now_playing';
   static const String secondarySectionDock = 'secondary_section_dock';
@@ -1223,6 +1229,12 @@ mixin AppLocale {
   static const String errorScanningRomsDetail = 'error_scanning_roms_detail';
   static const String systemsUpdateComplete = 'systems_update_complete';
   static const String systemsUpdateError = 'systems_update_error';
+  static const String checkSystemsUpdates = 'check_systems_updates';
+  static const String systemsUpdateChecking = 'systems_update_checking';
+  static const String systemsUpToDate = 'systems_up_to_date';
+  static const String systemsUpdateCheckFailed = 'systems_update_check_failed';
+  static const String systemsUpdateNeedsNewerApp =
+      'systems_update_needs_newer_app';
 
   // ---------------------------------------------------------------------------
   // Scraper single-game progress & result messages
