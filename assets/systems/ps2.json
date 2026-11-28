@@ -309,12 +309,12 @@
     },
     {
       "name": "Standalone ARMSX2 (Nightly)",
-      "unique_id": "ps2.com.nanodata.armsx2.debug",
+      "unique_id": "ps2.com.nightly.armsx2",
       "description": "Supported extensions: iso, chd, gz, mdf, bin, ciso, img.",
       "is_retroachievements_compatible": false,
       "platforms": {
         "android": {
-          "launch_arguments": "-n come.nanodata.armsx2.debug/kr.co.iefriends.pcsx2.activities.MainActivity -a android.intent.action.VIEW -d \"{file.uri}\"",
+          "launch_arguments": "-n com.armsx2.nightly/.Main -a android.intent.action.VIEW -d \"{file.uri}\"",
           "m3u_first_disc": true
         }
       }
